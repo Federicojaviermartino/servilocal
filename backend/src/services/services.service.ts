@@ -21,8 +21,8 @@ export class ServicesService {
     const service = this.serviceRepository.create({
       ...rest,
       providerId,
-      location: () =>
-        `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`,
+      location: (() =>
+        `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`) as any,
     });
 
     return this.serviceRepository.save(service);

@@ -61,7 +61,7 @@ export class Booking {
   totalPrice: number;
 
   @Column({ type: 'text', nullable: true })
-  cancellationReason: string;
+  cancellationReason: string | null;
 
   @Column({ type: 'timestamp', nullable: true })
   confirmedAt: Date;

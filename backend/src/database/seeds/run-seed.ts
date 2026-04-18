@@ -49,7 +49,7 @@ async function runSeed() {
     isEmailVerified: true,
     city: 'Madrid',
     phone: '600111222',
-    location: () => "ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)",
+    location: (() => "ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)") as any,
   });
 
   const provider1 = userRepo.create({
@@ -62,7 +62,7 @@ async function runSeed() {
     city: 'Madrid',
     phone: '600333444',
     bio: 'Fontanero profesional con 15 años de experiencia',
-    location: () => "ST_SetSRID(ST_MakePoint(-3.6920, 40.4200), 4326)",
+    location: (() => "ST_SetSRID(ST_MakePoint(-3.6920, 40.4200), 4326)") as any,
   });
 
   const provider2 = userRepo.create({
@@ -75,7 +75,7 @@ async function runSeed() {
     city: 'Madrid',
     phone: '600555666',
     bio: 'Electricista certificada, especialista en instalaciones domésticas',
-    location: () => "ST_SetSRID(ST_MakePoint(-3.7100, 40.4250), 4326)",
+    location: (() => "ST_SetSRID(ST_MakePoint(-3.7100, 40.4250), 4326)") as any,
   });
 
   await userRepo.save([admin, client, provider1, provider2]);

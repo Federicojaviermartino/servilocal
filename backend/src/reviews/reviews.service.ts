@@ -78,6 +78,10 @@ export class ReviewsService {
       where: { id: review.bookingId },
     });
 
+    if (!booking) {
+      throw new NotFoundException('Reserva asociada no encontrada');
+    }
+
     if (booking.providerId !== providerId) {
       throw new ForbiddenException('Solo el proveedor del servicio puede responder');
     }

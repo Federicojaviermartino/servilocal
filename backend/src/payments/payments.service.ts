@@ -21,7 +21,7 @@ export class PaymentsService {
     private configService: ConfigService,
   ) {
     this.stripe = new Stripe(
-      this.configService.get<string>('STRIPE_SECRET_KEY'),
+      this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
       { apiVersion: '2023-10-16' },
     );
   }
@@ -77,6 +77,10 @@ export class PaymentsService {
     });
 
     const savedPayment = await this.paymentRepository.save(payment);
+
+    if (!paymentIntent.client_secret) {
+      throw new Error('Stripe no devolvió client_secret para el PaymentIntent');
+    }
 
     return {
       clientSecret: paymentIntent.client_secret,
@@ -146,7 +150,7 @@ export class PaymentsService {
     });
   }
 
-  async findByBooking(bookingId: string): Promise<Payment> {
+  async findByBooking(bookingId: string): Promise<Payment | null> {
     return this.paymentRepository.findOne({
       where: { bookingId },
     });
