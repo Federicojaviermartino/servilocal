@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiLocal - Wireframes</title>
+  <style>
+    /* ============================================
+       WIREFRAME STYLES - Baja fidelidad
+       ServiLocal - TFM UOC 2025/2026
+       Autor: Federico Javier Martino
+       Resoluciones: 375px / 768px / 1280px
+       ============================================ */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --wire-bg: #f5f5f5;
+      --wire-card: #ffffff;
+      --wire-border: #d0d0d0;
+      --wire-text: #333333;
+      --wire-muted: #888888;
+      --wire-accent: #555555;
+      --wire-placeholder: #e0e0e0;
+      --wire-btn: #444444;
+      --wire-btn-text: #ffffff;
+      --wire-highlight: #666666;
+      --wire-blue: #4a7ab5;
+      --wire-green: #5a9e6f;
+      --wire-red: #b54a4a;
+      --wire-yellow: #d4a843;
+      --radius: 6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--wire-bg);
+      color: var(--wire-text);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Navigation between wireframes */
+    .wireframe-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #333;
+      color: white;
+      padding: 8px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .wireframe-nav span {
+      font-weight: 700;
+      font-size: 13px;
+      margin-right: 8px;
+    }
+
+    .wireframe-nav a {
+      color: #ccc;
+      text-decoration: none;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      background: #444;
+      transition: background 0.2s;
+    }
+
+    .wireframe-nav a:hover, .wireframe-nav a:focus {
+      background: var(--wire-blue);
+      color: white;
+    }
+
+    /* Page section */
+    .page-section {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+      border-bottom: 3px dashed var(--wire-border);
+    }
+
+    .page-title {
+      text-align: center;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--wire-muted);
+      margin-bottom: 4px;
+    }
+
+    .page-name {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: var(--wire-accent);
+    }
+
+    .resolution-label {
+      text-align: center;
+      font-size: 10px;
+      color: var(--wire-muted);
+      margin-bottom: 20px;
+    }
+
+    /* Common wireframe elements */
+    .wire-header {
+      background: var(--wire-card);
+      border: 1px solid var(--wire-border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .wire-logo {
+      font-weight: 700;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .wire-logo::before {
+      content: "\25C9";
+      font-size: 18px;
+      color: var(--wire-accent);
+    }
+
+    .wire-nav-links {
+      display: none;
+      gap: 16px;
+      font-size: 13px;
+    }
+
+    .wire-nav-links a {
+      color: var(--wire-muted);
+      text-decoration: none;
+    }
+
+    .wire-hamburger {
+      width: 24px;
+      height: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .wire-hamburger span {
+      display: block;
+      height: 2px;
+      background: var(--wire-text);
+      border-radius: 1px;
+    }
+
+    .wire-btn {
+      display: inline-block;
+      padding: 8px 16px;
+      background: var(--wire-btn);
+      color: var(--wire-btn-text);
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .wire-btn-outline {
+      background: transparent;
+      border: 1px solid var(--wire-border);
+      color: var(--wire-text);
+    }
+
+    .wire-btn-sm {
+      padding: 5px 12px;
+      font-size: 11px;
+    }
+
+    .wire-card {
+      background: var(--wire-card);
+      border: 1px solid var(--wire-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .wire-input {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--wire-border);
+      border-radius: var(--radius);
+      background: var(--wire-card);
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+
+    .wire-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--wire-accent);
+    }
+
+    .wire-placeholder-img {
+      background: var(--wire-placeholder);
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--wire-muted);
+      font-size: 12px;
+    }
+
+    .wire-stars {
+      color: var(--wire-yellow);
+      letter-spacing: 2px;
+    }
+
+    .wire-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .badge-pending { background: #fff3cd; color: #856404; }
+    .badge-confirmed { background: #d4edda; color: #155724; }
+    .badge-completed { background: #cce5ff; color: #004085; }
+    .badge-cancelled { background: #f8d7da; color: #721c24; }
+
+    .wire-footer {
+      background: var(--wire-card);
+      border: 1px solid var(--wire-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--wire-muted);
+      margin-top: 24px;
+    }
+
+    /* Grid helpers */
+    .grid-2 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+
+    /* Map placeholder */
+    .wire-map {
+      background: linear-gradient(135deg, #e8f0e0 0%, #dde8d5 50%, #e8f0e0 100%);
+      border: 1px solid #b0c8a0;
+      border-radius: var(--radius);
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #5a7a4a;
+      font-size: 13px;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wire-map::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(200,215,190,0.6) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(200,215,190,0.6) 1px, transparent 1px),
+        linear-gradient(25deg, transparent 48%, rgba(255,255,255,0.7) 48%, rgba(255,255,255,0.7) 52%, transparent 52%),
+        linear-gradient(155deg, transparent 48%, rgba(255,255,255,0.5) 48%, rgba(255,255,255,0.5) 52%, transparent 52%),
+        linear-gradient(90deg, transparent 45%, rgba(255,255,255,0.6) 45%, rgba(255,255,255,0.6) 55%, transparent 55%);
+      background-size: 50px 50px, 50px 50px, 100% 100%, 100% 100%, 100% 100%;
+    }
+
+    .wire-map::after {
+      content: "";
+      display: none;
+    }
+
+    .map-marker {
+      width: 24px;
+      height: 24px;
+      background: #dc2626;
+      border: 3px solid #fff;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+      position: absolute;
+      z-index: 2;
+    }
+
+    .map-marker-1 { top: 30%; left: 25%; }
+    .map-marker-2 { top: 50%; left: 50%; }
+    .map-marker-3 { top: 25%; left: 72%; }
+
+    .map-label {
+      position: relative;
+      z-index: 3;
+      background: rgba(255,255,255,0.92);
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #4a7a5a;
+      border: 1px solid rgba(180,210,170,0.5);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* Responsive */
+    @media (min-width: 768px) {
+      .wire-nav-links { display: flex; }
+      .wire-hamburger { display: none; }
+      .grid-2 { grid-template-columns: repeat(2, 1fr); }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+      .grid-4 { grid-template-columns: repeat(4, 1fr); }
+      .page-section { padding: 32px 24px 56px; }
+    }
+
+    @media (min-width: 1280px) {
+      .search-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .admin-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+      .msg-layout { display: grid; grid-template-columns: 300px 1fr; gap: 0; }
+    }
+
+    /* Annotation */
+    .annotation {
+      background: #fffde7;
+      border: 1px dashed var(--wire-yellow);
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 11px;
+      color: #6d5e00;
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Wireframe Navigation -->
+<nav class="wireframe-nav" aria-label="Navegación entre wireframes">
+  <span>WIREFRAMES</span>
+  <a href="#home">Home</a>
+  <a href="#search">Búsqueda</a>
+  <a href="#provider-profile">Perfil proveedor</a>
+  <a href="#booking">Reserva</a>
+  <a href="#my-bookings">Mis reservas</a>
+  <a href="#messages">Mensajes</a>
+  <a href="#dashboard">Dashboard</a>
+  <a href="#admin">Admin</a>
+  <a href="#login">Login</a>
+  <a href="#register">Registro</a>
+</nav>
+
+<!-- ================================================
+     PAGE 1: HOME / LANDING
+     ================================================ -->
+<section class="page-section" id="home">
+  <p class="page-title">Wireframe 01</p>
+  <h2 class="page-name">Home / Landing Page</h2>
+  <p class="resolution-label">Responsive: 375px → 768px → 1280px</p>
+
+  <!-- Header -->
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal</div>
+    <div class="wire-nav-links">
+      <a href="#">Buscar servicios</a>
+      <a href="#">Iniciar sesión</a>
+      <a href="#" class="wire-btn wire-btn-sm">Registrarse</a>
+    </div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- Hero -->
+  <div style="background: var(--wire-accent); color: white; padding: 40px 20px; border-radius: var(--radius); text-align: center; margin-bottom: 24px;">
+    <h1 style="font-size: 24px; margin-bottom: 8px;">Profesionales de confianza cerca de ti</h1>
+    <p style="font-size: 14px; opacity: 0.8; margin-bottom: 20px;">Encuentra, reserva y paga servicios locales de forma segura.</p>
+    <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+      <span class="wire-btn" style="background: white; color: #333;">🔍 Buscar servicios</span>
+      <span class="wire-btn wire-btn-outline" style="border-color: white; color: white;">Ofrecer mis servicios</span>
+    </div>
+  </div>
+
+  <!-- Categories grid -->
+  <h3 style="text-align: center; margin-bottom: 12px; font-size: 16px;">Categorías populares</h3>
+  <div class="grid-4" style="margin-bottom: 24px;">
+    <div class="wire-card" style="text-align: center; padding: 12px;">🔧<br><span style="font-size: 12px;">Fontanería</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">⚡<br><span style="font-size: 12px;">Electricidad</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">✨<br><span style="font-size: 12px;">Limpieza</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">🎨<br><span style="font-size: 12px;">Pintura</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">📚<br><span style="font-size: 12px;">Clases</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">🔨<br><span style="font-size: 12px;">Reformas</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">🌿<br><span style="font-size: 12px;">Jardinería</span></div>
+    <div class="wire-card" style="text-align: center; padding: 12px;">🎯<br><span style="font-size: 12px;">Diseño</span></div>
+  </div>
+
+  <!-- Features -->
+  <div class="grid-3" style="margin-bottom: 24px;">
+    <div class="wire-card">
+      <div style="font-size: 20px; margin-bottom: 6px;">🔍</div>
+      <strong style="font-size: 13px;">Búsqueda por proximidad</strong>
+      <p style="font-size: 12px; color: var(--wire-muted); margin-top: 4px;">Profesionales cerca de ti con geolocalización.</p>
+    </div>
+    <div class="wire-card">
+      <div style="font-size: 20px; margin-bottom: 6px;">⭐</div>
+      <strong style="font-size: 13px;">Valoraciones verificadas</strong>
+      <p style="font-size: 12px; color: var(--wire-muted); margin-top: 4px;">Solo clientes reales pueden valorar.</p>
+    </div>
+    <div class="wire-card">
+      <div style="font-size: 20px; margin-bottom: 6px;">💳</div>
+      <strong style="font-size: 13px;">Pagos seguros</strong>
+      <p style="font-size: 12px; color: var(--wire-muted); margin-top: 4px;">Paga con Stripe de forma segura.</p>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div style="background: var(--wire-accent); color: white; padding: 32px 20px; border-radius: var(--radius); text-align: center;">
+    <h3 style="margin-bottom: 8px;">¿Eres profesional? Únete</h3>
+    <p style="font-size: 13px; opacity: 0.8; margin-bottom: 16px;">Da visibilidad a tu negocio.</p>
+    <span class="wire-btn" style="background: white; color: #333;">Crear mi perfil gratis</span>
+  </div>
+
+  <div class="wire-footer">© 2026 ServiLocal · Acerca de · Términos · Privacidad</div>
+</section>
+
+<!-- ================================================
+     PAGE 2: BÚSQUEDA CON MAPA + FILTROS
+     ================================================ -->
+<section class="page-section" id="search">
+  <p class="page-title">Wireframe 02</p>
+  <h2 class="page-name">Búsqueda de Servicios</h2>
+  <p class="resolution-label">Desktop: mapa + lista lado a lado | Mobile: mapa arriba, lista abajo</p>
+
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal</div>
+    <div class="wire-nav-links">
+      <a href="#">Buscar</a>
+      <a href="#">Mis reservas</a>
+      <a href="#">Mensajes</a>
+      <a href="#">👤 Laura</a>
+    </div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- Search bar -->
+  <div class="wire-card" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px;">
+    <input class="wire-input" style="flex: 1; min-width: 200px; margin: 0;" placeholder="🔍 ¿Qué servicio necesitas?" />
+    <input class="wire-input" style="width: 160px; margin: 0;" placeholder="📍 Tu ubicación" />
+    <span class="wire-btn">Buscar</span>
+  </div>
+
+  <!-- Filters -->
+  <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;">
+    <select class="wire-input" style="width: auto; margin: 0; padding: 6px 10px;"><option>Categoría ▾</option></select>
+    <select class="wire-input" style="width: auto; margin: 0; padding: 6px 10px;"><option>Radio: 10 km ▾</option></select>
+    <select class="wire-input" style="width: auto; margin: 0; padding: 6px 10px;"><option>Valoración ▾</option></select>
+    <select class="wire-input" style="width: auto; margin: 0; padding: 6px 10px;"><option>Precio ▾</option></select>
+    <select class="wire-input" style="width: auto; margin: 0; padding: 6px 10px;"><option>Ordenar: Distancia ▾</option></select>
+  </div>
+
+  <p style="font-size: 12px; color: var(--wire-muted); margin-bottom: 12px;">24 resultados en un radio de 10 km</p>
+
+  <!-- Map + Results layout -->
+  <div class="search-layout">
+    <!-- Map -->
+    <div class="wire-map" style="min-height: 280px; margin-bottom: 16px;">
+      <div class="map-marker map-marker-1"></div>
+      <div class="map-marker map-marker-2"></div>
+      <div class="map-marker map-marker-3"></div>
+      <span class="map-label">Mapa interactivo (Leaflet.js)</span>
+    </div>
+
+    <!-- Results list -->
+    <div>
+      <!-- Service card 1 -->
+      <div class="wire-card" style="display: flex; gap: 12px;">
+        <div class="wire-placeholder-img" style="width: 80px; height: 80px; flex-shrink: 0;">[Img]</div>
+        <div style="flex: 1;">
+          <h4 style="font-size: 14px; margin-bottom: 2px;">Fontanería Carlos López</h4>
+          <p style="font-size: 11px; color: var(--wire-muted);">Fontanería · Madrid · 1.2 km</p>
+          <p class="wire-stars" style="font-size: 12px;">★★★★★ <span style="color: var(--wire-muted);">(23)</span></p>
+          <p style="font-size: 13px; font-weight: 600; margin-top: 4px;">25€ - 60€/hora</p>
+        </div>
+      </div>
+
+      <!-- Service card 2 -->
+      <div class="wire-card" style="display: flex; gap: 12px;">
+        <div class="wire-placeholder-img" style="width: 80px; height: 80px; flex-shrink: 0;">[Img]</div>
+        <div style="flex: 1;">
+          <h4 style="font-size: 14px; margin-bottom: 2px;">Electricista María Fernández</h4>
+          <p style="font-size: 11px; color: var(--wire-muted);">Electricidad · Madrid · 2.5 km</p>
+          <p class="wire-stars" style="font-size: 12px;">★★★★☆ <span style="color: var(--wire-muted);">(18)</span></p>
+          <p style="font-size: 13px; font-weight: 600; margin-top: 4px;">30€ - 50€/hora</p>
+        </div>
+      </div>
+
+      <!-- Service card 3 -->
+      <div class="wire-card" style="display: flex; gap: 12px;">
+        <div class="wire-placeholder-img" style="width: 80px; height: 80px; flex-shrink: 0;">[Img]</div>
+        <div style="flex: 1;">
+          <h4 style="font-size: 14px; margin-bottom: 2px;">Limpieza profesional Ana Torres</h4>
+          <p style="font-size: 11px; color: var(--wire-muted);">Limpieza · Madrid · 3.8 km</p>
+          <p class="wire-stars" style="font-size: 12px;">★★★★★ <span style="color: var(--wire-muted);">(42)</span></p>
+          <p style="font-size: 13px; font-weight: 600; margin-top: 4px;">15€ - 25€/hora</p>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div style="display: flex; justify-content: center; gap: 8px; margin-top: 16px;">
+        <span class="wire-btn wire-btn-sm" style="background: var(--wire-blue); color: white;">1</span>
+        <span class="wire-btn wire-btn-sm wire-btn-outline">2</span>
+        <span class="wire-btn wire-btn-sm wire-btn-outline">3</span>
+        <span class="wire-btn wire-btn-sm wire-btn-outline">→</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 3: PERFIL DE PROVEEDOR
+     ================================================ -->
+<section class="page-section" id="provider-profile">
+  <p class="page-title">Wireframe 03</p>
+  <h2 class="page-name">Perfil de Proveedor / Detalle Servicio</h2>
+
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal</div>
+    <div class="wire-nav-links"><a href="#">← Volver a búsqueda</a></div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="grid-2" style="align-items: start;">
+    <!-- Left: info -->
+    <div>
+      <div class="wire-card">
+        <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px;">
+          <div class="wire-placeholder-img" style="width: 80px; height: 80px; border-radius: 50%;">Foto</div>
+          <div>
+            <h3 style="font-size: 18px;">Carlos López</h3>
+            <p style="font-size: 12px; color: var(--wire-muted);">Fontanero profesional · Madrid</p>
+            <p class="wire-stars">★★★★★ <span style="color: var(--wire-muted);">(23 valoraciones)</span></p>
+          </div>
+        </div>
+        <p style="font-size: 13px; margin-bottom: 12px;">Fontanero profesional con 15 años de experiencia. Especialista en reparación de tuberías, grifería, cisternas y desatascos. Atención urgente 24h.</p>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: var(--wire-muted);">
+          <span>📍 Madrid centro (radio 15 km)</span>
+          <span>💰 25€ - 60€/hora</span>
+          <span>📞 600 333 444</span>
+        </div>
+      </div>
+
+      <!-- Portfolio -->
+      <div class="wire-card">
+        <h4 style="margin-bottom: 8px;">Portfolio de trabajos</h4>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;">
+          <div class="wire-placeholder-img" style="height: 80px;">[1]</div>
+          <div class="wire-placeholder-img" style="height: 80px;">[2]</div>
+          <div class="wire-placeholder-img" style="height: 80px;">[3]</div>
+        </div>
+      </div>
+
+      <!-- Reviews -->
+      <div class="wire-card">
+        <h4 style="margin-bottom: 12px;">Valoraciones (23)</h4>
+
+        <div style="border-bottom: 1px solid var(--wire-border); padding-bottom: 12px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <strong>Laura García</strong>
+            <span class="wire-stars">★★★★★</span>
+          </div>
+          <p style="font-size: 12px; margin-top: 4px;">Excelente trabajo, muy profesional y puntual. Lo recomiendo.</p>
+          <p style="font-size: 11px; color: var(--wire-muted); margin-top: 4px;">Hace 2 días</p>
+          <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; margin-top: 8px; font-size: 12px;">
+            <strong>Respuesta de Carlos:</strong> Gracias Laura, fue un placer atenderte.
+          </div>
+        </div>
+
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <strong>Pedro Sánchez</strong>
+            <span class="wire-stars">★★★★☆</span>
+          </div>
+          <p style="font-size: 12px; margin-top: 4px;">Buen servicio, aunque tardó un poco más de lo esperado.</p>
+          <p style="font-size: 11px; color: var(--wire-muted); margin-top: 4px;">Hace 1 semana</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: booking + map -->
+    <div>
+      <div class="wire-card" style="border: 2px solid var(--wire-accent);">
+        <h4 style="margin-bottom: 12px;">Solicitar reserva</h4>
+        <label class="wire-label">Fecha y hora</label>
+        <input class="wire-input" type="datetime-local" />
+        <label class="wire-label">Describe tu necesidad</label>
+        <textarea class="wire-input" rows="3" placeholder="Ej: Tengo un grifo que gotea en la cocina..."></textarea>
+        <label class="wire-label">Precio estimado</label>
+        <input class="wire-input" type="text" value="45,00 €" />
+        <span class="wire-btn" style="width: 100%; display: block;">Solicitar reserva</span>
+        <p style="font-size: 11px; color: var(--wire-muted); margin-top: 8px; text-align: center;">💬 También puedes enviar un mensaje antes de reservar</p>
+      </div>
+
+      <div class="wire-card">
+        <h4 style="margin-bottom: 8px;">Ubicación</h4>
+        <div class="wire-map" style="min-height: 160px;">
+          <div class="map-marker" style="top: 40%; left: 45%;"></div>
+          <span class="map-label">Zona de cobertura</span>
+        </div>
+        <p style="font-size: 12px; color: var(--wire-muted); margin-top: 8px;">Zona de cobertura: 15 km desde Madrid centro</p>
+      </div>
+
+      <span class="wire-btn wire-btn-outline" style="width: 100%; display: block; text-align: center;">💬 Enviar mensaje a Carlos</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 4: MIS RESERVAS
+     ================================================ -->
+<section class="page-section" id="my-bookings">
+  <p class="page-title">Wireframe 04</p>
+  <h2 class="page-name">Mis Reservas (vista cliente)</h2>
+
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal</div>
+    <div class="wire-nav-links"><a href="#">Buscar</a><a href="#" style="font-weight: 700;">Mis reservas</a><a href="#">Mensajes</a><a href="#">👤 Laura</a></div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <h3 style="font-size: 18px; margin-bottom: 16px;">Mis reservas</h3>
+
+  <!-- Tabs -->
+  <div style="display: flex; gap: 4px; margin-bottom: 16px;">
+    <span class="wire-btn wire-btn-sm">Todas</span>
+    <span class="wire-btn wire-btn-sm wire-btn-outline">Pendientes</span>
+    <span class="wire-btn wire-btn-sm wire-btn-outline">Confirmadas</span>
+    <span class="wire-btn wire-btn-sm wire-btn-outline">Completadas</span>
+  </div>
+
+  <!-- Booking cards -->
+  <div class="wire-card" style="display: flex; gap: 12px; align-items: center;">
+    <div class="wire-placeholder-img" style="width: 60px; height: 60px; flex-shrink: 0;">[Img]</div>
+    <div style="flex: 1;">
+      <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 4px;">
+        <h4 style="font-size: 14px;">Fontanería Carlos López</h4>
+        <span class="wire-badge badge-confirmed">Confirmada</span>
+      </div>
+      <p style="font-size: 12px; color: var(--wire-muted);">📅 15 abril 2026 · 10:00</p>
+      <p style="font-size: 12px;">Reparar grifo cocina · <strong>45,00 €</strong></p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <span class="wire-btn wire-btn-sm" style="background: var(--wire-blue);">💳 Pagar</span>
+      <span class="wire-btn wire-btn-sm wire-btn-outline" style="color: var(--wire-red);">Cancelar</span>
+    </div>
+  </div>
+
+  <div class="wire-card" style="display: flex; gap: 12px; align-items: center;">
+    <div class="wire-placeholder-img" style="width: 60px; height: 60px; flex-shrink: 0;">[Img]</div>
+    <div style="flex: 1;">
+      <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 4px;">
+        <h4 style="font-size: 14px;">Electricista María Fernández</h4>
+        <span class="wire-badge badge-completed">Completada</span>
+      </div>
+      <p style="font-size: 12px; color: var(--wire-muted);">📅 8 abril 2026 · 16:00</p>
+      <p style="font-size: 12px;">Instalación enchufes · <strong>80,00 €</strong></p>
+    </div>
+    <div>
+      <span class="wire-btn wire-btn-sm" style="background: var(--wire-yellow); color: #333;">⭐ Valorar</span>
+    </div>
+  </div>
+
+  <div class="wire-card" style="display: flex; gap: 12px; align-items: center;">
+    <div class="wire-placeholder-img" style="width: 60px; height: 60px; flex-shrink: 0;">[Img]</div>
+    <div style="flex: 1;">
+      <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 4px;">
+        <h4 style="font-size: 14px;">Limpieza Ana Torres</h4>
+        <span class="wire-badge badge-pending">Pendiente</span>
+      </div>
+      <p style="font-size: 12px; color: var(--wire-muted);">📅 20 abril 2026 · 09:00</p>
+      <p style="font-size: 12px;">Limpieza general piso · <strong>60,00 €</strong></p>
+    </div>
+    <div>
+      <span class="wire-btn wire-btn-sm wire-btn-outline" style="color: var(--wire-red);">Cancelar</span>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 5: MENSAJERÍA
+     ================================================ -->
+<section class="page-section" id="messages">
+  <p class="page-title">Wireframe 05</p>
+  <h2 class="page-name">Mensajería</h2>
+  <p class="resolution-label">Desktop: lista conversaciones + chat lado a lado</p>
+
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal</div>
+    <div class="wire-nav-links"><a href="#">Buscar</a><a href="#">Mis reservas</a><a href="#" style="font-weight: 700;">Mensajes <span style="background: var(--wire-red); color: white; border-radius: 10px; padding: 1px 6px; font-size: 10px;">3</span></a><a href="#">👤 Laura</a></div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="msg-layout" style="border: 1px solid var(--wire-border); border-radius: var(--radius); overflow: hidden; min-height: 400px;">
+    <!-- Conversation list -->
+    <div style="border-right: 1px solid var(--wire-border); background: white;">
+      <div style="padding: 12px; border-bottom: 1px solid var(--wire-border);">
+        <input class="wire-input" style="margin: 0;" placeholder="🔍 Buscar conversación..." />
+      </div>
+
+      <div style="padding: 12px; border-bottom: 1px solid var(--wire-border); background: #f0f5ff; cursor: pointer;">
+        <div style="display: flex; justify-content: space-between;">
+          <strong style="font-size: 13px;">Carlos López</strong>
+          <span style="font-size: 10px; color: var(--wire-muted);">10:30</span>
+        </div>
+        <p style="font-size: 12px; color: var(--wire-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Perfecto, nos vemos el martes a las 10.</p>
+      </div>
+
+      <div style="padding: 12px; border-bottom: 1px solid var(--wire-border); cursor: pointer;">
+        <div style="display: flex; justify-content: space-between;">
+          <strong style="font-size: 13px;">María Fernández</strong>
+          <span style="font-size: 10px; color: var(--wire-muted);">Ayer</span>
+        </div>
+        <p style="font-size: 12px; color: var(--wire-muted);">Gracias por la instalación, todo perfecto.</p>
+      </div>
+
+      <div style="padding: 12px; cursor: pointer;">
+        <div style="display: flex; justify-content: space-between;">
+          <strong style="font-size: 13px;">Ana Torres</strong>
+          <span style="font-size: 10px; color: var(--wire-muted);">Lun</span>
+        </div>
+        <p style="font-size: 12px; color: var(--wire-muted);">¿Tienes disponibilidad la semana que viene?</p>
+      </div>
+    </div>
+
+    <!-- Chat area -->
+    <div style="display: flex; flex-direction: column; background: #fafafa;">
+      <div style="padding: 12px; border-bottom: 1px solid var(--wire-border); background: white;">
+        <strong>Carlos López</strong> <span style="font-size: 12px; color: var(--wire-muted);">· Fontanero</span>
+      </div>
+
+      <div style="flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+        <!-- Messages -->
+        <div style="align-self: flex-start; background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--wire-border); max-width: 75%; font-size: 13px;">
+          Hola Laura, he visto tu solicitud de reserva. ¿Podrías darme más detalles sobre el grifo?
+          <div style="font-size: 10px; color: var(--wire-muted); margin-top: 4px;">10:15</div>
+        </div>
+
+        <div style="align-self: flex-end; background: var(--wire-blue); color: white; padding: 8px 12px; border-radius: 12px; max-width: 75%; font-size: 13px;">
+          Claro, es un grifo monomando de cocina que gotea constantemente. Creo que hay que cambiar el cartucho.
+          <div style="font-size: 10px; opacity: 0.7; margin-top: 4px;">10:22</div>
+        </div>
+
+        <div style="align-self: flex-start; background: white; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--wire-border); max-width: 75%; font-size: 13px;">
+          Perfecto, nos vemos el martes a las 10. Llevaré los repuestos necesarios.
+          <div style="font-size: 10px; color: var(--wire-muted); margin-top: 4px;">10:30</div>
+        </div>
+      </div>
+
+      <!-- Message input -->
+      <div style="padding: 12px; border-top: 1px solid var(--wire-border); background: white; display: flex; gap: 8px;">
+        <input class="wire-input" style="margin: 0; flex: 1;" placeholder="Escribe un mensaje..." />
+        <span class="wire-btn">Enviar</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 6: DASHBOARD PROVEEDOR
+     ================================================ -->
+<section class="page-section" id="dashboard">
+  <p class="page-title">Wireframe 06</p>
+  <h2 class="page-name">Dashboard Proveedor</h2>
+
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal</div>
+    <div class="wire-nav-links"><a href="#">Mis servicios</a><a href="#" style="font-weight: 700;">Dashboard</a><a href="#">Reservas</a><a href="#">Mensajes</a><a href="#">👤 Carlos</a></div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <h3 style="font-size: 18px; margin-bottom: 16px;">Panel de proveedor</h3>
+
+  <!-- Stats -->
+  <div class="grid-4" style="margin-bottom: 20px;">
+    <div class="wire-card" style="text-align: center;">
+      <p style="font-size: 24px; font-weight: 700;">12</p>
+      <p style="font-size: 11px; color: var(--wire-muted);">Reservas este mes</p>
+    </div>
+    <div class="wire-card" style="text-align: center;">
+      <p style="font-size: 24px; font-weight: 700;">540€</p>
+      <p style="font-size: 11px; color: var(--wire-muted);">Ingresos este mes</p>
+    </div>
+    <div class="wire-card" style="text-align: center;">
+      <p style="font-size: 24px; font-weight: 700;">4.8</p>
+      <p style="font-size: 11px; color: var(--wire-muted);">Valoración media</p>
+    </div>
+    <div class="wire-card" style="text-align: center;">
+      <p style="font-size: 24px; font-weight: 700;">3</p>
+      <p style="font-size: 11px; color: var(--wire-muted);">Pendientes</p>
+    </div>
+  </div>
+
+  <!-- Pending bookings -->
+  <div class="wire-card">
+    <h4 style="margin-bottom: 12px;">Reservas pendientes de confirmar</h4>
+    <div style="border-bottom: 1px solid var(--wire-border); padding: 10px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <strong style="font-size: 13px;">Laura García</strong>
+        <p style="font-size: 12px; color: var(--wire-muted);">Reparar grifo · 15 abr · 10:00 · 45€</p>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <span class="wire-btn wire-btn-sm" style="background: var(--wire-green);">✓ Confirmar</span>
+        <span class="wire-btn wire-btn-sm" style="background: var(--wire-red);">✗ Rechazar</span>
+      </div>
+    </div>
+    <div style="padding: 10px 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+      <div>
+        <strong style="font-size: 13px;">Pedro Sánchez</strong>
+        <p style="font-size: 12px; color: var(--wire-muted);">Desatasco baño · 18 abr · 14:00 · 35€</p>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <span class="wire-btn wire-btn-sm" style="background: var(--wire-green);">✓ Confirmar</span>
+        <span class="wire-btn wire-btn-sm" style="background: var(--wire-red);">✗ Rechazar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- My services -->
+  <div class="wire-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h4>Mis servicios</h4>
+      <span class="wire-btn wire-btn-sm">+ Nuevo servicio</span>
+    </div>
+    <div style="border: 1px solid var(--wire-border); border-radius: 4px; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="font-size: 13px;">Fontanería de urgencia 24h</strong>
+        <p style="font-size: 12px; color: var(--wire-muted);">Fontanería · 25-60€/hora · ★4.8 (23)</p>
+      </div>
+      <div style="display: flex; gap: 6px;">
+        <span class="wire-btn wire-btn-sm wire-btn-outline">Editar</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 7: PANEL DE ADMINISTRACIÓN
+     ================================================ -->
+<section class="page-section" id="admin">
+  <p class="page-title">Wireframe 07</p>
+  <h2 class="page-name">Panel de Administración</h2>
+
+  <div class="wire-header">
+    <div class="wire-logo">ServiLocal <span style="font-size: 10px; background: var(--wire-red); color: white; padding: 2px 6px; border-radius: 3px; margin-left: 4px;">ADMIN</span></div>
+    <div class="wire-nav-links"><a href="#">👤 Admin</a></div>
+    <div class="wire-hamburger"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <div class="wire-card" style="padding: 8px;">
+      <nav>
+        <div style="padding: 8px 12px; background: var(--wire-placeholder); border-radius: 4px; font-size: 13px; font-weight: 600; margin-bottom: 4px;">📊 Dashboard</div>
+        <div style="padding: 8px 12px; font-size: 13px; color: var(--wire-muted); margin-bottom: 4px;">👥 Usuarios</div>
+        <div style="padding: 8px 12px; font-size: 13px; color: var(--wire-muted); margin-bottom: 4px;">📁 Categorías</div>
+        <div style="padding: 8px 12px; font-size: 13px; color: var(--wire-muted); margin-bottom: 4px;">⚠️ Reseñas reportadas</div>
+        <div style="padding: 8px 12px; font-size: 13px; color: var(--wire-muted);">📄 Contenido</div>
+      </nav>
+    </div>
+
+    <!-- Content -->
+    <div>
+      <!-- Stats -->
+      <div class="grid-4" style="margin-bottom: 16px;">
+        <div class="wire-card" style="text-align: center;"><p style="font-size: 20px; font-weight: 700;">156</p><p style="font-size: 11px; color: var(--wire-muted);">Usuarios</p></div>
+        <div class="wire-card" style="text-align: center;"><p style="font-size: 20px; font-weight: 700;">43</p><p style="font-size: 11px; color: var(--wire-muted);">Proveedores</p></div>
+        <div class="wire-card" style="text-align: center;"><p style="font-size: 20px; font-weight: 700;">89</p><p style="font-size: 11px; color: var(--wire-muted);">Reservas</p></div>
+        <div class="wire-card" style="text-align: center;"><p style="font-size: 20px; font-weight: 700;">2</p><p style="font-size: 11px; color: var(--wire-muted);">Reportadas</p></div>
+      </div>
+
+      <!-- Users table -->
+      <div class="wire-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4>Usuarios recientes</h4>
+          <input class="wire-input" style="width: 200px; margin: 0;" placeholder="🔍 Buscar usuario..." />
+        </div>
+        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--wire-border); text-align: left;">
+              <th style="padding: 8px 4px;">Nombre</th>
+              <th style="padding: 8px 4px;">Email</th>
+              <th style="padding: 8px 4px;">Rol</th>
+              <th style="padding: 8px 4px;">Estado</th>
+              <th style="padding: 8px 4px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--wire-border);">
+              <td style="padding: 8px 4px;">Laura García</td>
+              <td style="padding: 8px 4px;">laura@ejemplo.com</td>
+              <td style="padding: 8px 4px;"><span class="wire-badge" style="background: #e8f0fe;">Cliente</span></td>
+              <td style="padding: 8px 4px;"><span class="wire-badge badge-confirmed">Activo</span></td>
+              <td style="padding: 8px 4px;"><span class="wire-btn wire-btn-sm wire-btn-outline" style="font-size: 10px;">Desactivar</span></td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--wire-border);">
+              <td style="padding: 8px 4px;">Carlos López</td>
+              <td style="padding: 8px 4px;">carlos@ejemplo.com</td>
+              <td style="padding: 8px 4px;"><span class="wire-badge" style="background: #e8f5e9;">Proveedor</span></td>
+              <td style="padding: 8px 4px;"><span class="wire-badge badge-confirmed">Activo</span></td>
+              <td style="padding: 8px 4px;"><span class="wire-btn wire-btn-sm wire-btn-outline" style="font-size: 10px;">Desactivar</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 8: LOGIN
+     ================================================ -->
+<section class="page-section" id="login">
+  <p class="page-title">Wireframe 08</p>
+  <h2 class="page-name">Inicio de Sesión</h2>
+
+  <div style="max-width: 400px; margin: 0 auto;">
+    <div class="wire-header" style="justify-content: center;">
+      <div class="wire-logo">ServiLocal</div>
+    </div>
+
+    <div class="wire-card">
+      <h3 style="text-align: center; margin-bottom: 4px; font-size: 18px;">Iniciar sesión</h3>
+      <p style="text-align: center; font-size: 12px; color: var(--wire-muted); margin-bottom: 16px;">Accede a tu cuenta de ServiLocal</p>
+
+      <label class="wire-label">Correo electrónico</label>
+      <input class="wire-input" type="email" placeholder="tu@email.com" />
+      <label class="wire-label">Contraseña</label>
+      <div style="position: relative;">
+        <input class="wire-input" type="password" placeholder="Tu contraseña" />
+        <span style="position: absolute; right: 12px; top: 10px; font-size: 12px; color: var(--wire-muted); cursor: pointer;">👁</span>
+      </div>
+      <span class="wire-btn" style="width: 100%; display: block; text-align: center; margin-top: 4px;">Iniciar sesión</span>
+      <p style="text-align: center; font-size: 12px; margin-top: 12px;">¿No tienes cuenta? <a href="#register" style="color: var(--wire-blue);">Regístrate aquí</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================
+     PAGE 9: REGISTRO
+     ================================================ -->
+<section class="page-section" id="register">
+  <p class="page-title">Wireframe 09</p>
+  <h2 class="page-name">Registro de Usuario</h2>
+
+  <div style="max-width: 400px; margin: 0 auto;">
+    <div class="wire-header" style="justify-content: center;">
+      <div class="wire-logo">ServiLocal</div>
+    </div>
+
+    <div class="wire-card">
+      <h3 style="text-align: center; margin-bottom: 4px; font-size: 18px;">Crear cuenta</h3>
+      <p style="text-align: center; font-size: 12px; color: var(--wire-muted); margin-bottom: 16px;">Únete a la comunidad ServiLocal</p>
+
+      <!-- Role selector -->
+      <label class="wire-label">¿Qué quieres hacer?</label>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+        <div style="border: 2px solid var(--wire-accent); border-radius: var(--radius); padding: 12px; text-align: center; cursor: pointer; background: #f5f5f5;">
+          <div style="font-size: 20px;">👤</div>
+          <span style="font-size: 12px; font-weight: 600;">Buscar servicios</span>
+        </div>
+        <div style="border: 2px solid var(--wire-border); border-radius: var(--radius); padding: 12px; text-align: center; cursor: pointer;">
+          <div style="font-size: 20px;">💼</div>
+          <span style="font-size: 12px; font-weight: 600;">Ofrecer servicios</span>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div><label class="wire-label">Nombre</label><input class="wire-input" placeholder="Federico" /></div>
+        <div><label class="wire-label">Apellidos</label><input class="wire-input" placeholder="Martino" /></div>
+      </div>
+      <label class="wire-label">Correo electrónico</label>
+      <input class="wire-input" type="email" placeholder="tu@email.com" />
+      <label class="wire-label">Contraseña</label>
+      <input class="wire-input" type="password" placeholder="Mínimo 8 caracteres" />
+      <label class="wire-label">Confirmar contraseña</label>
+      <input class="wire-input" type="password" placeholder="Repite la contraseña" />
+      <span class="wire-btn" style="width: 100%; display: block; text-align: center; margin-top: 4px;">Crear cuenta</span>
+      <p style="text-align: center; font-size: 12px; margin-top: 12px;">¿Ya tienes cuenta? <a href="#login" style="color: var(--wire-blue);">Inicia sesión</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- Annotations -->
+<section class="page-section">
+  <h2 class="page-name">Notas de diseño</h2>
+  <div class="annotation">
+    <strong>Resoluciones objetivo:</strong> Móvil (375px), Tablet (768px), Escritorio (1280px). Enfoque mobile-first con Tailwind CSS.
+  </div>
+  <div class="annotation">
+    <strong>Accesibilidad:</strong> Todos los formularios incluyen labels asociados, navegación por teclado, indicadores de foco, roles ARIA, skip-to-content, y contraste mínimo 4.5:1.
+  </div>
+  <div class="annotation">
+    <strong>Paleta wireframe:</strong> Estos wireframes usan escala de grises intencionalmente. La paleta final usa azul primario (#1a56db) con acentos (#0ea5e9) definidos en Tailwind config.
+  </div>
+  <div class="annotation">
+    <strong>Componentes reutilizables:</strong> Botones (primary, secondary, sm), Cards, Inputs, Labels, Badges de estado, Header responsive con menú hamburguesa, Footer.
+  </div>
+  <div class="annotation">
+    <strong>Páginas cubiertas (9):</strong> Home/Landing, Búsqueda con mapa, Perfil proveedor, Mis reservas, Mensajería, Dashboard proveedor, Panel admin, Login, Registro.
+  </div>
+</section>
+
+</body>
+</html>

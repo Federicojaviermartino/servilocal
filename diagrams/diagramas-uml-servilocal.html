@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiLocal - Diagramas UML</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f9fa; color: #1f2937; }
+    
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: #1e3a5f; color: white; padding: 10px 20px;
+      display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    }
+    nav span { font-weight: 700; font-size: 14px; margin-right: 12px; }
+    nav a { color: #93c5fd; text-decoration: none; font-size: 12px; padding: 4px 10px; border-radius: 4px; background: rgba(255,255,255,0.1); }
+    nav a:hover { background: rgba(255,255,255,0.25); }
+
+    .diagram-section {
+      max-width: 1200px; margin: 0 auto; padding: 32px 20px 48px;
+      border-bottom: 2px dashed #d1d5db;
+    }
+
+    .diagram-id { font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #6b7280; margin-bottom: 4px; }
+    .diagram-title { font-size: 22px; font-weight: 700; color: #1e3a5f; margin-bottom: 6px; }
+    .diagram-desc { font-size: 14px; color: #4b5563; margin-bottom: 20px; line-height: 1.6; }
+
+    .mermaid {
+      background: white; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 24px; margin-bottom: 16px; overflow-x: auto;
+    }
+
+    .note {
+      background: #fffde7; border: 1px dashed #d4a843; border-radius: 6px;
+      padding: 12px 16px; font-size: 13px; color: #6d5e00; margin-top: 12px;
+    }
+
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    th { background: #1e3a5f; color: white; padding: 10px 12px; text-align: left; }
+    td { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; }
+    tr:nth-child(even) { background: #f0f7ff; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span>DIAGRAMAS UML</span>
+  <a href="#d1">Casos de uso</a>
+  <a href="#d2">Clases</a>
+  <a href="#d3">Entidad-Relaci&oacute;n</a>
+  <a href="#d4">Arquitectura</a>
+  <a href="#d5">Despliegue</a>
+  <a href="#d6">Seq: Reserva</a>
+  <a href="#d7">Seq: Pago</a>
+  <a href="#d8">Seq: B&uacute;squeda</a>
+  <a href="#d9">Seq: Auth</a>
+  <a href="#d10">Estados Booking</a>
+</nav>
+
+<!-- ============================================================
+     DIAGRAMA 1: CASOS DE USO
+     ============================================================ -->
+<section class="diagram-section" id="d1">
+  <p class="diagram-id">Diagrama 2.1.1</p>
+  <h2 class="diagram-title">Diagrama de Casos de Uso</h2>
+  <p class="diagram-desc">Muestra las interacciones principales de los tres actores del sistema (Cliente, Proveedor, Administrador) con las funcionalidades de ServiLocal.</p>
+
+  <div class="mermaid">
+graph LR
+    subgraph Actores
+        C((Cliente))
+        P((Proveedor))
+        A((Admin))
+    end
+
+    subgraph "ServiLocal - Casos de Uso"
+        subgraph "Autenticaci&oacute;n"
+            CU01[CU01: Registrarse]
+            CU02[CU02: Iniciar sesi&oacute;n]
+            CU03[CU03: Editar perfil]
+        end
+        subgraph "B&uacute;squeda"
+            CU04[CU04: Buscar servicios por ubicaci&oacute;n]
+            CU05[CU05: Filtrar resultados]
+            CU06[CU06: Ver servicio en mapa]
+        end
+        subgraph "Reservas"
+            CU07[CU07: Solicitar reserva]
+            CU08[CU08: Confirmar/Rechazar reserva]
+            CU09[CU09: Completar servicio]
+            CU10[CU10: Cancelar reserva]
+        end
+        subgraph "Valoraciones"
+            CU11[CU11: Valorar servicio completado]
+            CU12[CU12: Responder a valoraci&oacute;n]
+            CU13[CU13: Reportar valoraci&oacute;n]
+        end
+        subgraph "Pagos"
+            CU14[CU14: Pagar reserva con Stripe]
+            CU15[CU15: Ver historial de pagos]
+        end
+        subgraph "Mensajer&iacute;a"
+            CU16[CU16: Enviar mensaje]
+            CU17[CU17: Ver conversaciones]
+        end
+        subgraph "Proveedor"
+            CU18[CU18: Crear servicio]
+            CU19[CU19: Gestionar disponibilidad]
+            CU20[CU20: Ver dashboard estad&iacute;sticas]
+        end
+        subgraph "Administraci&oacute;n"
+            CU21[CU21: Gestionar usuarios]
+            CU22[CU22: Gestionar categor&iacute;as]
+            CU23[CU23: Moderar rese&ntilde;as]
+            CU24[CU24: Ver estad&iacute;sticas plataforma]
+        end
+    end
+
+    C --- CU01 & CU02 & CU03
+    C --- CU04 & CU05 & CU06
+    C --- CU07 & CU10
+    C --- CU11 & CU13
+    C --- CU14 & CU15
+    C --- CU16 & CU17
+
+    P --- CU01 & CU02 & CU03
+    P --- CU08 & CU09 & CU10
+    P --- CU12
+    P --- CU16 & CU17
+    P --- CU18 & CU19 & CU20
+
+    A --- CU02
+    A --- CU21 & CU22 & CU23 & CU24
+  </div>
+
+  <h3 style="margin: 16px 0 8px; font-size: 16px;">Detalle de Casos de Uso principales</h3>
+  <table>
+    <tr><th>ID</th><th>Caso de uso</th><th>Actor(es)</th><th>Descripci&oacute;n</th><th>Precondici&oacute;n</th></tr>
+    <tr><td>CU01</td><td>Registrarse</td><td>Cliente, Proveedor</td><td>Crear cuenta seleccionando rol (cliente o proveedor)</td><td>No tener cuenta</td></tr>
+    <tr><td>CU04</td><td>Buscar servicios</td><td>Cliente</td><td>Buscar por texto, categor&iacute;a, ubicaci&oacute;n (PostGIS) y filtros</td><td>Ninguna (p&uacute;blico)</td></tr>
+    <tr><td>CU07</td><td>Solicitar reserva</td><td>Cliente</td><td>Seleccionar fecha, hora, describir necesidad, precio</td><td>Autenticado como cliente</td></tr>
+    <tr><td>CU08</td><td>Confirmar reserva</td><td>Proveedor</td><td>Aceptar o rechazar solicitud de reserva</td><td>Reserva en estado pendiente</td></tr>
+    <tr><td>CU11</td><td>Valorar servicio</td><td>Cliente</td><td>Puntuar (1-5) y comentar tras reserva completada</td><td>Reserva completada, sin valoraci&oacute;n previa</td></tr>
+    <tr><td>CU14</td><td>Pagar reserva</td><td>Cliente</td><td>Pago con Stripe (retenci&oacute;n hasta completar)</td><td>Reserva confirmada</td></tr>
+    <tr><td>CU18</td><td>Crear servicio</td><td>Proveedor</td><td>Publicar servicio con ubicaci&oacute;n, precios, categor&iacute;a</td><td>Autenticado como proveedor</td></tr>
+    <tr><td>CU21</td><td>Gestionar usuarios</td><td>Admin</td><td>Listar, activar, desactivar usuarios</td><td>Autenticado como admin</td></tr>
+  </table>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 2: CLASES DEL DOMINIO
+     ============================================================ -->
+<section class="diagram-section" id="d2">
+  <p class="diagram-id">Diagrama 2.1.2</p>
+  <h2 class="diagram-title">Diagrama de Clases del Dominio</h2>
+  <p class="diagram-desc">Modelo de dominio con las entidades principales, sus atributos clave y relaciones.</p>
+
+  <div class="mermaid">
+classDiagram
+    class User {
+        +UUID id
+        +String firstName
+        +String lastName
+        +String email
+        +String password
+        +UserRole role
+        +String phone
+        +String bio
+        +Point location
+        +Boolean isActive
+        +Date createdAt
+    }
+
+    class Category {
+        +UUID id
+        +String name
+        +String slug
+        +String description
+        +String icon
+        +UUID parentId
+        +Boolean isActive
+        +Int sortOrder
+    }
+
+    class Service {
+        +UUID id
+        +UUID providerId
+        +UUID categoryId
+        +String title
+        +String description
+        +Decimal priceMin
+        +Decimal priceMax
+        +Point location
+        +Int coverageRadiusKm
+        +Decimal averageRating
+        +Int totalReviews
+        +Boolean isActive
+    }
+
+    class Booking {
+        +UUID id
+        +UUID clientId
+        +UUID serviceId
+        +UUID providerId
+        +BookingStatus status
+        +DateTime scheduledDate
+        +Decimal totalPrice
+        +String description
+        +Date confirmedAt
+        +Date completedAt
+        +Date cancelledAt
+    }
+
+    class Review {
+        +UUID id
+        +UUID bookingId
+        +UUID clientId
+        +UUID serviceId
+        +Int rating
+        +String comment
+        +String providerResponse
+        +Boolean isReported
+    }
+
+    class Payment {
+        +UUID id
+        +UUID bookingId
+        +UUID clientId
+        +Decimal amount
+        +String currency
+        +PaymentStatus status
+        +String stripePaymentIntentId
+        +Date paidAt
+        +Date refundedAt
+    }
+
+    class Conversation {
+        +UUID id
+        +UUID participantOneId
+        +UUID participantTwoId
+        +String lastMessagePreview
+        +Date lastMessageAt
+    }
+
+    class Message {
+        +UUID id
+        +UUID conversationId
+        +UUID senderId
+        +String content
+        +Boolean isRead
+        +Date readAt
+    }
+
+    class Notification {
+        +UUID id
+        +UUID userId
+        +NotificationType type
+        +String title
+        +String content
+        +Boolean isRead
+    }
+
+    User "1" --> "*" Service : publica
+    User "1" --> "*" Booking : solicita como cliente
+    User "1" --> "*" Booking : recibe como proveedor
+    Service "*" --> "1" Category : pertenece a
+    Category "1" --> "*" Category : subcategorias
+    Booking "1" --> "1" Service : reserva de
+    Booking "1" --> "0..1" Review : genera
+    Booking "1" --> "0..1" Payment : tiene pago
+    Review "*" --> "1" Service : valora
+    User "1" --> "*" Conversation : participa en
+    Conversation "1" --> "*" Message : contiene
+    User "1" --> "*" Notification : recibe
+  </div>
+
+  <div class="note">
+    <strong>Enumeraciones:</strong> UserRole = {client, provider, admin} | BookingStatus = {pending, confirmed, completed, cancelled, rejected} | PaymentStatus = {pending, held, completed, refunded, failed} | NotificationType = {booking_request, booking_confirmed, new_review, new_message, payment_received, ...}
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 3: ENTIDAD-RELACI&Oacute;N (BD)
+     ============================================================ -->
+<section class="diagram-section" id="d3">
+  <p class="diagram-id">Diagrama 2.5.1</p>
+  <h2 class="diagram-title">Diagrama Entidad-Relaci&oacute;n (Base de Datos)</h2>
+  <p class="diagram-desc">Esquema relacional de PostgreSQL con PostGIS. Incluye tipos de datos, claves primarias, for&aacute;neas e &iacute;ndices geoespaciales.</p>
+
+  <div class="mermaid">
+erDiagram
+    users {
+        uuid id PK
+        varchar firstName
+        varchar lastName
+        varchar email UK
+        varchar password
+        enum role
+        varchar phone
+        text bio
+        varchar avatarUrl
+        varchar address
+        varchar city
+        geometry location "Point GiST index"
+        boolean isActive
+        boolean isEmailVerified
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    categories {
+        uuid id PK
+        varchar name
+        varchar slug
+        text description
+        varchar icon
+        uuid parentId FK
+        boolean isActive
+        int sortOrder
+        timestamp createdAt
+    }
+
+    services {
+        uuid id PK
+        uuid providerId FK
+        uuid categoryId FK
+        varchar title
+        text description
+        decimal priceMin
+        decimal priceMax
+        varchar priceUnit
+        geometry location "Point GiST index"
+        varchar address
+        varchar city
+        int coverageRadiusKm
+        text images
+        decimal averageRating
+        int totalReviews
+        boolean isActive
+        timestamp createdAt
+    }
+
+    bookings {
+        uuid id PK
+        uuid clientId FK
+        uuid serviceId FK
+        uuid providerId FK
+        enum status
+        timestamp scheduledDate
+        text description
+        decimal totalPrice
+        text cancellationReason
+        timestamp confirmedAt
+        timestamp completedAt
+        timestamp cancelledAt
+        timestamp createdAt
+    }
+
+    reviews {
+        uuid id PK
+        uuid bookingId FK "UK"
+        uuid clientId FK
+        uuid serviceId FK
+        int rating
+        text comment
+        text providerResponse
+        boolean isReported
+        text reportReason
+        timestamp createdAt
+    }
+
+    payments {
+        uuid id PK
+        uuid bookingId FK
+        uuid clientId FK
+        decimal amount
+        varchar currency
+        enum status
+        varchar stripePaymentIntentId
+        varchar stripeChargeId
+        timestamp paidAt
+        timestamp refundedAt
+        timestamp createdAt
+    }
+
+    conversations {
+        uuid id PK
+        uuid participantOneId FK
+        uuid participantTwoId FK
+        text lastMessagePreview
+        timestamp lastMessageAt
+        timestamp createdAt
+    }
+
+    messages {
+        uuid id PK
+        uuid conversationId FK
+        uuid senderId FK
+        text content
+        boolean isRead
+        timestamp readAt
+        timestamp createdAt
+    }
+
+    notifications {
+        uuid id PK
+        uuid userId FK
+        enum type
+        varchar title
+        text content
+        varchar actionUrl
+        boolean isRead
+        timestamp readAt
+        timestamp createdAt
+    }
+
+    users ||--o{ services : "publica"
+    users ||--o{ bookings : "solicita-clientId"
+    users ||--o{ bookings : "recibe-providerId"
+    categories ||--o{ services : "clasifica"
+    categories ||--o{ categories : "subcategoria"
+    services ||--o{ bookings : "se reserva"
+    bookings ||--o| reviews : "genera"
+    bookings ||--o| payments : "tiene pago"
+    reviews }o--|| services : "valora"
+    users ||--o{ conversations : "participa"
+    conversations ||--o{ messages : "contiene"
+    users ||--o{ messages : "envia"
+    users ||--o{ notifications : "recibe"
+  </div>
+
+  <div class="note">
+    <strong>PostGIS:</strong> Las columnas <code>location</code> en <code>users</code> y <code>services</code> usan el tipo <code>geometry(Point, 4326)</code> con &iacute;ndice GiST para b&uacute;squedas espaciales eficientes con <code>ST_DWithin()</code>.
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 4: ARQUITECTURA DEL SISTEMA
+     ============================================================ -->
+<section class="diagram-section" id="d4">
+  <p class="diagram-id">Diagrama 2.3.1</p>
+  <h2 class="diagram-title">Arquitectura del Sistema</h2>
+  <p class="diagram-desc">Arquitectura de alto nivel con las capas del front-end, back-end, base de datos y servicios externos.</p>
+
+  <div class="mermaid">
+graph TB
+    subgraph "Cliente (Navegador)"
+        FE["Next.js 14<br/>React + TypeScript<br/>Tailwind CSS"]
+        LEAF["Leaflet.js<br/>(Mapas)"]
+        STRIPE_JS["Stripe.js<br/>(Pagos)"]
+    end
+
+    subgraph "Servidor - Nest.js"
+        API["API REST<br/>/api/*"]
+        
+        subgraph "M&oacute;dulos"
+            AUTH["Auth Module<br/>JWT + Passport"]
+            USERS["Users Module"]
+            SERVICES["Services Module"]
+            BOOKINGS["Bookings Module"]
+            REVIEWS["Reviews Module"]
+            PAYMENTS["Payments Module"]
+            MESSAGES["Messages Module"]
+        end
+
+        subgraph "Transversal"
+            GUARDS["Guards (Roles)"]
+            PIPES["ValidationPipe"]
+            SWAGGER["Swagger/OpenAPI"]
+            HELMET["Helmet (Security)"]
+        end
+    end
+
+    subgraph "Base de Datos"
+        PG["PostgreSQL 16"]
+        POSTGIS["PostGIS<br/>ST_DWithin, ST_Distance"]
+    end
+
+    subgraph "Servicios Externos"
+        STRIPE_API["Stripe API<br/>(Pagos)"]
+        EMAIL["SMTP<br/>(Notificaciones email)"]
+    end
+
+    subgraph "CI/CD"
+        GH["GitHub Actions"]
+        DOCKER["Docker"]
+        RENDER["Render<br/>(Despliegue)"]
+    end
+
+    FE -->|"HTTP/JSON"| API
+    LEAF --> FE
+    STRIPE_JS --> FE
+    API --> AUTH & USERS & SERVICES & BOOKINGS & REVIEWS & PAYMENTS & MESSAGES
+    AUTH & USERS & SERVICES & BOOKINGS & REVIEWS & PAYMENTS & MESSAGES --> PG
+    PG --> POSTGIS
+    PAYMENTS -->|"API calls"| STRIPE_API
+    AUTH -->|"Emails"| EMAIL
+    GH -->|"Build + Test"| DOCKER
+    DOCKER -->|"Deploy"| RENDER
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 5: DESPLIEGUE
+     ============================================================ -->
+<section class="diagram-section" id="d5">
+  <p class="diagram-id">Diagrama 2.3.2</p>
+  <h2 class="diagram-title">Diagrama de Despliegue</h2>
+  <p class="diagram-desc">Distribuci&oacute;n de los componentes en la infraestructura de Render.</p>
+
+  <div class="mermaid">
+graph LR
+    subgraph "Usuario"
+        BROWSER["Navegador Web<br/>(Desktop / Tablet / M&oacute;vil)"]
+    end
+
+    subgraph "Render - Servicios"
+        subgraph "Web Service 1"
+            NEXT["Next.js 14<br/>SSR + Static<br/>Puerto 3000"]
+        end
+        subgraph "Web Service 2"
+            NEST["Nest.js API<br/>REST + Swagger<br/>Puerto 3001"]
+        end
+        subgraph "Database"
+            PGDB["PostgreSQL 16<br/>+ PostGIS<br/>Puerto 5432"]
+        end
+    end
+
+    subgraph "Externos"
+        STRIPE_EXT["Stripe API"]
+        SMTP_EXT["SMTP Server"]
+    end
+
+    BROWSER -->|"HTTPS"| NEXT
+    NEXT -->|"HTTP interno"| NEST
+    BROWSER -->|"HTTPS /api/*"| NEST
+    NEST -->|"TCP"| PGDB
+    NEST -->|"HTTPS"| STRIPE_EXT
+    NEST -->|"SMTP/TLS"| SMTP_EXT
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 6: SECUENCIA - FLUJO DE RESERVA
+     ============================================================ -->
+<section class="diagram-section" id="d6">
+  <p class="diagram-id">Diagrama 2.1.3</p>
+  <h2 class="diagram-title">Diagrama de Secuencia: Flujo de Reserva</h2>
+  <p class="diagram-desc">Flujo completo desde la solicitud de reserva hasta la valoraci&oacute;n del servicio.</p>
+
+  <div class="mermaid">
+sequenceDiagram
+    actor C as Cliente
+    participant FE as Frontend
+    participant API as API Nest.js
+    participant DB as PostgreSQL
+    participant EMAIL as Email Service
+    actor P as Proveedor
+
+    C->>FE: Selecciona servicio y fecha
+    FE->>API: POST /api/bookings
+    API->>DB: Verificar servicio activo
+    API->>DB: Crear booking (status: pending)
+    API-->>FE: Booking creado
+    API->>EMAIL: Notificar proveedor
+    EMAIL-->>P: Email: nueva solicitud
+
+    P->>FE: Abre reservas pendientes
+    FE->>API: GET /api/bookings/my/provider
+    API-->>FE: Lista de reservas
+
+    alt Proveedor confirma
+        P->>FE: Clic "Confirmar"
+        FE->>API: PATCH /api/bookings/:id/status {confirmed}
+        API->>DB: Actualizar status + confirmedAt
+        API->>EMAIL: Notificar cliente
+        EMAIL-->>C: Email: reserva confirmada
+    else Proveedor rechaza
+        P->>FE: Clic "Rechazar"
+        FE->>API: PATCH /api/bookings/:id/status {rejected}
+        API->>DB: Actualizar status + cancelledAt
+        API->>EMAIL: Notificar cliente
+    end
+
+    Note over C, P: Tras realizar el servicio presencialmente
+
+    P->>FE: Clic "Completar"
+    FE->>API: PATCH /api/bookings/:id/status {completed}
+    API->>DB: Actualizar status + completedAt
+    API->>EMAIL: Notificar cliente (invitar a valorar)
+
+    C->>FE: Deja valoraci&oacute;n (1-5 estrellas + comentario)
+    FE->>API: POST /api/reviews
+    API->>DB: Crear review
+    API->>DB: Actualizar averageRating del servicio
+    API-->>FE: Review creada
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 7: SECUENCIA - FLUJO DE PAGO STRIPE
+     ============================================================ -->
+<section class="diagram-section" id="d7">
+  <p class="diagram-id">Diagrama 2.1.4</p>
+  <h2 class="diagram-title">Diagrama de Secuencia: Pago con Stripe</h2>
+  <p class="diagram-desc">Flujo de pago con retenci&oacute;n (capture_method: manual) para proteger al cliente y al proveedor.</p>
+
+  <div class="mermaid">
+sequenceDiagram
+    actor C as Cliente
+    participant FE as Frontend
+    participant API as API Nest.js
+    participant DB as PostgreSQL
+    participant ST as Stripe API
+
+    C->>FE: Clic "Pagar reserva"
+    FE->>API: POST /api/payments/intent {bookingId}
+    API->>DB: Verificar booking confirmado
+    API->>ST: Crear PaymentIntent (capture_method: manual)
+    ST-->>API: clientSecret + paymentIntentId
+    API->>DB: Crear payment (status: pending)
+    API-->>FE: clientSecret
+
+    FE->>ST: Stripe.js confirma pago (tarjeta)
+    ST-->>FE: Pago autorizado (retenido)
+    FE->>API: POST /api/payments/confirm/:paymentIntentId
+    API->>DB: Actualizar payment (status: held)
+    API-->>FE: Pago retenido correctamente
+
+    Note over C, ST: Dinero retenido hasta completar servicio
+
+    alt Servicio completado
+        API->>ST: capture(paymentIntentId)
+        ST-->>API: Pago capturado
+        API->>DB: Actualizar payment (status: completed)
+    else Reserva cancelada
+        API->>ST: cancel(paymentIntentId)
+        ST-->>API: Pago cancelado/reembolsado
+        API->>DB: Actualizar payment (status: refunded)
+    end
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 8: SECUENCIA - B&Uacute;SQUEDA GEOESPACIAL
+     ============================================================ -->
+<section class="diagram-section" id="d8">
+  <p class="diagram-id">Diagrama 2.1.5</p>
+  <h2 class="diagram-title">Diagrama de Secuencia: B&uacute;squeda Geoespacial</h2>
+  <p class="diagram-desc">Flujo de b&uacute;squeda de servicios por proximidad usando PostGIS y Leaflet.js.</p>
+
+  <div class="mermaid">
+sequenceDiagram
+    actor C as Cliente
+    participant FE as Frontend
+    participant MAP as Leaflet.js
+    participant API as API Nest.js
+    participant DB as PostgreSQL + PostGIS
+
+    C->>FE: Accede a /search
+    FE->>FE: navigator.geolocation (con consentimiento)
+    FE-->>MAP: Centrar mapa en ubicaci&oacute;n
+
+    C->>FE: Introduce filtros (texto, categor&iacute;a, radio)
+    FE->>API: GET /api/services/search?lat=40.41&lng=-3.70&radiusKm=10&query=fontanero
+
+    API->>DB: SELECT * FROM services<br/>WHERE ST_DWithin(<br/>  location::geography,<br/>  ST_SetSRID(ST_MakePoint(-3.70, 40.41), 4326)::geography,<br/>  10000<br/>) AND isActive = true<br/>ORDER BY ST_Distance(...)
+
+    DB-->>API: Resultados con distancia calculada
+    API-->>FE: {data: [...], meta: {total, page, totalPages}}
+
+    FE->>MAP: Colocar marcadores en mapa
+    FE->>FE: Renderizar lista de resultados
+
+    C->>MAP: Clic en marcador
+    MAP->>FE: Mostrar popup con info del servicio
+    C->>FE: Clic "Ver detalle"
+    FE->>FE: Navegar a /services/:id
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 9: SECUENCIA - AUTENTICACI&Oacute;N JWT
+     ============================================================ -->
+<section class="diagram-section" id="d9">
+  <p class="diagram-id">Diagrama 2.3.3</p>
+  <h2 class="diagram-title">Diagrama de Secuencia: Autenticaci&oacute;n JWT</h2>
+  <p class="diagram-desc">Flujo de registro, login y acceso a rutas protegidas.</p>
+
+  <div class="mermaid">
+sequenceDiagram
+    actor U as Usuario
+    participant FE as Frontend (Zustand)
+    participant API as API Nest.js
+    participant DB as PostgreSQL
+    participant JWT as JWT Service
+
+    rect rgb(240, 248, 255)
+    Note over U, JWT: Registro
+    U->>FE: Completa formulario de registro
+    FE->>API: POST /api/auth/register {name, email, password, role}
+    API->>DB: Verificar email no existe
+    API->>API: bcrypt.hash(password)
+    API->>DB: INSERT usuario
+    API->>JWT: Generar token {sub, email, role}
+    JWT-->>API: accessToken
+    API-->>FE: {accessToken, user}
+    FE->>FE: localStorage.set('accessToken')
+    FE->>FE: Zustand: set({user, isAuthenticated: true})
+    end
+
+    rect rgb(255, 248, 240)
+    Note over U, JWT: Acceso a ruta protegida
+    U->>FE: Accede a /bookings
+    FE->>API: GET /api/bookings/my/client<br/>Header: Authorization: Bearer {token}
+    API->>JWT: Verificar y decodificar token
+    JWT-->>API: {sub: userId, role: client}
+    API->>DB: Buscar usuario por ID
+    alt Token v&aacute;lido y usuario activo
+        API->>DB: SELECT bookings WHERE clientId = userId
+        DB-->>API: Resultados
+        API-->>FE: Lista de reservas
+    else Token inv&aacute;lido o expirado
+        API-->>FE: 401 Unauthorized
+        FE->>FE: Limpiar localStorage
+        FE->>FE: Redirigir a /auth/login
+    end
+    end
+  </div>
+</section>
+
+<!-- ============================================================
+     DIAGRAMA 10: ESTADOS DE BOOKING
+     ============================================================ -->
+<section class="diagram-section" id="d10">
+  <p class="diagram-id">Diagrama 2.1.6</p>
+  <h2 class="diagram-title">Diagrama de Estados: Booking (Reserva)</h2>
+  <p class="diagram-desc">M&aacute;quina de estados de una reserva con las transiciones v&aacute;lidas y el actor responsable.</p>
+
+  <div class="mermaid">
+stateDiagram-v2
+    [*] --> Pending : Cliente solicita reserva
+
+    Pending --> Confirmed : Proveedor confirma
+    Pending --> Rejected : Proveedor rechaza
+    Pending --> Cancelled : Cliente cancela
+
+    Confirmed --> Completed : Proveedor completa servicio
+    Confirmed --> Cancelled : Cliente o proveedor cancela
+
+    Completed --> [*]
+    Rejected --> [*]
+    Cancelled --> [*]
+
+    note right of Pending
+        Estado inicial.
+        Esperando respuesta del proveedor.
+    end note
+
+    note right of Confirmed
+        Servicio aceptado.
+        Cliente puede pagar (Stripe hold).
+    end note
+
+    note right of Completed
+        Servicio realizado.
+        Cliente puede valorar.
+        Pago capturado.
+    end note
+
+    note left of Cancelled
+        Pago reembolsado
+        si exist&iacute;a retenci&oacute;n.
+    end note
+  </div>
+</section>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    securityLevel: 'loose',
+    flowchart: { useMaxWidth: true, htmlLabels: true },
+    sequence: { useMaxWidth: true, showSequenceNumbers: false },
+    er: { useMaxWidth: true },
+  });
+</script>
+
+</body>
+</html>

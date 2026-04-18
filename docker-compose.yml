@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: servilocal-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: servilocal
+      POSTGRES_USER: servilocal_user
+      POSTGRES_PASSWORD: servilocal_dev_2026
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U servilocal_user -d servilocal']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: servilocal-backend
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: servilocal_user
+      DB_PASSWORD: servilocal_dev_2026
+      DB_DATABASE: servilocal
+      JWT_SECRET: servilocal_jwt_secret_dev_2026
+      JWT_EXPIRATION: 24h
+      STRIPE_SECRET_KEY: sk_test_placeholder
+      PORT: 3001
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/src
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: servilocal-frontend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+      NEXT_PUBLIC_MAPBOX_TOKEN: ''
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+    command: npm run dev
+
+volumes:
+  pgdata:
