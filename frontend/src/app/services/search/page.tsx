@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { Service, ServiceSearchParams } from '@/types';
 import { servicesApi } from '@/lib/api';
 import SearchBar from '@/components/molecules/SearchBar';
@@ -11,7 +11,7 @@ import ResultsList from '@/components/organisms/ResultsList';
 export const dynamic = 'force-dynamic';
 
 // Carga dinamica del mapa para evitar SSR issues con Leaflet
-const ServiceMap = dynamic(
+const ServiceMap = nextDynamic(
   () => import('@/components/organisms/ServiceMap'),
   { ssr: false, loading: () => <div className="h-[500px] bg-neutral-100 rounded-lg animate-pulse" /> },
 );
