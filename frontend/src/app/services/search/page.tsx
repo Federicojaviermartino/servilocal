@@ -8,6 +8,8 @@ import SearchBar from '@/components/molecules/SearchBar';
 import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
 
+export const dynamic = 'force-dynamic';
+
 // Carga dinamica del mapa para evitar SSR issues con Leaflet
 const ServiceMap = dynamic(
   () => import('@/components/organisms/ServiceMap'),
