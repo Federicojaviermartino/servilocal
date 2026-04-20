@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Booking } from './booking.entity';
+import { ColumnNumericTransformer } from '../common/transformers/column-numeric.transformer';
 
 export enum PaymentStatus {
   PENDING = 'pending',
@@ -37,7 +38,12 @@ export class Payment {
   @JoinColumn({ name: 'clientId' })
   client: User;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: new ColumnNumericTransformer(),
+  })
   amount: number;
 
   @Column({ length: 3, default: 'EUR' })

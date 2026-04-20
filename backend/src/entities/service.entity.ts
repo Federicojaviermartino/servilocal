@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Category } from './category.entity';
+import { ColumnNumericTransformer } from '../common/transformers/column-numeric.transformer';
 
 @Entity('services')
 export class Service {
@@ -36,10 +37,21 @@ export class Service {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    transformer: new ColumnNumericTransformer(),
+  })
   priceMin: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: new ColumnNumericTransformer(),
+  })
   priceMax: number;
 
   @Column({ length: 20, default: 'hour' })
@@ -65,7 +77,13 @@ export class Service {
   @Column({ type: 'simple-array', nullable: true })
   images: string[];
 
-  @Column({ type: 'decimal', precision: 3, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 3,
+    scale: 2,
+    default: 0,
+    transformer: new ColumnNumericTransformer(),
+  })
   averageRating: number;
 
   @Column({ default: 0 })
