@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import nextDynamic from 'next/dynamic';
 import { Service, ServiceSearchParams } from '@/types';
@@ -8,15 +8,13 @@ import SearchBar from '@/components/molecules/SearchBar';
 import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
 
-export const dynamic = 'force-dynamic';
-
 // Carga dinamica del mapa para evitar SSR issues con Leaflet
 const ServiceMap = nextDynamic(
   () => import('@/components/organisms/ServiceMap'),
   { ssr: false, loading: () => <div className="h-[500px] bg-neutral-100 rounded-lg animate-pulse" /> },
 );
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
@@ -129,5 +127,13 @@ export default function SearchPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="bg-neutral-50 min-h-screen" />}>
+      <SearchPageContent />
+    </Suspense>
   );
 }
