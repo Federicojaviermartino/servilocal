@@ -4,16 +4,30 @@ import { User, UserRole } from '../../entities/user.entity';
 import { Category } from '../../entities/category.entity';
 
 async function runSeed() {
-  const dataSource = new DataSource({
-    type: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    username: process.env.DB_USERNAME || 'servilocal_user',
-    password: process.env.DB_PASSWORD || 'servilocal_dev_2026',
-    database: process.env.DB_DATABASE || 'servilocal',
-    entities: [__dirname + '/../../entities/*.entity{.ts,.js}'],
-    synchronize: true,
-  });
+  const databaseUrl = process.env.DATABASE_URL;
+
+  const dataSource = new DataSource(
+    databaseUrl
+      ? {
+          type: 'postgres',
+          url: databaseUrl,
+          ssl: { rejectUnauthorized: false },
+          entities: [__dirname + '/../../entities/*.entity{.ts,.js}'],
+          synchronize: true,
+          logging: false,
+        }
+      : {
+          type: 'postgres',
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432', 10),
+          username: process.env.DB_USERNAME || 'servilocal_user',
+          password: process.env.DB_PASSWORD || 'servilocal_dev_2026',
+          database: process.env.DB_DATABASE || 'servilocal',
+          entities: [__dirname + '/../../entities/*.entity{.ts,.js}'],
+          synchronize: true,
+          logging: false,
+        },
+  );
 
   await dataSource.initialize();
   console.log('Conexión a base de datos establecida');
