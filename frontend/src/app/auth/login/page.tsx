@@ -30,9 +30,14 @@ export default function LoginPage() {
       await login(data.email, data.password);
       router.push('/');
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || 'Error al iniciar sesión. Verifica tus credenciales.',
-      );
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        setError('Error al iniciar sesión. Verifica tus credenciales.');
+      } else if (!err?.response) {
+        setError('No se pudo contactar con el servidor. Inténtalo de nuevo en unos segundos.');
+      } else {
+        setError(err?.response?.data?.message || 'Servicio no disponible. Inténtalo de nuevo más tarde.');
+      }
     }
   };
 

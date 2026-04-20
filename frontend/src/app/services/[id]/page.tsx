@@ -20,10 +20,12 @@ export default function ServiceDetailPage() {
   const [service, setService] = useState<Service | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<'not-found' | 'unavailable' | 'network' | null>(null);
 
   useEffect(() => {
     async function load() {
       setIsLoading(true);
+      setLoadError(null);
       try {
         const [svcRes, revRes] = await Promise.all([
           servicesApi.getById(serviceId),
@@ -31,8 +33,12 @@ export default function ServiceDetailPage() {
         ]);
         setService(svcRes.data);
         setReviews(revRes.data || []);
-      } catch {
+      } catch (err: any) {
         setService(null);
+        const status = err?.response?.status;
+        if (status === 404) setLoadError('not-found');
+        else if (!err?.response) setLoadError('network');
+        else setLoadError('unavailable');
       } finally {
         setIsLoading(false);
       }
@@ -65,14 +71,22 @@ export default function ServiceDetailPage() {
   }
 
   if (!service) {
+    const title =
+      loadError === 'network'
+        ? 'No se pudo contactar con el servidor'
+        : loadError === 'unavailable'
+          ? 'Servicio no disponible'
+          : 'Servicio no encontrado';
+    const message =
+      loadError === 'network'
+        ? 'Comprueba tu conexión e inténtalo de nuevo en unos segundos.'
+        : loadError === 'unavailable'
+          ? 'Inténtalo de nuevo más tarde.'
+          : 'El servicio que buscas no existe o ha sido eliminado.';
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-semibold text-neutral-900">
-          Servicio no encontrado
-        </h1>
-        <p className="mt-2 text-neutral-600">
-          El servicio que buscas no existe o ha sido eliminado.
-        </p>
+        <h1 className="text-2xl font-semibold text-neutral-900">{title}</h1>
+        <p className="mt-2 text-neutral-600">{message}</p>
       </div>
     );
   }

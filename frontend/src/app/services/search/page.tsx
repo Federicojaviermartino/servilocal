@@ -22,9 +22,11 @@ function SearchPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<'list' | 'map'>('list');
   const [filters, setFilters] = useState<ServiceSearchParams>({});
+  const [fetchError, setFetchError] = useState<'network' | 'unavailable' | null>(null);
 
   const fetchResults = useCallback(async (params: ServiceSearchParams) => {
     setIsLoading(true);
+    setFetchError(null);
     try {
       const { data } = await servicesApi.search(params);
       // Soporta respuesta paginada o array directo
@@ -35,9 +37,11 @@ function SearchPageContent() {
         setServices(data.data || []);
         setTotal(data.total || 0);
       }
-    } catch {
+    } catch (err: any) {
       setServices([]);
       setTotal(0);
+      if (!err?.response) setFetchError('network');
+      else setFetchError('unavailable');
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +118,13 @@ function SearchPageContent() {
               </div>
             </div>
 
+            {fetchError && !isLoading && (
+              <div className="mb-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-800" role="alert">
+                {fetchError === 'network'
+                  ? 'No se pudo contactar con el servidor. Inténtalo de nuevo en unos segundos.'
+                  : 'Servicio no disponible. Inténtalo de nuevo más tarde.'}
+              </div>
+            )}
             {view === 'list' ? (
               <ResultsList
                 services={services}
