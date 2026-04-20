@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../../entities/user.entity';
 import { Category } from '../../entities/category.entity';
+import { Service } from '../../entities/service.entity';
 
 async function runSeed() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -34,10 +35,26 @@ async function runSeed() {
 
   const userRepo = dataSource.getRepository(User);
   const categoryRepo = dataSource.getRepository(Category);
+  const serviceRepo = dataSource.getRepository(Service);
 
-  // Limpiar datos existentes
-  await dataSource.query('DELETE FROM categories');
-  await dataSource.query('DELETE FROM users');
+  // Limpiar datos existentes respetando el orden de dependencias
+  const tablesToPurge = [
+    'payments',
+    'reviews',
+    'notifications',
+    'messages',
+    'bookings',
+    'services',
+    'categories',
+    'users',
+  ];
+  for (const table of tablesToPurge) {
+    try {
+      await dataSource.query(`DELETE FROM ${table}`);
+    } catch {
+      // la tabla puede no existir si el modulo aun no se ha usado; se ignora
+    }
+  }
   console.log('Datos anteriores eliminados');
 
   // Crear usuarios
@@ -109,10 +126,85 @@ async function runSeed() {
     { name: 'Diseño gráfico', slug: 'diseno-grafico', description: 'Diseño de logotipos, web y material gráfico', icon: 'palette', sortOrder: 10 },
   ];
 
+  const savedCategories: Record<string, Category> = {};
   for (const cat of categories) {
-    await categoryRepo.save(categoryRepo.create(cat));
+    const saved = await categoryRepo.save(categoryRepo.create(cat));
+    savedCategories[cat.slug] = saved;
   }
   console.log(`${categories.length} categorías creadas`);
+
+  // Crear servicios de muestra asociados a los proveedores
+  const sampleServices = [
+    {
+      providerId: provider1.id,
+      categoryId: savedCategories['fontaneria'].id,
+      title: 'Reparación de fugas y grifos',
+      description:
+        'Servicio rápido de detección y reparación de fugas de agua, cambio de grifos, sifones y llaves de paso. Presupuesto sin compromiso y garantía por escrito.',
+      priceMin: 40,
+      priceUnit: 'hour',
+      address: 'Calle Gran Vía 32',
+      city: 'Madrid',
+      coverageRadiusKm: 15,
+      lng: -3.7038,
+      lat: 40.4168,
+    },
+    {
+      providerId: provider1.id,
+      categoryId: savedCategories['fontaneria'].id,
+      title: 'Instalación de sanitarios y grifería',
+      description:
+        'Instalación profesional de lavabos, inodoros, bidés, duchas y grifería. Trabajo limpio, retirada de residuos y puesta en marcha incluidas.',
+      priceMin: 60,
+      priceMax: 150,
+      priceUnit: 'service',
+      address: 'Calle Velázquez 85',
+      city: 'Madrid',
+      coverageRadiusKm: 20,
+      lng: -3.6870,
+      lat: 40.4320,
+    },
+    {
+      providerId: provider2.id,
+      categoryId: savedCategories['electricidad'].id,
+      title: 'Revisión y reparación de instalación eléctrica',
+      description:
+        'Diagnóstico y reparación de averías eléctricas en viviendas y locales. Revisión de cuadro, sustitución de automáticos y comprobación de toma de tierra.',
+      priceMin: 50,
+      priceUnit: 'hour',
+      address: 'Calle Fuencarral 120',
+      city: 'Madrid',
+      coverageRadiusKm: 15,
+      lng: -3.7025,
+      lat: 40.4290,
+    },
+    {
+      providerId: provider2.id,
+      categoryId: savedCategories['electricidad'].id,
+      title: 'Instalación de puntos de luz y enchufes',
+      description:
+        'Colocación de nuevos puntos de luz, enchufes, interruptores y aplicación de domótica básica. Material incluido en presupuesto.',
+      priceMin: 35,
+      priceMax: 90,
+      priceUnit: 'service',
+      address: 'Calle Bravo Murillo 210',
+      city: 'Madrid',
+      coverageRadiusKm: 12,
+      lng: -3.7050,
+      lat: 40.4470,
+    },
+  ];
+
+  for (const s of sampleServices) {
+    const { lng, lat, ...rest } = s;
+    const service = serviceRepo.create({
+      ...rest,
+      location: (() =>
+        `ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`) as any,
+    });
+    await serviceRepo.save(service);
+  }
+  console.log(`${sampleServices.length} servicios creados`);
 
   // Credenciales de prueba
   console.log('\n=== CREDENCIALES DE PRUEBA ===');
