@@ -31,8 +31,11 @@ export default function Header() {
 
           {isAuthenticated && user ? (
             <div className="flex items-center gap-4">
-              <Link href="/dashboard/bookings" className="text-sm text-gray-600 hover:text-primary-500">
-                Mis reservas
+              <Link
+                href={user.role === 'provider' ? '/dashboard/bookings-received' : '/dashboard/bookings'}
+                className="text-sm text-gray-600 hover:text-primary-500"
+              >
+                {user.role === 'provider' ? 'Reservas recibidas' : 'Mis reservas'}
               </Link>
               <Link href="/dashboard/messages" className="text-sm text-gray-600 hover:text-primary-500">
                 Mensajes
@@ -88,8 +91,12 @@ export default function Header() {
             </Link>
             {isAuthenticated && user ? (
               <>
-                <Link href="/dashboard/bookings" className="text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
-                  Mis reservas
+                <Link
+                  href={user.role === 'provider' ? '/dashboard/bookings-received' : '/dashboard/bookings'}
+                  className="text-sm text-gray-600"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {user.role === 'provider' ? 'Reservas recibidas' : 'Mis reservas'}
                 </Link>
                 <Link href="/dashboard/messages" className="text-sm text-gray-600" onClick={() => setMenuOpen(false)}>
                   Mensajes
