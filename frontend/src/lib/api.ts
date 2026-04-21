@@ -114,7 +114,7 @@ export const paymentsApi = {
   createIntent: (bookingId: string) =>
     api.post('/payments/create-intent', { bookingId }),
   confirm: (paymentIntentId: string) =>
-    api.post('/payments/confirm', { paymentIntentId }),
+    api.post(`/payments/confirm/${paymentIntentId}`),
 };
 
 export default api;

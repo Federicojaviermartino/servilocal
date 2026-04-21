@@ -29,7 +29,12 @@ export class PaymentsService {
   async createPaymentIntent(
     clientId: string,
     bookingId: string,
-  ): Promise<{ clientSecret: string; paymentId: string }> {
+  ): Promise<{
+    clientSecret: string;
+    paymentIntentId: string;
+    amount: number;
+    currency: string;
+  }> {
     const booking = await this.bookingRepository.findOne({
       where: { id: bookingId },
     });
@@ -42,8 +47,11 @@ export class PaymentsService {
       throw new BadRequestException('Esta reserva no te pertenece');
     }
 
-    if (booking.status !== BookingStatus.CONFIRMED) {
-      throw new BadRequestException('La reserva debe estar confirmada para pagar');
+    if (
+      booking.status !== BookingStatus.PENDING &&
+      booking.status !== BookingStatus.CONFIRMED
+    ) {
+      throw new BadRequestException('La reserva no puede pagarse en su estado actual');
     }
 
     const existingPayment = await this.paymentRepository.findOne({
@@ -76,7 +84,7 @@ export class PaymentsService {
       stripePaymentIntentId: paymentIntent.id,
     });
 
-    const savedPayment = await this.paymentRepository.save(payment);
+    await this.paymentRepository.save(payment);
 
     if (!paymentIntent.client_secret) {
       throw new Error('Stripe no devolvió client_secret para el PaymentIntent');
@@ -84,7 +92,9 @@ export class PaymentsService {
 
     return {
       clientSecret: paymentIntent.client_secret,
-      paymentId: savedPayment.id,
+      paymentIntentId: paymentIntent.id,
+      amount: booking.totalPrice,
+      currency: 'EUR',
     };
   }
 

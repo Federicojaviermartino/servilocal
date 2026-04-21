@@ -6,6 +6,7 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -21,7 +22,7 @@ import { CreatePaymentIntentDto } from './dto/payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Post('intent')
+  @Post('create-intent')
   @UseGuards(RolesGuard)
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Crear intención de pago con Stripe (solo cliente)' })
@@ -42,7 +43,7 @@ export class PaymentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Capturar pago retenido al completar servicio (admin)' })
-  async capture(@Param('bookingId') bookingId: string) {
+  async capture(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
     return this.paymentsService.capturePayment(bookingId);
   }
 
@@ -50,7 +51,7 @@ export class PaymentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Reembolsar pago (admin)' })
-  async refund(@Param('bookingId') bookingId: string) {
+  async refund(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
     return this.paymentsService.refundPayment(bookingId);
   }
 
@@ -62,7 +63,7 @@ export class PaymentsController {
 
   @Get('booking/:bookingId')
   @ApiOperation({ summary: 'Pago de una reserva específica' })
-  async findByBooking(@Param('bookingId') bookingId: string) {
+  async findByBooking(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
     return this.paymentsService.findByBooking(bookingId);
   }
 }
