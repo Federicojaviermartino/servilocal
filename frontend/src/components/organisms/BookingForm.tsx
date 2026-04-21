@@ -54,7 +54,7 @@ export default function BookingForm({
     e.preventDefault();
     if (!validate()) return;
     onSubmit({
-      scheduledDate: `${date}T${time}:00`,
+      scheduledDate: new Date(`${date}T${time}:00`).toISOString(),
       description,
       totalPrice: price,
     });
