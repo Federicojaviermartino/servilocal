@@ -26,13 +26,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
-      if (!window.location.pathname.startsWith('/auth/')) {
-        window.location.href = '/auth/login';
-      }
-    }
+    // El 401 se maneja en el llamador: cada pagina decide si redirigir
+    // a /auth/login o mostrar un toast. Evitamos que una peticion en
+    // segundo plano borre la sesion o interrumpa un flujo en curso con
+    // una navegacion dura (window.location.href).
     return Promise.reject(error);
   },
 );
