@@ -12,15 +12,25 @@ export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
   const serviceId = params.id as string;
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, loadFromStorage } = useAuthStore();
 
   const [service, setService] = useState<Service | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
+
+  useEffect(() => {
     if (!isAuthenticated) {
-      router.push(`/auth/login?redirect=/services/${serviceId}/book`);
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('accessToken');
+        if (!stored) {
+          router.push(`/auth/login?redirect=/services/${serviceId}/book`);
+          return;
+        }
+      }
       return;
     }
     servicesApi
