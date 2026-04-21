@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Elements } from '@stripe/react-stripe-js';
 import { Booking, PaymentIntent } from '@/types';
 import { bookingsApi, paymentsApi } from '@/lib/api';
@@ -16,6 +17,7 @@ export default function PaymentPage() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [intent, setIntent] = useState<PaymentIntent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -24,8 +26,13 @@ export default function PaymentPage() {
         setBooking(b);
         const { data: i } = await paymentsApi.createIntent(bookingId);
         setIntent(i);
-      } catch {
-        router.push('/dashboard/bookings');
+      } catch (err: any) {
+        const status = err?.response?.status;
+        const apiMsg = err?.response?.data?.message;
+        if (status === 404) setError('Reserva no encontrada.');
+        else if (status === 403) setError('No tienes permiso para pagar esta reserva.');
+        else if (!err?.response) setError('No se pudo contactar con el servidor.');
+        else setError(apiMsg || `No se ha podido iniciar el pago (codigo ${status ?? 'desconocido'}).`);
       } finally {
         setIsLoading(false);
       }
@@ -41,12 +48,19 @@ export default function PaymentPage() {
     );
   }
 
-  if (!booking || !intent) {
+  if (error || !booking || !intent) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+      <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-4">
         <h1 className="text-2xl font-semibold text-neutral-900">
           No se ha podido iniciar el pago
         </h1>
+        {error && <p className="text-neutral-700">{error}</p>}
+        <Link
+          href={`/dashboard/bookings/${bookingId}`}
+          className="inline-block text-primary-600 hover:text-primary-700 underline text-sm"
+        >
+          Volver al detalle de la reserva
+        </Link>
       </div>
     );
   }
