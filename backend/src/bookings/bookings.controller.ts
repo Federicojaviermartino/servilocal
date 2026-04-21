@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -36,23 +37,23 @@ export class BookingsController {
     return this.bookingsService.create(req.user.id, createDto);
   }
 
-  @Get('my/client')
+  @Get('my')
   @ApiOperation({ summary: 'Mis reservas como cliente' })
   async findMyAsClient(@Request() req: any) {
     return this.bookingsService.findByClient(req.user.id);
   }
 
-  @Get('my/provider')
+  @Get('received')
   @UseGuards(RolesGuard)
   @Roles(UserRole.PROVIDER)
-  @ApiOperation({ summary: 'Mis reservas como proveedor' })
+  @ApiOperation({ summary: 'Reservas recibidas como proveedor' })
   async findMyAsProvider(@Request() req: any) {
     return this.bookingsService.findByProvider(req.user.id);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener reserva por ID' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.bookingsService.findById(id);
   }
 
@@ -61,7 +62,7 @@ export class BookingsController {
   @ApiResponse({ status: 200, description: 'Estado actualizado' })
   @ApiResponse({ status: 400, description: 'Transición de estado no válida' })
   async updateStatus(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Request() req: any,
     @Body() updateDto: UpdateBookingStatusDto,
   ) {

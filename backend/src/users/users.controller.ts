@@ -7,6 +7,7 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -35,14 +36,13 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
+  @Get('me')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obtener usuario por ID' })
-  @ApiResponse({ status: 200, description: 'Datos del usuario' })
-  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async findOne(@Param('id') id: string) {
-    const user = await this.usersService.findById(id);
+  @ApiOperation({ summary: 'Obtener datos del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Datos del usuario autenticado' })
+  async findMe(@Request() req: any) {
+    const user = await this.usersService.findById(req.user.id);
     const { password, ...result } = user;
     return result;
   }
@@ -58,13 +58,25 @@ export class UsersController {
     return result;
   }
 
+  @Get(':id')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener usuario por ID' })
+  @ApiResponse({ status: 200, description: 'Datos del usuario' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const user = await this.usersService.findById(id);
+    const { password, ...result } = user;
+    return result;
+  }
+
   @Patch(':id/toggle-active')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Activar/desactivar usuario (solo admin)' })
   @ApiResponse({ status: 200, description: 'Estado del usuario actualizado' })
-  async toggleActive(@Param('id') id: string) {
+  async toggleActive(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.toggleActive(id);
   }
 }
