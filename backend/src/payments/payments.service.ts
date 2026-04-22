@@ -165,4 +165,80 @@ export class PaymentsService {
       where: { bookingId },
     });
   }
+
+  async handleWebhookEvent(event: Stripe.Event): Promise<void> {
+    const type = event.type;
+    const pi = event.data.object as Stripe.PaymentIntent;
+
+    switch (type) {
+      case 'payment_intent.amount_capturable_updated': {
+        await this.markPaymentAndBooking(
+          pi.id,
+          PaymentStatus.HELD,
+          BookingStatus.CONFIRMED,
+        );
+        break;
+      }
+      case 'payment_intent.succeeded': {
+        await this.markPaymentAndBooking(
+          pi.id,
+          PaymentStatus.COMPLETED,
+          BookingStatus.CONFIRMED,
+        );
+        break;
+      }
+      case 'payment_intent.payment_failed':
+      case 'payment_intent.canceled': {
+        await this.markPaymentFailed(pi.id, pi.last_payment_error?.message);
+        break;
+      }
+      default:
+        // Eventos no manejados se ignoran; Stripe requiere 2xx de todas formas.
+        break;
+    }
+  }
+
+  private async markPaymentAndBooking(
+    paymentIntentId: string,
+    paymentStatus: PaymentStatus,
+    bookingStatus: BookingStatus,
+  ): Promise<void> {
+    const payment = await this.paymentRepository.findOne({
+      where: { stripePaymentIntentId: paymentIntentId },
+    });
+    if (!payment) return;
+
+    payment.status = paymentStatus;
+    if (paymentStatus === PaymentStatus.HELD) {
+      payment.paidAt = new Date();
+    }
+    await this.paymentRepository.save(payment);
+
+    const booking = await this.bookingRepository.findOne({
+      where: { id: payment.bookingId },
+    });
+    if (!booking) return;
+
+    if (booking.status !== bookingStatus) {
+      booking.status = bookingStatus;
+      if (bookingStatus === BookingStatus.CONFIRMED) {
+        booking.confirmedAt = new Date();
+      }
+      await this.bookingRepository.save(booking);
+    }
+  }
+
+  private async markPaymentFailed(
+    paymentIntentId: string,
+    reason?: string,
+  ): Promise<void> {
+    const payment = await this.paymentRepository.findOne({
+      where: { stripePaymentIntentId: paymentIntentId },
+    });
+    if (!payment) return;
+
+    payment.status = PaymentStatus.FAILED;
+    if (reason) payment.failureReason = reason;
+    await this.paymentRepository.save(payment);
+  }
 }
