@@ -18,12 +18,32 @@ interface CheckoutFormProps {
   bookingId: string;
   paymentIntentId: string;
   amount: number;
+  onIntentExpired?: () => Promise<void>;
+}
+
+const stripeErrorMessages: Record<string, string> = {
+  payment_intent_unexpected_state:
+    'La sesion de pago ha caducado. Generando una nueva...',
+  card_declined: 'Tu tarjeta ha sido rechazada.',
+  authentication_required:
+    'Se requiere verificacion adicional de tu banco.',
+  processing_error:
+    'Error temporal procesando el pago. Intentalo de nuevo.',
+  expired_card: 'Tu tarjeta ha caducado.',
+  incorrect_cvc: 'El CVC introducido no es correcto.',
+  insufficient_funds: 'Fondos insuficientes en la tarjeta.',
+};
+
+function translateStripeError(code?: string, fallback?: string): string {
+  if (code && stripeErrorMessages[code]) return stripeErrorMessages[code];
+  return fallback || 'Error procesando el pago.';
 }
 
 export default function CheckoutForm({
   bookingId,
   paymentIntentId,
   amount,
+  onIntentExpired,
 }: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -32,21 +52,40 @@ export default function CheckoutForm({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+
+    if (isProcessing) return;
+    if (!stripe || !elements) {
+      toast.error('El formulario de pago aun se esta cargando. Espera un momento.');
+      return;
+    }
 
     setIsProcessing(true);
+
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       redirect: 'if_required',
     });
 
     if (error) {
-      toast.error(error.message || 'Error procesando el pago');
+      if (error.code === 'payment_intent_unexpected_state' && onIntentExpired) {
+        toast(translateStripeError('payment_intent_unexpected_state'));
+        try {
+          await onIntentExpired();
+        } catch {
+          toast.error('No se pudo regenerar la sesion de pago. Recarga la pagina.');
+        }
+        setIsProcessing(false);
+        return;
+      }
+      toast.error(translateStripeError(error.code, error.message));
       setIsProcessing(false);
       return;
     }
 
-    if (paymentIntent?.status === 'succeeded') {
+    if (
+      paymentIntent?.status === 'succeeded' ||
+      paymentIntent?.status === 'requires_capture'
+    ) {
       try {
         await paymentsApi.confirm(paymentIntentId);
         toast.success('Pago completado. Reserva confirmada.');
@@ -71,7 +110,7 @@ export default function CheckoutForm({
         type="submit"
         fullWidth
         size="lg"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || !elements || isProcessing}
         isLoading={isProcessing}
       >
         Pagar {amount.toFixed(2)} euros

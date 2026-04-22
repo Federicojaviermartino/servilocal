@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Elements } from '@stripe/react-stripe-js';
@@ -19,6 +19,11 @@ export default function PaymentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const refreshIntent = useCallback(async () => {
+    const { data: i } = await paymentsApi.createIntent(bookingId);
+    setIntent(i);
+  }, [bookingId]);
+
   useEffect(() => {
     async function init() {
       try {
@@ -31,6 +36,7 @@ export default function PaymentPage() {
         const apiMsg = err?.response?.data?.message;
         if (status === 404) setError('Reserva no encontrada.');
         else if (status === 403) setError('No tienes permiso para pagar esta reserva.');
+        else if (status === 409) setError(apiMsg || 'Esta reserva ya tiene un pago en curso o completado.');
         else if (!err?.response) setError('No se pudo contactar con el servidor.');
         else setError(apiMsg || `No se ha podido iniciar el pago (codigo ${status ?? 'desconocido'}).`);
       } finally {
@@ -76,6 +82,7 @@ export default function PaymentPage() {
         </p>
         <div className="bg-white rounded-lg shadow-card p-6">
           <Elements
+            key={intent.clientSecret}
             stripe={getStripe()}
             options={{
               clientSecret: intent.clientSecret,
@@ -86,6 +93,7 @@ export default function PaymentPage() {
               bookingId={bookingId}
               paymentIntentId={intent.paymentIntentId}
               amount={booking.totalPrice}
+              onIntentExpired={refreshIntent}
             />
           </Elements>
         </div>
