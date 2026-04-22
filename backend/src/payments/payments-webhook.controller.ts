@@ -4,6 +4,7 @@ import {
   Req,
   Headers,
   BadRequestException,
+  ServiceUnavailableException,
   RawBodyRequest,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
@@ -16,7 +17,7 @@ import { PaymentsService } from './payments.service';
 @Controller('payments')
 export class PaymentsWebhookController {
   private readonly stripe: Stripe;
-  private readonly webhookSecret: string;
+  private readonly webhookSecret: string | undefined;
 
   constructor(
     private readonly paymentsService: PaymentsService,
@@ -26,9 +27,7 @@ export class PaymentsWebhookController {
       this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
       { apiVersion: '2023-10-16' },
     );
-    this.webhookSecret = this.configService.getOrThrow<string>(
-      'STRIPE_WEBHOOK_SECRET',
-    );
+    this.webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
   }
 
   @Post('webhook')
@@ -38,6 +37,11 @@ export class PaymentsWebhookController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
+    if (!this.webhookSecret) {
+      throw new ServiceUnavailableException(
+        'Webhook de Stripe no configurado en el servidor',
+      );
+    }
     if (!signature) {
       throw new BadRequestException('Falta cabecera stripe-signature');
     }
