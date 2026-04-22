@@ -29,13 +29,14 @@ function SearchPageContent() {
     setFetchError(null);
     try {
       const { data } = await servicesApi.search(params);
-      // Soporta respuesta paginada o array directo
+      // Soporta respuesta paginada { data, meta } o array directo
       if (Array.isArray(data)) {
         setServices(data);
         setTotal(data.length);
       } else {
-        setServices(data.data || []);
-        setTotal(data.total || 0);
+        const items = data.data || [];
+        setServices(items);
+        setTotal(data.meta?.total ?? data.total ?? items.length);
       }
     } catch (err: any) {
       setServices([]);
