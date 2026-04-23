@@ -152,6 +152,11 @@ export class SearchServicesDto {
   @IsString()
   categoryId?: string;
 
+  @ApiPropertyOptional({ example: 'Madrid' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
   @ApiPropertyOptional({ example: 40.4168 })
   @IsOptional()
   @IsNumber()

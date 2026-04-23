@@ -77,6 +77,7 @@ export class ServicesService {
     const {
       query,
       categoryId,
+      city,
       latitude,
       longitude,
       radiusKm = 10,
@@ -106,6 +107,11 @@ export class ServicesService {
     // Filtro por categoría
     if (categoryId) {
       qb.andWhere('service.categoryId = :categoryId', { categoryId });
+    }
+
+    // Filtro por ciudad (case-insensitive)
+    if (city) {
+      qb.andWhere('LOWER(service.city) = LOWER(:city)', { city });
     }
 
     // Búsqueda geoespacial con PostGIS (ST_DWithin)

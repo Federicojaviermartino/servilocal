@@ -74,13 +74,29 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
         <label className="block text-sm font-medium text-neutral-700 mb-1">
           Ciudad
         </label>
-        <input
-          type="text"
+        <select
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          placeholder="Madrid, Sevilla, Valencia..."
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
+          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        >
+          <option value="">Todas las ciudades</option>
+          {[
+            'Madrid',
+            'Barcelona',
+            'Valencia',
+            'Sevilla',
+            'Zaragoza',
+            'Malaga',
+            'Bilbao',
+            'Murcia',
+            'Palma',
+            'Las Palmas de Gran Canaria',
+          ].map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
