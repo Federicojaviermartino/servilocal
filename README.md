@@ -24,7 +24,7 @@ La beta esta operativa y el flujo completo (busqueda, reserva, pago con Stripe y
 
 ## Estado del proyecto en PEC3
 
-De los nueve requisitos de la checklist de la asignatura, siete estan cumplidos (1, 2, 3, 4, 7, 8 y 9) y dos se encuentran en progreso avanzado (5 diseno visual y 6 accesibilidad) con cierre planificado en la PEC4. Detalle completo en `documentacion/PEC3_checklist_Martino_Federico.pdf`.
+Los nueve requisitos de la checklist de la asignatura estan cumplidos en esta entrega: (1) front-end con framework JavaScript, (2) back-end con uso no trivial de base de datos, (3) administracion desde la propia aplicacion, (4) varias tablas y gestion de roles, (5) diseno visual, de interfaz y arquitectura de la informacion, (6) aplicacion accesible, (7) seguridad de la aplicacion, (8) HTML y CSS con buenas practicas, y (9) despliegue a servidor publico con cuenta de administracion. Detalle completo en `documentacion/PEC3_checklist_Martino_Federico.pdf`.
 
 ### Funcionalidades implementadas
 
