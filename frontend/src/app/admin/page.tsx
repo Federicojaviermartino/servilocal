@@ -5,11 +5,11 @@
  */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import { Users, Tag, Flag } from 'lucide-react';
+import { Users, Tag, Flag, Pencil, Check, X, Briefcase } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { usersApi, categoriesApi, reviewsApi } from '@/lib/api';
 import { User, Category, Review, UserRole } from '@/types';
@@ -26,10 +26,18 @@ const TABS: { key: Tab; label: string; icon: typeof Users }[] = [
   { key: 'reviews', label: 'Valoraciones reportadas', icon: Flag },
 ];
 
+interface Stats {
+  totalUsers: number;
+  totalProviders: number;
+  totalCategories: number;
+  reportedReviews: number;
+}
+
 export default function AdminPage() {
   const { user, loadFromStorage } = useAuthStore();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('users');
+  const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     loadFromStorage();
@@ -46,6 +54,31 @@ export default function AdminPage() {
     }
   }, [user, router]);
 
+  const loadStats = useCallback(async () => {
+    try {
+      const [usersRes, catsRes, repRes] = await Promise.all([
+        usersApi.getAll(),
+        categoriesApi.getAll(),
+        reviewsApi.getReported(),
+      ]);
+      const allUsers: User[] = usersRes.data || [];
+      const allCats: Category[] = flatten(catsRes.data || []);
+      const reported: Review[] = repRes.data || [];
+      setStats({
+        totalUsers: allUsers.length,
+        totalProviders: allUsers.filter((u) => u.role === UserRole.PROVIDER).length,
+        totalCategories: allCats.length,
+        reportedReviews: reported.length,
+      });
+    } catch {
+      // si falla, dejamos stats en null y los contadores no se muestran
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user?.role === UserRole.ADMIN) loadStats();
+  }, [user, loadStats]);
+
   if (!user || user.role !== UserRole.ADMIN) return null;
 
   return (
@@ -59,6 +92,15 @@ export default function AdminPage() {
             Gestión de usuarios, categorías y moderación de valoraciones.
           </p>
         </div>
+
+        {stats && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" aria-label="Métricas de la plataforma">
+            <MetricCard icon={Users} label="Usuarios" value={stats.totalUsers} variant="info" />
+            <MetricCard icon={Briefcase} label="Proveedores" value={stats.totalProviders} variant="success" />
+            <MetricCard icon={Tag} label="Categorías" value={stats.totalCategories} variant="default" />
+            <MetricCard icon={Flag} label="Reportes pendientes" value={stats.reportedReviews} variant={stats.reportedReviews > 0 ? 'warning' : 'default'} />
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-card">
           <div
@@ -90,7 +132,7 @@ export default function AdminPage() {
           <div className="p-5">
             {tab === 'users' && (
               <div role="tabpanel" id="panel-users" aria-labelledby="tab-users">
-                <UsersSection />
+                <UsersSection onMutate={loadStats} />
               </div>
             )}
             {tab === 'categories' && (
@@ -99,7 +141,7 @@ export default function AdminPage() {
                 id="panel-categories"
                 aria-labelledby="tab-categories"
               >
-                <CategoriesSection />
+                <CategoriesSection onMutate={loadStats} />
               </div>
             )}
             {tab === 'reviews' && (
@@ -108,7 +150,7 @@ export default function AdminPage() {
                 id="panel-reviews"
                 aria-labelledby="tab-reviews"
               >
-                <ReportedReviewsSection />
+                <ReportedReviewsSection onMutate={loadStats} />
               </div>
             )}
           </div>
@@ -118,11 +160,41 @@ export default function AdminPage() {
   );
 }
 
+function MetricCard({
+  icon: Icon,
+  label,
+  value,
+  variant = 'default',
+}: {
+  icon: typeof Users;
+  label: string;
+  value: number;
+  variant?: 'default' | 'info' | 'success' | 'warning';
+}) {
+  const ring = {
+    default: 'bg-neutral-50 text-neutral-600',
+    info: 'bg-primary-50 text-primary-700',
+    success: 'bg-success-50 text-success-700',
+    warning: 'bg-warning-50 text-warning-700',
+  }[variant];
+  return (
+    <div className="bg-white rounded-lg shadow-card p-4 flex items-center gap-3">
+      <div className={clsx('h-10 w-10 rounded-md flex items-center justify-center', ring)}>
+        <Icon size={20} aria-hidden="true" />
+      </div>
+      <div>
+        <p className="text-xs text-neutral-500 uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold text-neutral-900 leading-tight">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- */
 /*  Sección: Usuarios                                                */
 /* ---------------------------------------------------------------- */
 
-function UsersSection() {
+function UsersSection({ onMutate }: { onMutate?: () => void }) {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | UserRole>('all');
@@ -150,6 +222,7 @@ function UsersSection() {
       await usersApi.toggleActive(u.id);
       toast.success(`Cuenta ${next ? 'activada' : 'desactivada'}.`);
       load();
+      onMutate?.();
     } catch {
       toast.error('No se pudo actualizar el estado de la cuenta.');
     }
@@ -295,13 +368,18 @@ function FilterChip({
 /*  Sección: Categorías                                              */
 /* ---------------------------------------------------------------- */
 
-function CategoriesSection() {
+function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   const load = () => {
     setIsLoading(true);
@@ -334,10 +412,48 @@ function CategoriesSection() {
       setSlug('');
       setDescription('');
       load();
+      onMutate?.();
     } catch {
       toast.error('No se pudo crear la categoría.');
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const startEdit = (c: Category) => {
+    setEditingId(c.id);
+    setEditName(c.name);
+    setEditSlug(c.slug);
+    setEditDescription(c.description || '');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditSlug('');
+    setEditDescription('');
+  };
+
+  const saveEdit = async (id: string) => {
+    if (!editName.trim() || !editSlug.trim()) {
+      toast.error('Nombre y slug son obligatorios.');
+      return;
+    }
+    setIsSavingEdit(true);
+    try {
+      await categoriesApi.update(id, {
+        name: editName.trim(),
+        slug: editSlug.trim(),
+        description: editDescription.trim() || null,
+      });
+      toast.success('Categoría actualizada.');
+      cancelEdit();
+      load();
+      onMutate?.();
+    } catch {
+      toast.error('No se pudo actualizar la categoría.');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -353,6 +469,7 @@ function CategoriesSection() {
       await categoriesApi.remove(c.id);
       toast.success('Categoría eliminada.');
       load();
+      onMutate?.();
     } catch {
       toast.error('No se pudo eliminar la categoría (puede tener servicios asociados).');
     }
@@ -422,27 +539,97 @@ function CategoriesSection() {
                 </td>
               </tr>
             )}
-            {categories.map((c) => (
-              <tr key={c.id} className="border-t border-neutral-100">
-                <td className="px-3 py-2 font-medium">
-                  {c.parentId ? <span className="text-neutral-400 mr-1">↳</span> : null}
-                  {c.name}
-                </td>
-                <td className="px-3 py-2 text-neutral-600">{c.slug}</td>
-                <td className="px-3 py-2 text-neutral-600">
-                  {c.description || '—'}
-                </td>
-                <td className="px-3 py-2 text-right">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(c)}
-                  >
-                    Eliminar
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {categories.map((c) => {
+              const editing = editingId === c.id;
+              return (
+                <tr key={c.id} className="border-t border-neutral-100">
+                  <td className="px-3 py-2 font-medium">
+                    {c.parentId ? <span className="text-neutral-400 mr-1">↳</span> : null}
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                        aria-label="Editar nombre"
+                      />
+                    ) : (
+                      c.name
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-neutral-600">
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={editSlug}
+                        onChange={(e) => setEditSlug(e.target.value)}
+                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                        aria-label="Editar slug"
+                      />
+                    ) : (
+                      c.slug
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-neutral-600">
+                    {editing ? (
+                      <input
+                        type="text"
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                        aria-label="Editar descripción"
+                      />
+                    ) : (
+                      c.description || '—'
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {editing ? (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => saveEdit(c.id)}
+                          isLoading={isSavingEdit}
+                          aria-label="Guardar cambios"
+                        >
+                          <Check size={14} aria-hidden="true" />
+                          Guardar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEdit}
+                          aria-label="Cancelar edición"
+                        >
+                          <X size={14} aria-hidden="true" />
+                          Cancelar
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(c)}
+                          aria-label={`Editar ${c.name}`}
+                        >
+                          <Pencil size={14} aria-hidden="true" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDelete(c)}
+                        >
+                          Eliminar
+                        </Button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -474,7 +661,7 @@ function slugify(s: string): string {
 /*  Sección: Valoraciones reportadas                                 */
 /* ---------------------------------------------------------------- */
 
-function ReportedReviewsSection() {
+function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -491,6 +678,20 @@ function ReportedReviewsSection() {
     load();
   }, []);
 
+  const handleDismiss = async (r: Review) => {
+    if (!window.confirm('¿Descartar el reporte y mantener visible la valoración?')) {
+      return;
+    }
+    try {
+      await reviewsApi.dismissReport(r.id);
+      toast.success('Reporte descartado: la valoración sigue visible.');
+      load();
+      onMutate?.();
+    } catch {
+      toast.error('No se pudo descartar el reporte.');
+    }
+  };
+
   const handleDelete = async (r: Review) => {
     if (
       !window.confirm(
@@ -503,6 +704,7 @@ function ReportedReviewsSection() {
       await reviewsApi.remove(r.id);
       toast.success('Valoración eliminada.');
       load();
+      onMutate?.();
     } catch {
       toast.error('No se pudo eliminar la valoración.');
     }
@@ -547,9 +749,15 @@ function ReportedReviewsSection() {
                 Reserva #{r.bookingId.slice(0, 8)} · {new Date(r.createdAt).toLocaleDateString('es-ES')}
               </p>
             </div>
-            <Button variant="danger" size="sm" onClick={() => handleDelete(r)}>
-              Eliminar
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <Button variant="secondary" size="sm" onClick={() => handleDismiss(r)}>
+                <Check size={14} aria-hidden="true" />
+                Mantener
+              </Button>
+              <Button variant="danger" size="sm" onClick={() => handleDelete(r)}>
+                Eliminar
+              </Button>
+            </div>
           </div>
         </li>
       ))}

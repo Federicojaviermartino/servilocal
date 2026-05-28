@@ -97,6 +97,7 @@ export const reviewsApi = {
   respond: (id: string, response: string) =>
     api.patch(`/reviews/${id}/respond`, { response }),
   getReported: () => api.get('/reviews/reported'),
+  dismissReport: (id: string) => api.patch(`/reviews/${id}/dismiss-report`),
   remove: (id: string) => api.delete(`/reviews/${id}`),
 };
 
