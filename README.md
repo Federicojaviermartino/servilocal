@@ -1,58 +1,61 @@
 # ServiLocal
 
-Marketplace de servicios locales con geolocalizacion.
+Marketplace de servicios locales con geolocalización.
 
-Trabajo Final de Master - Master Universitario en Desarrollo de Sitios y Aplicaciones Web (UOC)
+Trabajo Final de Máster - Máster Universitario en Desarrollo de Sitios y Aplicaciones Web (UOC)
 
 **Autor:** Federico Javier Martino
 **Consultor:** Juan Luis Blanco de los Santos
-**PRA:** Cesar Corcoles
+**PRA:** César Córcoles Briongos
 **Semestre:** 2025/2026
-**Version:** 0.3.0 (beta PEC3, operativa end-to-end)
+**Versión:** 1.0.0 (entrega final)
 
-## Descripcion
+## Descripción
 
-ServiLocal es una plataforma web que conecta proveedores de servicios locales (fontaneria, electricidad, clases particulares, reformas, etc.) con clientes en su zona geografica. Integra geolocalizacion por radio con PostGIS, reservas con maquina de estados, valoraciones verificadas ligadas a reservas completadas, mensajeria directa y pagos seguros con Stripe en modelo capture manual y confirmacion automatica via webhook.
+ServiLocal es una plataforma web que conecta proveedores de servicios locales (fontanería, electricidad, clases particulares, reformas, etc.) con clientes en su zona geográfica. Integra geolocalización por radio con PostGIS, reservas con máquina de estados, valoraciones verificadas ligadas a reservas completadas, mensajería directa y pagos seguros con Stripe en modelo capture manual y confirmación automática vía webhook.
 
 ## Beta desplegada
 
 - Frontend: https://servilocal-web.onrender.com
 - Backend: https://servilocal-api.onrender.com (Swagger en `/api/docs`)
-- Repositorio publico: https://github.com/Federicojaviermartino/servilocal
+- Repositorio público: https://github.com/Federicojaviermartino/servilocal
 
-La beta esta operativa y el flujo completo (busqueda, reserva, pago con Stripe y confirmacion automatica via webhook) ha sido validado end-to-end en el entorno publico.
+La beta está operativa y el flujo completo (búsqueda, reserva, pago con Stripe y confirmación automática vía webhook) ha sido validado extremo a extremo en el entorno público.
 
-## Estado del proyecto en PEC3
+## Estado del proyecto
 
-Los nueve requisitos de la checklist de la asignatura estan cumplidos en esta entrega: (1) front-end con framework JavaScript, (2) back-end con uso no trivial de base de datos, (3) administracion desde la propia aplicacion, (4) varias tablas y gestion de roles, (5) diseno visual, de interfaz y arquitectura de la informacion, (6) aplicacion accesible, (7) seguridad de la aplicacion, (8) HTML y CSS con buenas practicas, y (9) despliegue a servidor publico con cuenta de administracion. Detalle completo en `documentacion/PEC3_checklist_Martino_Federico.pdf`.
+Los nueve requisitos de la checklist de la asignatura están cumplidos: (1) front-end con framework JavaScript, (2) back-end con uso no trivial de base de datos, (3) administración desde la propia aplicación, (4) varias tablas y gestión de roles, (5) diseño visual, de interfaz y arquitectura de la información, (6) aplicación accesible (WCAG 2.1 nivel AA), (7) seguridad de la aplicación, (8) HTML y CSS con buenas prácticas, y (9) despliegue a servidor público con cuenta de administración. Detalle completo en `documentacion/PAC_FINAL_checklist_Martino_Federico.pdf`.
 
 ### Funcionalidades implementadas
 
 **Visitante (no autenticado)**
-- Pagina de inicio con buscador geolocalizado
-- Busqueda con filtros (categoria, ciudad, radio, valoracion minima, precio maximo)
+- Página de inicio con buscador geolocalizado
+- Búsqueda con filtros (categoría, ciudad, radio, valoración mínima, precio máximo)
 - Vista lista o mapa (Leaflet con marcadores)
-- Detalle de servicio con resenas verificadas y datos del profesional
-- Registro e inicio de sesion con validacion
+- Detalle de servicio con reseñas verificadas y datos del profesional
+- Registro e inicio de sesión con validación
 
 **Cliente**
 - Panel de resumen con indicadores
-- Creacion de reserva con formulario validado (fecha y hora en ISO UTC sin desfase horario)
+- Creación de reserva con formulario validado (fecha y hora en ISO UTC sin desfase horario)
 - Pago seguro con Stripe Payment Element en modelo capture manual
 - Listado de reservas filtrable por estado
-- Detalle de reserva en `/dashboard/bookings/[id]` con accion Pagar ahora cuando procede y opcion de cancelacion
+- Detalle de reserva en `/dashboard/bookings/[id]` con acción Pagar ahora cuando procede y opción de cancelación
 - Sistema de valoraciones (pendientes y enviadas)
-- Mensajeria con proveedores y edicion del perfil
+- Mensajería con proveedores y edición del perfil
 
 **Proveedor**
 - Panel de resumen adaptado
 - CRUD completo de servicios publicados (crear, editar, pausar, eliminar)
-- Gestion de reservas recibidas con acciones Confirmar, Rechazar, Marcar como completada y Cancelar
-- Mensajeria con clientes y edicion del perfil profesional
+- Gestión de reservas recibidas con acciones Confirmar, Rechazar, Marcar como completada y Cancelar
+- Mensajería con clientes y edición del perfil profesional
 
 **Administrador**
-- Guards JWT + RolesGuard aplicados en el backend
-- Vistas dedicadas de moderacion global ampliadas en PEC4
+- Acceso protegido por Guards JWT + RolesGuard
+- Gestión de usuarios (listar, filtrar por rol y estado, activar o desactivar)
+- Gestión de categorías jerárquicas (crear, editar, renombrar, reorganizar)
+- Moderación de valoraciones reportadas (aprobar o rechazar)
+- Consulta de métricas básicas de la plataforma
 
 ## Arquitectura
 
@@ -62,15 +65,15 @@ Cliente-servidor de tres capas. El frontend consume la API REST del backend; el 
 servilocal/
   backend/          Nest.js + TypeORM + PostgreSQL/PostGIS + Stripe
     src/
-      auth/         Autenticacion JWT con Passport
-      users/        Gestion de usuarios (GET /users/me antes de /users/:id)
-      categories/   Categorias jerarquicas
-      services/     Servicios con busqueda geoespacial (ST_DWithin)
+      auth/         Autenticación JWT con Passport
+      users/        Gestión de usuarios (GET /users/me antes de /users/:id)
+      categories/   Categorías jerárquicas
+      services/     Servicios con búsqueda geoespacial (ST_DWithin)
       bookings/     Reservas y estados (/bookings/my, /bookings/received)
       reviews/      Valoraciones verificadas
-      payments/     Integracion con Stripe (capture manual)
+      payments/     Integración con Stripe (capture manual)
         payments-webhook.controller.ts   Webhook firmado con STRIPE_WEBHOOK_SECRET
-      messages/     Mensajeria entre usuarios (polling cada 10s)
+      messages/     Mensajería entre usuarios (polling cada 10s)
       entities/     Entidades TypeORM con ColumnNumericTransformer en decimales
       common/       Guards, decoradores, filtros y transformers
       config/       database.config.ts y data-source.ts (SSL obligatorio si DATABASE_URL)
@@ -96,30 +99,30 @@ servilocal/
   README.md
 ```
 
-## Stack tecnologico
+## Stack tecnológico
 
-| Capa | Tecnologia |
+| Capa | Tecnología |
 |------|-----------|
 | Front-end | React 18 + Next.js 14 (TypeScript, App Router) |
 | Back-end | Nest.js (TypeScript) con rawBody para webhook de Stripe |
-| Base de datos | PostgreSQL 16 + PostGIS (Supabase en produccion) |
+| Base de datos | PostgreSQL 16 + PostGIS (Supabase en producción) |
 | ORM | TypeORM con ColumnNumericTransformer en decimales |
 | Estilos | Tailwind CSS con tokens centralizados |
-| Sistema de diseno | Atomic Design |
-| Mapas | Leaflet.js + react-leaflet (carga dinamica) |
-| Autenticacion | JWT + Passport.js |
+| Sistema de diseño | Atomic Design |
+| Mapas | Leaflet.js + react-leaflet (carga dinámica) |
+| Autenticación | JWT + Passport.js |
 | Pagos | Stripe (Payment Element, capture manual, webhook firmado) |
 | Testing | Jest (19 tests unitarios en verde) |
 | CI/CD | GitHub Actions + Docker |
 | Despliegue | Render (servicios web) + Supabase (base de datos) |
 
-## Instalacion local
+## Instalación local
 
 ### Requisitos previos
 
 - Node.js 20 o superior (Node 22 usado en Render)
 - Docker y Docker Compose
-- Cuenta de Stripe (modo test) con claves publica y secreta
+- Cuenta de Stripe (modo test) con claves pública y secreta
 - Stripe CLI opcional para probar el webhook en local
 
 ### Pasos
@@ -134,7 +137,7 @@ cd servilocal
 2. Levantar la base de datos con Docker
 
 ```bash
-docker-compose up -d postgres
+docker-compose up -d db
 ```
 
 3. Configurar variables de entorno del backend
@@ -149,10 +152,10 @@ DB_USERNAME=servilocal_user
 DB_PASSWORD=servilocal_dev_2026
 DB_DATABASE=servilocal
 
-# Alternativa: URL unica con SSL activo
+# Alternativa: URL única con SSL activo
 # DATABASE_URL=postgresql://usuario:password@host:5432/base
 
-# Autenticacion
+# Autenticación
 JWT_SECRET=cambia_esto_en_produccion
 JWT_EXPIRATION=7d
 
@@ -173,11 +176,11 @@ PORT=3001
 ```bash
 cd backend
 npm install
-npm run seed          # crea usuarios, categorias y 4 servicios de muestra
+npm run seed          # crea usuarios, categorías y 4 servicios de muestra
 npm run start:dev
 ```
 
-El backend queda disponible en `http://localhost:3001/api`. La documentacion Swagger interactiva esta en `http://localhost:3001/api/docs`.
+El backend queda disponible en `http://localhost:3001/api`. La documentación Swagger interactiva está en `http://localhost:3001/api/docs`.
 
 5. Configurar variables de entorno del frontend
 
@@ -208,7 +211,7 @@ El comando imprime un `whsec_...` que debe copiarse a `STRIPE_WEBHOOK_SECRET` en
 
 ## Despliegue
 
-La beta usa una arquitectura hibrida para evitar la expiracion a 30 dias del PostgreSQL gratuito de Render:
+La beta usa una arquitectura híbrida para evitar la expiración a 30 días del PostgreSQL gratuito de Render:
 
 1. **Supabase** (PostgreSQL 16 con PostGIS nativo, plan gratuito permanente) aloja la base de datos.
 2. **Render** aloja dos Web Services:
@@ -219,7 +222,7 @@ La beta usa una arquitectura hibrida para evitar la expiracion a 30 dias del Pos
 
 **Servicio backend (servilocal-api)**
 
-| Variable | Descripcion |
+| Variable | Descripción |
 |----------|-------------|
 | `DATABASE_URL` | URL de Supabase (con SSL obligatorio) |
 | `NODE_ENV` | `production` |
@@ -232,12 +235,12 @@ La beta usa una arquitectura hibrida para evitar la expiracion a 30 dias del Pos
 
 **Servicio frontend (servilocal-web)**
 
-| Variable | Descripcion |
+| Variable | Descripción |
 |----------|-------------|
 | `NEXT_PUBLIC_API_URL` | `https://servilocal-api.onrender.com/api` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clave publica de Stripe |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clave pública de Stripe |
 
-Las variables `NEXT_PUBLIC_*` se inyectan como build args en el Dockerfile del frontend para que Next las inline en el bundle estatico. Tras cambiarlas hay que lanzar **Manual Deploy con Clear build cache** para invalidar el bundle anterior.
+Las variables `NEXT_PUBLIC_*` se inyectan como build args en el Dockerfile del frontend para que Next las inline en el bundle estático. Tras cambiarlas hay que lanzar **Manual Deploy con Clear build cache** para invalidar el bundle anterior.
 
 ### Alta del webhook en Stripe
 
@@ -254,16 +257,16 @@ Copiar el `whsec_...` generado y configurarlo como `STRIPE_WEBHOOK_SECRET` en Re
 
 ## Cuentas de prueba
 
-El seeder reproducible crea cuatro cuentas. Contrasena comun: **Password123!**
+El seeder reproducible crea cuatro cuentas. Contraseña común: **Password123!**
 
 | Rol | Correo | Observaciones |
 |-----|--------|---------------|
-| Administrador | admin@servilocal.com | Gestion avanzada ampliada en PEC4 |
-| Cliente | laura@ejemplo.com | Laura Garcia, Madrid. Flujo de reserva y pago |
+| Administrador | admin@servilocal.com | Acceso al panel de moderación |
+| Cliente | laura@ejemplo.com | Laura García, Madrid. Flujo de reserva y pago |
 | Proveedor | carlos@ejemplo.com | Fontanero. 2 servicios en Madrid |
 | Proveedor | maria@ejemplo.com | Electricista. 2 servicios en Madrid |
 
-**Tarjeta de prueba de Stripe:** `4242 4242 4242 4242`, cualquier fecha futura (por ejemplo `12/29`), CVC `123`, codigo postal `28001`. Tras confirmar el pago, la reserva pasa automaticamente a Confirmada gracias al webhook.
+**Tarjeta de prueba de Stripe:** `4242 4242 4242 4242`, cualquier fecha futura (por ejemplo `12/29`), CVC `123`, código postal `28001`. Tras confirmar el pago, la reserva pasa automáticamente a Confirmada gracias al webhook.
 
 ## Testing
 
@@ -281,13 +284,24 @@ cd ../frontend
 npm run build
 ```
 
-## Documentacion
+## Documentación
 
-- Memoria PEC3 completa: `documentacion/PEC3_mem_Martino_Federico.pdf`
-- Checklist de los 9 requisitos: `documentacion/PEC3_checklist_Martino_Federico.pdf`
-- Diagramas UML: carpeta `diagrams/` (casos de uso, clases, entidad-relacion, arquitectura, despliegue Render + Supabase, secuencias de reserva y pago con webhook, autenticacion JWT, estados de reserva)
-- Wireframes responsive: carpeta `wireframes/` (9 wireframes en 3 resoluciones 375px / 768px / 1280px)
+La memoria final incorpora las correcciones aplicadas tras la revisión del consultor sobre la entrega de la PEC3:
+
+- Reformulación del apartado 3.1 sobre los roles de PostgreSQL (persistencia) y TypeORM (acceso a datos).
+- Reorganización de los compromisos asumidos (despliegue público y accesibilidad WCAG 2.1 nivel AA) en un apartado dedicado en las conclusiones (4.7).
+- Ajustes de maquetación para evitar títulos al final de página.
+
+Documentos incluidos en la entrega:
+
+- Memoria final: `documentacion/PAC_FINAL_mem_Martino_Federico.pdf`
+- Autoinforme de evaluación: `documentacion/PAC_FINAL_autoinforme_Martino_Federico.pdf`
+- Checklist de los 9 requisitos: `documentacion/PAC_FINAL_checklist_Martino_Federico.pdf`
+- Presentación: `documentacion/PAC_FINAL_prs_Martino_Federico.pdf`
+- Vídeo de defensa: `PAC_FINAL_video_Martino_Federico.mp4`
+- Diagramas UML: carpeta `diagrams/`
+- Wireframes responsive: carpeta `wireframes/`
 
 ## Licencia
 
-Trabajo academico. Codigo bajo licencia MIT. Texto de la memoria bajo Creative Commons Reconocimiento - NoComercial - SinObraDerivada 3.0 Espana.
+Trabajo académico. Código bajo licencia MIT. Texto de la memoria bajo Creative Commons Reconocimiento - NoComercial - SinObraDerivada 3.0 España.
