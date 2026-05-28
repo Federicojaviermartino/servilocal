@@ -67,6 +67,15 @@ export class ReviewsController {
     return this.reviewsService.reportReview(id, dto);
   }
 
+  @Patch(':id/dismiss-report')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Descartar el reporte de una valoración (solo admin - moderación)' })
+  async dismissReport(@Param('id') id: string) {
+    return this.reviewsService.dismissReport(id);
+  }
+
   @Delete(':id')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)

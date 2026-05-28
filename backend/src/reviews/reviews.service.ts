@@ -123,6 +123,18 @@ export class ReviewsService {
     });
   }
 
+  async dismissReport(reviewId: string): Promise<Review> {
+    const review = await this.reviewRepository.findOne({
+      where: { id: reviewId },
+    });
+    if (!review) {
+      throw new NotFoundException('Valoración no encontrada');
+    }
+    review.isReported = false;
+    review.reportReason = null;
+    return this.reviewRepository.save(review);
+  }
+
   async deleteReview(reviewId: string): Promise<void> {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },

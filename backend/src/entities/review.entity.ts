@@ -52,7 +52,7 @@ export class Review {
   isReported: boolean;
 
   @Column({ type: 'text', nullable: true })
-  reportReason: string;
+  reportReason: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
