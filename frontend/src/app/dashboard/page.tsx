@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Booking, BookingStatus, UserRole } from '@/types';
 import { bookingsApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -8,11 +9,18 @@ import Spinner from '@/components/atoms/Spinner';
 
 export default function DashboardHomePage() {
   const { user } = useAuthStore();
+  const router = useRouter();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (user?.role === UserRole.ADMIN) {
+      router.replace('/admin');
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    if (!user || user.role === UserRole.ADMIN) return;
     const fetcher =
       user.role === UserRole.PROVIDER
         ? bookingsApi.getReceived
@@ -23,7 +31,7 @@ export default function DashboardHomePage() {
       .finally(() => setIsLoading(false));
   }, [user]);
 
-  if (!user) return null;
+  if (!user || user.role === UserRole.ADMIN) return null;
 
   const pending = bookings.filter(
     (b) => b.status === BookingStatus.PENDING,

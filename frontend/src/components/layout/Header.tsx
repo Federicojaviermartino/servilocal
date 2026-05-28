@@ -41,7 +41,7 @@ export default function Header() {
                 Mensajes
               </Link>
               {user.role === 'admin' && (
-                <Link href="/dashboard" className="text-sm text-gray-600 hover:text-primary-500">
+                <Link href="/admin" className="text-sm text-gray-600 hover:text-primary-500">
                   Admin
                 </Link>
               )}

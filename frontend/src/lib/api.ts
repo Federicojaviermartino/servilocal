@@ -96,6 +96,8 @@ export const reviewsApi = {
   getMyReviews: () => api.get('/reviews/my'),
   respond: (id: string, response: string) =>
     api.patch(`/reviews/${id}/respond`, { response }),
+  getReported: () => api.get('/reviews/reported'),
+  remove: (id: string) => api.delete(`/reviews/${id}`),
 };
 
 export const messagesApi = {
