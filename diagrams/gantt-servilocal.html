@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiLocal - Diagrama de Gantt detallado</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; margin: 0; padding: 24px; background: #f8f9fa; color: #2d2d2d; }
+    .header { background: linear-gradient(135deg, #1a4f8a 0%, #2d6cb6 100%); color: white; padding: 24px 28px; border-radius: 10px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(26, 79, 138, 0.2); }
+    .header h1 { margin: 0 0 4px 0; font-size: 24px; font-weight: 700; }
+    .header p { margin: 0; opacity: 0.92; font-size: 14px; }
+    .container { background: white; padding: 28px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .diagram-title { font-size: 22px; font-weight: 700; color: #1e3a5f; margin: 0 0 6px 0; }
+    .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
+    .mermaid { background: #ffffff; padding: 16px 0; overflow-x: auto; }
+    .summary { margin-top: 28px; padding: 18px 20px; background: #f4f8fc; border-left: 4px solid #1a4f8a; border-radius: 6px; }
+    .summary h3 { margin: 0 0 12px 0; color: #1e3a5f; font-size: 16px; }
+    .summary table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .summary td { padding: 8px 10px; border-bottom: 1px solid #e0e6ec; }
+    .summary td:nth-child(2), .summary td:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .summary tr.total td { background: #eaf2fa; font-weight: 700; }
+    .legend { margin-top: 20px; font-size: 13px; color: #555; }
+    .legend span { display: inline-block; padding: 2px 8px; border-radius: 3px; margin-right: 10px; font-weight: 600; }
+    .legend .crit { background: #fde7e9; color: #c0392b; }
+    .legend .active { background: #e8f0fa; color: #1a4f8a; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>ServiLocal — Trabajo Final de Máster</h1>
+    <p>Material complementario · Diagrama de Gantt detallado del proyecto</p>
+  </div>
+
+  <div class="container">
+    <h2 class="diagram-title">Cronograma del proyecto</h2>
+    <p class="meta">28 tareas distribuidas en 16 semanas (S1 a S16) · 278 horas totales · Cinco fases: PEC1, PEC2, PEC3, PEC4 y Defensa virtual</p>
+
+    <div class="mermaid">
+gantt
+  title Cronograma del Trabajo Final de Master
+  dateFormat YYYY-MM-DD
+  axisFormat %d/%m
+
+  section PEC1 - 28h
+  Investigacion de mercado y analisis sectorial   :p1a, 2026-02-16, 3d
+  Definicion de objetivos y alcance               :p1b, after p1a, 3d
+  Estudio de competidores y DAFO                  :p1c, after p1b, 4d
+  Analisis de riesgos y elaboracion del Gantt     :p1d, after p1c, 4d
+  Redaccion y entrega de la PEC1                  :crit, p1e, after p1d, 7d
+
+  section PEC2 - 70h
+  Perfiles de usuario con Cooper y JTBD           :p2a, after p1e, 3d
+  Arquitectura del sistema y diagramas UML        :p2b, after p2a, 4d
+  Modelo de datos y diagrama ER con PostGIS       :p2c, after p2b, 3d
+  Wireframes en tres resoluciones                 :p2d, after p2c, 4d
+  Sistema de diseno con Atomic Design             :p2e, after p2d, 3d
+  Diseno de la API REST y documentacion Swagger   :p2f, after p2e, 3d
+  Setup tecnico con Next y Nest y Docker          :p2g, after p2f, 4d
+  Redaccion y entrega de la PEC2                  :crit, p2h, after p2g, 4d
+
+  section PEC3 - 70h
+  Autenticacion JWT y guards de rol               :p3a, after p2h, 2d
+  Modulos back-end de servicios reservas y resena :p3b, after p3a, 4d
+  Integracion de PostGIS y busqueda geoespacial   :p3c, after p3b, 3d
+  Front-end de busqueda reserva y visualizacion   :p3d, after p3c, 3d
+  Integracion con Stripe y webhook firmado        :p3e, after p3d, 3d
+  Despliegue en Render y Supabase                 :p3f, after p3e, 3d
+  Redaccion y entrega de la PEC3                  :crit, p3g, after p3f, 3d
+
+  section PEC4 - 70h
+  Panel de administracion                         :p4a, after p3g, 6d
+  Validacion end-to-end y suite con Jest          :p4b, after p4a, 5d
+  Mejoras de accesibilidad WCAG 2.1 AA            :p4c, after p4b, 4d
+  Consolidacion final de la memoria               :p4d, after p4c, 8d
+  Presentacion escrita y visual                   :p4e, after p4d, 6d
+  Video de presentacion y defensa                 :crit, p4f, after p4e, 6d
+
+  section Defensa virtual - 40h
+  Ensayos y revision final del producto           :p5a, after p4f, 4d
+  Defensa ante el tribunal de evaluacion          :crit, p5b, after p5a, 3d
+    </div>
+
+    <div class="legend">
+      <span class="active">Tarea regular</span>
+      <span class="crit">Hito / entrega</span>
+    </div>
+
+    <div class="summary">
+      <h3>Resumen de dedicación por fase</h3>
+      <table>
+        <tr><td><strong>PEC1</strong> — Definición y planificación</td><td>28 h</td><td>10 %</td></tr>
+        <tr><td><strong>PEC2</strong> — Diseño + inicio del desarrollo</td><td>70 h</td><td>25 %</td></tr>
+        <tr><td><strong>PEC3</strong> — Desarrollo (versión beta)</td><td>70 h</td><td>25 %</td></tr>
+        <tr><td><strong>PEC4</strong> — Entrega final</td><td>70 h</td><td>25 %</td></tr>
+        <tr><td><strong>Defensa virtual</strong></td><td>40 h</td><td>15 %</td></tr>
+        <tr class="total"><td>Total</td><td>278 h</td><td>100 %</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose',
+      gantt: {
+        useMaxWidth: true,
+        leftPadding: 220,
+        rightPadding: 40,
+        topPadding: 40,
+        gridLineStartPadding: 30,
+        fontSize: 12,
+        sectionFontSize: 14,
+        numberSectionStyles: 5
+      }
+    });
+  </script>
+</body>
+</html>
