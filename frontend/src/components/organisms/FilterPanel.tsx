@@ -81,19 +81,19 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
         >
           <option value="">Todas las ciudades</option>
           {[
-            'Madrid',
-            'Barcelona',
-            'Valencia',
-            'Sevilla',
-            'Zaragoza',
-            'Malaga',
-            'Bilbao',
-            'Murcia',
-            'Palma',
-            'Las Palmas de Gran Canaria',
+            { value: 'Madrid', label: 'Madrid' },
+            { value: 'Barcelona', label: 'Barcelona' },
+            { value: 'Valencia', label: 'Valencia' },
+            { value: 'Sevilla', label: 'Sevilla' },
+            { value: 'Zaragoza', label: 'Zaragoza' },
+            { value: 'Malaga', label: 'Málaga' },
+            { value: 'Bilbao', label: 'Bilbao' },
+            { value: 'Murcia', label: 'Murcia' },
+            { value: 'Palma', label: 'Palma' },
+            { value: 'Las Palmas de Gran Canaria', label: 'Las Palmas de Gran Canaria' },
           ].map((c) => (
-            <option key={c} value={c}>
-              {c}
+            <option key={c.value} value={c.value}>
+              {c.label}
             </option>
           ))}
         </select>
