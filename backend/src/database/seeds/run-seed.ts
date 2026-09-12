@@ -80,7 +80,7 @@ async function runSeed() {
     isEmailVerified: true,
     city: 'Madrid',
     phone: '600111222',
-    location: (() => "ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)") as any,
+    location: (() => 'ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)') as any,
   });
 
   const provider1 = userRepo.create({
@@ -93,7 +93,7 @@ async function runSeed() {
     city: 'Madrid',
     phone: '600333444',
     bio: 'Fontanero profesional con 15 años de experiencia',
-    location: (() => "ST_SetSRID(ST_MakePoint(-3.6920, 40.4200), 4326)") as any,
+    location: (() => 'ST_SetSRID(ST_MakePoint(-3.6920, 40.4200), 4326)') as any,
   });
 
   const provider2 = userRepo.create({
@@ -106,7 +106,7 @@ async function runSeed() {
     city: 'Madrid',
     phone: '600555666',
     bio: 'Electricista certificada, especialista en instalaciones domésticas',
-    location: (() => "ST_SetSRID(ST_MakePoint(-3.7100, 40.4250), 4326)") as any,
+    location: (() => 'ST_SetSRID(ST_MakePoint(-3.7100, 40.4250), 4326)') as any,
   });
 
   await userRepo.save([admin, client, provider1, provider2]);
@@ -114,16 +114,76 @@ async function runSeed() {
 
   // Crear categorías
   const categories = [
-    { name: 'Fontanería', slug: 'fontaneria', description: 'Reparación e instalación de tuberías y grifería', icon: 'droplet', sortOrder: 1 },
-    { name: 'Electricidad', slug: 'electricidad', description: 'Instalaciones y reparaciones eléctricas', icon: 'zap', sortOrder: 2 },
-    { name: 'Limpieza', slug: 'limpieza', description: 'Servicios de limpieza doméstica y profesional', icon: 'sparkles', sortOrder: 3 },
-    { name: 'Pintura', slug: 'pintura', description: 'Pintura interior y exterior', icon: 'paintbrush', sortOrder: 4 },
-    { name: 'Cerrajería', slug: 'cerrajeria', description: 'Apertura de puertas y cambio de cerraduras', icon: 'key', sortOrder: 5 },
-    { name: 'Clases particulares', slug: 'clases-particulares', description: 'Profesores para refuerzo y formación', icon: 'book', sortOrder: 6 },
-    { name: 'Reformas', slug: 'reformas', description: 'Reformas integrales y parciales', icon: 'hammer', sortOrder: 7 },
-    { name: 'Jardinería', slug: 'jardineria', description: 'Mantenimiento de jardines y espacios verdes', icon: 'leaf', sortOrder: 8 },
-    { name: 'Mudanzas', slug: 'mudanzas', description: 'Servicios de mudanza y transporte', icon: 'truck', sortOrder: 9 },
-    { name: 'Diseño gráfico', slug: 'diseno-grafico', description: 'Diseño de logotipos, web y material gráfico', icon: 'palette', sortOrder: 10 },
+    {
+      name: 'Fontanería',
+      slug: 'fontaneria',
+      description: 'Reparación e instalación de tuberías y grifería',
+      icon: 'droplet',
+      sortOrder: 1,
+    },
+    {
+      name: 'Electricidad',
+      slug: 'electricidad',
+      description: 'Instalaciones y reparaciones eléctricas',
+      icon: 'zap',
+      sortOrder: 2,
+    },
+    {
+      name: 'Limpieza',
+      slug: 'limpieza',
+      description: 'Servicios de limpieza doméstica y profesional',
+      icon: 'sparkles',
+      sortOrder: 3,
+    },
+    {
+      name: 'Pintura',
+      slug: 'pintura',
+      description: 'Pintura interior y exterior',
+      icon: 'paintbrush',
+      sortOrder: 4,
+    },
+    {
+      name: 'Cerrajería',
+      slug: 'cerrajeria',
+      description: 'Apertura de puertas y cambio de cerraduras',
+      icon: 'key',
+      sortOrder: 5,
+    },
+    {
+      name: 'Clases particulares',
+      slug: 'clases-particulares',
+      description: 'Profesores para refuerzo y formación',
+      icon: 'book',
+      sortOrder: 6,
+    },
+    {
+      name: 'Reformas',
+      slug: 'reformas',
+      description: 'Reformas integrales y parciales',
+      icon: 'hammer',
+      sortOrder: 7,
+    },
+    {
+      name: 'Jardinería',
+      slug: 'jardineria',
+      description: 'Mantenimiento de jardines y espacios verdes',
+      icon: 'leaf',
+      sortOrder: 8,
+    },
+    {
+      name: 'Mudanzas',
+      slug: 'mudanzas',
+      description: 'Servicios de mudanza y transporte',
+      icon: 'truck',
+      sortOrder: 9,
+    },
+    {
+      name: 'Diseño gráfico',
+      slug: 'diseno-grafico',
+      description: 'Diseño de logotipos, web y material gráfico',
+      icon: 'palette',
+      sortOrder: 10,
+    },
   ];
 
   const savedCategories: Record<string, Category> = {};
@@ -161,8 +221,8 @@ async function runSeed() {
       address: 'Calle Velázquez 85',
       city: 'Madrid',
       coverageRadiusKm: 20,
-      lng: -3.6870,
-      lat: 40.4320,
+      lng: -3.687,
+      lat: 40.432,
     },
     {
       providerId: provider2.id,
@@ -176,7 +236,7 @@ async function runSeed() {
       city: 'Madrid',
       coverageRadiusKm: 15,
       lng: -3.7025,
-      lat: 40.4290,
+      lat: 40.429,
     },
     {
       providerId: provider2.id,
@@ -190,8 +250,8 @@ async function runSeed() {
       address: 'Calle Bravo Murillo 210',
       city: 'Madrid',
       coverageRadiusKm: 12,
-      lng: -3.7050,
-      lat: 40.4470,
+      lng: -3.705,
+      lat: 40.447,
     },
   ];
 
@@ -199,8 +259,7 @@ async function runSeed() {
     const { lng, lat, ...rest } = s;
     const service = serviceRepo.create({
       ...rest,
-      location: (() =>
-        `ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`) as any,
+      location: (() => `ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`) as any,
     });
     await serviceRepo.save(service);
   }

@@ -61,9 +61,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
   console.log(`ServiLocal API ejecutándose en http://localhost:${port}`);
-  console.log(
-    `Documentación Swagger en http://localhost:${port}/api/docs`,
-  );
+  console.log(`Documentación Swagger en http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

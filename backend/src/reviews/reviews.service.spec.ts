@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { Review, Booking, BookingStatus, Service } from '../entities';
 
@@ -29,8 +33,14 @@ describe('ReviewsService', () => {
       providers: [
         ReviewsService,
         { provide: getRepositoryToken(Review), useValue: mockReviewRepository },
-        { provide: getRepositoryToken(Booking), useValue: mockBookingRepository },
-        { provide: getRepositoryToken(Service), useValue: mockServiceRepository },
+        {
+          provide: getRepositoryToken(Booking),
+          useValue: mockBookingRepository,
+        },
+        {
+          provide: getRepositoryToken(Service),
+          useValue: mockServiceRepository,
+        },
       ],
     }).compile();
 
@@ -57,9 +67,9 @@ describe('ReviewsService', () => {
         serviceId: 'service-uuid',
       });
 
-      await expect(
-        service.create('client-uuid', createDto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('debería rechazar valoración si el usuario no es el cliente de la reserva', async () => {
@@ -70,9 +80,9 @@ describe('ReviewsService', () => {
         serviceId: 'service-uuid',
       });
 
-      await expect(
-        service.create('client-uuid', createDto),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('debería rechazar valoración duplicada', async () => {
@@ -85,9 +95,9 @@ describe('ReviewsService', () => {
 
       mockReviewRepository.findOne.mockResolvedValue({ id: 'existing-review' });
 
-      await expect(
-        service.create('client-uuid', createDto),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('debería crear valoración y actualizar rating del servicio', async () => {

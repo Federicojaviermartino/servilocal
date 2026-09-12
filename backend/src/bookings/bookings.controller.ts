@@ -58,7 +58,10 @@ export class BookingsController {
   }
 
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Cambiar estado de reserva (confirmar, completar, cancelar, rechazar)' })
+  @ApiOperation({
+    summary:
+      'Cambiar estado de reserva (confirmar, completar, cancelar, rechazar)',
+  })
   @ApiResponse({ status: 200, description: 'Estado actualizado' })
   @ApiResponse({ status: 400, description: 'Transición de estado no válida' })
   async updateStatus(

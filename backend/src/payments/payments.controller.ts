@@ -25,11 +25,10 @@ export class PaymentsController {
   @Post('create-intent')
   @UseGuards(RolesGuard)
   @Roles(UserRole.CLIENT)
-  @ApiOperation({ summary: 'Crear intención de pago con Stripe (solo cliente)' })
-  async createIntent(
-    @Request() req: any,
-    @Body() dto: CreatePaymentIntentDto,
-  ) {
+  @ApiOperation({
+    summary: 'Crear intención de pago con Stripe (solo cliente)',
+  })
+  async createIntent(@Request() req: any, @Body() dto: CreatePaymentIntentDto) {
     return this.paymentsService.createPaymentIntent(req.user.id, dto.bookingId);
   }
 
@@ -42,7 +41,9 @@ export class PaymentsController {
   @Post('capture/:bookingId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Capturar pago retenido al completar servicio (admin)' })
+  @ApiOperation({
+    summary: 'Capturar pago retenido al completar servicio (admin)',
+  })
   async capture(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
     return this.paymentsService.capturePayment(bookingId);
   }

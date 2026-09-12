@@ -18,12 +18,14 @@ export class CreateBookingDto {
   @IsDateString()
   scheduledDate: string;
 
-  @ApiPropertyOptional({ example: 'Necesito reparar un grifo que gotea en la cocina' })
+  @ApiPropertyOptional({
+    example: 'Necesito reparar un grifo que gotea en la cocina',
+  })
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 45.00 })
+  @ApiProperty({ example: 45.0 })
   @IsNumber()
   @Min(0)
   totalPrice: number;

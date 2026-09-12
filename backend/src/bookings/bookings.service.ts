@@ -18,7 +18,10 @@ export class BookingsService {
     private serviceRepository: Repository<Service>,
   ) {}
 
-  async create(clientId: string, createDto: CreateBookingDto): Promise<Booking> {
+  async create(
+    clientId: string,
+    createDto: CreateBookingDto,
+  ): Promise<Booking> {
     const service = await this.serviceRepository.findOne({
       where: { id: createDto.serviceId, isActive: true },
     });
@@ -130,17 +133,29 @@ export class BookingsService {
 
     // El proveedor confirma, completa o rechaza
     if (
-      [BookingStatus.CONFIRMED, BookingStatus.COMPLETED, BookingStatus.REJECTED].includes(newStatus)
+      [
+        BookingStatus.CONFIRMED,
+        BookingStatus.COMPLETED,
+        BookingStatus.REJECTED,
+      ].includes(newStatus)
     ) {
       if (booking.providerId !== userId && userRole !== 'admin') {
-        throw new ForbiddenException('Solo el proveedor puede realizar esta acción');
+        throw new ForbiddenException(
+          'Solo el proveedor puede realizar esta acción',
+        );
       }
     }
 
     // El cliente cancela
     if (newStatus === BookingStatus.CANCELLED) {
-      if (booking.clientId !== userId && booking.providerId !== userId && userRole !== 'admin') {
-        throw new ForbiddenException('No tienes permisos para cancelar esta reserva');
+      if (
+        booking.clientId !== userId &&
+        booking.providerId !== userId &&
+        userRole !== 'admin'
+      ) {
+        throw new ForbiddenException(
+          'No tienes permisos para cancelar esta reserva',
+        );
       }
     }
   }

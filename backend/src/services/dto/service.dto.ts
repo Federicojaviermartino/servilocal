@@ -18,7 +18,9 @@ export class CreateServiceDto {
   @MaxLength(200)
   title: string;
 
-  @ApiProperty({ example: 'Reparación de tuberías, grifos, cisternas y desatascos.' })
+  @ApiProperty({
+    example: 'Reparación de tuberías, grifos, cisternas y desatascos.',
+  })
   @IsString()
   @IsNotEmpty()
   description: string;
@@ -28,12 +30,12 @@ export class CreateServiceDto {
   @IsNotEmpty()
   categoryId: string;
 
-  @ApiProperty({ example: 25.00 })
+  @ApiProperty({ example: 25.0 })
   @IsNumber()
   @Min(0)
   priceMin: number;
 
-  @ApiPropertyOptional({ example: 60.00 })
+  @ApiPropertyOptional({ example: 60.0 })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -43,11 +45,17 @@ export class CreateServiceDto {
   @IsString()
   priceUnit: string;
 
-  @ApiProperty({ example: 40.4168, description: 'Latitud de la ubicación del servicio' })
+  @ApiProperty({
+    example: 40.4168,
+    description: 'Latitud de la ubicación del servicio',
+  })
   @IsNumber()
   latitude: number;
 
-  @ApiProperty({ example: -3.7038, description: 'Longitud de la ubicación del servicio' })
+  @ApiProperty({
+    example: -3.7038,
+    description: 'Longitud de la ubicación del servicio',
+  })
   @IsNumber()
   longitude: number;
 
@@ -198,7 +206,10 @@ export class SearchServicesDto {
   @Type(() => Number)
   priceMax?: number;
 
-  @ApiPropertyOptional({ example: 'distance', enum: ['distance', 'price', 'rating', 'newest'] })
+  @ApiPropertyOptional({
+    example: 'distance',
+    enum: ['distance', 'price', 'rating', 'newest'],
+  })
   @IsOptional()
   @IsString()
   sortBy?: string;

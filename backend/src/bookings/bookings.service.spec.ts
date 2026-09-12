@@ -1,6 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { Booking, BookingStatus, Service } from '../entities';
 
@@ -22,8 +26,14 @@ describe('BookingsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BookingsService,
-        { provide: getRepositoryToken(Booking), useValue: mockBookingRepository },
-        { provide: getRepositoryToken(Service), useValue: mockServiceRepository },
+        {
+          provide: getRepositoryToken(Booking),
+          useValue: mockBookingRepository,
+        },
+        {
+          provide: getRepositoryToken(Service),
+          useValue: mockServiceRepository,
+        },
       ],
     }).compile();
 

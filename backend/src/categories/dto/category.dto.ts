@@ -21,7 +21,10 @@ export class CreateCategoryDto {
   @MaxLength(255)
   slug: string;
 
-  @ApiProperty({ required: false, example: 'Servicios de fontanería y reparación de tuberías' })
+  @ApiProperty({
+    required: false,
+    example: 'Servicios de fontanería y reparación de tuberías',
+  })
   @IsOptional()
   @IsString()
   description?: string;

@@ -32,7 +32,9 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get('search')
-  @ApiOperation({ summary: 'Buscar servicios con filtros y geolocalización (público)' })
+  @ApiOperation({
+    summary: 'Buscar servicios con filtros y geolocalización (público)',
+  })
   @ApiResponse({ status: 200, description: 'Resultados de búsqueda paginados' })
   async search(@Query() searchDto: SearchServicesDto) {
     return this.servicesService.search(searchDto);

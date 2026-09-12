@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Service } from '../entities';
@@ -15,7 +19,10 @@ export class ServicesService {
     private serviceRepository: Repository<Service>,
   ) {}
 
-  async create(providerId: string, createDto: CreateServiceDto): Promise<Service> {
+  async create(
+    providerId: string,
+    createDto: CreateServiceDto,
+  ): Promise<Service> {
     const { latitude, longitude, ...rest } = createDto;
 
     const service = this.serviceRepository.create({
@@ -49,7 +56,9 @@ export class ServicesService {
     const service = await this.findById(id);
 
     if (service.providerId !== userId) {
-      throw new ForbiddenException('No tienes permisos para editar este servicio');
+      throw new ForbiddenException(
+        'No tienes permisos para editar este servicio',
+      );
     }
 
     const { latitude, longitude, ...rest } = updateDto;
@@ -67,7 +76,9 @@ export class ServicesService {
     const service = await this.findById(id);
 
     if (service.providerId !== userId && userRole !== 'admin') {
-      throw new ForbiddenException('No tienes permisos para eliminar este servicio');
+      throw new ForbiddenException(
+        'No tienes permisos para eliminar este servicio',
+      );
     }
 
     await this.serviceRepository.remove(service);
@@ -94,7 +105,9 @@ export class ServicesService {
       .leftJoinAndSelect('service.provider', 'provider')
       .leftJoinAndSelect('service.category', 'category')
       .where('service.isActive = :active', { active: true })
-      .andWhere('provider.isActive = :providerActive', { providerActive: true });
+      .andWhere('provider.isActive = :providerActive', {
+        providerActive: true,
+      });
 
     // Búsqueda por texto
     if (query) {

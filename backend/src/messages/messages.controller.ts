@@ -20,7 +20,9 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Enviar mensaje a otro usuario (crea conversación si no existe)' })
+  @ApiOperation({
+    summary: 'Enviar mensaje a otro usuario (crea conversación si no existe)',
+  })
   async send(@Request() req: any, @Body() dto: SendMessageDto) {
     return this.messagesService.sendMessage(req.user.id, dto);
   }
@@ -46,7 +48,9 @@ export class MessagesController {
   }
 
   @Get('conversation/:conversationId')
-  @ApiOperation({ summary: 'Obtener mensajes de una conversación (marca como leídos)' })
+  @ApiOperation({
+    summary: 'Obtener mensajes de una conversación (marca como leídos)',
+  })
   async getMessages(
     @Request() req: any,
     @Param('conversationId') conversationId: string,

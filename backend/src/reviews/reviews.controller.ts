@@ -9,12 +9,21 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { ReviewsService } from './reviews.service';
-import { CreateReviewDto, ProviderResponseDto, ReportReviewDto } from './dto/review.dto';
+import {
+  CreateReviewDto,
+  ProviderResponseDto,
+  ReportReviewDto,
+} from './dto/review.dto';
 
 @ApiTags('reviews')
 @Controller('reviews')
@@ -40,7 +49,9 @@ export class ReviewsController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.CLIENT)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Crear valoración tras reserva completada (solo cliente)' })
+  @ApiOperation({
+    summary: 'Crear valoración tras reserva completada (solo cliente)',
+  })
   @ApiResponse({ status: 201, description: 'Valoración creada' })
   async create(@Request() req: any, @Body() createDto: CreateReviewDto) {
     return this.reviewsService.create(req.user.id, createDto);
@@ -71,7 +82,9 @@ export class ReviewsController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Descartar el reporte de una valoración (solo admin - moderación)' })
+  @ApiOperation({
+    summary: 'Descartar el reporte de una valoración (solo admin - moderación)',
+  })
   async dismissReport(@Param('id') id: string) {
     return this.reviewsService.dismissReport(id);
   }

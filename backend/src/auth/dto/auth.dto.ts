@@ -33,7 +33,10 @@ export class RegisterDto {
   @MinLength(8)
   password: string;
 
-  @ApiProperty({ enum: [UserRole.CLIENT, UserRole.PROVIDER], example: UserRole.CLIENT })
+  @ApiProperty({
+    enum: [UserRole.CLIENT, UserRole.PROVIDER],
+    example: UserRole.CLIENT,
+  })
   @IsEnum([UserRole.CLIENT, UserRole.PROVIDER])
   role: UserRole;
 

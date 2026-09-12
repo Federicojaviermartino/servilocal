@@ -52,7 +52,9 @@ export class PaymentsService {
       booking.status !== BookingStatus.PENDING &&
       booking.status !== BookingStatus.CONFIRMED
     ) {
-      throw new BadRequestException('La reserva no puede pagarse en su estado actual');
+      throw new BadRequestException(
+        'La reserva no puede pagarse en su estado actual',
+      );
     }
 
     const existingPayment = await this.paymentRepository.findOne({
@@ -78,7 +80,9 @@ export class PaymentsService {
 
       if (reusable.includes(stripePi.status)) {
         if (!stripePi.client_secret) {
-          throw new Error('Stripe no devolvió client_secret para el PaymentIntent existente');
+          throw new Error(
+            'Stripe no devolvió client_secret para el PaymentIntent existente',
+          );
         }
         return {
           clientSecret: stripePi.client_secret,
@@ -89,7 +93,9 @@ export class PaymentsService {
       }
 
       if (alreadyPaid.includes(stripePi.status)) {
-        throw new ConflictException('Esta reserva ya tiene un pago en curso o completado');
+        throw new ConflictException(
+          'Esta reserva ya tiene un pago en curso o completado',
+        );
       }
       // Si el PI esta canceled o en otro estado no reutilizable, se crea uno nuevo abajo.
     }

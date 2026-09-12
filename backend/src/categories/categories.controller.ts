@@ -27,7 +27,10 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'Listar todas las categorías (público)' })
-  @ApiResponse({ status: 200, description: 'Lista de categorías con subcategorías' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de categorías con subcategorías',
+  })
   async findAll() {
     return this.categoriesService.findAll();
   }

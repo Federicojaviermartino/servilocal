@@ -27,7 +27,9 @@ export class PaymentsWebhookController {
       this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
       { apiVersion: '2023-10-16' },
     );
-    this.webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    this.webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
   }
 
   @Post('webhook')

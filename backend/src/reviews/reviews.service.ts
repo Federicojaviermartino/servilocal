@@ -7,7 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review, Booking, BookingStatus, Service } from '../entities';
-import { CreateReviewDto, ProviderResponseDto, ReportReviewDto } from './dto/review.dto';
+import {
+  CreateReviewDto,
+  ProviderResponseDto,
+  ReportReviewDto,
+} from './dto/review.dto';
 
 @Injectable()
 export class ReviewsService {
@@ -30,11 +34,15 @@ export class ReviewsService {
     }
 
     if (booking.clientId !== clientId) {
-      throw new ForbiddenException('Solo el cliente de la reserva puede valorar');
+      throw new ForbiddenException(
+        'Solo el cliente de la reserva puede valorar',
+      );
     }
 
     if (booking.status !== BookingStatus.COMPLETED) {
-      throw new BadRequestException('Solo se puede valorar una reserva completada');
+      throw new BadRequestException(
+        'Solo se puede valorar una reserva completada',
+      );
     }
 
     const existingReview = await this.reviewRepository.findOne({
@@ -83,17 +91,16 @@ export class ReviewsService {
     }
 
     if (booking.providerId !== providerId) {
-      throw new ForbiddenException('Solo el proveedor del servicio puede responder');
+      throw new ForbiddenException(
+        'Solo el proveedor del servicio puede responder',
+      );
     }
 
     review.providerResponse = dto.providerResponse;
     return this.reviewRepository.save(review);
   }
 
-  async reportReview(
-    reviewId: string,
-    dto: ReportReviewDto,
-  ): Promise<Review> {
+  async reportReview(reviewId: string, dto: ReportReviewDto): Promise<Review> {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },
     });

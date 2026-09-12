@@ -17,10 +17,7 @@ export class MessagesService {
     private messageRepository: Repository<Message>,
   ) {}
 
-  async sendMessage(
-    senderId: string,
-    dto: SendMessageDto,
-  ): Promise<Message> {
+  async sendMessage(senderId: string, dto: SendMessageDto): Promise<Message> {
     let conversation = await this.findOrCreateConversation(
       senderId,
       dto.recipientId,
@@ -148,14 +145,14 @@ export class MessagesService {
   ): Promise<Conversation> {
     const existing = await this.conversationRepository
       .createQueryBuilder('conv')
-      .where(
-        '(conv.participantOneId = :a AND conv.participantTwoId = :b)',
-        { a: userOneId, b: userTwoId },
-      )
-      .orWhere(
-        '(conv.participantOneId = :b AND conv.participantTwoId = :a)',
-        { a: userOneId, b: userTwoId },
-      )
+      .where('(conv.participantOneId = :a AND conv.participantTwoId = :b)', {
+        a: userOneId,
+        b: userTwoId,
+      })
+      .orWhere('(conv.participantOneId = :b AND conv.participantTwoId = :a)', {
+        a: userOneId,
+        b: userTwoId,
+      })
       .getOne();
 
     if (existing) return existing;
