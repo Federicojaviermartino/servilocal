@@ -10,7 +10,12 @@ export const getDatabaseConfig = (
   const commonOptions = {
     type: 'postgres' as const,
     entities: [__dirname + '/../entities/*.entity{.ts,.js}'],
-    synchronize: nodeEnv === 'development',
+    migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
+    // El esquema se crea y evoluciona solo mediante migraciones, también
+    // en desarrollo: con synchronize activo, local y producción divergen
+    // y el esquema nunca llega a crearse en los entornos desplegados.
+    synchronize: false,
+    migrationsRun: true,
     logging: nodeEnv === 'development',
   };
 
