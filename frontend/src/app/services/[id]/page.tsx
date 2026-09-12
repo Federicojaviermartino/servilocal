@@ -59,7 +59,7 @@ export default function ServiceDetailPage() {
       router.push('/auth/login');
       return;
     }
-    router.push(`/messages/${service?.providerId}`);
+    router.push(`/dashboard/messages/${service?.providerId}`);
   };
 
   if (isLoading) {
