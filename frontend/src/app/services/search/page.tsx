@@ -93,7 +93,7 @@ function SearchPageContent() {
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-4">
               <h1 className="text-xl font-semibold text-neutral-900">
-                Resultados de la busqueda
+                Resultados de la búsqueda
               </h1>
               <div className="flex bg-white rounded-md shadow-card">
                 <button

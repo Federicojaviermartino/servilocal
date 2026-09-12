@@ -34,7 +34,7 @@ export default function HomePage() {
       <section className="py-16 px-4 bg-neutral-50">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-center text-neutral-900 mb-12">
-            Por que elegir ServiLocal
+            ¿Por qué elegir ServiLocal?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
@@ -45,7 +45,7 @@ export default function HomePage() {
                 Profesionales cercanos
               </h3>
               <p className="text-neutral-600">
-                Busqueda por geolocalizacion para encontrar a los mejores
+                Búsqueda por geolocalización para encontrar a los mejores
                 profesionales de tu zona.
               </p>
             </div>
@@ -57,7 +57,7 @@ export default function HomePage() {
                 Pagos seguros
               </h3>
               <p className="text-neutral-600">
-                Plataforma de pago integrada con Stripe. Tu dinero esta
+                Plataforma de pago integrada con Stripe. Tu dinero está
                 protegido hasta que el servicio se complete.
               </p>
             </div>
@@ -70,7 +70,7 @@ export default function HomePage() {
               </h3>
               <p className="text-neutral-600">
                 Solo los clientes que han completado un servicio pueden dejar su
-                opinion.
+                opinión.
               </p>
             </div>
           </div>
@@ -81,7 +81,7 @@ export default function HomePage() {
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-2xl font-bold text-center text-neutral-900 mb-12">
-            Como funciona
+            Cómo funciona
           </h2>
           <ol className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <li className="flex flex-col items-center text-center">
@@ -92,8 +92,8 @@ export default function HomePage() {
                 Busca el servicio
               </h3>
               <p className="text-neutral-600 text-sm">
-                Indica que necesitas y donde. Nuestro sistema te muestra los
-                profesionales mas cercanos y mejor valorados.
+                Indica qué necesitas y dónde. Nuestro sistema te muestra los
+                profesionales más cercanos y mejor valorados.
               </p>
             </li>
             <li className="flex flex-col items-center text-center">
@@ -104,7 +104,7 @@ export default function HomePage() {
                 Reserva y paga
               </h3>
               <p className="text-neutral-600 text-sm">
-                Elige fecha, deja la senal y recibe la confirmacion al
+                Elige fecha, deja la señal y recibe la confirmación al
                 instante.
               </p>
             </li>
@@ -116,7 +116,7 @@ export default function HomePage() {
                 Valora tu experiencia
               </h3>
               <p className="text-neutral-600 text-sm">
-                Tras el servicio, deja tu opinion para ayudar a otros usuarios.
+                Tras el servicio, deja tu opinión para ayudar a otros usuarios.
               </p>
             </li>
           </ol>

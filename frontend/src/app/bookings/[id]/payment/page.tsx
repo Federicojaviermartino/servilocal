@@ -38,7 +38,7 @@ export default function PaymentPage() {
         else if (status === 403) setError('No tienes permiso para pagar esta reserva.');
         else if (status === 409) setError(apiMsg || 'Esta reserva ya tiene un pago en curso o completado.');
         else if (!err?.response) setError('No se pudo contactar con el servidor.');
-        else setError(apiMsg || `No se ha podido iniciar el pago (codigo ${status ?? 'desconocido'}).`);
+        else setError(apiMsg || `No se ha podido iniciar el pago (código ${status ?? 'desconocido'}).`);
       } finally {
         setIsLoading(false);
       }
@@ -78,7 +78,7 @@ export default function PaymentPage() {
           Confirmar pago
         </h1>
         <p className="text-neutral-600 mb-6">
-          Estas pagando la reserva de <strong>{booking.service.title}</strong>
+          Estás pagando la reserva de <strong>{booking.service.title}</strong>
         </p>
         <div className="bg-white rounded-lg shadow-card p-6">
           <Elements

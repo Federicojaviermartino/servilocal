@@ -53,7 +53,7 @@ export default function ServiceForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Titulo del servicio"
+        label="Título del servicio"
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
         required
@@ -61,7 +61,7 @@ export default function ServiceForm({
       />
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Descripcion
+          Descripción
         </label>
         <textarea
           value={form.description}
@@ -73,7 +73,7 @@ export default function ServiceForm({
       </div>
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Categoria
+          Categoría
         </label>
         <select
           value={form.categoryId}
@@ -81,7 +81,7 @@ export default function ServiceForm({
           required
           className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Selecciona una categoria</option>
+          <option value="">Selecciona una categoría</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -91,7 +91,7 @@ export default function ServiceForm({
       </div>
       <div className="grid grid-cols-3 gap-4">
         <Input
-          label="Precio minimo (euros)"
+          label="Precio mínimo (euros)"
           type="number"
           min={0}
           step={5}
@@ -100,7 +100,7 @@ export default function ServiceForm({
           required
         />
         <Input
-          label="Precio maximo (opcional)"
+          label="Precio máximo (opcional)"
           type="number"
           min={0}
           step={5}
@@ -118,13 +118,13 @@ export default function ServiceForm({
           >
             <option value="por hora">por hora</option>
             <option value="por servicio">por servicio</option>
-            <option value="por dia">por dia</option>
+            <option value="por dia">por día</option>
             <option value="por visita">por visita</option>
           </select>
         </div>
       </div>
       <Input
-        label="Direccion de referencia"
+        label="Dirección de referencia"
         value={form.address}
         onChange={(e) => setForm({ ...form, address: e.target.value })}
         required

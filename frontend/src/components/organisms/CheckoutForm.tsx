@@ -23,12 +23,12 @@ interface CheckoutFormProps {
 
 const stripeErrorMessages: Record<string, string> = {
   payment_intent_unexpected_state:
-    'La sesion de pago ha caducado. Generando una nueva...',
+    'La sesión de pago ha caducado. Generando una nueva...',
   card_declined: 'Tu tarjeta ha sido rechazada.',
   authentication_required:
-    'Se requiere verificacion adicional de tu banco.',
+    'Se requiere verificación adicional de tu banco.',
   processing_error:
-    'Error temporal procesando el pago. Intentalo de nuevo.',
+    'Error temporal procesando el pago. Inténtalo de nuevo.',
   expired_card: 'Tu tarjeta ha caducado.',
   incorrect_cvc: 'El CVC introducido no es correcto.',
   insufficient_funds: 'Fondos insuficientes en la tarjeta.',
@@ -55,7 +55,7 @@ export default function CheckoutForm({
 
     if (isProcessing) return;
     if (!stripe || !elements) {
-      toast.error('El formulario de pago aun se esta cargando. Espera un momento.');
+      toast.error('El formulario de pago aún se está cargando. Espera un momento.');
       return;
     }
 
@@ -72,7 +72,7 @@ export default function CheckoutForm({
         try {
           await onIntentExpired();
         } catch {
-          toast.error('No se pudo regenerar la sesion de pago. Recarga la pagina.');
+          toast.error('No se pudo regenerar la sesión de pago. Recarga la página.');
         }
         setIsProcessing(false);
         return;

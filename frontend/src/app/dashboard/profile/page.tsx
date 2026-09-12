@@ -92,25 +92,25 @@ export default function ProfilePage() {
             />
           </div>
           <Input
-            label="Telefono"
+            label="Teléfono"
             type="tel"
             value={form.phone}
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1">
-              Biografia
+              Biografía
             </label>
             <textarea
               value={form.bio}
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
               rows={3}
               className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              placeholder="Cuentanos sobre ti..."
+              placeholder="Cuéntanos sobre ti..."
             />
           </div>
           <Input
-            label="Direccion"
+            label="Dirección"
             value={form.address}
             onChange={(e) => setForm({ ...form, address: e.target.value })}
           />
@@ -121,7 +121,7 @@ export default function ProfilePage() {
               onChange={(e) => setForm({ ...form, city: e.target.value })}
             />
             <Input
-              label="Codigo postal"
+              label="Código postal"
               value={form.postalCode}
               onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
             />

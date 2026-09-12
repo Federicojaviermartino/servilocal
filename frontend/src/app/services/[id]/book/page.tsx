@@ -55,7 +55,7 @@ export default function BookingPage() {
       toast.success('Reserva creada. Vamos al pago.');
       router.push(`/bookings/${booking.id}/payment`);
     } catch {
-      toast.error('No se ha podido crear la reserva. Intentalo de nuevo.');
+      toast.error('No se ha podido crear la reserva. Inténtalo de nuevo.');
       setIsSubmitting(false);
     }
   };

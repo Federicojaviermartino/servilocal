@@ -51,8 +51,8 @@ export default function DashboardHomePage() {
         </h1>
         <p className="text-neutral-600 mt-1">
           {user.role === UserRole.PROVIDER
-            ? 'Aqui tienes el resumen de tu actividad como profesional.'
-            : 'Aqui tienes el resumen de tus reservas y valoraciones.'}
+            ? 'Aquí tienes el resumen de tu actividad como profesional.'
+            : 'Aquí tienes el resumen de tus reservas y valoraciones.'}
         </p>
       </div>
 
@@ -85,7 +85,7 @@ export default function DashboardHomePage() {
 
           <div className="bg-white rounded-lg shadow-card p-6">
             <h2 className="text-lg font-semibold text-neutral-900 mb-4">
-              Accesos rapidos
+              Accesos rápidos
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {user.role === UserRole.PROVIDER ? (

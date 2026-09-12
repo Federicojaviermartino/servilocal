@@ -19,7 +19,7 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
 
   const handleSubmit = async () => {
     if (rating < 1) {
-      toast.error('Selecciona una valoracion');
+      toast.error('Selecciona una valoración');
       return;
     }
     setIsSubmitting(true);
@@ -30,10 +30,10 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
         rating,
         comment: comment || undefined,
       });
-      toast.success('Valoracion enviada. Gracias!');
+      toast.success('Valoración enviada. Gracias!');
       onSubmit();
     } catch {
-      toast.error('No se ha podido enviar la valoracion');
+      toast.error('No se ha podido enviar la valoración');
     } finally {
       setIsSubmitting(false);
     }
@@ -47,7 +47,7 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
       </p>
       <div className="mt-3">
         <p className="text-sm font-medium text-neutral-700 mb-2">
-          Tu valoracion
+          Tu valoración
         </p>
         <RatingStars
           rating={rating}
@@ -65,7 +65,7 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
       />
       <div className="mt-3 flex justify-end">
         <Button onClick={handleSubmit} isLoading={isSubmitting}>
-          Enviar valoracion
+          Enviar valoración
         </Button>
       </div>
     </div>
@@ -141,7 +141,7 @@ export default function MyReviewsPage() {
         </h2>
         {reviews.length === 0 ? (
           <p className="text-neutral-600 text-sm">
-            Aun no has enviado ninguna valoracion.
+            Aún no has enviado ninguna valoración.
           </p>
         ) : (
           <div className="space-y-3">

@@ -132,10 +132,10 @@ export default function BookingDetailPage() {
 
         <div className="mb-6">
           <h2 className="text-sm font-semibold text-neutral-900 mb-2">
-            Descripcion
+            Descripción
           </h2>
           <p className="text-neutral-700 whitespace-pre-line">
-            {booking.description || 'Sin descripcion.'}
+            {booking.description || 'Sin descripción.'}
           </p>
         </div>
 

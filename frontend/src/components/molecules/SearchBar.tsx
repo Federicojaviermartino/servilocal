@@ -14,7 +14,7 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
-  placeholder = 'Que servicio necesitas?',
+  placeholder = '¿Qué servicio necesitas?',
   initialValue = '',
   onSearch,
 }: SearchBarProps) {

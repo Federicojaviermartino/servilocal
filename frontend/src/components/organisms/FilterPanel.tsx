@@ -54,14 +54,14 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Categoria
+          Categoría
         </label>
         <select
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
           className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Todas las categorias</option>
+          <option value="">Todas las categorías</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -101,7 +101,7 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Radio de busqueda: {radiusKm} km
+          Radio de búsqueda: {radiusKm} km
         </label>
         <input
           type="range"
@@ -115,7 +115,7 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-2">
-          Valoracion minima
+          Valoración mínima
         </label>
         <RatingStars
           rating={minRating}
@@ -126,14 +126,14 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Precio maximo (euros)
+          Precio máximo (euros)
         </label>
         <input
           type="number"
           min={0}
           value={maxPrice || ''}
           onChange={(e) => setMaxPrice(Number(e.target.value))}
-          placeholder="Sin limite"
+          placeholder="Sin límite"
           className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>

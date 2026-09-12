@@ -85,7 +85,7 @@ export default function ConversationPage() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
           <p className="text-center text-neutral-500 py-10">
-            Aun no hay mensajes en esta conversacion.
+            Aún no hay mensajes en esta conversación.
           </p>
         ) : (
           messages.map((m) => {

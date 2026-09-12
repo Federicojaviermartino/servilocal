@@ -54,7 +54,7 @@ export default function MyBookingsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-lg shadow-card p-10 text-center text-neutral-600">
-          No tienes reservas en esta seccion.
+          No tienes reservas en esta sección.
         </div>
       ) : (
         <div className="space-y-3">

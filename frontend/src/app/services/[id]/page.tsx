@@ -138,7 +138,7 @@ export default function ServiceDetailPage() {
                 </div>
                 <div className="mt-6 prose prose-neutral max-w-none">
                   <h2 className="text-lg font-semibold text-neutral-900">
-                    Descripcion del servicio
+                    Descripción del servicio
                   </h2>
                   <p className="text-neutral-700 whitespace-pre-line">
                     {service.description}
@@ -154,7 +154,7 @@ export default function ServiceDetailPage() {
               </h2>
               {reviews.length === 0 ? (
                 <p className="text-neutral-600 text-sm">
-                  Este servicio aun no tiene valoraciones.
+                  Este servicio aún no tiene valoraciones.
                 </p>
               ) : (
                 <div className="space-y-4">

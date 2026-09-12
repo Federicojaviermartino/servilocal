@@ -38,13 +38,13 @@ export default function BookingForm({
     if (!date) errs.date = 'La fecha es obligatoria';
     if (!time) errs.time = 'La hora es obligatoria';
     if (price < service.priceMin) {
-      errs.price = `El precio minimo es ${service.priceMin} euros`;
+      errs.price = `El precio mínimo es ${service.priceMin} euros`;
     }
     if (service.priceMax && price > service.priceMax) {
-      errs.price = `El precio maximo es ${service.priceMax} euros`;
+      errs.price = `El precio máximo es ${service.priceMax} euros`;
     }
     if (!description || description.length < 10) {
-      errs.description = 'Describe brevemente el trabajo (minimo 10 caracteres)';
+      errs.description = 'Describe brevemente el trabajo (mínimo 10 caracteres)';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -84,13 +84,13 @@ export default function BookingForm({
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
-          Descripcion del trabajo
+          Descripción del trabajo
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          placeholder="Describe brevemente el trabajo a realizar, ubicacion exacta, materiales necesarios..."
+          placeholder="Describe brevemente el trabajo a realizar, ubicación exacta, materiales necesarios..."
           className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
           required
         />

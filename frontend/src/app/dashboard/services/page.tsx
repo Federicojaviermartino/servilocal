@@ -65,7 +65,7 @@ export default function ProviderServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Quieres eliminar este servicio? No se podra deshacer.')) return;
+    if (!confirm('¿Quieres eliminar este servicio? No se podrá deshacer.')) return;
     try {
       await servicesApi.remove(id);
       toast.success('Servicio eliminado');
@@ -127,7 +127,7 @@ export default function ProviderServicesPage() {
       ) : services.length === 0 ? (
         <div className="bg-white rounded-lg shadow-card p-10 text-center">
           <p className="text-neutral-600">
-            Aun no has publicado ningun servicio.
+            Aún no has publicado ningún servicio.
           </p>
           <p className="text-sm text-neutral-500 mt-2">
             Crea tu primer servicio para empezar a recibir reservas.

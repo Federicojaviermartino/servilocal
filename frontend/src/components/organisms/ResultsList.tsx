@@ -32,7 +32,7 @@ export default function ResultsList({
           No se han encontrado servicios con los filtros aplicados.
         </p>
         <p className="mt-2 text-sm text-neutral-500">
-          Prueba a ampliar el radio de busqueda o eliminar algun filtro.
+          Prueba a ampliar el radio de búsqueda o eliminar algún filtro.
         </p>
       </div>
     );
