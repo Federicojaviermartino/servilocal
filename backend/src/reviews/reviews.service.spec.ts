@@ -1,10 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { Review, Booking, BookingStatus, Service } from '../entities';
 

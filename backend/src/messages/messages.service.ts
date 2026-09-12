@@ -18,7 +18,7 @@ export class MessagesService {
   ) {}
 
   async sendMessage(senderId: string, dto: SendMessageDto): Promise<Message> {
-    let conversation = await this.findOrCreateConversation(
+    const conversation = await this.findOrCreateConversation(
       senderId,
       dto.recipientId,
     );

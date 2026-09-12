@@ -82,6 +82,9 @@ jobs:
       - name: Ejecutar linter
         run: npm run lint
 
+      - name: Comprobar tipos
+        run: npm run type-check
+
       - name: Build
         run: npm run build
         env:

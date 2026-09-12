@@ -128,6 +128,7 @@ describe('BookingsService', () => {
       );
 
       expect(mockBookingRepository.save).toHaveBeenCalled();
+      expect(result.status).toBe(BookingStatus.CONFIRMED);
     });
 
     it('debería rechazar transición inválida de completada a pendiente', async () => {
