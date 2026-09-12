@@ -3,12 +3,12 @@ import { IsNotEmpty, IsString } from 'class-validator';
 
 export class SendMessageDto {
   @ApiProperty({
-    example: 'uuid-recipient',
+    example: 'uuid-destinatario',
     description: 'ID del destinatario',
   })
   @IsString()
   @IsNotEmpty()
-  recipientId: string;
+  receiverId: string;
 
   @ApiProperty({
     example:

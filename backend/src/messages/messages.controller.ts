@@ -47,15 +47,16 @@ export class MessagesController {
     return this.messagesService.getConversations(req.user.id);
   }
 
-  @Get('conversation/:conversationId')
+  @Get('conversation/:partnerId')
   @ApiOperation({
-    summary: 'Obtener mensajes de una conversación (marca como leídos)',
+    summary:
+      'Obtener los mensajes intercambiados con un interlocutor (marca como leídos)',
   })
   async getMessages(
     @Request() req: any,
-    @Param('conversationId') conversationId: string,
+    @Param('partnerId') partnerId: string,
   ) {
-    return this.messagesService.getMessages(req.user.id, conversationId);
+    return this.messagesService.findMessagesWithPartner(req.user.id, partnerId);
   }
 
   @Get('unread/count')

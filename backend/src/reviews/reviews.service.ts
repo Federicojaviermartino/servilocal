@@ -122,6 +122,14 @@ export class ReviewsService {
     });
   }
 
+  async findByClient(clientId: string): Promise<Review[]> {
+    return this.reviewRepository.find({
+      where: { clientId },
+      relations: ['service'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async findReported(): Promise<Review[]> {
     return this.reviewRepository.find({
       where: { isReported: true },

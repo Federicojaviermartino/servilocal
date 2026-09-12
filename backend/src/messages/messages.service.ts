@@ -8,6 +8,22 @@ import { Repository } from 'typeorm';
 import { Conversation, Message } from '../entities';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
 
+export interface ResumenConversacion {
+  partnerId: string;
+  partner: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl: string;
+    city: string;
+  };
+  lastMessage: {
+    content: string;
+    createdAt: Date;
+  };
+  unreadCount: number;
+}
+
 @Injectable()
 export class MessagesService {
   constructor(
@@ -20,7 +36,7 @@ export class MessagesService {
   async sendMessage(senderId: string, dto: SendMessageDto): Promise<Message> {
     const conversation = await this.findOrCreateConversation(
       senderId,
-      dto.recipientId,
+      dto.receiverId,
     );
 
     const message = this.messageRepository.create({
@@ -79,8 +95,8 @@ export class MessagesService {
     return savedMessage;
   }
 
-  async getConversations(userId: string): Promise<Conversation[]> {
-    return this.conversationRepository
+  async getConversations(userId: string): Promise<ResumenConversacion[]> {
+    const conversaciones = await this.conversationRepository
       .createQueryBuilder('conv')
       .leftJoinAndSelect('conv.participantOne', 'p1')
       .leftJoinAndSelect('conv.participantTwo', 'p2')
@@ -88,40 +104,93 @@ export class MessagesService {
       .orWhere('conv.participantTwoId = :userId', { userId })
       .orderBy('conv.lastMessageAt', 'DESC')
       .getMany();
+
+    // Una conversación sin ningún mensaje no tiene nada que mostrar y
+    // dejaría la fecha del último mensaje a null en el cliente.
+    const conIntercambio = conversaciones.filter((conv) => conv.lastMessageAt);
+    if (conIntercambio.length === 0) return [];
+
+    const noLeidos = await this.messageRepository
+      .createQueryBuilder('msg')
+      .select('msg.conversationId', 'conversationId')
+      .addSelect('COUNT(*)', 'total')
+      .where('msg.conversationId IN (:...ids)', {
+        ids: conIntercambio.map((conv) => conv.id),
+      })
+      .andWhere('msg.senderId != :userId', { userId })
+      .andWhere('msg.isRead = false')
+      .groupBy('msg.conversationId')
+      .getRawMany();
+
+    const noLeidosPorConversacion = new Map<string, number>(
+      noLeidos.map((fila) => [fila.conversationId, Number(fila.total)]),
+    );
+
+    return conIntercambio.map((conv) => {
+      const interlocutor =
+        conv.participantOneId === userId
+          ? conv.participantTwo
+          : conv.participantOne;
+
+      return {
+        partnerId: interlocutor.id,
+        // Se exponen solo los campos que necesita la interfaz: la entidad
+        // completa incluye el hash de la contraseña del participante.
+        partner: {
+          id: interlocutor.id,
+          firstName: interlocutor.firstName,
+          lastName: interlocutor.lastName,
+          avatarUrl: interlocutor.avatarUrl,
+          city: interlocutor.city,
+        },
+        lastMessage: {
+          content: conv.lastMessagePreview,
+          createdAt: conv.lastMessageAt,
+        },
+        unreadCount: noLeidosPorConversacion.get(conv.id) ?? 0,
+      };
+    });
   }
 
-  async getMessages(
+  async findMessagesWithPartner(
     userId: string,
-    conversationId: string,
+    partnerId: string,
   ): Promise<Message[]> {
-    const conversation = await this.conversationRepository.findOne({
-      where: { id: conversationId },
-    });
+    const conversation = await this.findConversationBetween(userId, partnerId);
 
-    if (!conversation) {
-      throw new NotFoundException('Conversación no encontrada');
-    }
+    // El hilo existe en la interfaz desde que se pulsa "Contactar", antes de
+    // que nadie haya escrito. Devolver vacío es correcto; un 404 no lo sería.
+    if (!conversation) return [];
 
-    if (
-      conversation.participantOneId !== userId &&
-      conversation.participantTwoId !== userId
-    ) {
-      throw new ForbiddenException('No perteneces a esta conversación');
-    }
-
-    // Marcar como leídos los mensajes del otro participante
     await this.messageRepository
       .createQueryBuilder()
       .update(Message)
       .set({ isRead: true, readAt: new Date() })
-      .where('conversationId = :conversationId', { conversationId })
+      .where('conversationId = :conversationId', {
+        conversationId: conversation.id,
+      })
       .andWhere('senderId != :userId', { userId })
-      .andWhere('isRead = :isRead', { isRead: false })
+      .andWhere('isRead = false')
       .execute();
 
     return this.messageRepository.find({
-      where: { conversationId },
-      relations: ['sender'],
+      where: { conversationId: conversation.id },
+      relations: { sender: true },
+      select: {
+        id: true,
+        conversationId: true,
+        senderId: true,
+        content: true,
+        isRead: true,
+        readAt: true,
+        createdAt: true,
+        sender: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+        },
+      },
       order: { createdAt: 'ASC' },
     });
   }
@@ -139,11 +208,11 @@ export class MessagesService {
       .getCount();
   }
 
-  private async findOrCreateConversation(
+  private async findConversationBetween(
     userOneId: string,
     userTwoId: string,
-  ): Promise<Conversation> {
-    const existing = await this.conversationRepository
+  ): Promise<Conversation | null> {
+    return this.conversationRepository
       .createQueryBuilder('conv')
       .where('(conv.participantOneId = :a AND conv.participantTwoId = :b)', {
         a: userOneId,
@@ -154,6 +223,13 @@ export class MessagesService {
         b: userTwoId,
       })
       .getOne();
+  }
+
+  private async findOrCreateConversation(
+    userOneId: string,
+    userTwoId: string,
+  ): Promise<Conversation> {
+    const existing = await this.findConversationBetween(userOneId, userTwoId);
 
     if (existing) return existing;
 

@@ -36,6 +36,17 @@ export class ReviewsController {
     return this.reviewsService.findByService(serviceId);
   }
 
+  @Get('my')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Listar las valoraciones escritas por el usuario autenticado',
+  })
+  @ApiResponse({ status: 200, description: 'Valoraciones del usuario' })
+  async findMine(@Request() req: any) {
+    return this.reviewsService.findByClient(req.user.id);
+  }
+
   @Get('reported')
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)

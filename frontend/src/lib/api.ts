@@ -74,8 +74,6 @@ export const categoriesApi = {
 export const servicesApi = {
   search: (params: ServiceSearchParams) =>
     api.get('/services/search', { params }),
-  getAll: (params?: { page?: number; limit?: number }) =>
-    api.get('/services', { params }),
   getById: (id: string) => api.get(`/services/${id}`),
   getByProvider: (providerId: string) =>
     api.get(`/services/provider/${providerId}`),
@@ -92,7 +90,6 @@ export const bookingsApi = {
   getById: (id: string) => api.get(`/bookings/${id}`),
   updateStatus: (id: string, status: string) =>
     api.patch(`/bookings/${id}/status`, { status }),
-  cancel: (id: string) => api.patch(`/bookings/${id}/cancel`),
 };
 
 export const reviewsApi = {
@@ -100,8 +97,8 @@ export const reviewsApi = {
   getByService: (serviceId: string) =>
     api.get(`/reviews/service/${serviceId}`),
   getMyReviews: () => api.get('/reviews/my'),
-  respond: (id: string, response: string) =>
-    api.patch(`/reviews/${id}/respond`, { response }),
+  respond: (id: string, providerResponse: string) =>
+    api.patch(`/reviews/${id}/response`, { providerResponse }),
   getReported: () => api.get('/reviews/reported'),
   dismissReport: (id: string) => api.patch(`/reviews/${id}/dismiss-report`),
   remove: (id: string) => api.delete(`/reviews/${id}`),
@@ -111,9 +108,8 @@ export const messagesApi = {
   getConversations: () => api.get('/messages/conversations'),
   getConversation: (partnerId: string) =>
     api.get(`/messages/conversation/${partnerId}`),
-  send: (data: { receiverId: string; content: string; bookingId?: string }) =>
+  send: (data: { receiverId: string; content: string }) =>
     api.post('/messages', data),
-  markAsRead: (id: string) => api.patch(`/messages/${id}/read`),
 };
 
 export const paymentsApi = {
