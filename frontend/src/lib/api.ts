@@ -8,8 +8,14 @@ import {
 // En produccion NEXT_PUBLIC_API_URL debe inyectarse como build arg en Docker.
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+// Sin timeout, una API que acepta la conexión pero no responde deja la
+// interfaz cargando indefinidamente: la promesa nunca se resuelve, así que
+// el catch del llamador no llega a ejecutarse y el spinner no desaparece.
+const REQUEST_TIMEOUT_MS = 20000;
+
 const api = axios.create({
   baseURL: API_URL,
+  timeout: REQUEST_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
 });
 

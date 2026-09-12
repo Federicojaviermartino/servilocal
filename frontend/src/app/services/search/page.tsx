@@ -22,7 +22,9 @@ function SearchPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<'list' | 'map'>('list');
   const [filters, setFilters] = useState<ServiceSearchParams>({});
-  const [fetchError, setFetchError] = useState<'network' | 'unavailable' | null>(null);
+  const [fetchError, setFetchError] = useState<
+    'network' | 'timeout' | 'unavailable' | null
+  >(null);
 
   const fetchResults = useCallback(async (params: ServiceSearchParams) => {
     setIsLoading(true);
@@ -41,7 +43,8 @@ function SearchPageContent() {
     } catch (err: any) {
       setServices([]);
       setTotal(0);
-      if (!err?.response) setFetchError('network');
+      if (err?.code === 'ECONNABORTED') setFetchError('timeout');
+      else if (!err?.response) setFetchError('network');
       else setFetchError('unavailable');
     } finally {
       setIsLoading(false);
@@ -121,9 +124,20 @@ function SearchPageContent() {
 
             {fetchError && !isLoading && (
               <div className="mb-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-800" role="alert">
-                {fetchError === 'network'
-                  ? 'No se pudo contactar con el servidor. Inténtalo de nuevo en unos segundos.'
-                  : 'Servicio no disponible. Inténtalo de nuevo más tarde.'}
+                <p>
+                  {fetchError === 'timeout'
+                    ? 'El servidor ha tardado demasiado en responder. Puede estar reactivándose tras un periodo de inactividad.'
+                    : fetchError === 'network'
+                      ? 'No se pudo contactar con el servidor. Inténtalo de nuevo en unos segundos.'
+                      : 'Servicio no disponible. Inténtalo de nuevo más tarde.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fetchResults(filters)}
+                  className="mt-2 font-medium underline hover:no-underline"
+                >
+                  Reintentar
+                </button>
               </div>
             )}
             {view === 'list' ? (
