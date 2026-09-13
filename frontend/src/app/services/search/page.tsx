@@ -7,11 +7,18 @@ import { servicesApi } from '@/lib/api';
 import SearchBar from '@/components/molecules/SearchBar';
 import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
+import Spinner from '@/components/atoms/Spinner';
+import Pagination from '@/components/molecules/Pagination';
 
 // Carga dinamica del mapa para evitar SSR issues con Leaflet
 const ServiceMap = nextDynamic(
   () => import('@/components/organisms/ServiceMap'),
-  { ssr: false, loading: () => <div className="h-[500px] bg-neutral-100 rounded-lg animate-pulse" /> },
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] bg-neutral-100 rounded-lg animate-pulse" />
+    ),
+  },
 );
 
 function SearchPageContent() {
@@ -22,34 +29,46 @@ function SearchPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<'list' | 'map'>('list');
   const [filters, setFilters] = useState<ServiceSearchParams>({});
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [fetchError, setFetchError] = useState<
     'network' | 'timeout' | 'unavailable' | null
   >(null);
 
-  const fetchResults = useCallback(async (params: ServiceSearchParams) => {
-    setIsLoading(true);
-    setFetchError(null);
-    try {
-      const { data } = await servicesApi.search(params);
-      // Soporta respuesta paginada { data, meta } o array directo
-      if (Array.isArray(data)) {
-        setServices(data);
-        setTotal(data.length);
-      } else {
-        const items = data.data || [];
-        setServices(items);
-        setTotal(data.meta?.total ?? data.total ?? items.length);
+  const fetchResults = useCallback(
+    async (params: ServiceSearchParams, paginaSolicitada: number) => {
+      setIsLoading(true);
+      setFetchError(null);
+      try {
+        const { data } = await servicesApi.search({
+          ...params,
+          page: paginaSolicitada,
+        });
+        // Soporta respuesta paginada { data, meta } o array directo
+        if (Array.isArray(data)) {
+          setServices(data);
+          setTotal(data.length);
+          setTotalPages(1);
+        } else {
+          const items = data.data || [];
+          setServices(items);
+          setTotal(data.meta?.total ?? data.total ?? items.length);
+          setTotalPages(data.meta?.totalPages ?? 1);
+        }
+        setPage(paginaSolicitada);
+      } catch (err: any) {
+        setServices([]);
+        setTotal(0);
+        setTotalPages(1);
+        if (err?.code === 'ECONNABORTED') setFetchError('timeout');
+        else if (!err?.response) setFetchError('network');
+        else setFetchError('unavailable');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: any) {
-      setServices([]);
-      setTotal(0);
-      if (err?.code === 'ECONNABORTED') setFetchError('timeout');
-      else if (!err?.response) setFetchError('network');
-      else setFetchError('unavailable');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     const initial: ServiceSearchParams = {
@@ -58,32 +77,35 @@ function SearchPageContent() {
       city: searchParams.get('city') || undefined,
     };
     setFilters(initial);
-    fetchResults(initial);
+    fetchResults(initial, 1);
   }, [searchParams, fetchResults]);
 
   const handleSearch = (query: string) => {
     const next = { ...filters, query: query || undefined };
     setFilters(next);
-    fetchResults(next);
+    fetchResults(next, 1);
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     router.replace(`/services/search?${params.toString()}`);
   };
 
+  const cambiarPagina = (nuevaPagina: number) => {
+    fetchResults(filters, nuevaPagina);
+    // Al saltar de página el usuario espera empezar por el primer resultado.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleApplyFilters = (newFilters: ServiceSearchParams) => {
     const merged = { ...filters, ...newFilters };
     setFilters(merged);
-    fetchResults(merged);
+    fetchResults(merged, 1);
   };
 
   return (
     <main className="bg-neutral-50 min-h-screen">
       <div className="bg-white border-b border-neutral-200 py-4 px-4">
         <div className="max-w-6xl mx-auto">
-          <SearchBar
-            initialValue={filters.query}
-            onSearch={handleSearch}
-          />
+          <SearchBar initialValue={filters.query} onSearch={handleSearch} />
         </div>
       </div>
 
@@ -122,8 +144,15 @@ function SearchPageContent() {
               </div>
             </div>
 
-            {fetchError && !isLoading && (
-              <div className="mb-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-800" role="alert">
+            {isLoading ? (
+              <div className="flex justify-center py-16">
+                <Spinner size="lg" />
+              </div>
+            ) : fetchError ? (
+              <div
+                className="rounded-lg bg-amber-50 p-4 text-sm text-amber-800"
+                role="alert"
+              >
                 <p>
                   {fetchError === 'timeout'
                     ? 'El servidor ha tardado demasiado en responder. Puede estar reactivándose tras un periodo de inactividad.'
@@ -133,21 +162,24 @@ function SearchPageContent() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => fetchResults(filters)}
+                  onClick={() => fetchResults(filters, page)}
                   className="mt-2 font-medium underline hover:no-underline"
                 >
                   Reintentar
                 </button>
               </div>
-            )}
-            {view === 'list' ? (
-              <ResultsList
-                services={services}
-                isLoading={isLoading}
-                total={total}
-              />
+            ) : view === 'list' ? (
+              <ResultsList services={services} total={total} />
             ) : (
               <ServiceMap services={services} />
+            )}
+
+            {!isLoading && !fetchError && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onChange={cambiarPagina}
+              />
             )}
           </div>
         </div>

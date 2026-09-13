@@ -4,27 +4,15 @@
  */
 import { Service } from '@/types';
 import ServiceCard from '../molecules/ServiceCard';
-import Spinner from '../atoms/Spinner';
 
 interface ResultsListProps {
   services: Service[];
-  isLoading: boolean;
   total?: number;
 }
 
-export default function ResultsList({
-  services,
-  isLoading,
-  total,
-}: ResultsListProps) {
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
+// Solo se renderiza cuando la búsqueda ha respondido correctamente, así que
+// una lista vacía significa cero resultados y nunca un fallo de red.
+export default function ResultsList({ services, total }: ResultsListProps) {
   if (services.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-card p-10 text-center">
