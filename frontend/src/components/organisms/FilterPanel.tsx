@@ -45,7 +45,15 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
     setRadiusKm(10);
     setMinRating(0);
     setMaxPrice(0);
-    onApply({});
+    // El buscador fusiona lo que recibe sobre los filtros vigentes, de modo
+    // que un objeto vacío no borraría nada: hay que anular cada campo.
+    onApply({
+      categoryId: undefined,
+      city: undefined,
+      radiusKm: undefined,
+      minRating: undefined,
+      maxPrice: undefined,
+    });
   };
 
   return (
@@ -86,7 +94,7 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
             { value: 'Valencia', label: 'Valencia' },
             { value: 'Sevilla', label: 'Sevilla' },
             { value: 'Zaragoza', label: 'Zaragoza' },
-            { value: 'Malaga', label: 'Málaga' },
+            { value: 'Málaga', label: 'Málaga' },
             { value: 'Bilbao', label: 'Bilbao' },
             { value: 'Murcia', label: 'Murcia' },
             { value: 'Palma', label: 'Palma' },
