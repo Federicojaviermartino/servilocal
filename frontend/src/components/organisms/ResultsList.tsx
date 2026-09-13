@@ -30,7 +30,7 @@ export default function ResultsList({ services, total }: ResultsListProps) {
     <div>
       {total !== undefined && (
         <p className="mb-4 text-sm text-neutral-600">
-          {total} {total === 1 ? 'resultado' : 'resultados'} encontrados
+          {total} {total === 1 ? 'resultado encontrado' : 'resultados encontrados'}
         </p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
