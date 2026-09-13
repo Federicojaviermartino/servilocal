@@ -10,6 +10,7 @@ import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
 import Spinner from '@/components/atoms/Spinner';
 import RatingStars from '@/components/molecules/RatingStars';
+import ServiceImage from '@/components/molecules/ServiceImage';
 
 export default function ServiceDetailPage() {
   const params = useParams();
@@ -103,18 +104,15 @@ export default function ServiceDetailPage() {
           {/* Columna principal */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-lg shadow-card overflow-hidden">
-              <div className="aspect-video bg-neutral-100">
-                {service.images?.[0] ? (
-                  <img
-                    src={service.images[0]}
-                    alt={service.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                    Sin imagen
-                  </div>
-                )}
+              <div className="aspect-video bg-neutral-100 relative">
+                <ServiceImage
+                  src={service.images?.[0]}
+                  alt={service.title}
+                  categoryIcon={service.category?.icon}
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  priority
+                  iconSize={72}
+                />
               </div>
               <div className="p-6">
                 {service.category && (

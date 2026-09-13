@@ -34,6 +34,10 @@ export default function Avatar({
 }: AvatarProps) {
   if (src) {
     return (
+      // Se mantiene <img> a propósito: la URL del avatar la elige el usuario y
+      // next/image exige declarar cada host en remotePatterns, así que un
+      // dominio no previsto rompería el renderizado en lugar de degradarse.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt={name}

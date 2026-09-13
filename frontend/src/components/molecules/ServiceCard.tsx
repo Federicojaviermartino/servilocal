@@ -7,6 +7,7 @@ import { MapPin, Euro } from 'lucide-react';
 import { Service } from '@/types';
 import Badge from '../atoms/Badge';
 import RatingStars from './RatingStars';
+import ServiceImage from './ServiceImage';
 
 interface ServiceCardProps {
   service: Service;
@@ -24,17 +25,12 @@ export default function ServiceCard({ service }: ServiceCardProps) {
       className="block bg-white rounded-lg shadow-card hover:shadow-card-hover transition-shadow overflow-hidden"
     >
       <div className="aspect-video bg-neutral-100 relative">
-        {service.images?.[0] ? (
-          <img
-            src={service.images[0]}
-            alt={service.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-400">
-            Sin imagen
-          </div>
-        )}
+        <ServiceImage
+          src={service.images?.[0]}
+          alt={service.title}
+          categoryIcon={service.category?.icon}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+        />
         {service.category && (
           <div className="absolute top-2 left-2">
             <Badge variant="info">{service.category.name}</Badge>
