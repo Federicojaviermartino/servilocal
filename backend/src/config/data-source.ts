@@ -12,7 +12,9 @@ export const AppDataSource = new DataSource(
     ? {
         type: 'postgres',
         url: databaseUrl,
-        ssl: { rejectUnauthorized: false },
+        // Coherente con database.config.ts: se valida salvo que se pida lo
+        // contrario de forma explícita.
+        ssl: { rejectUnauthorized: process.env.DB_SSL_PERMISIVO !== 'true' },
         entities: [resolve(__dirname, '../entities/*.entity{.ts,.js}')],
         migrations: [resolve(__dirname, '../database/migrations/*{.ts,.js}')],
         synchronize: false,

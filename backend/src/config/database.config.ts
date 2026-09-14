@@ -1,6 +1,14 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 
+/**
+ * El certificado del servidor se valida por defecto: aceptarlo sin comprobar
+ * deja la conexión expuesta a un intermediario. DB_SSL_PERMISIVO=true
+ * desactiva la comprobación para proveedores con certificado autofirmado.
+ */
+const validarCertificado = (configService: ConfigService): boolean =>
+  configService.get<string>('DB_SSL_PERMISIVO') !== 'true';
+
 export const getDatabaseConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
@@ -23,7 +31,7 @@ export const getDatabaseConfig = (
     return {
       ...commonOptions,
       url: databaseUrl,
-      ssl: { rejectUnauthorized: false },
+      ssl: { rejectUnauthorized: validarCertificado(configService) },
     };
   }
 
