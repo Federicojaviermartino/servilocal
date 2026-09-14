@@ -123,6 +123,9 @@ jobs:
       STRIPE_SECRET_KEY: sk_test_marcador
       CORS_ORIGINS: http://localhost:3000
       PORT: 3001
+      # La suite inicia sesión muchas veces desde la misma IP. El límite
+      # real se comprueba aparte; aquí solo estorbaría a los tests de flujo.
+      THROTTLE_AUTH_LIMIT: '100'
       NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
     steps:
