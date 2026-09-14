@@ -89,3 +89,88 @@ jobs:
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+  e2e:
+    name: Tests de extremo a extremo
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-build]
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: servilocal_e2e
+          POSTGRES_USER: servilocal_user
+          POSTGRES_PASSWORD: e2e_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U servilocal_user -d servilocal_e2e"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: servilocal_user
+      DB_PASSWORD: e2e_password
+      DB_DATABASE: servilocal_e2e
+      JWT_SECRET: secreto_solo_para_los_tests
+      JWT_EXPIRATION: 1h
+      # Clave de marcador: el test de pago se omite solo si Stripe no está
+      # configurado, así que la integración continua no depende de Stripe.
+      STRIPE_SECRET_KEY: sk_test_marcador
+      CORS_ORIGINS: http://localhost:3000
+      NODE_ENV: production
+      PORT: 3001
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Preparar la API
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm run migration:run
+          npm run seed
+          npm run build
+
+      - name: Arrancar la API en segundo plano
+        working-directory: ./backend
+        run: |
+          nohup node dist/main.js > api.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:3001/api/categories > /dev/null; then
+              echo "API disponible tras $((i * 2))s"; exit 0
+            fi
+            sleep 2
+          done
+          echo "La API no llegó a responder. Últimas líneas del registro:"
+          tail -40 api.log
+          exit 1
+
+      - name: Preparar el frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+          npx playwright install --with-deps chromium
+
+      - name: Ejecutar Playwright
+        working-directory: ./frontend
+        run: npm run e2e
+
+      - name: Guardar el informe si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-playwright
+          path: frontend/playwright-report/
+          retention-days: 7

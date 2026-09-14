@@ -242,9 +242,25 @@ cd frontend
 npm run lint
 npm run type-check
 npm run build
+
+# End-to-end (Playwright, desktop and mobile viewports)
+cd frontend
+npx playwright install chromium   # first run only
+npm run e2e
 ```
 
-All of these run in CI on every push to `main`.
+The end-to-end suite covers search with accent-insensitive matching, pagination,
+city filtering, the collapsible mobile filter panel, the map, demo login, failed
+login, route protection, and a full booking paid with a Stripe test card.
+
+The payment test skips itself, with an explicit reason, when Stripe keys are not
+configured — the booking is still created, but there is nothing to charge. Add
+`STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository
+secrets to run it for real in CI.
+
+All of these run in CI on every push to `main`. The end-to-end job spins up the
+whole stack: a PostGIS container, migrations, the seed, the API and the built
+front end.
 
 ---
 
