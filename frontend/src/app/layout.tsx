@@ -3,18 +3,28 @@ import { Inter } from 'next/font/google';
 import { Toaster } from 'react-hot-toast';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { SITIO_URL } from '@/lib/sitio';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
+  // Necesario para que las URLs de Open Graph se resuelvan como absolutas.
+  metadataBase: new URL(SITIO_URL),
   title: {
     default: 'ServiLocal - Servicios locales cerca de ti',
     template: '%s | ServiLocal',
   },
   description:
     'Encuentra profesionales de confianza en tu zona. Fontanería, electricidad, clases particulares y más. Reserva, paga y valora de forma segura.',
-  keywords: ['servicios locales', 'profesionales', 'marketplace', 'reservas', 'fontanero', 'electricista'],
+  keywords: [
+    'servicios locales',
+    'profesionales',
+    'marketplace',
+    'reservas',
+    'fontanero',
+    'electricista',
+  ],
   authors: [{ name: 'Federico Javier Martino' }],
   openGraph: {
     type: 'website',
@@ -39,6 +49,25 @@ export default function RootLayout({
         >
           Ir al contenido principal
         </a>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              name: 'ServiLocal',
+              url: SITIO_URL,
+              inLanguage: 'es-ES',
+              description:
+                'Marketplace de servicios del hogar que conecta clientes con profesionales de su zona.',
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: `${SITIO_URL}/services/search?q={search_term_string}`,
+                'query-input': 'required name=search_term_string',
+              },
+            }),
+          }}
+        />
         <Header />
         <main id="main-content" className="flex-1" role="main">
           {children}
