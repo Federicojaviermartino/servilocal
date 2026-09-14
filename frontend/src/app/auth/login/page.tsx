@@ -27,11 +27,6 @@ const CUENTAS_DEMO = [
     email: 'carlos@ejemplo.com',
     descripcion: 'Publica servicios y gestiona sus reservas',
   },
-  {
-    etiqueta: 'Administración',
-    email: 'admin@servilocal.com',
-    descripcion: 'Usuarios, categorías y moderación',
-  },
 ];
 
 function LoginPageContent() {
@@ -182,7 +177,7 @@ function LoginPageContent() {
             <p className="mt-1 text-xs text-gray-600">
               Entra con un clic y recorre la aplicación con datos de prueba.
             </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {CUENTAS_DEMO.map((cuenta) => (
                 <button
                   key={cuenta.email}
