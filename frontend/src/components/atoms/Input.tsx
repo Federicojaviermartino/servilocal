@@ -2,7 +2,7 @@
  * Nivel atomico: Atomo
  * Componente: Input
  */
-import { InputHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, forwardRef, useId } from 'react';
 import clsx from 'clsx';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -13,7 +13,11 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, className, id, ...rest }, ref) => {
-    const inputId = id || rest.name;
+    // Casi ningún uso pasa id ni name, y sin ellos htmlFor quedaba vacío: la
+    // etiqueta no se asociaba al campo y un lector de pantalla no la anunciaba.
+    // useId genera un identificador estable entre servidor y cliente.
+    const idGenerado = useId();
+    const inputId = id || rest.name || idGenerado;
     return (
       <div className="w-full">
         {label && (
