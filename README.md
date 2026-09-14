@@ -33,6 +33,10 @@ Password for every seeded account: `Password123!`
 |---|
 | ![Search results](docs/screenshots/search.png) |
 
+| The same screen in dark mode |
+|---|
+| ![Search results in dark mode](docs/screenshots/search-dark.png) |
+
 | Service detail | One-click demo access |
 |---|---|
 | ![Service detail](docs/screenshots/service-detail.png) | ![Demo login](docs/screenshots/demo-login.png) |
@@ -50,6 +54,7 @@ Password for every seeded account: `Password123!`
 - Results as a list or on a Leaflet map with markers
 - Accent- and case-insensitive search that also matches trade names, so "fontaneria" finds *Fontanería*
 - Service detail with verified reviews, price range and provider profile
+- Light and dark themes: follows the system preference, and remembers an explicit choice
 
 **Clients**
 - Booking form with validation, dates handled in ISO UTC to avoid timezone drift
@@ -77,7 +82,7 @@ Password for every seeded account: `Password123!`
 | Layer | Technology |
 |-------|-----------|
 | Front end | React 18, Next.js 14 (App Router), TypeScript |
-| Styling | Tailwind CSS, Atomic Design component structure |
+| Styling | Tailwind CSS with semantic colour tokens, Atomic Design component structure |
 | Back end | NestJS, TypeScript |
 | Database | PostgreSQL with PostGIS (schema managed by TypeORM migrations) |
 | ORM | TypeORM, with a numeric transformer for decimal columns |
@@ -97,6 +102,7 @@ Password for every seeded account: `Password123!`
 - **Reviews are tied to completed bookings** by a unique constraint, so ratings cannot be faked.
 - **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
 - **`/api/health` checks the database, not just the process.** An API that boots but cannot reach its database is down in practice — exactly the failure this project had, unnoticed, for four months. It returns `503` when the database does not answer, so a monitor can actually detect it.
+- **Dark mode uses semantic tokens, not a second set of classes.** Components name the role of a colour (`bg-superficie`, `text-principal`), never the colour itself. The theme is applied by a blocking inline script before first paint, so there is no flash of the wrong theme.
 - **Rate limiting is proxy-aware.** Behind Render's proxy, without `trust proxy` every request appears to come from the same address and one attacker would lock out every user.
 
 ---
