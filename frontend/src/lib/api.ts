@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import {
   ServiceSearchParams,
   CreateBookingDto,
@@ -11,7 +11,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 // Sin timeout, una API que acepta la conexión pero no responde deja la
 // interfaz cargando indefinidamente: la promesa nunca se resuelve, así que
 // el catch del llamador no llega a ejecutarse y el spinner no desaparece.
-const REQUEST_TIMEOUT_MS = 20000;
+const REQUEST_TIMEOUT_MS = 25000;
+
+// La API vive en una instancia que se duerme por inactividad y tarda cerca de
+// un minuto en volver. El primer intento se rinde pronto para no castigar al
+// usuario cuando el servidor está caído de verdad, y el reintento espera más
+// porque a esas alturas lo más probable es que solo esté arrancando.
+const REINTENTO_TIMEOUT_MS = 45000;
+
+interface PeticionConReintento extends InternalAxiosRequestConfig {
+  reintentada?: boolean;
+}
 
 const api = axios.create({
   baseURL: API_URL,
@@ -31,11 +41,29 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  (error: AxiosError) => {
     // El 401 se maneja en el llamador: cada pagina decide si redirigir
     // a /auth/login o mostrar un toast. Evitamos que una peticion en
     // segundo plano borre la sesion o interrumpa un flujo en curso con
     // una navegacion dura (window.location.href).
+    const peticion = error.config as PeticionConReintento | undefined;
+    const agotadoOSinRespuesta =
+      error.code === 'ECONNABORTED' || !error.response;
+    // Solo se reintentan las lecturas: repetir un POST podría duplicar una
+    // reserva o un cobro.
+    const esLectura = (peticion?.method || 'get').toLowerCase() === 'get';
+
+    if (
+      peticion &&
+      esLectura &&
+      agotadoOSinRespuesta &&
+      !peticion.reintentada
+    ) {
+      peticion.reintentada = true;
+      peticion.timeout = REINTENTO_TIMEOUT_MS;
+      return api(peticion);
+    }
+
     return Promise.reject(error);
   },
 );
@@ -94,8 +122,7 @@ export const bookingsApi = {
 
 export const reviewsApi = {
   create: (data: CreateReviewDto) => api.post('/reviews', data),
-  getByService: (serviceId: string) =>
-    api.get(`/reviews/service/${serviceId}`),
+  getByService: (serviceId: string) => api.get(`/reviews/service/${serviceId}`),
   getMyReviews: () => api.get('/reviews/my'),
   respond: (id: string, providerResponse: string) =>
     api.patch(`/reviews/${id}/response`, { providerResponse }),

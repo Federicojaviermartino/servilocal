@@ -30,6 +30,7 @@ function SearchPageContent() {
   const [view, setView] = useState<'list' | 'map'>('list');
   const [filters, setFilters] = useState<ServiceSearchParams>({});
   const [page, setPage] = useState(1);
+  const [tardando, setTardando] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [fetchError, setFetchError] = useState<
     'network' | 'timeout' | 'unavailable' | null
@@ -69,6 +70,17 @@ function SearchPageContent() {
     },
     [],
   );
+
+  // Si la espera se alarga suele ser la instancia gratuita despertando. Vale
+  // más explicarlo que dejar al usuario mirando un indicador de carga mudo.
+  useEffect(() => {
+    if (!isLoading) {
+      setTardando(false);
+      return;
+    }
+    const temporizador = setTimeout(() => setTardando(true), 6000);
+    return () => clearTimeout(temporizador);
+  }, [isLoading]);
 
   useEffect(() => {
     const initial: ServiceSearchParams = {
@@ -145,8 +157,14 @@ function SearchPageContent() {
             </div>
 
             {isLoading ? (
-              <div className="flex justify-center py-16">
+              <div className="flex flex-col items-center gap-3 py-16">
                 <Spinner size="lg" />
+                {tardando && (
+                  <p className="max-w-sm text-center text-sm text-neutral-500">
+                    El servidor está despertando tras un periodo de inactividad.
+                    Puede tardar hasta un minuto.
+                  </p>
+                )}
               </div>
             ) : fetchError ? (
               <div
