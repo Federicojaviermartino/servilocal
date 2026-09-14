@@ -84,9 +84,28 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "**/*.service.ts",
+      "**/guards/**/*.ts",
+      "**/transformers/**/*.ts",
+      "!**/*.spec.ts"
     ],
     "coverageDirectory": "../coverage",
+    "coverageThreshold": {
+      "global": {
+        "statements": 15,
+        "branches": 10,
+        "functions": 12,
+        "lines": 15
+      },
+      "./src/auth/auth.service.ts": {
+        "statements": 85,
+        "branches": 75
+      },
+      "./src/common/guards/roles.guard.ts": {
+        "statements": 90,
+        "branches": 100
+      }
+    },
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"

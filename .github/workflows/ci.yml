@@ -45,8 +45,8 @@ jobs:
       - name: Ejecutar linter
         run: npm run lint
 
-      - name: Ejecutar tests
-        run: npm run test
+      - name: Ejecutar tests con umbral de cobertura
+        run: npm run test:cov
         env:
           DB_HOST: localhost
           DB_PORT: 5432
