@@ -53,6 +53,8 @@ export interface Service {
   city: string;
   latitude?: number;
   longitude?: number;
+  /** La API devuelve la posición como GeoJSON: coordinates es [lng, lat]. */
+  location?: { type: string; coordinates: [number, number] };
   coverageRadiusKm: number;
   images: string[];
   averageRating: number;

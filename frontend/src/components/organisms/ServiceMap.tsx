@@ -39,9 +39,21 @@ export default function ServiceMap({
     // Forzar refresco de tiles tras montar
   }, []);
 
-  const validServices = services.filter(
-    (s) => s.latitude !== undefined && s.longitude !== undefined,
-  );
+  // La API entrega la posición como GeoJSON (coordinates es [lng, lat]); los
+  // campos planos latitude y longitude se aceptan como alternativa por si el
+  // servicio llega desde otro endpoint.
+  const marcadores = services
+    .map((service) => {
+      const desdeGeoJson = service.location?.coordinates;
+      const lat = desdeGeoJson ? desdeGeoJson[1] : service.latitude;
+      const lng = desdeGeoJson ? desdeGeoJson[0] : service.longitude;
+      return lat !== undefined && lng !== undefined
+        ? { service, posicion: [lat, lng] as [number, number] }
+        : null;
+    })
+    .filter(
+      (m): m is { service: Service; posicion: [number, number] } => m !== null,
+    );
 
   return (
     <div style={{ height }} className="rounded-lg overflow-hidden shadow-card">
@@ -55,11 +67,8 @@ export default function ServiceMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {validServices.map((service) => (
-          <Marker
-            key={service.id}
-            position={[service.latitude!, service.longitude!]}
-          >
+        {marcadores.map(({ service, posicion }) => (
+          <Marker key={service.id} position={posicion}>
             <Popup>
               <div className="text-sm">
                 <p className="font-semibold">{service.title}</p>
