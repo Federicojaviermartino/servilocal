@@ -12,6 +12,20 @@ import {
   SearchServicesDto,
 } from './dto/service.dto';
 
+/**
+ * Devuelve una expresión SQL que compara texto ignorando mayúsculas y acentos.
+ *
+ * Tanto la ciudad como el texto libre los teclean personas: quien busque
+ * "fontaneria" o "malaga" sin tilde debe encontrar lo mismo que quien las
+ * escriba con ella.
+ *
+ * Se usa translate() en lugar de la extensión unaccent para no depender de una
+ * extensión que puede no estar instalada, y porque translate() es IMMUTABLE y
+ * por tanto se puede indexar.
+ */
+const sinAcentos = (expresion: string): string =>
+  `translate(lower(${expresion}), 'áàäâéèëêíìïîóòöôúùüûñç', 'aaaaeeeeiiiioooouuuunc')`;
+
 @Injectable()
 export class ServicesService {
   constructor(
@@ -109,10 +123,12 @@ export class ServicesService {
         providerActive: true,
       });
 
-    // Búsqueda por texto
+    // Búsqueda por texto. Incluye el nombre de la categoría porque la gente
+    // busca por oficio ("jardinería", "cerrajería") y esa palabra rara vez
+    // aparece en el título o la descripción del servicio.
     if (query) {
       qb.andWhere(
-        '(LOWER(service.title) LIKE LOWER(:query) OR LOWER(service.description) LIKE LOWER(:query))',
+        `(${sinAcentos('service.title')} LIKE ${sinAcentos(':query')} OR ${sinAcentos('service.description')} LIKE ${sinAcentos(':query')} OR ${sinAcentos('category.name')} LIKE ${sinAcentos(':query')})`,
         { query: `%${query}%` },
       );
     }
@@ -122,9 +138,11 @@ export class ServicesService {
       qb.andWhere('service.categoryId = :categoryId', { categoryId });
     }
 
-    // Filtro por ciudad (case-insensitive)
+    // Filtro por ciudad, indiferente a mayúsculas y acentos
     if (city) {
-      qb.andWhere('LOWER(service.city) = LOWER(:city)', { city });
+      qb.andWhere(`${sinAcentos('service.city')} = ${sinAcentos(':city')}`, {
+        city,
+      });
     }
 
     // Búsqueda geoespacial con PostGIS (ST_DWithin)

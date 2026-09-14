@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { Category, ServiceSearchParams } from '@/types';
 import { categoriesApi } from '@/lib/api';
+import { CIUDADES } from '@/lib/ciudades';
 import Button from '../atoms/Button';
 import RatingStars from '../molecules/RatingStars';
 
@@ -14,7 +15,10 @@ interface FilterPanelProps {
   onApply: (filters: ServiceSearchParams) => void;
 }
 
-export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps) {
+export default function FilterPanel({
+  initial = {},
+  onApply,
+}: FilterPanelProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState(initial.categoryId || '');
   const [city, setCity] = useState(initial.city || '');
@@ -88,20 +92,9 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
           className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">Todas las ciudades</option>
-          {[
-            { value: 'Madrid', label: 'Madrid' },
-            { value: 'Barcelona', label: 'Barcelona' },
-            { value: 'Valencia', label: 'Valencia' },
-            { value: 'Sevilla', label: 'Sevilla' },
-            { value: 'Zaragoza', label: 'Zaragoza' },
-            { value: 'Málaga', label: 'Málaga' },
-            { value: 'Bilbao', label: 'Bilbao' },
-            { value: 'Murcia', label: 'Murcia' },
-            { value: 'Palma', label: 'Palma' },
-            { value: 'Las Palmas de Gran Canaria', label: 'Las Palmas de Gran Canaria' },
-          ].map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
+          {CIUDADES.map((ciudad) => (
+            <option key={ciudad} value={ciudad}>
+              {ciudad}
             </option>
           ))}
         </select>
@@ -125,11 +118,7 @@ export default function FilterPanel({ initial = {}, onApply }: FilterPanelProps)
         <label className="block text-sm font-medium text-neutral-700 mb-2">
           Valoración mínima
         </label>
-        <RatingStars
-          rating={minRating}
-          interactive
-          onChange={setMinRating}
-        />
+        <RatingStars rating={minRating} interactive onChange={setMinRating} />
       </div>
 
       <div>

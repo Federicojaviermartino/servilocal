@@ -6,6 +6,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Category, Service } from '@/types';
 import { categoriesApi } from '@/lib/api';
+import { CIUDADES } from '@/lib/ciudades';
 import Input from '../atoms/Input';
 import Button from '../atoms/Button';
 
@@ -41,6 +42,13 @@ export default function ServiceForm({
       .then((res) => setCategories(res.data || []))
       .catch(() => setCategories([]));
   }, []);
+
+  // Al editar un servicio antiguo cuya ciudad no está en la lista, se añade
+  // como opción para no perder el valor guardado al volver a enviar el formulario.
+  const ciudadesDisponibles =
+    form.city && !CIUDADES.includes(form.city)
+      ? [...CIUDADES, form.city]
+      : CIUDADES;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -89,14 +97,16 @@ export default function ServiceForm({
           ))}
         </select>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Input
           label="Precio mínimo (euros)"
           type="number"
           min={0}
           step={5}
           value={form.priceMin}
-          onChange={(e) => setForm({ ...form, priceMin: Number(e.target.value) })}
+          onChange={(e) =>
+            setForm({ ...form, priceMin: Number(e.target.value) })
+          }
           required
         />
         <Input
@@ -105,7 +115,9 @@ export default function ServiceForm({
           min={0}
           step={5}
           value={form.priceMax || ''}
-          onChange={(e) => setForm({ ...form, priceMax: Number(e.target.value) })}
+          onChange={(e) =>
+            setForm({ ...form, priceMax: Number(e.target.value) })
+          }
         />
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-1">
@@ -129,13 +141,25 @@ export default function ServiceForm({
         onChange={(e) => setForm({ ...form, address: e.target.value })}
         required
       />
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Ciudad"
-          value={form.city}
-          onChange={(e) => setForm({ ...form, city: e.target.value })}
-          required
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">
+            Ciudad
+          </label>
+          <select
+            value={form.city}
+            onChange={(e) => setForm({ ...form, city: e.target.value })}
+            required
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Selecciona una ciudad</option>
+            {ciudadesDisponibles.map((ciudad) => (
+              <option key={ciudad} value={ciudad}>
+                {ciudad}
+              </option>
+            ))}
+          </select>
+        </div>
         <Input
           label="Radio de cobertura (km)"
           type="number"
