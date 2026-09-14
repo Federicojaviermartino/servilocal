@@ -96,6 +96,8 @@ Password for every seeded account: `Password123!`
 - **The webhook verifies Stripe's signature** against the raw request body, which is why the Nest app boots with `rawBody: true`.
 - **Reviews are tied to completed bookings** by a unique constraint, so ratings cannot be faked.
 - **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
+- **`/api/health` checks the database, not just the process.** An API that boots but cannot reach its database is down in practice — exactly the failure this project had, unnoticed, for four months. It returns `503` when the database does not answer, so a monitor can actually detect it.
+- **Rate limiting is proxy-aware.** Behind Render's proxy, without `trust proxy` every request appears to come from the same address and one attacker would lock out every user.
 
 ---
 
@@ -286,6 +288,8 @@ The deployed demo uses:
 | `STRIPE_WEBHOOK_SECRET` | Endpoint signing secret from the Stripe dashboard |
 | `CORS_ORIGINS` | Comma-separated list of allowed origins |
 | `PORT` | `3001` |
+| `SENTRY_DSN` | Optional. When set, unhandled errors are reported to Sentry |
+| `THROTTLE_AUTH_LIMIT` | Optional. Login attempts per minute per IP, default `5`. Only raise it in test environments |
 
 **Front end (`servilocal-web`)**
 
