@@ -122,7 +122,6 @@ jobs:
       # configurado, así que la integración continua no depende de Stripe.
       STRIPE_SECRET_KEY: sk_test_marcador
       CORS_ORIGINS: http://localhost:3000
-      NODE_ENV: production
       PORT: 3001
       NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
@@ -144,6 +143,10 @@ jobs:
 
       - name: Arrancar la API en segundo plano
         working-directory: ./backend
+        env:
+          # Solo aquí: a nivel de job haría que npm ci omitiera las
+          # dependencias de desarrollo y faltaría el CLI de Nest.
+          NODE_ENV: production
         run: |
           nohup node dist/main.js > api.log 2>&1 &
           for i in $(seq 1 40); do
