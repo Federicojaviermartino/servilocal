@@ -25,6 +25,8 @@ export class RolesGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user.role);
+    // Sin AuthGuard delante no hay usuario en la petición: hay que denegar,
+    // no dejar que reviente con un 500 al leer user.role sobre undefined.
+    return !!user && requiredRoles.includes(user.role);
   }
 }
