@@ -98,10 +98,14 @@ export default function ProfilePage() {
             onChange={(e) => setForm({ ...form, phone: e.target.value })}
           />
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">
+            <label
+              htmlFor="perfil-biografia"
+              className="block text-sm font-medium text-neutral-700 mb-1"
+            >
               Biografía
             </label>
             <textarea
+              id="perfil-biografia"
               value={form.bio}
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
               rows={3}

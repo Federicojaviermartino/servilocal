@@ -44,7 +44,8 @@ export default function BookingForm({
       errs.price = `El precio máximo es ${service.priceMax} euros`;
     }
     if (!description || description.length < 10) {
-      errs.description = 'Describe brevemente el trabajo (mínimo 10 caracteres)';
+      errs.description =
+        'Describe brevemente el trabajo (mínimo 10 caracteres)';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -83,10 +84,14 @@ export default function BookingForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label
+          htmlFor="reserva-descripcion"
+          className="block text-sm font-medium text-neutral-700 mb-1"
+        >
           Descripción del trabajo
         </label>
         <textarea
+          id="reserva-descripcion"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
