@@ -70,12 +70,12 @@ export default function ConversationPage() {
     messages.find((m) => m.receiverId === partnerId)?.receiver;
 
   return (
-    <div className="bg-white rounded-lg shadow-card flex flex-col h-[70vh]">
+    <div className="bg-superficie rounded-lg shadow-card flex flex-col h-[70vh]">
       {partner && (
-        <div className="p-4 border-b border-neutral-200 flex items-center gap-3">
+        <div className="p-4 border-b border-borde flex items-center gap-3">
           <Avatar name={`${partner.firstName} ${partner.lastName}`} size="md" />
           <div>
-            <p className="font-semibold text-neutral-900">
+            <p className="font-semibold text-principal">
               {partner.firstName} {partner.lastName}
             </p>
           </div>
@@ -84,7 +84,7 @@ export default function ConversationPage() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
-          <p className="text-center text-neutral-500 py-10">
+          <p className="text-center text-tenue py-10">
             Aún no hay mensajes en esta conversación.
           </p>
         ) : (
@@ -99,13 +99,13 @@ export default function ConversationPage() {
                   className={`max-w-[70%] rounded-lg px-4 py-2 ${
                     isOwn
                       ? 'bg-primary-600 text-white'
-                      : 'bg-neutral-100 text-neutral-900'
+                      : 'bg-superficie-alt text-principal'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-line">{m.content}</p>
                   <p
                     className={`text-xs mt-1 ${
-                      isOwn ? 'text-primary-100' : 'text-neutral-500'
+                      isOwn ? 'text-primary-100' : 'text-tenue'
                     }`}
                   >
                     {new Date(m.createdAt).toLocaleTimeString('es-ES', {
@@ -123,14 +123,14 @@ export default function ConversationPage() {
 
       <form
         onSubmit={handleSend}
-        className="p-3 border-t border-neutral-200 flex gap-2"
+        className="p-3 border-t border-borde flex gap-2"
       >
         <input
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Escribe un mensaje..."
-          className="flex-1 rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="flex-1 rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         <Button
           type="submit"

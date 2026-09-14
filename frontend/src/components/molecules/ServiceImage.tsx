@@ -71,7 +71,7 @@ export default function ServiceImage({
   const Icono = (categoryIcon && iconosPorCategoria[categoryIcon]) || Wrench;
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 text-primary-400">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 text-primary-400 dark:from-primary-900/40 dark:to-primary-800/40 dark:text-primary-300">
       <Icono size={iconSize} strokeWidth={1.5} aria-hidden="true" />
     </div>
   );

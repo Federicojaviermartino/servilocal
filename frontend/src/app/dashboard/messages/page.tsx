@@ -31,23 +31,23 @@ export default function MessagesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Mensajes</h1>
+      <h1 className="text-2xl font-bold text-principal mb-6">Mensajes</h1>
 
       {conversations.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-card p-10 text-center text-neutral-600">
+        <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
           <p>No tienes conversaciones.</p>
-          <p className="text-sm text-neutral-500 mt-2">
-            Las conversaciones se crean al contactar con un profesional desde
-            un servicio o reserva.
+          <p className="text-sm text-tenue mt-2">
+            Las conversaciones se crean al contactar con un profesional desde un
+            servicio o reserva.
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-card overflow-hidden">
+        <div className="bg-superficie rounded-lg shadow-card overflow-hidden">
           {conversations.map((c) => (
             <Link
               key={c.partnerId}
               href={`/dashboard/messages/${c.partnerId}`}
-              className="flex items-center gap-3 p-4 border-b border-neutral-100 last:border-0 hover:bg-neutral-50"
+              className="flex items-center gap-3 p-4 border-b border-borde last:border-0 hover:bg-fondo"
             >
               <Avatar
                 name={`${c.partner.firstName} ${c.partner.lastName}`}
@@ -55,17 +55,17 @@ export default function MessagesPage() {
               />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-medium text-neutral-900 truncate">
+                  <p className="font-medium text-principal truncate">
                     {c.partner.firstName} {c.partner.lastName}
                   </p>
-                  <span className="text-xs text-neutral-500 whitespace-nowrap">
+                  <span className="text-xs text-tenue whitespace-nowrap">
                     {formatDistanceToNow(new Date(c.lastMessage.createdAt), {
                       locale: es,
                       addSuffix: true,
                     })}
                   </span>
                 </div>
-                <p className="text-sm text-neutral-600 truncate mt-1">
+                <p className="text-sm text-secundario truncate mt-1">
                   {c.lastMessage.content}
                 </p>
               </div>

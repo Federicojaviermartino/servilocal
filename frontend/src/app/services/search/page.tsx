@@ -24,7 +24,7 @@ const ServiceMap = nextDynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[500px] bg-neutral-100 rounded-lg animate-pulse" />
+      <div className="h-[500px] bg-superficie-alt rounded-lg animate-pulse" />
     ),
   },
 );
@@ -143,8 +143,8 @@ function SearchPageContent() {
   };
 
   return (
-    <main className="bg-neutral-50 min-h-screen">
-      <div className="bg-white border-b border-neutral-200 py-4 px-4">
+    <main className="bg-fondo min-h-screen">
+      <div className="bg-superficie border-b border-borde py-4 px-4">
         <div className="max-w-6xl mx-auto">
           <SearchBar initialValue={filters.query} onSearch={handleSearch} />
         </div>
@@ -161,7 +161,7 @@ function SearchPageContent() {
               onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}
               aria-expanded={filtrosAbiertos}
               aria-controls="panel-filtros"
-              className="mb-3 flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-card lg:hidden"
+              className="mb-3 flex w-full items-center justify-between rounded-lg bg-superficie px-4 py-3 text-sm font-medium text-principal shadow-card lg:hidden"
             >
               <span className="flex items-center gap-2">
                 <SlidersHorizontal size={18} aria-hidden="true" />
@@ -186,16 +186,16 @@ function SearchPageContent() {
 
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-semibold text-neutral-900">
+              <h1 className="text-xl font-semibold text-principal">
                 Resultados de la búsqueda
               </h1>
-              <div className="flex bg-white rounded-md shadow-card">
+              <div className="flex bg-superficie rounded-md shadow-card">
                 <button
                   onClick={() => cambiarVista('list')}
                   className={`px-4 py-2 text-sm rounded-l-md ${
                     view === 'list'
                       ? 'bg-primary-600 text-white'
-                      : 'text-neutral-700 hover:bg-neutral-50'
+                      : 'text-secundario hover:bg-fondo'
                   }`}
                 >
                   Lista
@@ -205,7 +205,7 @@ function SearchPageContent() {
                   className={`px-4 py-2 text-sm rounded-r-md ${
                     view === 'map'
                       ? 'bg-primary-600 text-white'
-                      : 'text-neutral-700 hover:bg-neutral-50'
+                      : 'text-secundario hover:bg-fondo'
                   }`}
                 >
                   Mapa
@@ -216,7 +216,7 @@ function SearchPageContent() {
             {isLoading ? (
               <div>
                 {tardando && (
-                  <p className="mb-4 rounded-lg bg-neutral-100 p-3 text-center text-sm text-neutral-600">
+                  <p className="mb-4 rounded-lg bg-superficie-alt p-3 text-center text-sm text-secundario">
                     El servidor está despertando tras un periodo de inactividad.
                     Puede tardar hasta un minuto.
                   </p>
@@ -273,7 +273,7 @@ function SearchPageContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="bg-neutral-50 min-h-screen" />}>
+    <Suspense fallback={<div className="bg-fondo min-h-screen" />}>
       <SearchPageContent />
     </Suspense>
   );

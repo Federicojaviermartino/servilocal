@@ -30,7 +30,7 @@ export default function SearchBar({
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-tenue"
             size={20}
           />
           <input
@@ -38,7 +38,7 @@ export default function SearchBar({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={placeholder}
-            className="w-full pl-10 pr-3 py-2.5 rounded-md border border-neutral-300 bg-white text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="w-full pl-10 pr-3 py-2.5 rounded-md border border-borde bg-superficie text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             aria-label="Buscar servicios"
           />
         </div>

@@ -64,15 +64,15 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Mi perfil</h1>
-      <div className="bg-white rounded-lg shadow-card p-6">
+      <h1 className="text-2xl font-bold text-principal mb-6">Mi perfil</h1>
+      <div className="bg-superficie rounded-lg shadow-card p-6">
         <div className="flex items-center gap-4 mb-6">
           <Avatar name={`${form.firstName} ${form.lastName}`} size="lg" />
           <div>
-            <p className="font-semibold text-neutral-900">
+            <p className="font-semibold text-principal">
               {form.firstName} {form.lastName}
             </p>
-            <p className="text-sm text-neutral-600">{user.email}</p>
+            <p className="text-sm text-secundario">{user.email}</p>
           </div>
         </div>
 
@@ -100,7 +100,7 @@ export default function ProfilePage() {
           <div>
             <label
               htmlFor="perfil-biografia"
-              className="block text-sm font-medium text-neutral-700 mb-1"
+              className="block text-sm font-medium text-secundario mb-1"
             >
               Biografía
             </label>
@@ -109,7 +109,7 @@ export default function ProfilePage() {
               value={form.bio}
               onChange={(e) => setForm({ ...form, bio: e.target.value })}
               rows={3}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
               placeholder="Cuéntanos sobre ti..."
             />
           </div>

@@ -15,7 +15,7 @@ interface SkeletonProps {
 export default function Skeleton({ className }: SkeletonProps) {
   return (
     <div
-      className={clsx('animate-pulse rounded bg-neutral-200', className)}
+      className={clsx('animate-pulse rounded bg-superficie-alt', className)}
       aria-hidden="true"
     />
   );

@@ -86,7 +86,7 @@ export default function BookingForm({
       <div>
         <label
           htmlFor="reserva-descripcion"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Descripción del trabajo
         </label>
@@ -96,7 +96,7 @@ export default function BookingForm({
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           placeholder="Describe brevemente el trabajo a realizar, ubicación exacta, materiales necesarios..."
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           required
         />
         {errors.description && (
@@ -117,13 +117,13 @@ export default function BookingForm({
         required
       />
 
-      <div className="bg-neutral-50 rounded-md p-4 text-sm">
-        <p className="font-medium text-neutral-900 mb-1">Resumen</p>
-        <p className="text-neutral-700">Servicio: {service.title}</p>
-        <p className="text-neutral-700">
+      <div className="bg-fondo rounded-md p-4 text-sm">
+        <p className="font-medium text-principal mb-1">Resumen</p>
+        <p className="text-secundario">Servicio: {service.title}</p>
+        <p className="text-secundario">
           Fecha: {date} a las {time}
         </p>
-        <p className="text-neutral-900 font-semibold mt-2">
+        <p className="text-principal font-semibold mt-2">
           Total: {price} euros
         </p>
       </div>

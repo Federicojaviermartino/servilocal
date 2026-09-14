@@ -71,7 +71,7 @@ export default function BookingPage() {
   if (!service) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-semibold text-neutral-900">
+        <h1 className="text-2xl font-semibold text-principal">
           Servicio no disponible
         </h1>
       </div>
@@ -79,12 +79,12 @@ export default function BookingPage() {
   }
 
   return (
-    <main className="bg-neutral-50 min-h-screen py-8">
+    <main className="bg-fondo min-h-screen py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">
+        <h1 className="text-2xl font-bold text-principal mb-6">
           Reservar: {service.title}
         </h1>
-        <div className="bg-white rounded-lg shadow-card p-6">
+        <div className="bg-superficie rounded-lg shadow-card p-6">
           <BookingForm
             service={service}
             onSubmit={handleSubmit}

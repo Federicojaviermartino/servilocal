@@ -35,10 +35,19 @@ export default function PaymentPage() {
         const status = err?.response?.status;
         const apiMsg = err?.response?.data?.message;
         if (status === 404) setError('Reserva no encontrada.');
-        else if (status === 403) setError('No tienes permiso para pagar esta reserva.');
-        else if (status === 409) setError(apiMsg || 'Esta reserva ya tiene un pago en curso o completado.');
-        else if (!err?.response) setError('No se pudo contactar con el servidor.');
-        else setError(apiMsg || `No se ha podido iniciar el pago (código ${status ?? 'desconocido'}).`);
+        else if (status === 403)
+          setError('No tienes permiso para pagar esta reserva.');
+        else if (status === 409)
+          setError(
+            apiMsg || 'Esta reserva ya tiene un pago en curso o completado.',
+          );
+        else if (!err?.response)
+          setError('No se pudo contactar con el servidor.');
+        else
+          setError(
+            apiMsg ||
+              `No se ha podido iniciar el pago (código ${status ?? 'desconocido'}).`,
+          );
       } finally {
         setIsLoading(false);
       }
@@ -57,10 +66,10 @@ export default function PaymentPage() {
   if (error || !booking || !intent) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center space-y-4">
-        <h1 className="text-2xl font-semibold text-neutral-900">
+        <h1 className="text-2xl font-semibold text-principal">
           No se ha podido iniciar el pago
         </h1>
-        {error && <p className="text-neutral-700">{error}</p>}
+        {error && <p className="text-secundario">{error}</p>}
         <Link
           href={`/dashboard/bookings/${bookingId}`}
           className="inline-block text-primary-600 hover:text-primary-700 underline text-sm"
@@ -72,15 +81,15 @@ export default function PaymentPage() {
   }
 
   return (
-    <main className="bg-neutral-50 min-h-screen py-8">
+    <main className="bg-fondo min-h-screen py-8">
       <div className="max-w-2xl mx-auto px-4">
-        <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+        <h1 className="text-2xl font-bold text-principal mb-2">
           Confirmar pago
         </h1>
-        <p className="text-neutral-600 mb-6">
+        <p className="text-secundario mb-6">
           Estás pagando la reserva de <strong>{booking.service.title}</strong>
         </p>
-        <div className="bg-white rounded-lg shadow-card p-6">
+        <div className="bg-superficie rounded-lg shadow-card p-6">
           <Elements
             key={intent.clientSecret}
             stripe={getStripe()}

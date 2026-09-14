@@ -24,16 +24,16 @@ export default function HomePage() {
             Encuentra al profesional adecuado para cualquier servicio del hogar.
             Valoraciones reales, presupuestos transparentes y reserva inmediata.
           </p>
-          <div className="bg-white rounded-lg p-2 max-w-2xl mx-auto">
+          <div className="bg-superficie rounded-lg p-2 max-w-2xl mx-auto">
             <SearchBar onSearch={handleSearch} />
           </div>
         </div>
       </section>
 
       {/* Caracteristicas */}
-      <section className="py-16 px-4 bg-neutral-50">
+      <section className="py-16 px-4 bg-fondo">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-center text-neutral-900 mb-12">
+          <h2 className="text-2xl font-bold text-center text-principal mb-12">
             ¿Por qué elegir ServiLocal?
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -41,10 +41,10 @@ export default function HomePage() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-100 text-primary-600 mb-4">
                 <MapPin size={28} />
               </div>
-              <h3 className="font-semibold text-lg text-neutral-900 mb-2">
+              <h3 className="font-semibold text-lg text-principal mb-2">
                 Profesionales cercanos
               </h3>
-              <p className="text-neutral-600">
+              <p className="text-secundario">
                 Búsqueda por geolocalización para encontrar a los mejores
                 profesionales de tu zona.
               </p>
@@ -53,10 +53,10 @@ export default function HomePage() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-100 text-primary-600 mb-4">
                 <Shield size={28} />
               </div>
-              <h3 className="font-semibold text-lg text-neutral-900 mb-2">
+              <h3 className="font-semibold text-lg text-principal mb-2">
                 Pagos seguros
               </h3>
-              <p className="text-neutral-600">
+              <p className="text-secundario">
                 Plataforma de pago integrada con Stripe. Tu dinero está
                 protegido hasta que el servicio se complete.
               </p>
@@ -65,10 +65,10 @@ export default function HomePage() {
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary-100 text-primary-600 mb-4">
                 <Star size={28} />
               </div>
-              <h3 className="font-semibold text-lg text-neutral-900 mb-2">
+              <h3 className="font-semibold text-lg text-principal mb-2">
                 Valoraciones verificadas
               </h3>
-              <p className="text-neutral-600">
+              <p className="text-secundario">
                 Solo los clientes que han completado un servicio pueden dejar su
                 opinión.
               </p>
@@ -80,7 +80,7 @@ export default function HomePage() {
       {/* Como funciona */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-center text-neutral-900 mb-12">
+          <h2 className="text-2xl font-bold text-center text-principal mb-12">
             Cómo funciona
           </h2>
           <ol className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -88,10 +88,10 @@ export default function HomePage() {
               <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold mb-4">
                 1
               </div>
-              <h3 className="font-semibold text-neutral-900 mb-2">
+              <h3 className="font-semibold text-principal mb-2">
                 Busca el servicio
               </h3>
-              <p className="text-neutral-600 text-sm">
+              <p className="text-secundario text-sm">
                 Indica qué necesitas y dónde. Nuestro sistema te muestra los
                 profesionales más cercanos y mejor valorados.
               </p>
@@ -100,22 +100,21 @@ export default function HomePage() {
               <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold mb-4">
                 2
               </div>
-              <h3 className="font-semibold text-neutral-900 mb-2">
+              <h3 className="font-semibold text-principal mb-2">
                 Reserva y paga
               </h3>
-              <p className="text-neutral-600 text-sm">
-                Elige fecha, deja la señal y recibe la confirmación al
-                instante.
+              <p className="text-secundario text-sm">
+                Elige fecha, deja la señal y recibe la confirmación al instante.
               </p>
             </li>
             <li className="flex flex-col items-center text-center">
               <div className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center font-bold mb-4">
                 3
               </div>
-              <h3 className="font-semibold text-neutral-900 mb-2">
+              <h3 className="font-semibold text-principal mb-2">
                 Valora tu experiencia
               </h3>
-              <p className="text-neutral-600 text-sm">
+              <p className="text-secundario text-sm">
                 Tras el servicio, deja tu opinión para ayudar a otros usuarios.
               </p>
             </li>

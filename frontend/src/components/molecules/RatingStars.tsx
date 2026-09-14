@@ -45,20 +45,17 @@ export default function RatingStars({
               className={
                 value <= rating
                   ? 'fill-warning-500 text-warning-500'
-                  : 'fill-neutral-200 text-neutral-300'
+                  : 'fill-borde text-tenue'
               }
             />
           </button>
         ))}
       </div>
       {showNumber && (
-        <span className="text-sm font-medium text-neutral-700">
+        <span className="text-sm font-medium text-secundario">
           {rating.toFixed(1)}
           {total !== undefined && (
-            <span className="text-neutral-500 font-normal">
-              {' '}
-              ({total})
-            </span>
+            <span className="text-tenue font-normal"> ({total})</span>
           )}
         </span>
       )}

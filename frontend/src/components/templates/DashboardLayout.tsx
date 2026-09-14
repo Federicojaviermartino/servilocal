@@ -6,7 +6,14 @@
 import { ReactNode, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Calendar, Star, User, MessageSquare, Briefcase, LayoutDashboard } from 'lucide-react';
+import {
+  Calendar,
+  Star,
+  User,
+  MessageSquare,
+  Briefcase,
+  LayoutDashboard,
+} from 'lucide-react';
 import clsx from 'clsx';
 import { useAuthStore } from '@/lib/auth-store';
 import { UserRole } from '@/types';
@@ -46,7 +53,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const providerItems = [
     { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
     { href: '/dashboard/services', label: 'Mis servicios', icon: Briefcase },
-    { href: '/dashboard/bookings-received', label: 'Reservas recibidas', icon: Calendar },
+    {
+      href: '/dashboard/bookings-received',
+      label: 'Reservas recibidas',
+      icon: Calendar,
+    },
     { href: '/dashboard/messages', label: 'Mensajes', icon: MessageSquare },
     { href: '/dashboard/profile', label: 'Perfil', icon: User },
   ];
@@ -54,16 +65,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const items = isProvider ? providerItems : clientItems;
 
   return (
-    <div className="bg-neutral-50 min-h-screen">
+    <div className="bg-fondo min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <aside className="lg:col-span-1">
-            <nav className="bg-white rounded-lg shadow-card p-2 sticky top-4">
+            <nav className="bg-superficie rounded-lg shadow-card p-2 sticky top-4">
               {items.map((item) => {
                 const Icon = item.icon;
                 const active =
                   pathname === item.href ||
-                  (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                  (item.href !== '/dashboard' &&
+                    pathname.startsWith(item.href));
                 return (
                   <Link
                     key={item.href}
@@ -72,7 +84,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                       active
                         ? 'bg-primary-50 text-primary-700'
-                        : 'text-neutral-700 hover:bg-neutral-50',
+                        : 'text-secundario hover:bg-fondo',
                     )}
                   >
                     <Icon size={18} />

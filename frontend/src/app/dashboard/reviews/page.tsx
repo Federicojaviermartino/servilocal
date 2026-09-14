@@ -40,13 +40,13 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-card p-5">
-      <p className="font-medium text-neutral-900">{booking.service.title}</p>
-      <p className="text-sm text-neutral-600 mt-1">
+    <div className="bg-superficie rounded-lg shadow-card p-5">
+      <p className="font-medium text-principal">{booking.service.title}</p>
+      <p className="text-sm text-secundario mt-1">
         Con {booking.provider.firstName} {booking.provider.lastName}
       </p>
       <div className="mt-3">
-        <p className="text-sm font-medium text-neutral-700 mb-2">
+        <p className="text-sm font-medium text-secundario mb-2">
           Tu valoración
         </p>
         <RatingStars
@@ -61,7 +61,7 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
         onChange={(e) => setComment(e.target.value)}
         rows={3}
         placeholder="Comentario opcional sobre el servicio..."
-        className="mt-3 w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        className="mt-3 w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
       />
       <div className="mt-3 flex justify-end">
         <Button onClick={handleSubmit} isLoading={isSubmitting}>
@@ -115,32 +115,28 @@ export default function MyReviewsPage() {
   return (
     <div className="space-y-8">
       <section>
-        <h1 className="text-2xl font-bold text-neutral-900 mb-4">
+        <h1 className="text-2xl font-bold text-principal mb-4">
           Valoraciones pendientes
         </h1>
         {pending.length === 0 ? (
-          <p className="text-neutral-600 text-sm">
+          <p className="text-secundario text-sm">
             No tienes valoraciones pendientes.
           </p>
         ) : (
           <div className="space-y-4">
             {pending.map((b) => (
-              <PendingReviewForm
-                key={b.id}
-                booking={b}
-                onSubmit={load}
-              />
+              <PendingReviewForm key={b.id} booking={b} onSubmit={load} />
             ))}
           </div>
         )}
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-neutral-900 mb-4">
+        <h2 className="text-xl font-semibold text-principal mb-4">
           Valoraciones enviadas ({reviews.length})
         </h2>
         {reviews.length === 0 ? (
-          <p className="text-neutral-600 text-sm">
+          <p className="text-secundario text-sm">
             Aún no has enviado ninguna valoración.
           </p>
         ) : (
@@ -148,16 +144,16 @@ export default function MyReviewsPage() {
             {reviews.map((r) => (
               <div
                 key={r.id}
-                className="bg-white rounded-lg shadow-card p-4"
+                className="bg-superficie rounded-lg shadow-card p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <RatingStars rating={r.rating} size="sm" />
-                  <span className="text-xs text-neutral-500">
+                  <span className="text-xs text-tenue">
                     {new Date(r.createdAt).toLocaleDateString('es-ES')}
                   </span>
                 </div>
                 {r.comment && (
-                  <p className="text-sm text-neutral-700">{r.comment}</p>
+                  <p className="text-sm text-secundario">{r.comment}</p>
                 )}
               </div>
             ))}

@@ -2,13 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tokens de color. Los componentes nunca nombran un color concreto, sino su
+ * papel: superficie, texto principal, borde. Cambiar de tema es cambiar estos
+ * valores, no recorrer la aplicación entera.
+ *
+ * Se guardan como canales sueltos para que Tailwind pueda aplicarles opacidad.
+ */
 @layer base {
+  :root {
+    --color-fondo: 250 250 250;
+    --color-superficie: 255 255 255;
+    --color-superficie-alt: 245 245 245;
+    --color-principal: 23 23 23;
+    --color-secundario: 82 82 82;
+    --color-tenue: 115 115 115;
+    --color-borde: 229 229 229;
+  }
+
+  .dark {
+    --color-fondo: 10 10 10;
+    --color-superficie: 23 23 23;
+    --color-superficie-alt: 38 38 38;
+    --color-principal: 250 250 250;
+    --color-secundario: 163 163 163;
+    --color-tenue: 115 115 115;
+    --color-borde: 64 64 64;
+  }
+
   html {
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-fondo text-principal antialiased;
   }
 
   /* Foco visible para navegación por teclado (WCAG 2.1 AA) */
@@ -26,27 +53,27 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-gray-300
-           bg-white px-5 py-2.5 text-sm font-medium text-gray-700 transition-colors
-           hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary-500
+    @apply inline-flex items-center justify-center rounded-lg border border-borde
+           bg-superficie px-5 py-2.5 text-sm font-medium text-secundario transition-colors
+           hover:bg-superficie-alt focus-visible:ring-2 focus-visible:ring-primary-500
            focus-visible:ring-offset-2;
   }
 
   .input-field {
-    @apply block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5
-           text-sm text-gray-900 placeholder-gray-400 transition-colors
+    @apply block w-full rounded-lg border border-borde bg-superficie px-4 py-2.5
+           text-sm text-principal placeholder-tenue transition-colors
            focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
   }
 
   .card {
-    @apply rounded-xl border border-gray-200 bg-white p-6 shadow-sm;
+    @apply rounded-xl border border-borde bg-superficie p-6 shadow-sm;
   }
 
   .label {
-    @apply mb-1 block text-sm font-medium text-gray-700;
+    @apply mb-1 block text-sm font-medium text-secundario;
   }
 
   .error-text {
-    @apply mt-1 text-sm text-red-600;
+    @apply mt-1 text-sm text-danger-600;
   }
 }

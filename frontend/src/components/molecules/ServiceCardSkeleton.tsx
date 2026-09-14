@@ -9,7 +9,7 @@ import Skeleton from '../atoms/Skeleton';
 
 export default function ServiceCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow-card">
+    <div className="overflow-hidden rounded-lg bg-superficie shadow-card">
       <Skeleton className="aspect-video rounded-none" />
       <div className="space-y-3 p-4">
         <Skeleton className="h-5 w-3/4" />

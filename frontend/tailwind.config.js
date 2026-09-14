@@ -1,11 +1,24 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  // El tema se activa con una clase en <html>, no por preferencia del sistema:
+  // así el usuario puede elegir y su elección se recuerda.
+  darkMode: 'class',
   content: [
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
+        // Tokens semánticos. Su valor vive en globals.css y cambia con el tema;
+        // aquí solo se declara el nombre. El formato de canales sueltos permite
+        // seguir usando modificadores de opacidad como bg-superficie/50.
+        fondo: 'rgb(var(--color-fondo) / <alpha-value>)',
+        superficie: 'rgb(var(--color-superficie) / <alpha-value>)',
+        'superficie-alt': 'rgb(var(--color-superficie-alt) / <alpha-value>)',
+        principal: 'rgb(var(--color-principal) / <alpha-value>)',
+        secundario: 'rgb(var(--color-secundario) / <alpha-value>)',
+        tenue: 'rgb(var(--color-tenue) / <alpha-value>)',
+        borde: 'rgb(var(--color-borde) / <alpha-value>)',
         primary: {
           50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
           400: '#60a5fa', 500: '#1a56db', 600: '#1e40af', 700: '#1e3a5f',

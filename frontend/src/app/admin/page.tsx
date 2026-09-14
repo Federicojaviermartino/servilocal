@@ -66,7 +66,8 @@ export default function AdminPage() {
       const reported: Review[] = repRes.data || [];
       setStats({
         totalUsers: allUsers.length,
-        totalProviders: allUsers.filter((u) => u.role === UserRole.PROVIDER).length,
+        totalProviders: allUsers.filter((u) => u.role === UserRole.PROVIDER)
+          .length,
         totalCategories: allCats.length,
         reportedReviews: reported.length,
       });
@@ -82,31 +83,54 @@ export default function AdminPage() {
   if (!user || user.role !== UserRole.ADMIN) return null;
 
   return (
-    <div className="bg-neutral-50 min-h-screen">
+    <div className="bg-fondo min-h-screen">
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900">
+          <h1 className="text-2xl font-bold text-principal">
             Panel de administración
           </h1>
-          <p className="text-neutral-600 mt-1">
+          <p className="text-secundario mt-1">
             Gestión de usuarios, categorías y moderación de valoraciones.
           </p>
         </div>
 
         {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" aria-label="Métricas de la plataforma">
-            <MetricCard icon={Users} label="Usuarios" value={stats.totalUsers} variant="info" />
-            <MetricCard icon={Briefcase} label="Proveedores" value={stats.totalProviders} variant="success" />
-            <MetricCard icon={Tag} label="Categorías" value={stats.totalCategories} variant="default" />
-            <MetricCard icon={Flag} label="Reportes pendientes" value={stats.reportedReviews} variant={stats.reportedReviews > 0 ? 'warning' : 'default'} />
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6"
+            aria-label="Métricas de la plataforma"
+          >
+            <MetricCard
+              icon={Users}
+              label="Usuarios"
+              value={stats.totalUsers}
+              variant="info"
+            />
+            <MetricCard
+              icon={Briefcase}
+              label="Proveedores"
+              value={stats.totalProviders}
+              variant="success"
+            />
+            <MetricCard
+              icon={Tag}
+              label="Categorías"
+              value={stats.totalCategories}
+              variant="default"
+            />
+            <MetricCard
+              icon={Flag}
+              label="Reportes pendientes"
+              value={stats.reportedReviews}
+              variant={stats.reportedReviews > 0 ? 'warning' : 'default'}
+            />
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-card">
+        <div className="bg-superficie rounded-lg shadow-card">
           <div
             role="tablist"
             aria-label="Secciones de administración"
-            className="flex border-b border-neutral-200 overflow-x-auto"
+            className="flex border-b border-borde overflow-x-auto"
           >
             {TABS.map(({ key, label, icon: Icon }) => (
               <button
@@ -120,7 +144,7 @@ export default function AdminPage() {
                   'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
                   tab === key
                     ? 'border-primary-600 text-primary-700'
-                    : 'border-transparent text-neutral-600 hover:text-neutral-900',
+                    : 'border-transparent text-secundario hover:text-principal',
                 )}
               >
                 <Icon size={16} aria-hidden="true" />
@@ -172,19 +196,26 @@ function MetricCard({
   variant?: 'default' | 'info' | 'success' | 'warning';
 }) {
   const ring = {
-    default: 'bg-neutral-50 text-neutral-600',
+    default: 'bg-fondo text-secundario',
     info: 'bg-primary-50 text-primary-700',
     success: 'bg-success-50 text-success-700',
     warning: 'bg-warning-50 text-warning-700',
   }[variant];
   return (
-    <div className="bg-white rounded-lg shadow-card p-4 flex items-center gap-3">
-      <div className={clsx('h-10 w-10 rounded-md flex items-center justify-center', ring)}>
+    <div className="bg-superficie rounded-lg shadow-card p-4 flex items-center gap-3">
+      <div
+        className={clsx(
+          'h-10 w-10 rounded-md flex items-center justify-center',
+          ring,
+        )}
+      >
         <Icon size={20} aria-hidden="true" />
       </div>
       <div>
-        <p className="text-xs text-neutral-500 uppercase tracking-wide">{label}</p>
-        <p className="text-2xl font-bold text-neutral-900 leading-tight">{value}</p>
+        <p className="text-xs text-tenue uppercase tracking-wide">{label}</p>
+        <p className="text-2xl font-bold text-principal leading-tight">
+          {value}
+        </p>
       </div>
     </div>
   );
@@ -215,7 +246,11 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
   const handleToggle = async (u: User) => {
     const next = !u.isActive;
     const verb = next ? 'activar' : 'desactivar';
-    if (!window.confirm(`¿Confirmas ${verb} la cuenta de ${u.firstName} ${u.lastName}?`)) {
+    if (
+      !window.confirm(
+        `¿Confirmas ${verb} la cuenta de ${u.firstName} ${u.lastName}?`,
+      )
+    ) {
       return;
     }
     try {
@@ -274,7 +309,7 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm" aria-label="Lista de usuarios">
-          <thead className="bg-neutral-50 text-neutral-600">
+          <thead className="bg-fondo text-secundario">
             <tr>
               <th className="text-left px-3 py-2 font-medium">Nombre</th>
               <th className="text-left px-3 py-2 font-medium">Email</th>
@@ -286,22 +321,21 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
           <tbody>
             {visible.length === 0 && (
               <tr>
-                <td
-                  colSpan={5}
-                  className="text-center text-neutral-500 py-6"
-                >
+                <td colSpan={5} className="text-center text-tenue py-6">
                   No hay usuarios en esta categoría.
                 </td>
               </tr>
             )}
             {visible.map((u) => (
-              <tr key={u.id} className="border-t border-neutral-100">
+              <tr key={u.id} className="border-t border-borde">
                 <td className="px-3 py-2">
                   {u.firstName} {u.lastName}
                 </td>
-                <td className="px-3 py-2 text-neutral-600">{u.email}</td>
+                <td className="px-3 py-2 text-secundario">{u.email}</td>
                 <td className="px-3 py-2">
-                  <Badge variant={roleVariant(u.role)}>{roleLabel(u.role)}</Badge>
+                  <Badge variant={roleVariant(u.role)}>
+                    {roleLabel(u.role)}
+                  </Badge>
                 </td>
                 <td className="px-3 py-2">
                   <Badge variant={u.isActive ? 'success' : 'danger'}>
@@ -355,7 +389,7 @@ function FilterChip({
         'px-3 py-1.5 rounded-full text-sm border transition-colors',
         active
           ? 'bg-primary-50 border-primary-200 text-primary-700'
-          : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50',
+          : 'bg-superficie border-borde text-secundario hover:bg-fondo',
       )}
       aria-pressed={active}
     >
@@ -471,7 +505,9 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
       load();
       onMutate?.();
     } catch {
-      toast.error('No se pudo eliminar la categoría (puede tener servicios asociados).');
+      toast.error(
+        'No se pudo eliminar la categoría (puede tener servicios asociados).',
+      );
     }
   };
 
@@ -487,7 +523,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
     <div className="space-y-6">
       <form
         onSubmit={handleCreate}
-        className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end p-4 bg-neutral-50 rounded-md border border-neutral-200"
+        className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end p-4 bg-fondo rounded-md border border-borde"
         aria-label="Crear nueva categoría"
       >
         <Input
@@ -523,7 +559,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm" aria-label="Lista de categorías">
-          <thead className="bg-neutral-50 text-neutral-600">
+          <thead className="bg-fondo text-secundario">
             <tr>
               <th className="text-left px-3 py-2 font-medium">Nombre</th>
               <th className="text-left px-3 py-2 font-medium">Slug</th>
@@ -534,7 +570,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
           <tbody>
             {categories.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center text-neutral-500 py-6">
+                <td colSpan={4} className="text-center text-tenue py-6">
                   No hay categorías. Crea la primera con el formulario superior.
                 </td>
               </tr>
@@ -542,41 +578,43 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
             {categories.map((c) => {
               const editing = editingId === c.id;
               return (
-                <tr key={c.id} className="border-t border-neutral-100">
+                <tr key={c.id} className="border-t border-borde">
                   <td className="px-3 py-2 font-medium">
-                    {c.parentId ? <span className="text-neutral-400 mr-1">↳</span> : null}
+                    {c.parentId ? (
+                      <span className="text-tenue mr-1">↳</span>
+                    ) : null}
                     {editing ? (
                       <input
                         type="text"
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
-                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                        className="w-full border border-borde rounded px-2 py-1 text-sm"
                         aria-label="Editar nombre"
                       />
                     ) : (
                       c.name
                     )}
                   </td>
-                  <td className="px-3 py-2 text-neutral-600">
+                  <td className="px-3 py-2 text-secundario">
                     {editing ? (
                       <input
                         type="text"
                         value={editSlug}
                         onChange={(e) => setEditSlug(e.target.value)}
-                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                        className="w-full border border-borde rounded px-2 py-1 text-sm"
                         aria-label="Editar slug"
                       />
                     ) : (
                       c.slug
                     )}
                   </td>
-                  <td className="px-3 py-2 text-neutral-600">
+                  <td className="px-3 py-2 text-secundario">
                     {editing ? (
                       <input
                         type="text"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
-                        className="w-full border border-neutral-300 rounded px-2 py-1 text-sm"
+                        className="w-full border border-borde rounded px-2 py-1 text-sm"
                         aria-label="Editar descripción"
                       />
                     ) : (
@@ -670,7 +708,9 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
     reviewsApi
       .getReported()
       .then((res) => setReviews(res.data || []))
-      .catch(() => toast.error('No se pudo cargar la lista de valoraciones reportadas.'))
+      .catch(() =>
+        toast.error('No se pudo cargar la lista de valoraciones reportadas.'),
+      )
       .finally(() => setIsLoading(false));
   };
 
@@ -679,7 +719,9 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   }, []);
 
   const handleDismiss = async (r: Review) => {
-    if (!window.confirm('¿Descartar el reporte y mantener visible la valoración?')) {
+    if (
+      !window.confirm('¿Descartar el reporte y mantener visible la valoración?')
+    ) {
       return;
     }
     try {
@@ -720,8 +762,12 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
 
   if (reviews.length === 0) {
     return (
-      <div className="text-center text-neutral-500 py-10">
-        <Flag size={32} className="mx-auto mb-2 text-neutral-300" aria-hidden="true" />
+      <div className="text-center text-tenue py-10">
+        <Flag
+          size={32}
+          className="mx-auto mb-2 text-tenue"
+          aria-hidden="true"
+        />
         <p>No hay valoraciones reportadas pendientes de moderación.</p>
       </div>
     );
@@ -732,29 +778,38 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
       {reviews.map((r) => (
         <li
           key={r.id}
-          className="border border-neutral-200 rounded-md p-4 bg-white"
+          className="border border-borde rounded-md p-4 bg-superficie"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1 min-w-0">
               <div className="flex items-center gap-2">
                 <Badge variant="warning">Reportada</Badge>
-                <span className="text-sm text-neutral-600">
+                <span className="text-sm text-secundario">
                   {r.rating}/5 · {r.client?.firstName} {r.client?.lastName}
                 </span>
               </div>
               {r.comment && (
-                <p className="text-neutral-800 break-words">{r.comment}</p>
+                <p className="text-principal break-words">{r.comment}</p>
               )}
-              <p className="text-xs text-neutral-500">
-                Reserva #{r.bookingId.slice(0, 8)} · {new Date(r.createdAt).toLocaleDateString('es-ES')}
+              <p className="text-xs text-tenue">
+                Reserva #{r.bookingId.slice(0, 8)} ·{' '}
+                {new Date(r.createdAt).toLocaleDateString('es-ES')}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-              <Button variant="secondary" size="sm" onClick={() => handleDismiss(r)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => handleDismiss(r)}
+              >
                 <Check size={14} aria-hidden="true" />
                 Mantener
               </Button>
-              <Button variant="danger" size="sm" onClick={() => handleDelete(r)}>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleDelete(r)}
+              >
                 Eliminar
               </Button>
             </div>

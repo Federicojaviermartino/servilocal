@@ -46,10 +46,10 @@ export default function DashboardHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900">
+        <h1 className="text-2xl font-bold text-principal">
           Hola, {user.firstName}
         </h1>
-        <p className="text-neutral-600 mt-1">
+        <p className="text-secundario mt-1">
           {user.role === UserRole.PROVIDER
             ? 'Aquí tienes el resumen de tu actividad como profesional.'
             : 'Aquí tienes el resumen de tus reservas y valoraciones.'}
@@ -63,28 +63,28 @@ export default function DashboardHomePage() {
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg shadow-card p-5">
-              <p className="text-sm text-neutral-600">Pendientes</p>
+            <div className="bg-superficie rounded-lg shadow-card p-5">
+              <p className="text-sm text-secundario">Pendientes</p>
               <p className="text-3xl font-bold text-warning-600 mt-1">
                 {pending}
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-card p-5">
-              <p className="text-sm text-neutral-600">Confirmadas</p>
+            <div className="bg-superficie rounded-lg shadow-card p-5">
+              <p className="text-sm text-secundario">Confirmadas</p>
               <p className="text-3xl font-bold text-primary-600 mt-1">
                 {confirmed}
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow-card p-5">
-              <p className="text-sm text-neutral-600">Completadas</p>
+            <div className="bg-superficie rounded-lg shadow-card p-5">
+              <p className="text-sm text-secundario">Completadas</p>
               <p className="text-3xl font-bold text-success-600 mt-1">
                 {completed}
               </p>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-card p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 mb-4">
+          <div className="bg-superficie rounded-lg shadow-card p-6">
+            <h2 className="text-lg font-semibold text-principal mb-4">
               Accesos rápidos
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -92,23 +92,23 @@ export default function DashboardHomePage() {
                 <>
                   <Link
                     href="/dashboard/services"
-                    className="block p-4 rounded-md border border-neutral-200 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium text-principal">
                       Gestionar mis servicios
                     </p>
-                    <p className="text-sm text-neutral-600 mt-1">
+                    <p className="text-sm text-secundario mt-1">
                       Crea, edita o pausa tus servicios publicados.
                     </p>
                   </Link>
                   <Link
                     href="/dashboard/bookings-received"
-                    className="block p-4 rounded-md border border-neutral-200 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium text-principal">
                       Reservas recibidas
                     </p>
-                    <p className="text-sm text-neutral-600 mt-1">
+                    <p className="text-sm text-secundario mt-1">
                       Acepta, rechaza o marca trabajos como completados.
                     </p>
                   </Link>
@@ -117,23 +117,23 @@ export default function DashboardHomePage() {
                 <>
                   <Link
                     href="/services/search"
-                    className="block p-4 rounded-md border border-neutral-200 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium text-principal">
                       Buscar un servicio
                     </p>
-                    <p className="text-sm text-neutral-600 mt-1">
+                    <p className="text-sm text-secundario mt-1">
                       Encuentra profesionales cerca de ti.
                     </p>
                   </Link>
                   <Link
                     href="/dashboard/bookings"
-                    className="block p-4 rounded-md border border-neutral-200 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
-                    <p className="font-medium text-neutral-900">
+                    <p className="font-medium text-principal">
                       Ver mis reservas
                     </p>
-                    <p className="text-sm text-neutral-600 mt-1">
+                    <p className="text-sm text-secundario mt-1">
                       Consulta el estado de tus reservas en curso.
                     </p>
                   </Link>

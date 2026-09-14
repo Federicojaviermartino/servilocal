@@ -25,10 +25,8 @@ const stripeErrorMessages: Record<string, string> = {
   payment_intent_unexpected_state:
     'La sesión de pago ha caducado. Generando una nueva...',
   card_declined: 'Tu tarjeta ha sido rechazada.',
-  authentication_required:
-    'Se requiere verificación adicional de tu banco.',
-  processing_error:
-    'Error temporal procesando el pago. Inténtalo de nuevo.',
+  authentication_required: 'Se requiere verificación adicional de tu banco.',
+  processing_error: 'Error temporal procesando el pago. Inténtalo de nuevo.',
   expired_card: 'Tu tarjeta ha caducado.',
   incorrect_cvc: 'El CVC introducido no es correcto.',
   insufficient_funds: 'Fondos insuficientes en la tarjeta.',
@@ -55,7 +53,9 @@ export default function CheckoutForm({
 
     if (isProcessing) return;
     if (!stripe || !elements) {
-      toast.error('El formulario de pago aún se está cargando. Espera un momento.');
+      toast.error(
+        'El formulario de pago aún se está cargando. Espera un momento.',
+      );
       return;
     }
 
@@ -72,7 +72,9 @@ export default function CheckoutForm({
         try {
           await onIntentExpired();
         } catch {
-          toast.error('No se pudo regenerar la sesión de pago. Recarga la página.');
+          toast.error(
+            'No se pudo regenerar la sesión de pago. Recarga la página.',
+          );
         }
         setIsProcessing(false);
         return;
@@ -100,9 +102,9 @@ export default function CheckoutForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement />
-      <div className="bg-neutral-50 rounded-md p-4 flex justify-between items-center">
-        <span className="text-neutral-700">Total a pagar</span>
-        <span className="text-xl font-bold text-neutral-900">
+      <div className="bg-fondo rounded-md p-4 flex justify-between items-center">
+        <span className="text-secundario">Total a pagar</span>
+        <span className="text-xl font-bold text-principal">
           {amount.toFixed(2)} euros
         </span>
       </div>
@@ -115,7 +117,7 @@ export default function CheckoutForm({
       >
         Pagar {amount.toFixed(2)} euros
       </Button>
-      <p className="text-xs text-neutral-500 text-center">
+      <p className="text-xs text-tenue text-center">
         Pago procesado de forma segura por Stripe. ServiLocal no almacena los
         datos de tu tarjeta.
       </p>

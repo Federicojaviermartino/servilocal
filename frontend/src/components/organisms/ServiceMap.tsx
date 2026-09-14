@@ -72,8 +72,8 @@ export default function ServiceMap({
             <Popup>
               <div className="text-sm">
                 <p className="font-semibold">{service.title}</p>
-                <p className="text-neutral-600">{service.city}</p>
-                <p className="text-neutral-600">
+                <p className="text-secundario">{service.city}</p>
+                <p className="text-secundario">
                   Desde {service.priceMin} {service.priceUnit}
                 </p>
                 <Link

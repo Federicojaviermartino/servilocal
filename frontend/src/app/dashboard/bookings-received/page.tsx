@@ -70,11 +70,11 @@ export default function BookingsReceivedPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">
+      <h1 className="text-2xl font-bold text-principal mb-6">
         Reservas recibidas
       </h1>
 
-      <div className="bg-white rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
+      <div className="bg-superficie rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -82,7 +82,7 @@ export default function BookingsReceivedPage() {
             className={`px-4 py-2 text-sm rounded-md ${
               filter === t.id
                 ? 'bg-primary-600 text-white'
-                : 'text-neutral-700 hover:bg-neutral-50'
+                : 'text-secundario hover:bg-fondo'
             }`}
           >
             {t.label}
@@ -95,7 +95,7 @@ export default function BookingsReceivedPage() {
           <Spinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-card p-10 text-center text-neutral-600">
+        <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
           No tienes reservas en esta sección.
         </div>
       ) : (
@@ -105,7 +105,7 @@ export default function BookingsReceivedPage() {
             return (
               <div
                 key={b.id}
-                className="bg-white rounded-lg shadow-card p-5"
+                className="bg-superficie rounded-lg shadow-card p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -113,14 +113,14 @@ export default function BookingsReceivedPage() {
                       <Badge variant={statusVariants[b.status]}>
                         {statusLabels[b.status]}
                       </Badge>
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-tenue">
                         #{b.id.slice(0, 8)}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-neutral-900">
+                    <h3 className="font-semibold text-principal">
                       {b.service.title}
                     </h3>
-                    <p className="text-sm text-neutral-600 mt-1">
+                    <p className="text-sm text-secundario mt-1">
                       {date.toLocaleDateString('es-ES', {
                         day: '2-digit',
                         month: 'long',
@@ -133,7 +133,7 @@ export default function BookingsReceivedPage() {
                       })}
                     </p>
                     {b.description && (
-                      <p className="mt-2 text-sm text-neutral-700 bg-neutral-50 rounded p-2">
+                      <p className="mt-2 text-sm text-secundario bg-fondo rounded p-2">
                         {b.description}
                       </p>
                     )}
@@ -142,18 +142,18 @@ export default function BookingsReceivedPage() {
                         name={`${b.client.firstName} ${b.client.lastName}`}
                         size="sm"
                       />
-                      <span className="text-sm text-neutral-700">
+                      <span className="text-sm text-secundario">
                         {b.client.firstName} {b.client.lastName}
                       </span>
                     </div>
                   </div>
-                  <p className="text-lg font-bold text-neutral-900 whitespace-nowrap">
+                  <p className="text-lg font-bold text-principal whitespace-nowrap">
                     {b.totalPrice} euros
                   </p>
                 </div>
 
                 {b.status === BookingStatus.PENDING && (
-                  <div className="mt-4 pt-4 border-t border-neutral-100 flex gap-2 justify-end">
+                  <div className="mt-4 pt-4 border-t border-borde flex gap-2 justify-end">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -174,7 +174,7 @@ export default function BookingsReceivedPage() {
                   </div>
                 )}
                 {b.status === BookingStatus.CONFIRMED && (
-                  <div className="mt-4 pt-4 border-t border-neutral-100 flex justify-end">
+                  <div className="mt-4 pt-4 border-t border-borde flex justify-end">
                     <Button
                       size="sm"
                       variant="secondary"

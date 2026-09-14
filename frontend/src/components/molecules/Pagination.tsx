@@ -66,7 +66,7 @@ export default function Pagination({
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
         aria-label="Página anterior"
-        className={clsx(claseBoton, 'text-neutral-700 hover:bg-neutral-100')}
+        className={clsx(claseBoton, 'text-secundario hover:bg-superficie-alt')}
       >
         <ChevronLeft size={18} aria-hidden="true" />
       </button>
@@ -75,7 +75,7 @@ export default function Pagination({
         elemento === SALTO ? (
           <span
             key={`salto-${indice}`}
-            className="px-2 text-neutral-400"
+            className="px-2 text-tenue"
             aria-hidden="true"
           >
             …
@@ -91,7 +91,7 @@ export default function Pagination({
               claseBoton,
               elemento === page
                 ? 'bg-primary-600 font-medium text-white'
-                : 'text-neutral-700 hover:bg-neutral-100',
+                : 'text-secundario hover:bg-superficie-alt',
             )}
           >
             {elemento}
@@ -104,7 +104,7 @@ export default function Pagination({
         onClick={() => onChange(page + 1)}
         disabled={page === totalPages}
         aria-label="Página siguiente"
-        className={clsx(claseBoton, 'text-neutral-700 hover:bg-neutral-100')}
+        className={clsx(claseBoton, 'text-secundario hover:bg-superficie-alt')}
       >
         <ChevronRight size={18} aria-hidden="true" />
       </button>

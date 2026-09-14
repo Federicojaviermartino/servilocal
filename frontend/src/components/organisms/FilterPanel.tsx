@@ -61,13 +61,13 @@ export default function FilterPanel({
   };
 
   return (
-    <aside className="bg-white rounded-lg shadow-card p-5 space-y-5">
-      <h2 className="font-semibold text-neutral-900">Filtros</h2>
+    <aside className="bg-superficie rounded-lg shadow-card p-5 space-y-5">
+      <h2 className="font-semibold text-principal">Filtros</h2>
 
       <div>
         <label
           htmlFor="filtro-categoria"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Categoría
         </label>
@@ -75,7 +75,7 @@ export default function FilterPanel({
           id="filtro-categoria"
           value={categoryId}
           onChange={(e) => setCategoryId(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">Todas las categorías</option>
           {categories.map((c) => (
@@ -89,7 +89,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filtro-ciudad"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Ciudad
         </label>
@@ -97,7 +97,7 @@ export default function FilterPanel({
           id="filtro-ciudad"
           value={city}
           onChange={(e) => setCity(e.target.value)}
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-neutral-900 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">Todas las ciudades</option>
           {CIUDADES.map((ciudad) => (
@@ -111,7 +111,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filtro-radio"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Radio de búsqueda: {radiusKm} km
         </label>
@@ -127,7 +127,7 @@ export default function FilterPanel({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
+        <label className="block text-sm font-medium text-secundario mb-2">
           Valoración mínima
         </label>
         <RatingStars rating={minRating} interactive onChange={setMinRating} />
@@ -136,7 +136,7 @@ export default function FilterPanel({
       <div>
         <label
           htmlFor="filtro-precio-maximo"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Precio máximo (euros)
         </label>
@@ -147,7 +147,7 @@ export default function FilterPanel({
           value={maxPrice || ''}
           onChange={(e) => setMaxPrice(Number(e.target.value))}
           placeholder="Sin límite"
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 

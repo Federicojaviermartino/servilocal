@@ -69,7 +69,7 @@ export default function ServiceDetailPage() {
     // Reproduce la estructura real de la ficha para que el contenido no
     // desplace la página al llegar.
     return (
-      <main className="bg-neutral-50 min-h-screen py-8">
+      <main className="bg-fondo min-h-screen py-8">
         <div className="max-w-5xl mx-auto px-4">
           <div
             className="grid grid-cols-1 lg:grid-cols-3 gap-6"
@@ -77,7 +77,7 @@ export default function ServiceDetailPage() {
             aria-label="Cargando el servicio"
           >
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-white rounded-lg shadow-card overflow-hidden">
+              <div className="bg-superficie rounded-lg shadow-card overflow-hidden">
                 <Skeleton className="aspect-video rounded-none" />
                 <div className="p-6 space-y-4">
                   <Skeleton className="h-5 w-28" />
@@ -92,12 +92,12 @@ export default function ServiceDetailPage() {
               </div>
             </div>
             <aside className="space-y-6">
-              <div className="bg-white rounded-lg shadow-card p-6 space-y-4">
+              <div className="bg-superficie rounded-lg shadow-card p-6 space-y-4">
                 <Skeleton className="h-8 w-40" />
                 <Skeleton className="h-11 w-full" />
                 <Skeleton className="h-11 w-full" />
               </div>
-              <div className="bg-white rounded-lg shadow-card p-6 space-y-3">
+              <div className="bg-superficie rounded-lg shadow-card p-6 space-y-3">
                 <Skeleton className="h-5 w-36" />
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-16 w-16 rounded-full" />
@@ -129,8 +129,8 @@ export default function ServiceDetailPage() {
           : 'El servicio que buscas no existe o ha sido eliminado.';
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-2xl font-semibold text-neutral-900">{title}</h1>
-        <p className="mt-2 text-neutral-600">{message}</p>
+        <h1 className="text-2xl font-semibold text-principal">{title}</h1>
+        <p className="mt-2 text-secundario">{message}</p>
       </div>
     );
   }
@@ -141,13 +141,13 @@ export default function ServiceDetailPage() {
       : `${service.priceMin} ${service.priceUnit}`;
 
   return (
-    <main className="bg-neutral-50 min-h-screen py-8">
+    <main className="bg-fondo min-h-screen py-8">
       <div className="max-w-5xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Columna principal */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg shadow-card overflow-hidden">
-              <div className="aspect-video bg-neutral-100 relative">
+            <div className="bg-superficie rounded-lg shadow-card overflow-hidden">
+              <div className="aspect-video bg-superficie-alt relative">
                 <ServiceImage
                   src={service.images?.[0]}
                   alt={service.title}
@@ -163,10 +163,10 @@ export default function ServiceDetailPage() {
                     {service.category.name}
                   </Badge>
                 )}
-                <h1 className="text-2xl font-bold text-neutral-900">
+                <h1 className="text-2xl font-bold text-principal">
                   {service.title}
                 </h1>
-                <div className="mt-3 flex items-center gap-4 text-sm text-neutral-600">
+                <div className="mt-3 flex items-center gap-4 text-sm text-secundario">
                   <div className="flex items-center gap-1">
                     <MapPin size={16} />
                     <span>{service.city}</span>
@@ -178,10 +178,10 @@ export default function ServiceDetailPage() {
                   />
                 </div>
                 <div className="mt-6 prose prose-neutral max-w-none">
-                  <h2 className="text-lg font-semibold text-neutral-900">
+                  <h2 className="text-lg font-semibold text-principal">
                     Descripción del servicio
                   </h2>
-                  <p className="text-neutral-700 whitespace-pre-line">
+                  <p className="text-secundario whitespace-pre-line">
                     {service.description}
                   </p>
                 </div>
@@ -189,12 +189,12 @@ export default function ServiceDetailPage() {
             </div>
 
             {/* Reseñas */}
-            <div className="bg-white rounded-lg shadow-card p-6">
-              <h2 className="text-lg font-semibold text-neutral-900 mb-4">
+            <div className="bg-superficie rounded-lg shadow-card p-6">
+              <h2 className="text-lg font-semibold text-principal mb-4">
                 Valoraciones ({reviews.length})
               </h2>
               {reviews.length === 0 ? (
-                <p className="text-neutral-600 text-sm">
+                <p className="text-secundario text-sm">
                   Este servicio aún no tiene valoraciones.
                 </p>
               ) : (
@@ -202,7 +202,7 @@ export default function ServiceDetailPage() {
                   {reviews.map((review) => (
                     <div
                       key={review.id}
-                      className="border-b border-neutral-100 pb-4 last:border-0"
+                      className="border-b border-borde pb-4 last:border-0"
                     >
                       <div className="flex items-start gap-3">
                         <Avatar
@@ -211,22 +211,22 @@ export default function ServiceDetailPage() {
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <p className="font-medium text-neutral-900 text-sm">
+                            <p className="font-medium text-principal text-sm">
                               {review.client.firstName} {review.client.lastName}
                             </p>
                             <RatingStars rating={review.rating} size="sm" />
                           </div>
                           {review.comment && (
-                            <p className="mt-2 text-neutral-700 text-sm">
+                            <p className="mt-2 text-secundario text-sm">
                               {review.comment}
                             </p>
                           )}
                           {review.providerResponse && (
                             <div className="mt-3 ml-4 pl-3 border-l-2 border-primary-200">
-                              <p className="text-xs font-medium text-neutral-500 mb-1">
+                              <p className="text-xs font-medium text-tenue mb-1">
                                 Respuesta del profesional
                               </p>
-                              <p className="text-sm text-neutral-700">
+                              <p className="text-sm text-secundario">
                                 {review.providerResponse}
                               </p>
                             </div>
@@ -242,10 +242,10 @@ export default function ServiceDetailPage() {
 
           {/* Columna lateral: reserva y proveedor */}
           <aside className="space-y-6">
-            <div className="bg-white rounded-lg shadow-card p-6 sticky top-4">
+            <div className="bg-superficie rounded-lg shadow-card p-6 sticky top-4">
               <div className="flex items-center gap-1 mb-4">
                 <Euro size={20} className="text-primary-600" />
-                <span className="text-2xl font-bold text-neutral-900">
+                <span className="text-2xl font-bold text-principal">
                   {priceLabel}
                 </span>
               </div>
@@ -264,8 +264,8 @@ export default function ServiceDetailPage() {
               </Button>
             </div>
 
-            <div className="bg-white rounded-lg shadow-card p-6">
-              <h3 className="font-semibold text-neutral-900 mb-3">
+            <div className="bg-superficie rounded-lg shadow-card p-6">
+              <h3 className="font-semibold text-principal mb-3">
                 Sobre el profesional
               </h3>
               <div className="flex items-center gap-3">
@@ -274,16 +274,16 @@ export default function ServiceDetailPage() {
                   size="lg"
                 />
                 <div>
-                  <p className="font-medium text-neutral-900">
+                  <p className="font-medium text-principal">
                     {service.provider.firstName} {service.provider.lastName}
                   </p>
-                  <p className="text-sm text-neutral-600">
+                  <p className="text-sm text-secundario">
                     {service.provider.city || service.city}
                   </p>
                 </div>
               </div>
               {service.provider.bio && (
-                <p className="mt-4 text-sm text-neutral-700">
+                <p className="mt-4 text-sm text-secundario">
                   {service.provider.bio}
                 </p>
               )}

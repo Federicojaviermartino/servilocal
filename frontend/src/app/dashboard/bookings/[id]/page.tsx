@@ -12,7 +12,13 @@ import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
 import Spinner from '@/components/atoms/Spinner';
 
-const statusLabels: Record<BookingStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
+const statusLabels: Record<
+  BookingStatus,
+  {
+    label: string;
+    variant: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  }
+> = {
   [BookingStatus.PENDING]: { label: 'Pendiente', variant: 'warning' },
   [BookingStatus.CONFIRMED]: { label: 'Confirmada', variant: 'info' },
   [BookingStatus.COMPLETED]: { label: 'Completada', variant: 'success' },
@@ -66,7 +72,7 @@ export default function BookingDetailPage() {
 
   if (!booking || !user) {
     return (
-      <div className="bg-white rounded-lg shadow-card p-10 text-center text-neutral-600">
+      <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
         Reserva no encontrada.
       </div>
     );
@@ -75,38 +81,43 @@ export default function BookingDetailPage() {
   const isClient = user.role === UserRole.CLIENT;
   const isProvider = user.role === UserRole.PROVIDER;
   const counterpart = isProvider ? booking.client : booking.provider;
-  const backHref = isProvider ? '/dashboard/bookings-received' : '/dashboard/bookings';
+  const backHref = isProvider
+    ? '/dashboard/bookings-received'
+    : '/dashboard/bookings';
   const statusCfg = statusLabels[booking.status];
   const date = new Date(booking.scheduledDate);
 
   const canClientPay = isClient && booking.status === BookingStatus.PENDING;
-  const canProviderDecide = isProvider && booking.status === BookingStatus.PENDING;
-  const canProviderComplete = isProvider && booking.status === BookingStatus.CONFIRMED;
+  const canProviderDecide =
+    isProvider && booking.status === BookingStatus.PENDING;
+  const canProviderComplete =
+    isProvider && booking.status === BookingStatus.CONFIRMED;
   const canCancel =
-    (booking.status === BookingStatus.PENDING || booking.status === BookingStatus.CONFIRMED) &&
+    (booking.status === BookingStatus.PENDING ||
+      booking.status === BookingStatus.CONFIRMED) &&
     (booking.clientId === user.id || booking.providerId === user.id);
 
   return (
     <div>
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-primary-600 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-secundario hover:text-primary-600 mb-4"
       >
         <ArrowLeft size={16} />
         Volver
       </Link>
 
-      <div className="bg-white rounded-lg shadow-card p-6">
+      <div className="bg-superficie rounded-lg shadow-card p-6">
         <div className="flex items-center gap-3 mb-4">
           <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
-          <span className="text-xs text-neutral-500">#{booking.id.slice(0, 8)}</span>
+          <span className="text-xs text-tenue">#{booking.id.slice(0, 8)}</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-neutral-900 mb-4">
+        <h1 className="text-2xl font-bold text-principal mb-4">
           {booking.service.title}
         </h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-neutral-700 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-secundario mb-6">
           <div className="flex items-center gap-2">
             <Calendar size={16} />
             <span>
@@ -131,41 +142,46 @@ export default function BookingDetailPage() {
         </div>
 
         <div className="mb-6">
-          <h2 className="text-sm font-semibold text-neutral-900 mb-2">
+          <h2 className="text-sm font-semibold text-principal mb-2">
             Descripción
           </h2>
-          <p className="text-neutral-700 whitespace-pre-line">
+          <p className="text-secundario whitespace-pre-line">
             {booking.description || 'Sin descripción.'}
           </p>
         </div>
 
-        <div className="bg-neutral-50 rounded-md p-4 mb-6">
-          <h2 className="text-sm font-semibold text-neutral-900 mb-3">
+        <div className="bg-fondo rounded-md p-4 mb-6">
+          <h2 className="text-sm font-semibold text-principal mb-3">
             {isProvider ? 'Cliente' : 'Profesional'}
           </h2>
           <div className="flex items-center gap-3">
-            <Avatar name={`${counterpart.firstName} ${counterpart.lastName}`} size="md" />
+            <Avatar
+              name={`${counterpart.firstName} ${counterpart.lastName}`}
+              size="md"
+            />
             <div>
-              <p className="font-medium text-neutral-900">
+              <p className="font-medium text-principal">
                 {counterpart.firstName} {counterpart.lastName}
               </p>
               {counterpart.phone && (
-                <p className="text-sm text-neutral-600">{counterpart.phone}</p>
+                <p className="text-sm text-secundario">{counterpart.phone}</p>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-neutral-200 pt-4 mb-6">
-          <span className="text-neutral-700">Importe</span>
-          <span className="text-2xl font-bold text-neutral-900">
+        <div className="flex items-center justify-between border-t border-borde pt-4 mb-6">
+          <span className="text-secundario">Importe</span>
+          <span className="text-2xl font-bold text-principal">
             {booking.totalPrice} euros
           </span>
         </div>
 
         <div className="flex flex-wrap gap-2 justify-end">
           {canClientPay && (
-            <Button onClick={() => router.push(`/bookings/${booking.id}/payment`)}>
+            <Button
+              onClick={() => router.push(`/bookings/${booking.id}/payment`)}
+            >
               Pagar ahora
             </Button>
           )}

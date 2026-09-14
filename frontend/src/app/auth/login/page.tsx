@@ -76,8 +76,8 @@ function LoginPageContent() {
             className="mx-auto mb-3 h-10 w-10 text-primary-500"
             aria-hidden="true"
           />
-          <h1 className="text-2xl font-bold text-gray-900">Iniciar sesión</h1>
-          <p className="mt-2 text-sm text-gray-600">
+          <h1 className="text-2xl font-bold text-principal">Iniciar sesión</h1>
+          <p className="mt-2 text-sm text-secundario">
             Accede a tu cuenta de ServiLocal
           </p>
         </div>
@@ -141,7 +141,7 @@ function LoginPageContent() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-tenue"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={
                     showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
@@ -170,11 +170,11 @@ function LoginPageContent() {
             </button>
           </form>
 
-          <div className="mt-6 rounded-lg border border-primary-100 bg-primary-50 p-4">
-            <p className="text-sm font-medium text-gray-900">
+          <div className="mt-6 rounded-lg border border-primary-100 bg-primary-50 p-4 dark:border-primary-800 dark:bg-primary-900/20">
+            <p className="text-sm font-medium text-principal">
               Acceso de demostración
             </p>
-            <p className="mt-1 text-xs text-gray-600">
+            <p className="mt-1 text-xs text-secundario">
               Entra con un clic y recorre la aplicación con datos de prueba.
             </p>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -185,19 +185,19 @@ function LoginPageContent() {
                   onClick={() => iniciarSesion(cuenta.email, PASSWORD_DEMO)}
                   disabled={isLoading}
                   title={cuenta.descripcion}
-                  className="rounded-md border border-primary-200 bg-white px-3 py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {cuenta.etiqueta}
                 </button>
               ))}
             </div>
-            <p className="mt-3 text-xs text-gray-500">
+            <p className="mt-3 text-xs text-tenue">
               También puedes entrar a mano con cualquiera de esos correos y la
               contraseña <span className="font-medium">{PASSWORD_DEMO}</span>.
             </p>
           </div>
 
-          <p className="mt-4 text-center text-sm text-gray-600">
+          <p className="mt-4 text-center text-sm text-secundario">
             ¿No tienes cuenta?{' '}
             <Link
               href="/auth/register"

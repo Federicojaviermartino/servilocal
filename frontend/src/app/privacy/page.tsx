@@ -45,10 +45,10 @@ const derechos = [
 export default function PrivacyPage() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-3xl font-bold text-neutral-900">
+      <h1 className="text-3xl font-bold text-principal">
         Política de privacidad
       </h1>
-      <p className="mt-2 text-sm text-neutral-500">
+      <p className="mt-2 text-sm text-tenue">
         Última actualización: septiembre de 2026
       </p>
 
@@ -59,10 +59,10 @@ export default function PrivacyPage() {
       </div>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">
+        <h2 className="text-lg font-semibold text-principal">
           Quién trata tus datos
         </h2>
-        <p className="mt-3 text-neutral-600">
+        <p className="mt-3 text-secundario">
           El responsable del tratamiento es Federico Javier Martino, autor del
           proyecto. Puedes contactar a través del repositorio público del
           proyecto para cualquier cuestión relativa a esta política.
@@ -70,13 +70,13 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">
+        <h2 className="text-lg font-semibold text-principal">
           Qué datos tratamos y para qué
         </h2>
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-neutral-200 text-neutral-500">
+              <tr className="border-b border-borde text-tenue">
                 <th className="py-2 pr-4 font-medium">Categoría</th>
                 <th className="py-2 pr-4 font-medium">Detalle</th>
                 <th className="py-2 font-medium">Finalidad</th>
@@ -86,13 +86,13 @@ export default function PrivacyPage() {
               {datos.map((fila) => (
                 <tr
                   key={fila.categoria}
-                  className="border-b border-neutral-100 align-top"
+                  className="border-b border-borde align-top"
                 >
-                  <td className="py-3 pr-4 font-medium text-neutral-900">
+                  <td className="py-3 pr-4 font-medium text-principal">
                     {fila.categoria}
                   </td>
-                  <td className="py-3 pr-4 text-neutral-600">{fila.detalle}</td>
-                  <td className="py-3 text-neutral-600">{fila.finalidad}</td>
+                  <td className="py-3 pr-4 text-secundario">{fila.detalle}</td>
+                  <td className="py-3 text-secundario">{fila.finalidad}</td>
                 </tr>
               ))}
             </tbody>
@@ -101,10 +101,8 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">
-          Base legal
-        </h2>
-        <p className="mt-3 text-neutral-600">
+        <h2 className="text-lg font-semibold text-principal">Base legal</h2>
+        <p className="mt-3 text-secundario">
           Tratamos tus datos para ejecutar el contrato que aceptas al usar la
           plataforma, para cumplir obligaciones legales en materia fiscal y de
           consumo, y sobre la base de nuestro interés legítimo en prevenir el
@@ -113,10 +111,10 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">
+        <h2 className="text-lg font-semibold text-principal">
           Con quién los compartimos
         </h2>
-        <p className="mt-3 text-neutral-600">
+        <p className="mt-3 text-secundario">
           Con la otra parte de una reserva, en la medida necesaria para
           prestarla, y con Stripe como proveedor de pagos. No vendemos datos
           personales ni los cedemos con fines publicitarios.
@@ -124,10 +122,10 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">
+        <h2 className="text-lg font-semibold text-principal">
           Cuánto tiempo los conservamos
         </h2>
-        <p className="mt-3 text-neutral-600">
+        <p className="mt-3 text-secundario">
           Mientras tu cuenta esté activa y, después, durante los plazos de
           prescripción legal aplicables a las obligaciones contables y de
           consumo. Transcurridos esos plazos, los suprimimos o anonimizamos.
@@ -135,10 +133,10 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">
+        <h2 className="text-lg font-semibold text-principal">
           Almacenamiento en tu navegador
         </h2>
-        <p className="mt-3 text-neutral-600">
+        <p className="mt-3 text-secundario">
           Para mantener tu sesión iniciada guardamos un token de acceso en el
           almacenamiento local de tu navegador. No utilizamos cookies
           publicitarias ni de seguimiento de terceros. Al cerrar sesión, ese
@@ -147,15 +145,15 @@ export default function PrivacyPage() {
       </section>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold text-neutral-900">Tus derechos</h2>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-neutral-600">
+        <h2 className="text-lg font-semibold text-principal">Tus derechos</h2>
+        <ul className="mt-3 list-disc space-y-2 pl-5 text-secundario">
           {derechos.map((derecho) => (
             <li key={derecho}>{derecho}</li>
           ))}
         </ul>
       </section>
 
-      <p className="mt-10 text-sm text-neutral-600">
+      <p className="mt-10 text-sm text-secundario">
         Consulta también los{' '}
         <Link href="/terms" className="text-primary-600 hover:underline">
           términos de uso

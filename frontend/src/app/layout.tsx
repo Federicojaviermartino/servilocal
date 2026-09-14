@@ -41,7 +41,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
+      <head>
+        {/* Corre antes de pintar: sin esto la página aparecería en claro y
+            saltaría a oscuro al hidratar. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('tema');var oscuro=t==='oscuro'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',oscuro);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`${inter.className} flex min-h-screen flex-col`}>
         <a
           href="#main-content"

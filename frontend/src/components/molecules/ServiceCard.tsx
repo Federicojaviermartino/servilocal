@@ -22,9 +22,9 @@ export default function ServiceCard({ service }: ServiceCardProps) {
   return (
     <Link
       href={`/services/${service.id}`}
-      className="block bg-white rounded-lg shadow-card hover:shadow-card-hover transition-shadow overflow-hidden"
+      className="block bg-superficie rounded-lg shadow-card hover:shadow-card-hover transition-shadow overflow-hidden"
     >
-      <div className="aspect-video bg-neutral-100 relative">
+      <div className="aspect-video bg-superficie-alt relative">
         <ServiceImage
           src={service.images?.[0]}
           alt={service.title}
@@ -38,13 +38,13 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="font-semibold text-neutral-900 line-clamp-1">
+        <h3 className="font-semibold text-principal line-clamp-1">
           {service.title}
         </h3>
-        <p className="mt-1 text-sm text-neutral-600 line-clamp-2">
+        <p className="mt-1 text-sm text-secundario line-clamp-2">
           {service.description}
         </p>
-        <div className="mt-3 flex items-center gap-3 text-sm text-neutral-600">
+        <div className="mt-3 flex items-center gap-3 text-sm text-secundario">
           <div className="flex items-center gap-1">
             <MapPin size={14} />
             <span>{service.city}</span>

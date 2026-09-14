@@ -76,8 +76,8 @@ const secciones = [
 export default function TermsPage() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="text-3xl font-bold text-neutral-900">Términos de uso</h1>
-      <p className="mt-2 text-sm text-neutral-500">
+      <h1 className="text-3xl font-bold text-principal">Términos de uso</h1>
+      <p className="mt-2 text-sm text-tenue">
         Última actualización: septiembre de 2026
       </p>
 
@@ -90,18 +90,18 @@ export default function TermsPage() {
 
       {secciones.map((seccion) => (
         <section key={seccion.titulo} className="mt-8">
-          <h2 className="text-lg font-semibold text-neutral-900">
+          <h2 className="text-lg font-semibold text-principal">
             {seccion.titulo}
           </h2>
           {seccion.parrafos.map((parrafo) => (
-            <p key={parrafo} className="mt-3 text-neutral-600">
+            <p key={parrafo} className="mt-3 text-secundario">
               {parrafo}
             </p>
           ))}
         </section>
       ))}
 
-      <p className="mt-10 text-sm text-neutral-600">
+      <p className="mt-10 text-sm text-secundario">
         Consulta también la{' '}
         <Link href="/privacy" className="text-primary-600 hover:underline">
           política de privacidad

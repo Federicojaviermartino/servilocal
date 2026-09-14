@@ -30,9 +30,9 @@ export default function MyBookingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Mis reservas</h1>
+      <h1 className="text-2xl font-bold text-principal mb-6">Mis reservas</h1>
 
-      <div className="bg-white rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
+      <div className="bg-superficie rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
         {tabs.map((t) => (
           <button
             key={t.id}
@@ -40,7 +40,7 @@ export default function MyBookingsPage() {
             className={`px-4 py-2 text-sm rounded-md transition-colors ${
               filter === t.id
                 ? 'bg-primary-600 text-white'
-                : 'text-neutral-700 hover:bg-neutral-50'
+                : 'text-secundario hover:bg-fondo'
             }`}
           >
             {t.label}
@@ -53,7 +53,7 @@ export default function MyBookingsPage() {
           <Spinner size="lg" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-card p-10 text-center text-neutral-600">
+        <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
           No tienes reservas en esta sección.
         </div>
       ) : (

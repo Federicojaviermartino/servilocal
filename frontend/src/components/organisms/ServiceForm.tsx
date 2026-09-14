@@ -70,7 +70,7 @@ export default function ServiceForm({
       <div>
         <label
           htmlFor="servicio-descripcion"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Descripción
         </label>
@@ -80,13 +80,13 @@ export default function ServiceForm({
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           rows={4}
           required
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
       <div>
         <label
           htmlFor="servicio-categoria"
-          className="block text-sm font-medium text-neutral-700 mb-1"
+          className="block text-sm font-medium text-secundario mb-1"
         >
           Categoría
         </label>
@@ -95,7 +95,7 @@ export default function ServiceForm({
           value={form.categoryId}
           onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
           required
-          className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">Selecciona una categoría</option>
           {categories.map((c) => (
@@ -130,7 +130,7 @@ export default function ServiceForm({
         <div>
           <label
             htmlFor="servicio-unidad"
-            className="block text-sm font-medium text-neutral-700 mb-1"
+            className="block text-sm font-medium text-secundario mb-1"
           >
             Unidad
           </label>
@@ -138,7 +138,7 @@ export default function ServiceForm({
             id="servicio-unidad"
             value={form.priceUnit}
             onChange={(e) => setForm({ ...form, priceUnit: e.target.value })}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="por hora">por hora</option>
             <option value="por servicio">por servicio</option>
@@ -157,7 +157,7 @@ export default function ServiceForm({
         <div>
           <label
             htmlFor="servicio-ciudad"
-            className="block text-sm font-medium text-neutral-700 mb-1"
+            className="block text-sm font-medium text-secundario mb-1"
           >
             Ciudad
           </label>
@@ -166,7 +166,7 @@ export default function ServiceForm({
             value={form.city}
             onChange={(e) => setForm({ ...form, city: e.target.value })}
             required
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">Selecciona una ciudad</option>
             {ciudadesDisponibles.map((ciudad) => (

@@ -65,7 +65,8 @@ export default function ProviderServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Quieres eliminar este servicio? No se podrá deshacer.')) return;
+    if (!confirm('¿Quieres eliminar este servicio? No se podrá deshacer.'))
+      return;
     try {
       await servicesApi.remove(id);
       toast.success('Servicio eliminado');
@@ -78,10 +79,10 @@ export default function ProviderServicesPage() {
   if (isCreating) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">
+        <h1 className="text-2xl font-bold text-principal mb-6">
           Nuevo servicio
         </h1>
-        <div className="bg-white rounded-lg shadow-card p-6">
+        <div className="bg-superficie rounded-lg shadow-card p-6">
           <ServiceForm
             onSubmit={handleCreate}
             onCancel={() => setIsCreating(false)}
@@ -95,10 +96,10 @@ export default function ProviderServicesPage() {
   if (editing) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 mb-6">
+        <h1 className="text-2xl font-bold text-principal mb-6">
           Editar servicio
         </h1>
-        <div className="bg-white rounded-lg shadow-card p-6">
+        <div className="bg-superficie rounded-lg shadow-card p-6">
           <ServiceForm
             initial={editing}
             onSubmit={handleUpdate}
@@ -113,7 +114,7 @@ export default function ProviderServicesPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-neutral-900">Mis servicios</h1>
+        <h1 className="text-2xl font-bold text-principal">Mis servicios</h1>
         <Button onClick={() => setIsCreating(true)}>
           <Plus size={18} className="inline mr-1" />
           Nuevo servicio
@@ -125,11 +126,11 @@ export default function ProviderServicesPage() {
           <Spinner size="lg" />
         </div>
       ) : services.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-card p-10 text-center">
-          <p className="text-neutral-600">
+        <div className="bg-superficie rounded-lg shadow-card p-10 text-center">
+          <p className="text-secundario">
             Aún no has publicado ningún servicio.
           </p>
-          <p className="text-sm text-neutral-500 mt-2">
+          <p className="text-sm text-tenue mt-2">
             Crea tu primer servicio para empezar a recibir reservas.
           </p>
         </div>
@@ -138,21 +139,21 @@ export default function ProviderServicesPage() {
           {services.map((s) => (
             <div
               key={s.id}
-              className="bg-white rounded-lg shadow-card p-5 flex items-start justify-between gap-4"
+              className="bg-superficie rounded-lg shadow-card p-5 flex items-start justify-between gap-4"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-neutral-900 truncate">
+                  <h3 className="font-semibold text-principal truncate">
                     {s.title}
                   </h3>
                   <Badge variant={s.isActive ? 'success' : 'default'}>
                     {s.isActive ? 'Activo' : 'Pausado'}
                   </Badge>
                 </div>
-                <p className="text-sm text-neutral-600 line-clamp-2">
+                <p className="text-sm text-secundario line-clamp-2">
                   {s.description}
                 </p>
-                <div className="mt-2 flex items-center gap-4 text-sm text-neutral-600">
+                <div className="mt-2 flex items-center gap-4 text-sm text-secundario">
                   <span>{s.city}</span>
                   <span>Desde {s.priceMin} euros</span>
                   <span>
@@ -164,7 +165,7 @@ export default function ProviderServicesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setEditing(s)}
-                  className="p-2 rounded-md hover:bg-neutral-100 text-neutral-600"
+                  className="p-2 rounded-md hover:bg-superficie-alt text-secundario"
                   aria-label="Editar"
                 >
                   <Pencil size={18} />
