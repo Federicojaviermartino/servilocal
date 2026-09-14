@@ -14,3 +14,8 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Salida de Playwright
+test-results/
+playwright-report/
+.playwright/
