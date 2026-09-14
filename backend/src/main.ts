@@ -4,8 +4,14 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { iniciarSentry } from './common/observabilidad/sentry';
+import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
 
 async function bootstrap() {
+  // Antes de crear la aplicación, para que la instrumentación alcance a todo
+  // lo que se cargue después.
+  const sentryActivo = iniciarSentry();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
@@ -31,6 +37,8 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api');
+
+  app.useGlobalFilters(new FiltroDeExcepciones());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -69,6 +77,11 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`ServiLocal API ejecutándose en http://localhost:${port}`);
   console.log(`Documentación Swagger en http://localhost:${port}/api/docs`);
+  console.log(
+    sentryActivo
+      ? 'Sentry activo: los errores no controlados se reportarán'
+      : 'Sentry inactivo: define SENTRY_DSN para activarlo',
+  );
 }
 
 bootstrap();
