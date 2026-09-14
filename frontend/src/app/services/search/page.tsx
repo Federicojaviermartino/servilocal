@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -45,12 +45,19 @@ function SearchPageContent() {
     'network' | 'timeout' | 'unavailable' | null
   >(null);
 
+  // Puede haber varias búsquedas en vuelo a la vez (cambiar de vista mientras
+  // carga la inicial, por ejemplo). Sin este contador gana la que responde la
+  // última, no la que se pidió la última, y la lista acaba mostrando datos de
+  // una petición ya descartada.
+  const peticionVigente = useRef(0);
+
   const fetchResults = useCallback(
     async (
       params: ServiceSearchParams,
       paginaSolicitada: number,
       vista: Vista,
     ) => {
+      const idPeticion = ++peticionVigente.current;
       setIsLoading(true);
       setFetchError(null);
       try {
@@ -59,6 +66,7 @@ function SearchPageContent() {
           page: paginaSolicitada,
           ...(vista === 'map' ? { limit: LIMITE_MAPA } : {}),
         });
+        if (idPeticion !== peticionVigente.current) return;
         // Soporta respuesta paginada { data, meta } o array directo
         if (Array.isArray(data)) {
           setServices(data);
@@ -72,6 +80,7 @@ function SearchPageContent() {
         }
         setPage(paginaSolicitada);
       } catch (err: any) {
+        if (idPeticion !== peticionVigente.current) return;
         setServices([]);
         setTotal(0);
         setTotalPages(1);
@@ -79,7 +88,7 @@ function SearchPageContent() {
         else if (!err?.response) setFetchError('network');
         else setFetchError('unavailable');
       } finally {
-        setIsLoading(false);
+        if (idPeticion === peticionVigente.current) setIsLoading(false);
       }
     },
     [],
