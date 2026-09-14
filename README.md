@@ -1,197 +1,213 @@
 # ServiLocal
 
-Marketplace de servicios locales con geolocalización.
+**A local services marketplace with geolocation search, verified reviews and real payments.**
 
-Trabajo Final de Máster - Máster Universitario en Desarrollo de Sitios y Aplicaciones Web (UOC)
+ServiLocal connects people who need work done at home — plumbing, electrical, cleaning, painting, renovations, private tutoring — with professionals in their area. It handles the full journey: proximity search, booking, payment, messaging and reviews.
 
-**Autor:** Federico Javier Martino
-**Consultor:** Juan Luis Blanco de los Santos
-**PRA:** César Córcoles Briongos
-**Semestre:** 2025/2026
-**Versión:** 1.0.0 (entrega final)
+Built as a full-stack project with a Next.js front end, a NestJS REST API, PostgreSQL with PostGIS for spatial queries, and Stripe for payments.
 
-## Descripción
+---
 
-ServiLocal es una plataforma web que conecta proveedores de servicios locales (fontanería, electricidad, clases particulares, reformas, etc.) con clientes en su zona geográfica. Integra geolocalización por radio con PostGIS, reservas con máquina de estados, valoraciones verificadas ligadas a reservas completadas, mensajería directa y pagos seguros con Stripe en modelo capture manual y confirmación automática vía webhook.
+## Live demo
 
-## Beta desplegada
+**[servilocal-web.onrender.com](https://servilocal-web.onrender.com)** · API docs (Swagger): **[servilocal-api.onrender.com/api/docs](https://servilocal-api.onrender.com/api/docs)**
 
-- Frontend: https://servilocal-web.onrender.com
-- Backend: https://servilocal-api.onrender.com (Swagger en `/api/docs`)
-- Repositorio público: https://github.com/Federicojaviermartino/servilocal
+The login page has **one-click demo access** — no need to type anything:
 
-La beta está operativa y el flujo completo (búsqueda, reserva, pago con Stripe y confirmación automática vía webhook) ha sido validado extremo a extremo en el entorno público.
+| Role | Account | What you can do |
+|------|---------|-----------------|
+| Client | `laura@ejemplo.com` | Search, book, pay, review, message providers |
+| Provider | `carlos@ejemplo.com` | Publish services, accept or reject bookings |
 
-## Estado del proyecto
+Password for every seeded account: `Password123!`
 
-Los nueve requisitos de la checklist de la asignatura están cumplidos: (1) front-end con framework JavaScript, (2) back-end con uso no trivial de base de datos, (3) administración desde la propia aplicación, (4) varias tablas y gestión de roles, (5) diseño visual, de interfaz y arquitectura de la información, (6) aplicación accesible (WCAG 2.1 nivel AA), (7) seguridad de la aplicación, (8) HTML y CSS con buenas prácticas, y (9) despliegue a servidor público con cuenta de administración. Detalle completo en `documentacion/PAC_FINAL_checklist_Martino_Federico.pdf`.
+**Stripe test card:** `4242 4242 4242 4242`, any future expiry date, CVC `123`. Payments run in Stripe test mode, so nothing is ever charged. Once confirmed, the booking flips to *Confirmed* automatically through the signed webhook.
 
-### Funcionalidades implementadas
+> **Note on the first load.** The demo runs on free hosting tiers that sleep after 15 minutes of inactivity. A scheduled job keeps it warm during working hours (08:00–16:00 UTC). Outside that window the first request wakes the server and can take up to a minute — the app shows a notice and retries automatically instead of failing.
 
-**Visitante (no autenticado)**
-- Página de inicio con buscador geolocalizado
-- Búsqueda con filtros (categoría, ciudad, radio, valoración mínima, precio máximo)
-- Vista lista o mapa (Leaflet con marcadores)
-- Detalle de servicio con reseñas verificadas y datos del profesional
-- Registro e inicio de sesión con validación
+---
 
-**Cliente**
-- Panel de resumen con indicadores
-- Creación de reserva con formulario validado (fecha y hora en ISO UTC sin desfase horario)
-- Pago seguro con Stripe Payment Element en modelo capture manual
-- Listado de reservas filtrable por estado
-- Detalle de reserva en `/dashboard/bookings/[id]` con acción Pagar ahora cuando procede y opción de cancelación
-- Sistema de valoraciones (pendientes y enviadas)
-- Mensajería con proveedores y edición del perfil
+## Screenshots
 
-**Proveedor**
-- Panel de resumen adaptado
-- CRUD completo de servicios publicados (crear, editar, pausar, eliminar)
-- Gestión de reservas recibidas con acciones Confirmar, Rechazar, Marcar como completada y Cancelar
-- Mensajería con clientes y edición del perfil profesional
+| Search with filters, map view and pagination |
+|---|
+| ![Search results](docs/screenshots/search.png) |
 
-**Administrador**
-- Acceso protegido por Guards JWT + RolesGuard
-- Gestión de usuarios (listar, filtrar por rol y estado, activar o desactivar)
-- Gestión de categorías jerárquicas (crear, editar, renombrar, reorganizar)
-- Moderación de valoraciones reportadas (aprobar o rechazar)
-- Consulta de métricas básicas de la plataforma
+| Service detail | One-click demo access |
+|---|---|
+| ![Service detail](docs/screenshots/service-detail.png) | ![Demo login](docs/screenshots/demo-login.png) |
 
-## Arquitectura
+| Mobile — search | Mobile — service detail |
+|---|---|
+| <img src="docs/screenshots/search-mobile.png" width="280" alt="Mobile search"> | <img src="docs/screenshots/service-detail-mobile.png" width="280" alt="Mobile service detail"> |
 
-Cliente-servidor de tres capas. El frontend consume la API REST del backend; el backend persiste en PostgreSQL con PostGIS y se integra con Stripe para pagos.
+---
+
+## What it does
+
+**Anyone**
+- Geolocated search with filters: category, city, radius, minimum rating, maximum price
+- Results as a list or on a Leaflet map with markers
+- Accent- and case-insensitive search that also matches trade names, so "fontaneria" finds *Fontanería*
+- Service detail with verified reviews, price range and provider profile
+
+**Clients**
+- Booking form with validation, dates handled in ISO UTC to avoid timezone drift
+- Payment through Stripe Payment Element using **manual capture**: funds are held, not taken, until the job is confirmed
+- Bookings filtered by status, with cancellation where allowed
+- Reviews — only after a completed booking, so ratings reflect real work
+- Direct messaging with providers
+
+**Providers**
+- Full CRUD over published services, including coverage radius and price unit
+- Incoming bookings with confirm, reject, complete and cancel actions
+- Messaging with clients
+
+**Administrators**
+- Protected by JWT guards plus a role guard
+- User management: list, filter by role and status, activate or deactivate
+- Hierarchical category management
+- Moderation queue for reported reviews
+- Basic platform metrics
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Front end | React 18, Next.js 14 (App Router), TypeScript |
+| Styling | Tailwind CSS, Atomic Design component structure |
+| Back end | NestJS, TypeScript |
+| Database | PostgreSQL with PostGIS (schema managed by TypeORM migrations) |
+| ORM | TypeORM, with a numeric transformer for decimal columns |
+| Maps | Leaflet + react-leaflet, dynamically imported to avoid SSR issues |
+| Auth | JWT with Passport, bcrypt password hashing |
+| Payments | Stripe Payment Element, manual capture, signed webhook |
+| Testing | Jest (19 unit tests) |
+| CI | GitHub Actions: lint, type-check, tests and build on every push |
+| Hosting | Render (web services) + Neon (PostgreSQL) |
+
+### Engineering details worth a look
+
+- **Spatial search** uses PostGIS `ST_DWithin` against GiST-indexed geometry columns, not a bounding-box approximation.
+- **Text and city matching** is accent-insensitive through an `IMMUTABLE` SQL expression, backed by a functional index so it stays indexable.
+- **Payments use manual capture**, so the client's money is authorised at booking time and only captured when the work is confirmed — the correct model for a marketplace.
+- **The webhook verifies Stripe's signature** against the raw request body, which is why the Nest app boots with `rawBody: true`.
+- **Reviews are tied to completed bookings** by a unique constraint, so ratings cannot be faked.
+- **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
+
+---
+
+## Architecture
+
+Three-tier client–server. The front end consumes the REST API; the API persists to PostgreSQL/PostGIS and integrates with Stripe.
 
 ```
 servilocal/
-  backend/          Nest.js + TypeORM + PostgreSQL/PostGIS + Stripe
+  backend/                  NestJS + TypeORM + PostgreSQL/PostGIS + Stripe
     src/
-      auth/         Autenticación JWT con Passport
-      users/        Gestión de usuarios (GET /users/me antes de /users/:id)
-      categories/   Categorías jerárquicas
-      services/     Servicios con búsqueda geoespacial (ST_DWithin)
-      bookings/     Reservas y estados (/bookings/my, /bookings/received)
-      reviews/      Valoraciones verificadas
-      payments/     Integración con Stripe (capture manual)
-        payments-webhook.controller.ts   Webhook firmado con STRIPE_WEBHOOK_SECRET
-      messages/     Mensajería entre usuarios (polling cada 10s)
-      entities/     Entidades TypeORM con ColumnNumericTransformer en decimales
-      common/       Guards, decoradores, filtros y transformers
-      config/       database.config.ts y data-source.ts (SSL obligatorio si DATABASE_URL)
-      database/     Seeders reproducibles
-  frontend/         Next.js 14 App Router + Tailwind
+      auth/                 JWT authentication with Passport
+      users/                User management
+      categories/           Hierarchical categories
+      services/             Services with geospatial search (ST_DWithin)
+      bookings/             Bookings and their state machine
+      reviews/              Reviews tied to completed bookings
+      payments/             Stripe integration, manual capture
+        payments-webhook.controller.ts    Signature-verified webhook
+      messages/             Direct messaging between users
+      entities/             TypeORM entities
+      common/               Guards, decorators and transformers
+      config/               Database config and CLI data source
+      database/
+        migrations/         Schema history — the only source of truth
+        seeds/              Reproducible demo data
+  frontend/                 Next.js 14 App Router + Tailwind
     src/
-      app/          Rutas (Next.js App Router)
-        bookings/[id]/payment/   Pago con Stripe Elements
-        dashboard/bookings/[id]/ Detalle de reserva con acciones por rol y estado
+      app/                  Routes, including robots.ts and sitemap.ts
       components/
-        atoms/      Button, Input, Badge, Avatar, Spinner
-        molecules/  SearchBar, ServiceCard, BookingCard, RatingStars
-        organisms/  FilterPanel, ResultsList, ServiceMap (dynamic ssr:false),
-                    BookingForm, CheckoutForm, ServiceForm
-        templates/  DashboardLayout
-        layout/     Header con hrefs condicionales por rol, Footer
-      lib/          api.ts (axios con interceptor 401 no destructivo),
-                    auth-store.ts (Zustand), stripe.ts
-      types/        Tipos compartidos
-  diagrams/         Diagramas UML (Mermaid.js)
-  wireframes/       Wireframes responsive en HTML
+        atoms/              Button, Input, Badge, Avatar, Spinner
+        molecules/          SearchBar, ServiceCard, ServiceImage, Pagination
+        organisms/          FilterPanel, ResultsList, ServiceMap, forms
+        templates/          DashboardLayout
+        layout/             Header, Footer
+      lib/                  API client, auth store (Zustand), Stripe, shared constants
+      types/                Shared TypeScript types
+  diagrams/                 UML diagrams (Mermaid)
+  wireframes/               Responsive wireframes
+  docs/screenshots/         Images used in this README
   docker-compose.yml
-  README.md
 ```
 
-## Stack tecnológico
+---
 
-| Capa | Tecnología |
-|------|-----------|
-| Front-end | React 18 + Next.js 14 (TypeScript, App Router) |
-| Back-end | Nest.js (TypeScript) con rawBody para webhook de Stripe |
-| Base de datos | PostgreSQL 16 + PostGIS (Supabase en producción) |
-| ORM | TypeORM con ColumnNumericTransformer en decimales |
-| Estilos | Tailwind CSS con tokens centralizados |
-| Sistema de diseño | Atomic Design |
-| Mapas | Leaflet.js + react-leaflet (carga dinámica) |
-| Autenticación | JWT + Passport.js |
-| Pagos | Stripe (Payment Element, capture manual, webhook firmado) |
-| Testing | Jest (19 tests unitarios en verde) |
-| CI/CD | GitHub Actions + Docker |
-| Despliegue | Render (servicios web) + Supabase (base de datos) |
+## Running it locally
 
-## Instalación local
+### Prerequisites
 
-### Requisitos previos
+- Node.js 20 or newer
+- Docker and Docker Compose
+- A Stripe account in test mode (publishable and secret keys)
 
-- Node.js 20 o superior (Node 22 usado en Render)
-- Docker y Docker Compose
-- Cuenta de Stripe (modo test) con claves pública y secreta
-- Stripe CLI opcional para probar el webhook en local
+### Steps
 
-### Pasos
-
-1. Clonar el repositorio
+**1. Clone and start the database**
 
 ```bash
 git clone https://github.com/Federicojaviermartino/servilocal.git
 cd servilocal
+docker compose up -d db
 ```
 
-2. Levantar la base de datos con Docker
+**2. Configure the back end**
 
-```bash
-docker-compose up -d db
-```
-
-3. Configurar variables de entorno del backend
-
-Crear `backend/.env` a partir de `backend/.env.example`:
+Create `backend/.env` from `backend/.env.example`:
 
 ```env
-# Base de datos local (se ignora si se define DATABASE_URL)
+# Local database (ignored when DATABASE_URL is set)
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=servilocal_user
 DB_PASSWORD=servilocal_dev_2026
 DB_DATABASE=servilocal
 
-# Alternativa: URL única con SSL activo
-# DATABASE_URL=postgresql://usuario:password@host:5432/base
+# Alternative: a single URL, SSL enabled
+# DATABASE_URL=postgresql://user:password@host:5432/database
 
-# Autenticación
-JWT_SECRET=cambia_esto_en_produccion
+JWT_SECRET=change_this_in_production
 JWT_EXPIRATION=7d
 
-# CORS (lista coma-separada)
 CORS_ORIGINS=http://localhost:3000
 
-# Stripe
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...   # opcional al arranque
+STRIPE_WEBHOOK_SECRET=whsec_...   # optional at boot
 
-# Servidor
 NODE_ENV=development
 PORT=3001
 ```
 
-4. Instalar dependencias y arrancar backend
+**3. Install, migrate and seed**
 
 ```bash
 cd backend
 npm install
-npm run seed          # crea usuarios, categorías y 4 servicios de muestra
+npm run migration:run   # creates the schema, including the PostGIS extension
+npm run seed            # 16 users, 10 categories, 25 services, 79 reviews
 npm run start:dev
 ```
 
-El backend queda disponible en `http://localhost:3001/api`. La documentación Swagger interactiva está en `http://localhost:3001/api/docs`.
+The API runs at `http://localhost:3001/api`, with interactive Swagger docs at `/api/docs`.
 
-5. Configurar variables de entorno del frontend
+> The schema is created **only** by migrations — `synchronize` is off in every environment, so local and production can never drift apart. In deployed environments pending migrations run automatically at boot.
 
-Crear `frontend/.env.local`:
+**4. Configure and start the front end**
+
+Create `frontend/.env.local`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
-
-6. Instalar dependencias y arrancar frontend
 
 ```bash
 cd frontend
@@ -199,109 +215,95 @@ npm install
 npm run dev
 ```
 
-El frontend queda disponible en `http://localhost:3000`.
+The app runs at `http://localhost:3000`.
 
-### Probar el webhook de Stripe en local
+**5. Optional — test the Stripe webhook locally**
 
 ```bash
 stripe listen --forward-to localhost:3001/api/payments/webhook
 ```
 
-El comando imprime un `whsec_...` que debe copiarse a `STRIPE_WEBHOOK_SECRET` en `backend/.env` y reiniciar el backend.
+Copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET` and restart the back end.
 
-## Despliegue
+---
 
-La beta usa una arquitectura híbrida para evitar la expiración a 30 días del PostgreSQL gratuito de Render:
-
-1. **Supabase** (PostgreSQL 16 con PostGIS nativo, plan gratuito permanente) aloja la base de datos.
-2. **Render** aloja dos Web Services:
-   - Backend Nest.js construido desde `backend/Dockerfile`.
-   - Frontend Next.js construido desde `frontend/Dockerfile` (node 22-alpine multi-stage con ARG para inyectar variables `NEXT_PUBLIC_*` en build time).
-
-### Variables de entorno en Render
-
-**Servicio backend (servilocal-api)**
-
-| Variable | Descripción |
-|----------|-------------|
-| `DATABASE_URL` | URL de Supabase (con SSL obligatorio) |
-| `NODE_ENV` | `production` |
-| `JWT_SECRET` | Secreto para firmar tokens JWT |
-| `JWT_EXPIRATION` | Por ejemplo `7d` |
-| `STRIPE_SECRET_KEY` | Clave secreta de Stripe en modo test |
-| `STRIPE_WEBHOOK_SECRET` | Firma del endpoint en Stripe Dashboard |
-| `CORS_ORIGINS` | `http://localhost:3000,https://servilocal-web.onrender.com` |
-| `PORT` | `3001` |
-
-**Servicio frontend (servilocal-web)**
-
-| Variable | Descripción |
-|----------|-------------|
-| `NEXT_PUBLIC_API_URL` | `https://servilocal-api.onrender.com/api` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Clave pública de Stripe |
-
-Las variables `NEXT_PUBLIC_*` se inyectan como build args en el Dockerfile del frontend para que Next las inline en el bundle estático. Tras cambiarlas hay que lanzar **Manual Deploy con Clear build cache** para invalidar el bundle anterior.
-
-### Alta del webhook en Stripe
-
-En Stripe Dashboard (modo test), Developers > Webhooks > Add endpoint:
-
-- URL: `https://servilocal-api.onrender.com/api/payments/webhook`
-- Eventos:
-  - `payment_intent.amount_capturable_updated` (marca reserva como Confirmada)
-  - `payment_intent.succeeded` (completa el pago)
-  - `payment_intent.payment_failed` (deja la reserva pendiente de reintento)
-  - `payment_intent.canceled`
-
-Copiar el `whsec_...` generado y configurarlo como `STRIPE_WEBHOOK_SECRET` en Render.
-
-## Cuentas de prueba
-
-El seeder reproducible crea cuatro cuentas. Contraseña común: **Password123!**
-
-| Rol | Correo | Observaciones |
-|-----|--------|---------------|
-| Administrador | admin@servilocal.com | Acceso al panel de moderación |
-| Cliente | laura@ejemplo.com | Laura García, Madrid. Flujo de reserva y pago |
-| Proveedor | carlos@ejemplo.com | Fontanero. 2 servicios en Madrid |
-| Proveedor | maria@ejemplo.com | Electricista. 2 servicios en Madrid |
-
-**Tarjeta de prueba de Stripe:** `4242 4242 4242 4242`, cualquier fecha futura (por ejemplo `12/29`), CVC `123`, código postal `28001`. Tras confirmar el pago, la reserva pasa automáticamente a Confirmada gracias al webhook.
-
-## Testing
+## Testing and quality checks
 
 ```bash
-# Backend (19 tests unitarios en 3 suites)
+# Back end
 cd backend
-npm run test
+npm run lint
+npm run test          # 19 unit tests across 3 suites
 npm run test:cov
-
-# Build del backend (sin tests)
 npm run build
 
-# Build del frontend
-cd ../frontend
+# Front end
+cd frontend
+npm run lint
+npm run type-check
 npm run build
 ```
 
-## Documentación
+All of these run in CI on every push to `main`.
 
-La memoria final incorpora las correcciones aplicadas tras la revisión del consultor sobre la entrega de la PEC3:
+---
 
-- Reformulación del apartado 3.1 sobre los roles de PostgreSQL (persistencia) y TypeORM (acceso a datos).
-- Reorganización de los compromisos asumidos (despliegue público y accesibilidad WCAG 2.1 nivel AA) en un apartado dedicado en las conclusiones (4.7).
-- Ajustes de maquetación para evitar títulos al final de página.
+## Deployment
 
-Documentos incluidos en la entrega:
+The deployed demo uses:
 
-- Memoria final: `documentacion/PAC_FINAL_mem_Martino_Federico.pdf`
-- Autoinforme de evaluación: `documentacion/PAC_FINAL_autoinforme_Martino_Federico.pdf`
-- Checklist de los 9 requisitos: `documentacion/PAC_FINAL_checklist_Martino_Federico.pdf`
-- Presentación: `documentacion/PAC_FINAL_prs_Martino_Federico.pdf`
-- Vídeo de defensa: `PAC_FINAL_video_Martino_Federico.mp4`
-- Diagramas UML: carpeta `diagrams/`
-- Wireframes responsive: carpeta `wireframes/`
+- **Neon** for PostgreSQL with PostGIS — a free tier that does not expire after 30 days, unlike the alternatives.
+- **Render** for two web services, each built from its own Dockerfile: the NestJS API and the Next.js front end.
+- **GitHub Actions** for CI and for a scheduled job that keeps both services awake during working hours.
 
-## Licencia
+### Environment variables
 
-Trabajo académico. Código bajo licencia MIT. Texto de la memoria bajo Creative Commons Reconocimiento - NoComercial - SinObraDerivada 3.0 España.
+**API (`servilocal-api`)**
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | Postgres connection string with SSL |
+| `NODE_ENV` | `production` |
+| `JWT_SECRET` | Secret used to sign JWTs |
+| `JWT_EXPIRATION` | For example `7d` |
+| `STRIPE_SECRET_KEY` | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | Endpoint signing secret from the Stripe dashboard |
+| `CORS_ORIGINS` | Comma-separated list of allowed origins |
+| `PORT` | `3001` |
+
+**Front end (`servilocal-web`)**
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | `https://servilocal-api.onrender.com/api` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
+| `NEXT_PUBLIC_SITE_URL` | Public site URL, used by the sitemap and Open Graph tags |
+
+`NEXT_PUBLIC_*` variables are injected as Docker build args, because Next.js inlines them at build time. After changing one, redeploy with **Clear build cache** — a restart is not enough.
+
+### Stripe webhook
+
+Register `https://servilocal-api.onrender.com/api/payments/webhook` in the Stripe dashboard for these events:
+
+- `payment_intent.amount_capturable_updated` — marks the booking as confirmed
+- `payment_intent.succeeded` — completes the payment
+- `payment_intent.payment_failed` — leaves the booking awaiting retry
+- `payment_intent.canceled`
+
+---
+
+## Project context
+
+ServiLocal is the Master's thesis project for the *Máster Universitario en Desarrollo de Sitios y Aplicaciones Web* at Universitat Oberta de Catalunya (UOC), 2025/2026.
+
+**Author:** Federico Javier Martino
+
+The application meets the nine assessment requirements of the course, including WCAG 2.1 level AA accessibility, role management, in-app administration and deployment to a public server. The written dissertation, self-assessment report, checklist and defence presentation were submitted through the university's platform and are not part of this repository.
+
+Included here: UML diagrams in [`diagrams/`](diagrams/) and responsive wireframes in [`wireframes/`](wireframes/), both as standalone HTML.
+
+---
+
+## License
+
+Code released under the MIT License. The dissertation text is under Creative Commons Attribution–NonCommercial–NoDerivatives 3.0 Spain.
