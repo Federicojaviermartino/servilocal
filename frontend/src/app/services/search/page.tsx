@@ -7,8 +7,8 @@ import { servicesApi } from '@/lib/api';
 import SearchBar from '@/components/molecules/SearchBar';
 import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
-import Spinner from '@/components/atoms/Spinner';
 import Pagination from '@/components/molecules/Pagination';
+import ServiceCardSkeleton from '@/components/molecules/ServiceCardSkeleton';
 
 // Carga dinamica del mapa para evitar SSR issues con Leaflet
 const ServiceMap = nextDynamic(
@@ -157,14 +157,22 @@ function SearchPageContent() {
             </div>
 
             {isLoading ? (
-              <div className="flex flex-col items-center gap-3 py-16">
-                <Spinner size="lg" />
+              <div>
                 {tardando && (
-                  <p className="max-w-sm text-center text-sm text-neutral-500">
+                  <p className="mb-4 rounded-lg bg-neutral-100 p-3 text-center text-sm text-neutral-600">
                     El servidor está despertando tras un periodo de inactividad.
                     Puede tardar hasta un minuto.
                   </p>
                 )}
+                <div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+                  role="status"
+                  aria-label="Cargando resultados"
+                >
+                  {Array.from({ length: 6 }).map((_, indice) => (
+                    <ServiceCardSkeleton key={indice} />
+                  ))}
+                </div>
               </div>
             ) : fetchError ? (
               <div

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
-import Spinner from '@/components/atoms/Spinner';
+import Skeleton from '@/components/atoms/Skeleton';
 import RatingStars from '@/components/molecules/RatingStars';
 import ServiceImage from '@/components/molecules/ServiceImage';
 
@@ -21,7 +21,9 @@ export default function ServiceDetailPage() {
   const [service, setService] = useState<Service | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<'not-found' | 'unavailable' | 'network' | null>(null);
+  const [loadError, setLoadError] = useState<
+    'not-found' | 'unavailable' | 'network' | null
+  >(null);
 
   useEffect(() => {
     async function load() {
@@ -64,10 +66,51 @@ export default function ServiceDetailPage() {
   };
 
   if (isLoading) {
+    // Reproduce la estructura real de la ficha para que el contenido no
+    // desplace la página al llegar.
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
+      <main className="bg-neutral-50 min-h-screen py-8">
+        <div className="max-w-5xl mx-auto px-4">
+          <div
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+            role="status"
+            aria-label="Cargando el servicio"
+          >
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white rounded-lg shadow-card overflow-hidden">
+                <Skeleton className="aspect-video rounded-none" />
+                <div className="p-6 space-y-4">
+                  <Skeleton className="h-5 w-28" />
+                  <Skeleton className="h-8 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <div className="space-y-2 pt-4">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <aside className="space-y-6">
+              <div className="bg-white rounded-lg shadow-card p-6 space-y-4">
+                <Skeleton className="h-8 w-40" />
+                <Skeleton className="h-11 w-full" />
+                <Skeleton className="h-11 w-full" />
+              </div>
+              <div className="bg-white rounded-lg shadow-card p-6 space-y-3">
+                <Skeleton className="h-5 w-36" />
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-16 w-16 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </main>
     );
   }
 
@@ -169,8 +212,7 @@ export default function ServiceDetailPage() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <p className="font-medium text-neutral-900 text-sm">
-                              {review.client.firstName}{' '}
-                              {review.client.lastName}
+                              {review.client.firstName} {review.client.lastName}
                             </p>
                             <RatingStars rating={review.rating} size="sm" />
                           </div>
