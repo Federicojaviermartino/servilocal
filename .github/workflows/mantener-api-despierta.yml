@@ -1,32 +1,46 @@
-name: Mantener la API despierta
+name: Mantener la demo despierta
 
 # Las instancias gratuitas de Render se duermen tras 15 minutos sin tráfico y
-# tardan cerca de un minuto en volver. Este flujo las despierta con una
-# petición periódica para que la demo no haga esperar a quien la visita.
+# tardan cerca de un minuto en volver. Este flujo despierta el frontend y la
+# API con una petición periódica para que la demo no haga esperar a quien la
+# visita en horario laboral.
 #
-# Importante: las 750 horas mensuales del plan gratuito son POR WORKSPACE y se
-# reparten entre todos los servicios. Por eso solo se hace ping en horario
-# diurno (unas 360 h al mes) en vez de las 24 horas, que consumirían el cupo
-# entero y suspenderían el resto de servicios del workspace.
+# Aritmética del cupo: Render concede 750 horas mensuales POR WORKSPACE,
+# repartidas entre todos los servicios gratuitos. Este workspace tiene cuatro.
+# Manteniendo dos servicios despiertos 8 horas al día salen unas 480 h al mes,
+# lo que deja unas 270 h para el resto. Ampliar la franja o añadir servicios
+# puede agotar el cupo, y entonces Render suspende TODOS los servicios
+# gratuitos hasta el mes siguiente.
 #
-# La petición ataca un endpoint que consulta la base de datos, de modo que
+# La petición a la API ataca un endpoint que consulta la base de datos, así que
 # también evita que el cómputo de Neon se suspenda por inactividad.
 
 on:
   schedule:
-    # Cada 10 minutos, de 08:00 a 19:59 UTC (10:00-21:59 en horario peninsular)
-    - cron: '*/10 8-19 * * *'
+    # Cada 10 minutos, de 08:00 a 15:59 UTC.
+    # Son las 10:00-17:59 en horario de verano peninsular y 09:00-16:59 en invierno.
+    - cron: '*/10 8-15 * * *'
   workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Despertar la API
+      - name: Despertar el frontend y la API
         run: |
-          URL="https://servilocal-api.onrender.com/api/categories"
-          CODIGO=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$URL")
-          echo "Respuesta de $URL: $CODIGO"
-          if [ "$CODIGO" != "200" ]; then
-            echo "::warning::La API respondió $CODIGO en lugar de 200"
+          fallos=0
+          for url in \
+            "https://servilocal-web.onrender.com" \
+            "https://servilocal-api.onrender.com/api/categories"
+          do
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$url")
+            echo "$url -> $codigo"
+            if [ "$codigo" != "200" ]; then
+              echo "::warning::$url respondió $codigo en lugar de 200"
+              fallos=$((fallos + 1))
+            fi
+          done
+          if [ "$fallos" -eq 2 ]; then
+            echo "::error::Ni el frontend ni la API respondieron"
+            exit 1
           fi
