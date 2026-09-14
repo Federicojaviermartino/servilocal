@@ -32,7 +32,7 @@ export default function MyBookingsPage() {
     <div>
       <h1 className="text-2xl font-bold text-neutral-900 mb-6">Mis reservas</h1>
 
-      <div className="bg-white rounded-lg shadow-card p-1 mb-4 inline-flex">
+      <div className="bg-white rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
         {tabs.map((t) => (
           <button
             key={t.id}
