@@ -1,5 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, Suspense } from 'react';
+import { SlidersHorizontal, ChevronDown } from 'lucide-react';
+import clsx from 'clsx';
 import { useSearchParams, useRouter } from 'next/navigation';
 import nextDynamic from 'next/dynamic';
 import { Service, ServiceSearchParams } from '@/types';
@@ -9,6 +11,12 @@ import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
 import Pagination from '@/components/molecules/Pagination';
 import ServiceCardSkeleton from '@/components/molecules/ServiceCardSkeleton';
+
+type Vista = 'list' | 'map';
+
+// Una lista se pagina; un mapa, no: quien lo abre espera ver todos los
+// resultados del área, no doce de veinticinco. 50 es el máximo que admite la API.
+const LIMITE_MAPA = 50;
 
 // Carga dinamica del mapa para evitar SSR issues con Leaflet
 const ServiceMap = nextDynamic(
@@ -27,7 +35,8 @@ function SearchPageContent() {
   const [services, setServices] = useState<Service[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<'list' | 'map'>('list');
+  const [view, setView] = useState<Vista>('list');
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const [filters, setFilters] = useState<ServiceSearchParams>({});
   const [page, setPage] = useState(1);
   const [tardando, setTardando] = useState(false);
@@ -37,13 +46,18 @@ function SearchPageContent() {
   >(null);
 
   const fetchResults = useCallback(
-    async (params: ServiceSearchParams, paginaSolicitada: number) => {
+    async (
+      params: ServiceSearchParams,
+      paginaSolicitada: number,
+      vista: Vista,
+    ) => {
       setIsLoading(true);
       setFetchError(null);
       try {
         const { data } = await servicesApi.search({
           ...params,
           page: paginaSolicitada,
+          ...(vista === 'map' ? { limit: LIMITE_MAPA } : {}),
         });
         // Soporta respuesta paginada { data, meta } o array directo
         if (Array.isArray(data)) {
@@ -89,20 +103,26 @@ function SearchPageContent() {
       city: searchParams.get('city') || undefined,
     };
     setFilters(initial);
-    fetchResults(initial, 1);
+    fetchResults(initial, 1, 'list');
   }, [searchParams, fetchResults]);
 
   const handleSearch = (query: string) => {
     const next = { ...filters, query: query || undefined };
     setFilters(next);
-    fetchResults(next, 1);
+    fetchResults(next, 1, view);
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     router.replace(`/services/search?${params.toString()}`);
   };
 
+  const cambiarVista = (nueva: Vista) => {
+    if (nueva === view) return;
+    setView(nueva);
+    fetchResults(filters, 1, nueva);
+  };
+
   const cambiarPagina = (nuevaPagina: number) => {
-    fetchResults(filters, nuevaPagina);
+    fetchResults(filters, nuevaPagina, view);
     // Al saltar de página el usuario espera empezar por el primer resultado.
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -110,7 +130,7 @@ function SearchPageContent() {
   const handleApplyFilters = (newFilters: ServiceSearchParams) => {
     const merged = { ...filters, ...newFilters };
     setFilters(merged);
-    fetchResults(merged, 1);
+    fetchResults(merged, 1, view);
   };
 
   return (
@@ -124,7 +144,35 @@ function SearchPageContent() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <div className="lg:col-span-1">
-            <FilterPanel initial={filters} onApply={handleApplyFilters} />
+            {/* En móvil el panel desplegado empujaba los resultados fuera de
+                la primera pantalla, así que se pliega tras un botón. En
+                escritorio sigue siempre visible. */}
+            <button
+              type="button"
+              onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}
+              aria-expanded={filtrosAbiertos}
+              aria-controls="panel-filtros"
+              className="mb-3 flex w-full items-center justify-between rounded-lg bg-white px-4 py-3 text-sm font-medium text-neutral-900 shadow-card lg:hidden"
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal size={18} aria-hidden="true" />
+                Filtros
+              </span>
+              <ChevronDown
+                size={18}
+                aria-hidden="true"
+                className={clsx(
+                  'transition-transform',
+                  filtrosAbiertos && 'rotate-180',
+                )}
+              />
+            </button>
+            <div
+              id="panel-filtros"
+              className={clsx(filtrosAbiertos ? 'block' : 'hidden', 'lg:block')}
+            >
+              <FilterPanel initial={filters} onApply={handleApplyFilters} />
+            </div>
           </div>
 
           <div className="lg:col-span-3">
@@ -134,7 +182,7 @@ function SearchPageContent() {
               </h1>
               <div className="flex bg-white rounded-md shadow-card">
                 <button
-                  onClick={() => setView('list')}
+                  onClick={() => cambiarVista('list')}
                   className={`px-4 py-2 text-sm rounded-l-md ${
                     view === 'list'
                       ? 'bg-primary-600 text-white'
@@ -144,7 +192,7 @@ function SearchPageContent() {
                   Lista
                 </button>
                 <button
-                  onClick={() => setView('map')}
+                  onClick={() => cambiarVista('map')}
                   className={`px-4 py-2 text-sm rounded-r-md ${
                     view === 'map'
                       ? 'bg-primary-600 text-white'
@@ -188,7 +236,7 @@ function SearchPageContent() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => fetchResults(filters, page)}
+                  onClick={() => fetchResults(filters, page, view)}
                   className="mt-2 font-medium underline hover:no-underline"
                 >
                   Reintentar
@@ -200,7 +248,7 @@ function SearchPageContent() {
               <ServiceMap services={services} />
             )}
 
-            {!isLoading && !fetchError && (
+            {!isLoading && !fetchError && view === 'list' && (
               <Pagination
                 page={page}
                 totalPages={totalPages}
