@@ -28,7 +28,9 @@ export class User {
   @Column({ length: 255 })
   email: string;
 
-  @Column()
+  // No se carga en las consultas salvo que se pida explícitamente, para que
+  // el hash no pueda escaparse por descuido en una respuesta de la API.
+  @Column({ select: false })
   password: string;
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.CLIENT })

@@ -44,6 +44,16 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email },
+      // password está marcada como no seleccionable: aquí hace falta.
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+      },
     });
 
     if (!user) {
