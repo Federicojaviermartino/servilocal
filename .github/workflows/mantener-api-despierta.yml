@@ -12,8 +12,9 @@ name: Mantener la demo despierta
 # puede agotar el cupo, y entonces Render suspende TODOS los servicios
 # gratuitos hasta el mes siguiente.
 #
-# La petición a la API ataca un endpoint que consulta la base de datos, así que
-# también evita que el cómputo de Neon se suspenda por inactividad.
+# La petición a la API va al endpoint de estado, que comprueba la base de datos:
+# así también evita que el cómputo de Neon se suspenda, y devuelve 503 si la
+# base no responde, de modo que el aviso del flujo significa algo.
 
 on:
   schedule:
@@ -31,7 +32,7 @@ jobs:
           fallos=0
           for url in \
             "https://servilocal-web.onrender.com" \
-            "https://servilocal-api.onrender.com/api/categories"
+            "https://servilocal-api.onrender.com/api/health"
           do
             codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$url")
             echo "$url -> $codigo"

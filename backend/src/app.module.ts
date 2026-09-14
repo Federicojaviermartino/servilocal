@@ -12,6 +12,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MessagesModule } from './messages/messages.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MessagesModule } from './messages/messages.module';
     ReviewsModule,
     PaymentsModule,
     MessagesModule,
+    HealthModule,
   ],
   providers: [
     {
