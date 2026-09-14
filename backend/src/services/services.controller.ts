@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -43,14 +44,14 @@ export class ServicesController {
   @Get(':id')
   @ApiOperation({ summary: 'Obtener servicio por ID (público)' })
   @ApiResponse({ status: 200, description: 'Detalle del servicio' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.servicesService.findById(id);
   }
 
   @Get('provider/:providerId')
   @ApiOperation({ summary: 'Listar servicios de un proveedor (público)' })
   @ApiResponse({ status: 200, description: 'Servicios del proveedor' })
-  async findByProvider(@Param('providerId') providerId: string) {
+  async findByProvider(@Param('providerId', ParseUUIDPipe) providerId: string) {
     return this.servicesService.findByProvider(providerId);
   }
 
@@ -71,7 +72,7 @@ export class ServicesController {
   @ApiOperation({ summary: 'Actualizar servicio (solo el proveedor dueño)' })
   @ApiResponse({ status: 200, description: 'Servicio actualizado' })
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Request() req: any,
     @Body() updateDto: UpdateServiceDto,
   ) {
@@ -83,7 +84,7 @@ export class ServicesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar servicio (proveedor dueño o admin)' })
   @ApiResponse({ status: 200, description: 'Servicio eliminado' })
-  async remove(@Param('id') id: string, @Request() req: any) {
+  async remove(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     await this.servicesService.remove(id, req.user.id, req.user.role);
     return { message: 'Servicio eliminado correctamente' };
   }

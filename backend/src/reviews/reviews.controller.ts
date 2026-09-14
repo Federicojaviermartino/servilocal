@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,7 +33,7 @@ export class ReviewsController {
 
   @Get('service/:serviceId')
   @ApiOperation({ summary: 'Listar valoraciones de un servicio (público)' })
-  async findByService(@Param('serviceId') serviceId: string) {
+  async findByService(@Param('serviceId', ParseUUIDPipe) serviceId: string) {
     return this.reviewsService.findByService(serviceId);
   }
 
@@ -74,7 +75,7 @@ export class ReviewsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Responder a una valoración (solo proveedor)' })
   async addResponse(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Request() req: any,
     @Body() dto: ProviderResponseDto,
   ) {
@@ -85,7 +86,10 @@ export class ReviewsController {
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reportar valoración inapropiada' })
-  async report(@Param('id') id: string, @Body() dto: ReportReviewDto) {
+  async report(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReportReviewDto,
+  ) {
     return this.reviewsService.reportReview(id, dto);
   }
 
@@ -96,7 +100,7 @@ export class ReviewsController {
   @ApiOperation({
     summary: 'Descartar el reporte de una valoración (solo admin - moderación)',
   })
-  async dismissReport(@Param('id') id: string) {
+  async dismissReport(@Param('id', ParseUUIDPipe) id: string) {
     return this.reviewsService.dismissReport(id);
   }
 
@@ -105,7 +109,7 @@ export class ReviewsController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar valoración (solo admin - moderación)' })
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.reviewsService.deleteReview(id);
     return { message: 'Valoración eliminada correctamente' };
   }

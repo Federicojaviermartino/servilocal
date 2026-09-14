@@ -6,6 +6,7 @@ import {
   Body,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -31,7 +32,7 @@ export class MessagesController {
   @ApiOperation({ summary: 'Responder en una conversación existente' })
   async reply(
     @Request() req: any,
-    @Param('conversationId') conversationId: string,
+    @Param('conversationId', ParseUUIDPipe) conversationId: string,
     @Body() dto: ReplyMessageDto,
   ) {
     return this.messagesService.replyToConversation(
@@ -54,7 +55,7 @@ export class MessagesController {
   })
   async getMessages(
     @Request() req: any,
-    @Param('partnerId') partnerId: string,
+    @Param('partnerId', ParseUUIDPipe) partnerId: string,
   ) {
     return this.messagesService.findMessagesWithPartner(req.user.id, partnerId);
   }

@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -39,7 +40,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Obtener categoría por ID (público)' })
   @ApiResponse({ status: 200, description: 'Datos de la categoría' })
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.categoriesService.findById(id);
   }
 
@@ -59,7 +60,10 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Actualizar categoría (solo admin)' })
   @ApiResponse({ status: 200, description: 'Categoría actualizada' })
-  async update(@Param('id') id: string, @Body() updateDto: UpdateCategoryDto) {
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateCategoryDto,
+  ) {
     return this.categoriesService.update(id, updateDto);
   }
 
@@ -69,7 +73,7 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar categoría (solo admin)' })
   @ApiResponse({ status: 200, description: 'Categoría eliminada' })
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
     await this.categoriesService.remove(id);
     return { message: 'Categoría eliminada correctamente' };
   }
