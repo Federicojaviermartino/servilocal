@@ -15,14 +15,23 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto, AuthResponseDto } from './dto/auth.dto';
+
+/**
+ * Registro e inicio de sesión aceptan cinco intentos por minuto y por IP.
+ * Sin este límite, probar contraseñas contra una cuenta conocida no tiene
+ * ningún coste para el atacante.
+ */
+const LIMITE_AUTENTICACION = { default: { limit: 5, ttl: 60000 } };
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle(LIMITE_AUTENTICACION)
   @Post('register')
   @ApiOperation({ summary: 'Registrar nuevo usuario (cliente o proveedor)' })
   @ApiResponse({ status: 201, description: 'Usuario registrado correctamente' })
@@ -31,6 +40,7 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Throttle(LIMITE_AUTENTICACION)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Iniciar sesión con email y contraseña' })
