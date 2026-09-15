@@ -105,7 +105,7 @@ Password for every seeded account: `Password123!`
 - **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
 - **`/api/health` checks the database, not just the process.** An API that boots but cannot reach its database is down in practice — exactly the failure this project had, unnoticed, for four months. It returns `503` when the database does not answer, so a monitor can actually detect it.
 - **Dark mode uses semantic tokens, not a second set of classes.** Components name the role of a colour (`bg-superficie`, `text-principal`), never the colour itself. The theme is applied by a blocking inline script before first paint, so there is no flash of the wrong theme.
-- **Ten languages, statically generated.** Every page is prerendered once per locale rather than translated in the browser, so a crawler and a first-time visitor get the same HTML. The locale comes from the URL, each page declares `hreflang` alternates plus `x-default`, and Arabic flips `dir` to `rtl` at the document root. Catalogues are checked for key parity against Spanish, so a missing translation is caught before it ships rather than showing as a blank label in production. Every screen is covered, dashboard and admin panel included; the terms and privacy texts stay in Spanish on purpose, with a notice in the reader's language saying the Spanish version is the one that prevails. `@swc/wasm` is pinned as a direct dependency on purpose: next-intl pulls in `@swc/core`, whose install script shells out to a nested `npm install` when it cannot load a native binding, and that nested install is what breaks `npm ci` on a clean runner. Having the wasm build present makes that script return early instead.
+- **Ten languages, statically generated.** Every page is prerendered once per locale rather than translated in the browser, so a crawler and a first-time visitor get the same HTML. The locale comes from the URL, each page declares `hreflang` alternates plus `x-default`, and Arabic flips `dir` to `rtl` at the document root. Catalogues are checked for key parity against Spanish, so a missing translation is caught before it ships rather than showing as a blank label in production. Every screen is covered, dashboard and admin panel included; the terms and privacy texts stay in Spanish on purpose, with a notice in the reader's language saying the Spanish version is the one that prevails.
 - **Rate limiting is proxy-aware.** Behind Render's proxy, without `trust proxy` every request appears to come from the same address and one attacker would lock out every user.
 
 ---
@@ -244,6 +244,13 @@ Copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET` and restart the back
 ---
 
 ## Testing and quality checks
+
+The front-end lock file must be generated on Linux. `next-intl` pulls in
+`@swc/core`, which declares `@swc/helpers >=0.5.17` as an optional peer while
+Next pins `0.5.5` exactly; npm on Linux resolves that into two entries and npm on
+Windows into one, and `npm ci` rejects the Windows tree. Regenerate it with
+`docker run --rm -v "$PWD:/app" -w /app node:22 npm install --package-lock-only`
+after changing front-end dependencies.
 
 ```bash
 # Back end
