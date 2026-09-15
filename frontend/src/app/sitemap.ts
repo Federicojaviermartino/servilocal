@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITIO_URL } from '@/lib/sitio';
+import { routing } from '@/i18n/routing';
 
 // Se regenera cada hora en lugar de fijarse en la compilación: así los
 // servicios nuevos entran solos y, si la API está dormida al compilar, el
@@ -10,6 +11,21 @@ interface ServicioDelSitemap {
   id: string;
   updatedAt?: string;
 }
+
+/**
+ * URL absoluta de una ruta en un idioma. El idioma por defecto va sin prefijo
+ * porque el enrutado está configurado como «as-needed».
+ */
+const urlDe = (idioma: string, ruta: string): string =>
+  idioma === routing.defaultLocale
+    ? `${SITIO_URL}${ruta}`
+    : `${SITIO_URL}/${idioma}${ruta}`;
+
+/** Mapa hreflang de una ruta: la misma página en todos los idiomas. */
+const alternativasDe = (ruta: string): Record<string, string> =>
+  Object.fromEntries(
+    routing.locales.map((idioma) => [idioma, urlDe(idioma, ruta)]),
+  );
 
 /**
  * Pide a la API los servicios publicados. Si no responde, se devuelve una
@@ -45,42 +61,36 @@ async function obtenerServicios(): Promise<ServicioDelSitemap[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const ahora = new Date();
 
-  const paginasFijas: MetadataRoute.Sitemap = [
+  const rutasFijas = [
+    { ruta: '', changeFrequency: 'weekly' as const, priority: 1 },
     {
-      url: SITIO_URL,
-      lastModified: ahora,
-      changeFrequency: 'weekly',
-      priority: 1,
-    },
-    {
-      url: `${SITIO_URL}/services/search`,
-      lastModified: ahora,
-      changeFrequency: 'daily',
+      ruta: '/services/search',
+      changeFrequency: 'daily' as const,
       priority: 0.9,
     },
-    {
-      url: `${SITIO_URL}/about`,
-      lastModified: ahora,
-      changeFrequency: 'monthly',
-      priority: 0.5,
-    },
-    {
-      url: `${SITIO_URL}/terms`,
-      lastModified: ahora,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
-    {
-      url: `${SITIO_URL}/privacy`,
-      lastModified: ahora,
-      changeFrequency: 'yearly',
-      priority: 0.3,
-    },
+    { ruta: '/about', changeFrequency: 'monthly' as const, priority: 0.5 },
+    { ruta: '/terms', changeFrequency: 'yearly' as const, priority: 0.3 },
+    { ruta: '/privacy', changeFrequency: 'yearly' as const, priority: 0.3 },
   ];
 
+  // Una entrada por idioma, y cada una declara al resto como alternativas
+  // para que los buscadores las traten como la misma página traducida.
+  const paginasFijas: MetadataRoute.Sitemap = rutasFijas.flatMap((pagina) =>
+    routing.locales.map((idioma) => ({
+      url: urlDe(idioma, pagina.ruta),
+      lastModified: ahora,
+      changeFrequency: pagina.changeFrequency,
+      priority: pagina.priority,
+      alternates: { languages: alternativasDe(pagina.ruta) },
+    })),
+  );
+
+  // Las fichas solo se publican en el idioma por defecto: la interfaz está
+  // traducida, pero el texto que escribe el profesional está en español y
+  // anunciar diez versiones del mismo contenido sería engañoso.
   const servicios = await obtenerServicios();
   const fichas: MetadataRoute.Sitemap = servicios.map((servicio) => ({
-    url: `${SITIO_URL}/services/${servicio.id}`,
+    url: urlDe(routing.defaultLocale, `/services/${servicio.id}`),
     lastModified: servicio.updatedAt ? new Date(servicio.updatedAt) : ahora,
     changeFrequency: 'weekly',
     priority: 0.8,

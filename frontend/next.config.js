@@ -1,4 +1,7 @@
-/** @type {import('next').NextConfig} */
+const createNextIntlPlugin = require('next-intl/plugin');
+
+// Indica dónde vive la configuración de idioma por petición.
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 // El token de sesión vive en localStorage, así que la defensa contra XSS es
 // especialmente importante: connect-src limita a dónde puede enviarse algo
@@ -41,6 +44,7 @@ const securityHeaders = [
   },
 ];
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -56,4 +60,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);
