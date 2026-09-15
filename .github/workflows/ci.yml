@@ -90,6 +90,11 @@ jobs:
         env:
           NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
+      # Una historia rota no rompe la aplicación, así que sin este paso el
+      # catálogo de componentes se pudre sin que nadie se entere.
+      - name: Compilar el catálogo de componentes
+        run: npm run build-storybook -- --quiet
+
   e2e:
     name: Tests de extremo a extremo
     runs-on: ubuntu-latest

@@ -10,7 +10,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "e2e": "playwright test",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^2.5.0",
@@ -31,6 +33,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@storybook/addon-a11y": "^10.6.0",
+    "@storybook/addon-docs": "^10.6.0",
+    "@storybook/nextjs": "^10.6.0",
     "@types/leaflet": "^1.9.8",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.48",
@@ -39,6 +44,7 @@
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",
     "postcss": "^8.4.33",
+    "storybook": "^10.6.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
   }

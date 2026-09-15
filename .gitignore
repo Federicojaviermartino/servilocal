@@ -19,3 +19,6 @@ Thumbs.db
 test-results/
 playwright-report/
 .playwright/
+
+# Salida de Storybook
+storybook-static/

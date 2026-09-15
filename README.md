@@ -91,6 +91,7 @@ Password for every seeded account: `Password123!`
 | Maps | Leaflet + react-leaflet, dynamically imported to avoid SSR issues |
 | Auth | JWT with Passport, bcrypt password hashing |
 | Payments | Stripe Payment Element, manual capture, signed webhook |
+| Component catalogue | Storybook 10, with locale and theme switchers in the toolbar |
 | Testing | Jest (19 unit tests) |
 | CI | GitHub Actions: lint, type-check, tests and build on every push |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
@@ -106,6 +107,7 @@ Password for every seeded account: `Password123!`
 - **`/api/health` checks the database, not just the process.** An API that boots but cannot reach its database is down in practice — exactly the failure this project had, unnoticed, for four months. It returns `503` when the database does not answer, so a monitor can actually detect it.
 - **Dark mode uses semantic tokens, not a second set of classes.** Components name the role of a colour (`bg-superficie`, `text-principal`), never the colour itself. The theme is applied by a blocking inline script before first paint, so there is no flash of the wrong theme.
 - **Ten languages, statically generated.** Every page is prerendered once per locale rather than translated in the browser, so a crawler and a first-time visitor get the same HTML. The locale comes from the URL, each page declares `hreflang` alternates plus `x-default`, and Arabic flips `dir` to `rtl` at the document root. Catalogues are checked for key parity against Spanish, so a missing translation is caught before it ships rather than showing as a blank label in production. Every screen is covered, dashboard and admin panel included; the terms and privacy texts stay in Spanish on purpose, with a notice in the reader's language saying the Spanish version is the one that prevails.
+- **The component catalogue renders components the way the app does.** Stories run inside the same locale provider and theme tokens as the application, and the toolbar switches both, so a card can be checked in Arabic on a dark background without starting the API. CI builds the catalogue on every push, because a broken story breaks nothing in production and would otherwise rot unnoticed.
 - **Rate limiting is proxy-aware.** Behind Render's proxy, without `trust proxy` every request appears to come from the same address and one attacker would lock out every user.
 
 ---
@@ -134,6 +136,7 @@ servilocal/
         migrations/         Schema history — the only source of truth
         seeds/              Reproducible demo data
   frontend/                 Next.js 14 App Router + Tailwind
+    .storybook/             Component catalogue config and sample data
     messages/               Translation catalogues, one JSON per locale
     src/
       app/
@@ -270,6 +273,10 @@ npm run build
 cd frontend
 npx playwright install chromium   # first run only
 npm run e2e
+
+# Component catalogue
+cd frontend
+npm run storybook
 ```
 
 The end-to-end suite covers search with accent-insensitive matching, pagination,
