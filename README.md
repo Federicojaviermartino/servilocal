@@ -154,6 +154,7 @@ servilocal/
       types/                Shared TypeScript types
   diagrams/                 UML diagrams (Mermaid)
   wireframes/               Responsive wireframes
+  scripts/                  Lock file regeneration inside Linux
   docs/screenshots/         Images used in this README
   docker-compose.yml
 ```
@@ -248,12 +249,18 @@ Copy the `whsec_...` it prints into `STRIPE_WEBHOOK_SECRET` and restart the back
 
 ## Testing and quality checks
 
-The front-end lock file must be generated on Linux. `next-intl` pulls in
+Lock files are generated on Linux, not on the development machine. npm resolves
+peer dependencies differently per operating system: `next-intl` pulls in
 `@swc/core`, which declares `@swc/helpers >=0.5.17` as an optional peer while
-Next pins `0.5.5` exactly; npm on Linux resolves that into two entries and npm on
-Windows into one, and `npm ci` rejects the Windows tree. Regenerate it with
-`docker run --rm -v "$PWD:/app" -w /app node:22 npm install --package-lock-only`
-after changing front-end dependencies.
+Next pins `0.5.5` exactly, and Storybook brings the same clash with `ajv`. Linux
+resolves each into two entries, Windows into one, and `npm ci` rejects the
+Windows tree outright. npm's own `--os` and `--cpu` flags do not help — they
+filter platform binaries, they do not change peer resolution.
+
+So after changing dependencies in either package, run `npm run lock` there. It
+rebuilds the tree inside a `node:22` container and refuses to write the file
+until `npm ci` accepts it, which makes an unusable lock file hard to produce by
+accident. CI fails with a message pointing at that command if one slips through.
 
 ```bash
 # Back end
@@ -277,6 +284,9 @@ npm run e2e
 # Component catalogue
 cd frontend
 npm run storybook
+
+# Regenerate a lock file after changing dependencies (needs Docker)
+npm run lock
 ```
 
 The end-to-end suite covers search with accent-insensitive matching, pagination,

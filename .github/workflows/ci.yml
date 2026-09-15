@@ -40,7 +40,11 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Instalar dependencias
-        run: npm ci
+        run: |
+          npm ci || {
+            echo "::error::npm ci ha rechazado el lockfile. Se genera en Windows y se instala en Linux, y npm resuelve las dependencias de pares distinto en cada uno. Regenéralo con 'npm run lock' en la carpeta del paquete y vuelve a subirlo."
+            exit 1
+          }
 
       - name: Ejecutar linter
         run: npm run lint
@@ -77,7 +81,11 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Instalar dependencias
-        run: npm ci
+        run: |
+          npm ci || {
+            echo "::error::npm ci ha rechazado el lockfile. Se genera en Windows y se instala en Linux, y npm resuelve las dependencias de pares distinto en cada uno. Regenéralo con 'npm run lock' en la carpeta del paquete y vuelve a subirlo."
+            exit 1
+          }
 
       - name: Ejecutar linter
         run: npm run lint

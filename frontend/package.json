@@ -12,7 +12,8 @@
     "e2e": "playwright test",
     "e2e:report": "playwright show-report",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "lock": "node ../scripts/regenerar-lockfile.mjs"
   },
   "dependencies": {
     "@stripe/react-stripe-js": "^2.5.0",
