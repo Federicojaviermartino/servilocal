@@ -3,6 +3,7 @@
  * Componente: Pagination (navegación entre páginas de resultados)
  */
 'use client';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -50,6 +51,8 @@ export default function Pagination({
   totalPages,
   onChange,
 }: PaginationProps) {
+  const t = useTranslations('paginacion');
+
   if (totalPages <= 1) return null;
 
   const paginas = construirRango(page, totalPages);
@@ -59,13 +62,13 @@ export default function Pagination({
   return (
     <nav
       className="mt-6 flex items-center justify-center gap-1"
-      aria-label="Paginación de resultados"
+      aria-label={t('navegacion')}
     >
       <button
         type="button"
         onClick={() => onChange(page - 1)}
         disabled={page === 1}
-        aria-label="Página anterior"
+        aria-label={t('anterior')}
         className={clsx(claseBoton, 'text-secundario hover:bg-superficie-alt')}
       >
         <ChevronLeft size={18} aria-hidden="true" />
@@ -85,7 +88,7 @@ export default function Pagination({
             key={elemento}
             type="button"
             onClick={() => onChange(elemento)}
-            aria-label={`Página ${elemento}`}
+            aria-label={t('pagina', { numero: elemento })}
             aria-current={elemento === page ? 'page' : undefined}
             className={clsx(
               claseBoton,
@@ -103,7 +106,7 @@ export default function Pagination({
         type="button"
         onClick={() => onChange(page + 1)}
         disabled={page === totalPages}
-        aria-label="Página siguiente"
+        aria-label={t('siguiente')}
         className={clsx(claseBoton, 'text-secundario hover:bg-superficie-alt')}
       >
         <ChevronRight size={18} aria-hidden="true" />

@@ -9,7 +9,8 @@ import {
   useElements,
   PaymentElement,
 } from '@stripe/react-stripe-js';
-import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { paymentsApi } from '@/lib/api';
 import Button from '../atoms/Button';
@@ -21,21 +22,17 @@ interface CheckoutFormProps {
   onIntentExpired?: () => Promise<void>;
 }
 
-const stripeErrorMessages: Record<string, string> = {
-  payment_intent_unexpected_state:
-    'La sesión de pago ha caducado. Generando una nueva...',
-  card_declined: 'Tu tarjeta ha sido rechazada.',
-  authentication_required: 'Se requiere verificación adicional de tu banco.',
-  processing_error: 'Error temporal procesando el pago. Inténtalo de nuevo.',
-  expired_card: 'Tu tarjeta ha caducado.',
-  incorrect_cvc: 'El CVC introducido no es correcto.',
-  insufficient_funds: 'Fondos insuficientes en la tarjeta.',
-};
-
-function translateStripeError(code?: string, fallback?: string): string {
-  if (code && stripeErrorMessages[code]) return stripeErrorMessages[code];
-  return fallback || 'Error procesando el pago.';
-}
+// Stripe devuelve el motivo en inglés y con jerga de pasarela. Estos son los
+// códigos que un usuario puede provocar de verdad al pagar.
+const CLAVES_STRIPE = {
+  payment_intent_unexpected_state: 'caducada',
+  card_declined: 'rechazada',
+  authentication_required: 'verificacion',
+  processing_error: 'errorTemporal',
+  expired_card: 'tarjetaCaducada',
+  incorrect_cvc: 'cvcIncorrecto',
+  insufficient_funds: 'fondosInsuficientes',
+} as const;
 
 export default function CheckoutForm({
   bookingId,
@@ -43,19 +40,25 @@ export default function CheckoutForm({
   amount,
   onIntentExpired,
 }: CheckoutFormProps) {
+  const t = useTranslations('pago');
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
+
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const mensajeStripe = (codigo?: string, alternativa?: string): string => {
+    const clave = codigo && CLAVES_STRIPE[codigo as keyof typeof CLAVES_STRIPE];
+    if (clave) return t(clave);
+    return alternativa || t('errorGenerico');
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
     if (isProcessing) return;
     if (!stripe || !elements) {
-      toast.error(
-        'El formulario de pago aún se está cargando. Espera un momento.',
-      );
+      toast.error(t('formularioCargando'));
       return;
     }
 
@@ -68,18 +71,16 @@ export default function CheckoutForm({
 
     if (error) {
       if (error.code === 'payment_intent_unexpected_state' && onIntentExpired) {
-        toast(translateStripeError('payment_intent_unexpected_state'));
+        toast(t('caducada'));
         try {
           await onIntentExpired();
         } catch {
-          toast.error(
-            'No se pudo regenerar la sesión de pago. Recarga la página.',
-          );
+          toast.error(t('noRegenerar'));
         }
         setIsProcessing(false);
         return;
       }
-      toast.error(translateStripeError(error.code, error.message));
+      toast.error(mensajeStripe(error.code, error.message));
       setIsProcessing(false);
       return;
     }
@@ -90,10 +91,10 @@ export default function CheckoutForm({
     ) {
       try {
         await paymentsApi.confirm(paymentIntentId);
-        toast.success('Pago completado. Reserva confirmada.');
+        toast.success(t('completado'));
         router.push(`/dashboard/bookings?confirmed=${bookingId}`);
       } catch {
-        toast.error('Pago recibido pero no confirmado. Contacta con soporte.');
+        toast.error(t('noConfirmado'));
       }
     }
     setIsProcessing(false);
@@ -103,9 +104,9 @@ export default function CheckoutForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement />
       <div className="bg-fondo rounded-md p-4 flex justify-between items-center">
-        <span className="text-secundario">Total a pagar</span>
+        <span className="text-secundario">{t('totalPagar')}</span>
         <span className="text-xl font-bold text-principal">
-          {amount.toFixed(2)} euros
+          {t('importe', { importe: amount.toFixed(2) })}
         </span>
       </div>
       <Button
@@ -115,12 +116,9 @@ export default function CheckoutForm({
         disabled={!stripe || !elements || isProcessing}
         isLoading={isProcessing}
       >
-        Pagar {amount.toFixed(2)} euros
+        {t('pagar', { importe: amount.toFixed(2) })}
       </Button>
-      <p className="text-xs text-tenue text-center">
-        Pago procesado de forma segura por Stripe. ServiLocal no almacena los
-        datos de tu tarjeta.
-      </p>
+      <p className="text-xs text-tenue text-center">{t('avisoStripe')}</p>
     </form>
   );
 }

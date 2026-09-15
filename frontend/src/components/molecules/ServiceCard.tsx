@@ -2,7 +2,9 @@
  * Nivel atomico: Molecula
  * Componente: ServiceCard (tarjeta de resultado)
  */
-import Link from 'next/link';
+'use client';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { MapPin, Euro } from 'lucide-react';
 import { Service } from '@/types';
 import Badge from '../atoms/Badge';
@@ -14,10 +16,17 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service }: ServiceCardProps) {
+  const t = useTranslations('tarjeta');
+
+  // La unidad de precio la escribe el profesional, así que va tal cual.
   const priceLabel =
     service.priceMax && service.priceMax !== service.priceMin
-      ? `${service.priceMin} a ${service.priceMax} ${service.priceUnit}`
-      : `${service.priceMin} ${service.priceUnit}`;
+      ? t('precioRango', {
+          min: service.priceMin,
+          max: service.priceMax,
+          unidad: service.priceUnit,
+        })
+      : t('precioUnico', { min: service.priceMin, unidad: service.priceUnit });
 
   return (
     <Link

@@ -2,9 +2,12 @@
  * Nivel atomico: Molecula
  * Componente: BookingCard (tarjeta de reserva)
  */
-import Link from 'next/link';
+'use client';
+import { useLocale, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { Calendar, MapPin } from 'lucide-react';
-import { Booking, BookingStatus } from '@/types';
+import { Booking } from '@/types';
+import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
 import Badge from '../atoms/Badge';
 import Avatar from '../atoms/Avatar';
 
@@ -13,22 +16,9 @@ interface BookingCardProps {
   viewAs: 'client' | 'provider';
 }
 
-const statusConfig: Record<
-  BookingStatus,
-  {
-    label: string;
-    variant: 'default' | 'success' | 'warning' | 'danger' | 'info';
-  }
-> = {
-  [BookingStatus.PENDING]: { label: 'Pendiente', variant: 'warning' },
-  [BookingStatus.CONFIRMED]: { label: 'Confirmada', variant: 'info' },
-  [BookingStatus.COMPLETED]: { label: 'Completada', variant: 'success' },
-  [BookingStatus.CANCELLED]: { label: 'Cancelada', variant: 'default' },
-  [BookingStatus.REJECTED]: { label: 'Rechazada', variant: 'danger' },
-};
-
 export default function BookingCard({ booking, viewAs }: BookingCardProps) {
-  const status = statusConfig[booking.status];
+  const t = useTranslations('estados');
+  const idioma = useLocale();
   const counterpart = viewAs === 'client' ? booking.provider : booking.client;
   const date = new Date(booking.scheduledDate);
 
@@ -40,7 +30,9 @@ export default function BookingCard({ booking, viewAs }: BookingCardProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <Badge variant={status.variant}>{status.label}</Badge>
+            <Badge variant={VARIANTE_ESTADO[booking.status]}>
+              {t(CLAVE_ESTADO[booking.status])}
+            </Badge>
             <span className="text-xs text-tenue">
               #{booking.id.slice(0, 8)}
             </span>
@@ -52,12 +44,12 @@ export default function BookingCard({ booking, viewAs }: BookingCardProps) {
             <div className="flex items-center gap-1">
               <Calendar size={14} />
               <span>
-                {date.toLocaleDateString('es-ES', {
+                {date.toLocaleDateString(idioma, {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric',
                 })}{' '}
-                {date.toLocaleTimeString('es-ES', {
+                {date.toLocaleTimeString(idioma, {
                   hour: '2-digit',
                   minute: '2-digit',
                 })}

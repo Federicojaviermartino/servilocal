@@ -4,8 +4,9 @@
  */
 'use client';
 import { ReactNode, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import {
   Calendar,
   Star,
@@ -23,6 +24,9 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const t = useTranslations('panel');
+  const tReservas = useTranslations('reservasPanel');
+  const tNavegacion = useTranslations('navegacion');
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, loadFromStorage } = useAuthStore();
@@ -38,29 +42,41 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [isAuthenticated, router]);
 
-  if (!user) return null;
-
-  const isProvider = user.role === UserRole.PROVIDER;
+  const isProvider = user?.role === UserRole.PROVIDER;
 
   const clientItems = [
-    { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
-    { href: '/dashboard/bookings', label: 'Mis reservas', icon: Calendar },
-    { href: '/dashboard/reviews', label: 'Valoraciones', icon: Star },
-    { href: '/dashboard/messages', label: 'Mensajes', icon: MessageSquare },
-    { href: '/dashboard/profile', label: 'Perfil', icon: User },
+    { href: '/dashboard', label: t('resumen'), icon: LayoutDashboard },
+    {
+      href: '/dashboard/bookings',
+      label: tReservas('misReservas'),
+      icon: Calendar,
+    },
+    { href: '/dashboard/reviews', label: t('valoraciones'), icon: Star },
+    {
+      href: '/dashboard/messages',
+      label: tNavegacion('mensajes'),
+      icon: MessageSquare,
+    },
+    { href: '/dashboard/profile', label: t('perfil'), icon: User },
   ];
 
   const providerItems = [
-    { href: '/dashboard', label: 'Resumen', icon: LayoutDashboard },
-    { href: '/dashboard/services', label: 'Mis servicios', icon: Briefcase },
+    { href: '/dashboard', label: t('resumen'), icon: LayoutDashboard },
+    { href: '/dashboard/services', label: t('misServicios'), icon: Briefcase },
     {
       href: '/dashboard/bookings-received',
-      label: 'Reservas recibidas',
+      label: tReservas('reservasRecibidas'),
       icon: Calendar,
     },
-    { href: '/dashboard/messages', label: 'Mensajes', icon: MessageSquare },
-    { href: '/dashboard/profile', label: 'Perfil', icon: User },
+    {
+      href: '/dashboard/messages',
+      label: tNavegacion('mensajes'),
+      icon: MessageSquare,
+    },
+    { href: '/dashboard/profile', label: t('perfil'), icon: User },
   ];
+
+  if (!user) return null;
 
   const items = isProvider ? providerItems : clientItems;
 

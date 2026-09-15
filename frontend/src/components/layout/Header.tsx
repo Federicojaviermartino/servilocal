@@ -1,14 +1,17 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 import { useAuthStore } from '@/lib/auth-store';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { MapPin, Menu, X, User, LogOut, Search } from 'lucide-react';
 import SelectorTema from '../molecules/SelectorTema';
+import SelectorIdioma from '../molecules/SelectorIdioma';
 
 export default function Header() {
   const { user, isAuthenticated, logout, loadFromStorage } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = useTranslations('navegacion');
 
   useEffect(() => {
     loadFromStorage();
@@ -21,7 +24,7 @@ export default function Header() {
     >
       <nav
         className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6"
-        aria-label="Navegación principal"
+        aria-label={t('principal')}
       >
         {/* Logo */}
         <Link
@@ -34,13 +37,14 @@ export default function Header() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-6 md:flex">
+          <SelectorIdioma />
           <SelectorTema />
           <Link
             href="/services/search"
             className="flex items-center gap-1 text-sm text-secundario transition-colors hover:text-primary-500"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
-            Buscar servicios
+            {t('buscarServicios')}
           </Link>
 
           {isAuthenticated && user ? (
@@ -54,21 +58,21 @@ export default function Header() {
                 className="text-sm text-secundario hover:text-primary-500"
               >
                 {user.role === 'provider'
-                  ? 'Reservas recibidas'
-                  : 'Mis reservas'}
+                  ? t('reservasRecibidas')
+                  : t('misReservas')}
               </Link>
               <Link
                 href="/dashboard/messages"
                 className="text-sm text-secundario hover:text-primary-500"
               >
-                Mensajes
+                {t('mensajes')}
               </Link>
               {user.role === 'admin' && (
                 <Link
                   href="/admin"
                   className="text-sm text-secundario hover:text-primary-500"
                 >
-                  Admin
+                  {t('administracion')}
                 </Link>
               )}
               <Link
@@ -81,19 +85,19 @@ export default function Header() {
               <button
                 onClick={logout}
                 className="flex items-center gap-1 text-sm text-secundario hover:text-red-500"
-                aria-label="Cerrar sesión"
+                aria-label={t('cerrarSesion')}
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
-                Salir
+                {t('salir')}
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-3">
               <Link href="/auth/login" className="btn-secondary text-sm">
-                Iniciar sesión
+                {t('iniciarSesion')}
               </Link>
               <Link href="/auth/register" className="btn-primary text-sm">
-                Registrarse
+                {t('registrarse')}
               </Link>
             </div>
           )}
@@ -107,7 +111,7 @@ export default function Header() {
             onClick={() => setMenuOpen(!menuOpen)}
             aria-expanded={menuOpen}
             aria-controls="mobile-menu"
-            aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-label={menuOpen ? t('cerrarMenu') : t('abrirMenu')}
           >
             {menuOpen ? (
               <X className="h-6 w-6" />
@@ -124,7 +128,7 @@ export default function Header() {
           id="mobile-menu"
           className="border-t border-borde bg-superficie px-4 py-4 md:hidden"
           role="navigation"
-          aria-label="Menú móvil"
+          aria-label={t('menuMovil')}
         >
           <div className="flex flex-col gap-3">
             <Link
@@ -132,7 +136,7 @@ export default function Header() {
               className="text-sm text-secundario"
               onClick={() => setMenuOpen(false)}
             >
-              Buscar servicios
+              {t('buscarServicios')}
             </Link>
             {isAuthenticated && user ? (
               <>
@@ -146,22 +150,22 @@ export default function Header() {
                   onClick={() => setMenuOpen(false)}
                 >
                   {user.role === 'provider'
-                    ? 'Reservas recibidas'
-                    : 'Mis reservas'}
+                    ? t('reservasRecibidas')
+                    : t('misReservas')}
                 </Link>
                 <Link
                   href="/dashboard/messages"
                   className="text-sm text-secundario"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Mensajes
+                  {t('mensajes')}
                 </Link>
                 <Link
                   href="/dashboard/profile"
                   className="text-sm text-secundario"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Mi perfil
+                  {t('miPerfil')}
                 </Link>
                 <button
                   onClick={() => {
@@ -170,7 +174,7 @@ export default function Header() {
                   }}
                   className="text-left text-sm text-red-500"
                 >
-                  Cerrar sesión
+                  {t('cerrarSesion')}
                 </button>
               </>
             ) : (
@@ -180,17 +184,20 @@ export default function Header() {
                   className="text-sm text-primary-500"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Iniciar sesión
+                  {t('iniciarSesion')}
                 </Link>
                 <Link
                   href="/auth/register"
                   className="text-sm text-primary-500"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Registrarse
+                  {t('registrarse')}
                 </Link>
               </>
             )}
+            <div className="border-t border-borde pt-3">
+              <SelectorIdioma />
+            </div>
           </div>
         </div>
       )}

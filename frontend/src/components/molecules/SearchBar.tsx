@@ -4,6 +4,7 @@
  */
 'use client';
 import { useState, FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
 import Button from '../atoms/Button';
 
@@ -14,10 +15,12 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
-  placeholder = '¿Qué servicio necesitas?',
+  placeholder,
   initialValue = '',
   onSearch,
 }: SearchBarProps) {
+  const t = useTranslations('buscador');
+  const tComun = useTranslations('comun');
   const [value, setValue] = useState(initialValue);
 
   const handleSubmit = (e: FormEvent) => {
@@ -37,13 +40,13 @@ export default function SearchBar({
             type="search"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder={placeholder}
+            placeholder={placeholder ?? t('queNecesitas')}
             className="w-full pl-10 pr-3 py-2.5 rounded-md border border-borde bg-superficie text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            aria-label="Buscar servicios"
+            aria-label={t('buscarServicios')}
           />
         </div>
         <Button type="submit" variant="primary" size="md">
-          Buscar
+          {tComun('buscar')}
         </Button>
       </div>
     </form>

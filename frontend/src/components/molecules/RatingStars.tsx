@@ -2,6 +2,8 @@
  * Nivel atomico: Molecula
  * Componente: RatingStars (visualizacion de valoracion)
  */
+'use client';
+import { useTranslations } from 'next-intl';
 import { Star } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -24,6 +26,7 @@ export default function RatingStars({
   interactive = false,
   onChange,
 }: RatingStarsProps) {
+  const t = useTranslations('valoracion');
   const stars = [1, 2, 3, 4, 5];
   return (
     <div className="inline-flex items-center gap-1">
@@ -38,7 +41,7 @@ export default function RatingStars({
               interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default',
               'transition-transform',
             )}
-            aria-label={`Valorar con ${value} estrellas`}
+            aria-label={t('valorar', { estrellas: value })}
           >
             <Star
               size={sizes[size]}

@@ -9,11 +9,13 @@
  */
 'use client';
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Moon, Sun } from 'lucide-react';
 
 export const CLAVE_TEMA = 'tema';
 
 export default function SelectorTema() {
+  const t = useTranslations('tema');
   // null mientras no se ha montado: el servidor no sabe qué tema tiene el
   // usuario, así que el primer render del cliente debe coincidir con el suyo.
   const [oscuro, setOscuro] = useState<boolean | null>(null);
@@ -34,7 +36,7 @@ export default function SelectorTema() {
     }
   };
 
-  const etiqueta = oscuro ? 'Activar tema claro' : 'Activar tema oscuro';
+  const etiqueta = oscuro ? t('activarClaro') : t('activarOscuro');
 
   return (
     <button

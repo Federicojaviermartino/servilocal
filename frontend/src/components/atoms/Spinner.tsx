@@ -2,6 +2,8 @@
  * Nivel atomico: Atomo
  * Componente: Spinner (indicador de carga)
  */
+'use client';
+import { useTranslations } from 'next-intl';
 import clsx from 'clsx';
 
 interface SpinnerProps {
@@ -16,6 +18,8 @@ const sizes = {
 };
 
 export default function Spinner({ size = 'md', className }: SpinnerProps) {
+  const t = useTranslations('comun');
+
   return (
     <div
       className={clsx(
@@ -24,7 +28,7 @@ export default function Spinner({ size = 'md', className }: SpinnerProps) {
         className,
       )}
       role="status"
-      aria-label="Cargando"
+      aria-label={t('cargando')}
     />
   );
 }

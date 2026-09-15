@@ -9,7 +9,8 @@ import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { Service } from '@/types';
 
 // Workaround para los iconos de Leaflet en bundlers
@@ -35,6 +36,8 @@ export default function ServiceMap({
   zoom = 12,
   height = '500px',
 }: ServiceMapProps) {
+  const t = useTranslations('mapa');
+
   useEffect(() => {
     // Forzar refresco de tiles tras montar
   }, []);
@@ -74,13 +77,16 @@ export default function ServiceMap({
                 <p className="font-semibold">{service.title}</p>
                 <p className="text-secundario">{service.city}</p>
                 <p className="text-secundario">
-                  Desde {service.priceMin} {service.priceUnit}
+                  {t('desde', {
+                    precio: service.priceMin,
+                    unidad: service.priceUnit,
+                  })}
                 </p>
                 <Link
                   href={`/services/${service.id}`}
                   className="text-primary-600 hover:underline mt-1 inline-block"
                 >
-                  Ver detalle
+                  {t('verDetalle')}
                 </Link>
               </div>
             </Popup>

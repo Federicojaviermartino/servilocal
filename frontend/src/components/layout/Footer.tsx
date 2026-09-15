@@ -1,7 +1,10 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { MapPin } from 'lucide-react';
 
 export default function Footer() {
+  const t = useTranslations('pie');
+
   return (
     <footer className="border-t border-borde bg-superficie" role="contentinfo">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
@@ -10,26 +13,26 @@ export default function Footer() {
             <MapPin className="h-5 w-5" aria-hidden="true" />
             <span className="text-sm font-medium">ServiLocal</span>
           </div>
-          <nav aria-label="Enlaces del pie de página">
+          <nav aria-label={t('enlaces')}>
             <ul className="flex gap-6 text-sm text-tenue">
               <li>
                 <Link href="/about" className="hover:text-primary-500">
-                  Acerca de
+                  {t('acercaDe')}
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="hover:text-primary-500">
-                  Términos
+                  {t('terminos')}
                 </Link>
               </li>
               <li>
                 <Link href="/privacy" className="hover:text-primary-500">
-                  Privacidad
+                  {t('privacidad')}
                 </Link>
               </li>
             </ul>
           </nav>
-          <p className="text-sm text-tenue">&copy; 2026 ServiLocal. TFM UOC.</p>
+          <p className="text-sm text-tenue">{t('derechos')}</p>
         </div>
       </div>
     </footer>

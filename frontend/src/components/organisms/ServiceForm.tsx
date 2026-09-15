@@ -4,6 +4,7 @@
  */
 'use client';
 import { useState, useEffect, FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { Category, Service } from '@/types';
 import { categoriesApi } from '@/lib/api';
 import { CIUDADES } from '@/lib/ciudades';
@@ -23,6 +24,7 @@ export default function ServiceForm({
   onCancel,
   isSubmitting,
 }: ServiceFormProps) {
+  const t = useTranslations('formularioServicio');
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState({
     title: initial?.title || '',
@@ -61,7 +63,7 @@ export default function ServiceForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Input
-        label="Título del servicio"
+        label={t('titulo')}
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
         required
@@ -72,7 +74,7 @@ export default function ServiceForm({
           htmlFor="servicio-descripcion"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Descripción
+          {t('descripcion')}
         </label>
         <textarea
           id="servicio-descripcion"
@@ -88,7 +90,7 @@ export default function ServiceForm({
           htmlFor="servicio-categoria"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Categoría
+          {t('categoria')}
         </label>
         <select
           id="servicio-categoria"
@@ -97,7 +99,7 @@ export default function ServiceForm({
           required
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Selecciona una categoría</option>
+          <option value="">{t('seleccionaCategoria')}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -107,7 +109,7 @@ export default function ServiceForm({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Input
-          label="Precio mínimo (euros)"
+          label={t('precioMinimo')}
           type="number"
           min={0}
           step={5}
@@ -118,7 +120,7 @@ export default function ServiceForm({
           required
         />
         <Input
-          label="Precio máximo (opcional)"
+          label={t('precioMaximo')}
           type="number"
           min={0}
           step={5}
@@ -148,7 +150,7 @@ export default function ServiceForm({
         </div>
       </div>
       <Input
-        label="Dirección de referencia"
+        label={t('direccion')}
         value={form.address}
         onChange={(e) => setForm({ ...form, address: e.target.value })}
         required
@@ -168,7 +170,7 @@ export default function ServiceForm({
             required
             className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">Selecciona una ciudad</option>
+            <option value="">{t('seleccionaCiudad')}</option>
             {ciudadesDisponibles.map((ciudad) => (
               <option key={ciudad} value={ciudad}>
                 {ciudad}
@@ -177,7 +179,7 @@ export default function ServiceForm({
           </select>
         </div>
         <Input
-          label="Radio de cobertura (km)"
+          label={t('radio')}
           type="number"
           min={1}
           max={100}

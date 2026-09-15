@@ -4,6 +4,7 @@
  */
 'use client';
 import { useState, FormEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { Service } from '@/types';
 import Button from '../atoms/Button';
 import Input from '../atoms/Input';
@@ -23,6 +24,7 @@ export default function BookingForm({
   onSubmit,
   isSubmitting = false,
 }: BookingFormProps) {
+  const t = useTranslations('reserva');
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = minDate.toISOString().split('T')[0];
@@ -35,17 +37,16 @@ export default function BookingForm({
 
   const validate = () => {
     const errs: Record<string, string> = {};
-    if (!date) errs.date = 'La fecha es obligatoria';
-    if (!time) errs.time = 'La hora es obligatoria';
+    if (!date) errs.date = t('fechaObligatoria');
+    if (!time) errs.time = t('horaObligatoria');
     if (price < service.priceMin) {
-      errs.price = `El precio mínimo es ${service.priceMin} euros`;
+      errs.price = t('precioMinimo', { min: service.priceMin });
     }
     if (service.priceMax && price > service.priceMax) {
-      errs.price = `El precio máximo es ${service.priceMax} euros`;
+      errs.price = t('precioMaximo', { max: service.priceMax });
     }
     if (!description || description.length < 10) {
-      errs.description =
-        'Describe brevemente el trabajo (mínimo 10 caracteres)';
+      errs.description = t('descripcionCorta');
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -66,7 +67,7 @@ export default function BookingForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           type="date"
-          label="Fecha"
+          label={t('fecha')}
           min={minDateStr}
           value={date}
           onChange={(e) => setDate(e.target.value)}
@@ -75,7 +76,7 @@ export default function BookingForm({
         />
         <Input
           type="time"
-          label="Hora"
+          label={t('hora')}
           value={time}
           onChange={(e) => setTime(e.target.value)}
           error={errors.time}
@@ -88,14 +89,14 @@ export default function BookingForm({
           htmlFor="reserva-descripcion"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Descripción del trabajo
+          {t('descripcionTrabajo')}
         </label>
         <textarea
           id="reserva-descripcion"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          placeholder="Describe brevemente el trabajo a realizar, ubicación exacta, materiales necesarios..."
+          placeholder={t('descripcionPlaceholder')}
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           required
         />
@@ -106,25 +107,34 @@ export default function BookingForm({
 
       <Input
         type="number"
-        label={`Precio acordado en euros (entre ${service.priceMin}${service.priceMax ? ` y ${service.priceMax}` : ''})`}
+        label={
+          service.priceMax
+            ? t('precioRango', {
+                min: service.priceMin,
+                max: service.priceMax,
+              })
+            : t('precioMinimoEtiqueta', { min: service.priceMin })
+        }
         min={service.priceMin}
         max={service.priceMax}
         step={5}
         value={price}
         onChange={(e) => setPrice(Number(e.target.value))}
         error={errors.price}
-        hint="Este importe puede ajustarse tras hablar con el profesional."
+        hint={t('precioPista')}
         required
       />
 
       <div className="bg-fondo rounded-md p-4 text-sm">
-        <p className="font-medium text-principal mb-1">Resumen</p>
-        <p className="text-secundario">Servicio: {service.title}</p>
+        <p className="font-medium text-principal mb-1">{t('resumen')}</p>
         <p className="text-secundario">
-          Fecha: {date} a las {time}
+          {t('resumenServicio', { titulo: service.title })}
+        </p>
+        <p className="text-secundario">
+          {t('resumenFecha', { fecha: date, hora: time })}
         </p>
         <p className="text-principal font-semibold mt-2">
-          Total: {price} euros
+          {t('resumenTotal', { precio: price })}
         </p>
       </div>
 
@@ -135,7 +145,7 @@ export default function BookingForm({
         isLoading={isSubmitting}
         disabled={isSubmitting}
       >
-        Continuar al pago
+        {t('continuar')}
       </Button>
     </form>
   );

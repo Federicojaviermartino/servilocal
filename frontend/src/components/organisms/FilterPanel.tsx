@@ -4,6 +4,7 @@
  */
 'use client';
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Category, ServiceSearchParams } from '@/types';
 import { categoriesApi } from '@/lib/api';
 import { CIUDADES } from '@/lib/ciudades';
@@ -19,6 +20,8 @@ export default function FilterPanel({
   initial = {},
   onApply,
 }: FilterPanelProps) {
+  const t = useTranslations('filtros');
+  const tResultados = useTranslations('resultados');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState(initial.categoryId || '');
   const [city, setCity] = useState(initial.city || '');
@@ -62,14 +65,14 @@ export default function FilterPanel({
 
   return (
     <aside className="bg-superficie rounded-lg shadow-card p-5 space-y-5">
-      <h2 className="font-semibold text-principal">Filtros</h2>
+      <h2 className="font-semibold text-principal">{tResultados('filtros')}</h2>
 
       <div>
         <label
           htmlFor="filtro-categoria"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Categoría
+          {t('categoria')}
         </label>
         <select
           id="filtro-categoria"
@@ -77,7 +80,7 @@ export default function FilterPanel({
           onChange={(e) => setCategoryId(e.target.value)}
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Todas las categorías</option>
+          <option value="">{t('todasCategorias')}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -91,7 +94,7 @@ export default function FilterPanel({
           htmlFor="filtro-ciudad"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Ciudad
+          {t('ciudad')}
         </label>
         <select
           id="filtro-ciudad"
@@ -99,7 +102,7 @@ export default function FilterPanel({
           onChange={(e) => setCity(e.target.value)}
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
-          <option value="">Todas las ciudades</option>
+          <option value="">{t('todasCiudades')}</option>
           {CIUDADES.map((ciudad) => (
             <option key={ciudad} value={ciudad}>
               {ciudad}
@@ -113,7 +116,7 @@ export default function FilterPanel({
           htmlFor="filtro-radio"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Radio de búsqueda: {radiusKm} km
+          {t('radio', { km: radiusKm })}
         </label>
         <input
           id="filtro-radio"
@@ -128,7 +131,7 @@ export default function FilterPanel({
 
       <div>
         <label className="block text-sm font-medium text-secundario mb-2">
-          Valoración mínima
+          {t('valoracionMinima')}
         </label>
         <RatingStars rating={minRating} interactive onChange={setMinRating} />
       </div>
@@ -138,7 +141,7 @@ export default function FilterPanel({
           htmlFor="filtro-precio-maximo"
           className="block text-sm font-medium text-secundario mb-1"
         >
-          Precio máximo (euros)
+          {t('precioMaximo')}
         </label>
         <input
           id="filtro-precio-maximo"
@@ -146,17 +149,17 @@ export default function FilterPanel({
           min={0}
           value={maxPrice || ''}
           onChange={(e) => setMaxPrice(Number(e.target.value))}
-          placeholder="Sin límite"
+          placeholder={t('sinLimite')}
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
       </div>
 
       <div className="flex flex-col gap-2 pt-2">
         <Button onClick={handleApply} fullWidth>
-          Aplicar filtros
+          {t('aplicar')}
         </Button>
         <Button onClick={handleReset} variant="ghost" fullWidth>
-          Limpiar
+          {t('limpiar')}
         </Button>
       </div>
     </aside>
