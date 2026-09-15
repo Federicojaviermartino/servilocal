@@ -172,7 +172,7 @@ export default function Header() {
                     logout();
                     setMenuOpen(false);
                   }}
-                  className="text-left text-sm text-red-500"
+                  className="text-start text-sm text-red-500"
                 >
                   {t('cerrarSesion')}
                 </button>

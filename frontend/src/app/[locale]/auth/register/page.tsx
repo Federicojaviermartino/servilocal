@@ -193,7 +193,7 @@ export default function RegisterPage() {
                   id="reg-password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="new-password"
-                  className="input-field pr-10"
+                  className="input-field pe-10"
                   placeholder={t('passwordMinimo')}
                   aria-invalid={!!errors.password}
                   {...register('password', {
@@ -206,7 +206,7 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-tenue"
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-tenue"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={
                     showPassword ? t('ocultarPassword') : t('mostrarPassword')

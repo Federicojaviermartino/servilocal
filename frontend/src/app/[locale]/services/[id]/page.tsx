@@ -233,7 +233,7 @@ export default function ServiceDetailPage() {
                             </p>
                           )}
                           {review.providerResponse && (
-                            <div className="mt-3 ml-4 pl-3 border-l-2 border-primary-200">
+                            <div className="mt-3 ms-4 ps-3 border-s-2 border-primary-200">
                               <p className="text-xs font-medium text-tenue mb-1">
                                 {t('respuestaProfesional')}
                               </p>
@@ -261,7 +261,7 @@ export default function ServiceDetailPage() {
                 </span>
               </div>
               <Button onClick={handleBook} fullWidth size="lg">
-                <Calendar size={18} className="inline mr-2" />
+                <Calendar size={18} className="inline me-2" />
                 {t('reservar')}
               </Button>
               <Button
@@ -270,7 +270,7 @@ export default function ServiceDetailPage() {
                 fullWidth
                 className="mt-2"
               >
-                <MessageSquare size={18} className="inline mr-2" />
+                <MessageSquare size={18} className="inline me-2" />
                 {t('contactar')}
               </Button>
             </div>

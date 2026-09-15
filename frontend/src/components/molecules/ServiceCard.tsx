@@ -41,7 +41,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
         {service.category && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 start-2">
             <Badge variant="info">{service.category.name}</Badge>
           </div>
         )}

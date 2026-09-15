@@ -117,7 +117,7 @@ export default function ProviderServicesPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-principal">{t('titulo')}</h1>
         <Button onClick={() => setIsCreating(true)}>
-          <Plus size={18} className="inline mr-1" />
+          <Plus size={18} className="inline me-1" />
           {t('nuevo')}
         </Button>
       </div>

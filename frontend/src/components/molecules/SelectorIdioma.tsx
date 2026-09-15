@@ -33,7 +33,7 @@ export default function SelectorIdioma() {
   return (
     <div className="relative inline-flex items-center">
       <Globe
-        className="pointer-events-none absolute left-2 h-4 w-4 text-secundario"
+        className="pointer-events-none absolute start-2 h-4 w-4 text-secundario"
         aria-hidden="true"
       />
       <select
@@ -42,7 +42,7 @@ export default function SelectorIdioma() {
         disabled={pendiente}
         aria-label={t('cambiar')}
         title={t('cambiar')}
-        className="cursor-pointer appearance-none rounded-md border border-transparent bg-superficie py-1.5 pl-7 pr-2 text-sm text-secundario transition-colors hover:bg-superficie-alt hover:text-principal focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
+        className="cursor-pointer appearance-none rounded-md border border-transparent bg-superficie py-1.5 ps-7 pe-2 text-sm text-secundario transition-colors hover:bg-superficie-alt hover:text-principal focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-60"
       >
         {routing.locales.map((idioma) => (
           <option

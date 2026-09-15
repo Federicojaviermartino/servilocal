@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { useLocale, useTranslations } from 'next-intl';
+import { direccionDe, type Idioma } from '@/i18n/routing';
 import { Link } from '@/i18n/navigation';
 
 export const metadata: Metadata = {
@@ -81,7 +82,9 @@ export default function TermsPage() {
   const idiomaActual = useLocale();
 
   return (
-    <article className="mx-auto max-w-3xl px-4 py-12">
+    // El texto está en español: se declara así para que no herede la
+    // dirección del documento cuando el visitante navega en árabe.
+    <article className="mx-auto max-w-3xl px-4 py-12" lang="es" dir="ltr">
       <h1 className="text-3xl font-bold text-principal">Términos de uso</h1>
       <p className="mt-2 text-sm text-tenue">
         Última actualización: septiembre de 2026
@@ -90,6 +93,7 @@ export default function TermsPage() {
         <p
           className="mt-4 rounded-lg border border-borde bg-superficie-alt p-3 text-sm text-secundario"
           lang={idiomaActual}
+          dir={direccionDe(idiomaActual as Idioma)}
         >
           {tLegal('avisoIdioma')}
         </p>

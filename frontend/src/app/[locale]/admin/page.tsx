@@ -309,13 +309,15 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
         <table className="min-w-full text-sm" aria-label={t('listaUsuarios')}>
           <thead className="bg-fondo text-secundario">
             <tr>
-              <th className="text-left px-3 py-2 font-medium">{t('nombre')}</th>
-              <th className="text-left px-3 py-2 font-medium">{t('email')}</th>
-              <th className="text-left px-3 py-2 font-medium">{t('rol')}</th>
-              <th className="text-left px-3 py-2 font-medium">{t('estado')}</th>
-              <th className="text-right px-3 py-2 font-medium">
-                {t('accion')}
+              <th className="text-start px-3 py-2 font-medium">
+                {t('nombre')}
               </th>
+              <th className="text-start px-3 py-2 font-medium">{t('email')}</th>
+              <th className="text-start px-3 py-2 font-medium">{t('rol')}</th>
+              <th className="text-start px-3 py-2 font-medium">
+                {t('estado')}
+              </th>
+              <th className="text-end px-3 py-2 font-medium">{t('accion')}</th>
             </tr>
           </thead>
           <tbody>
@@ -342,7 +344,7 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
                     {u.isActive ? t('activa') : t('inactiva')}
                   </Badge>
                 </td>
-                <td className="px-3 py-2 text-right">
+                <td className="px-3 py-2 text-end">
                   <Button
                     variant={u.isActive ? 'danger' : 'primary'}
                     size="sm"
@@ -561,14 +563,14 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
         <table className="min-w-full text-sm" aria-label={t('listaCategorias')}>
           <thead className="bg-fondo text-secundario">
             <tr>
-              <th className="text-left px-3 py-2 font-medium">{t('nombre')}</th>
-              <th className="text-left px-3 py-2 font-medium">{t('slug')}</th>
-              <th className="text-left px-3 py-2 font-medium">
+              <th className="text-start px-3 py-2 font-medium">
+                {t('nombre')}
+              </th>
+              <th className="text-start px-3 py-2 font-medium">{t('slug')}</th>
+              <th className="text-start px-3 py-2 font-medium">
                 {t('descripcion')}
               </th>
-              <th className="text-right px-3 py-2 font-medium">
-                {t('accion')}
-              </th>
+              <th className="text-end px-3 py-2 font-medium">{t('accion')}</th>
             </tr>
           </thead>
           <tbody>
@@ -625,7 +627,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
                       c.description || '—'
                     )}
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="px-3 py-2 text-end">
                     {editing ? (
                       <div className="flex justify-end gap-2">
                         <Button

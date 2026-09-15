@@ -72,7 +72,7 @@ export default function BookingCard({ booking, viewAs }: BookingCardProps) {
             </span>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-end">
           <p className="text-lg font-bold text-principal">
             {booking.totalPrice} euros
           </p>
