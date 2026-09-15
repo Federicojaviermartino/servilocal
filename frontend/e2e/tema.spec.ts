@@ -7,7 +7,10 @@ test.describe('Tema claro y oscuro', () => {
   test('respeta la preferencia del sistema en la primera visita', async ({
     browser,
   }) => {
-    const contexto = await browser.newContext({ colorScheme: 'dark' });
+    const contexto = await browser.newContext({
+      colorScheme: 'dark',
+      locale: 'es-ES',
+    });
     const pagina = await contexto.newPage();
     await pagina.goto('/');
     await expect.poll(() => claseHtml(pagina)).toContain('dark');
@@ -19,7 +22,10 @@ test.describe('Tema claro y oscuro', () => {
   }) => {
     // El sistema pide oscuro; el usuario elige claro y debe seguir en claro
     // después de recargar.
-    const contexto = await browser.newContext({ colorScheme: 'dark' });
+    const contexto = await browser.newContext({
+      colorScheme: 'dark',
+      locale: 'es-ES',
+    });
     const pagina = await contexto.newPage();
     await pagina.goto('/');
 
@@ -35,7 +41,10 @@ test.describe('Tema claro y oscuro', () => {
   test('los campos de formulario siguen siendo legibles en oscuro', async ({
     browser,
   }) => {
-    const contexto = await browser.newContext({ colorScheme: 'dark' });
+    const contexto = await browser.newContext({
+      colorScheme: 'dark',
+      locale: 'es-ES',
+    });
     const pagina = await contexto.newPage();
     await pagina.goto('/services/search');
 

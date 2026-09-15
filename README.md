@@ -55,6 +55,7 @@ Password for every seeded account: `Password123!`
 - Accent- and case-insensitive search that also matches trade names, so "fontaneria" finds *Fontanería*
 - Service detail with verified reviews, price range and provider profile
 - Light and dark themes: follows the system preference, and remembers an explicit choice
+- Available in 10 languages, picked from the browser and switchable at any time, right-to-left layout included
 
 **Clients**
 - Booking form with validation, dates handled in ISO UTC to avoid timezone drift
@@ -83,6 +84,7 @@ Password for every seeded account: `Password123!`
 |-------|-----------|
 | Front end | React 18, Next.js 14 (App Router), TypeScript |
 | Styling | Tailwind CSS with semantic colour tokens, Atomic Design component structure |
+| Internationalisation | next-intl, 10 locales with per-locale static generation, ICU plurals, `hreflang` alternates and RTL support |
 | Back end | NestJS, TypeScript |
 | Database | PostgreSQL with PostGIS (schema managed by TypeORM migrations) |
 | ORM | TypeORM, with a numeric transformer for decimal columns |
@@ -103,6 +105,7 @@ Password for every seeded account: `Password123!`
 - **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
 - **`/api/health` checks the database, not just the process.** An API that boots but cannot reach its database is down in practice — exactly the failure this project had, unnoticed, for four months. It returns `503` when the database does not answer, so a monitor can actually detect it.
 - **Dark mode uses semantic tokens, not a second set of classes.** Components name the role of a colour (`bg-superficie`, `text-principal`), never the colour itself. The theme is applied by a blocking inline script before first paint, so there is no flash of the wrong theme.
+- **Ten languages, statically generated.** Every page is prerendered once per locale rather than translated in the browser, so a crawler and a first-time visitor get the same HTML. The locale comes from the URL, each page declares `hreflang` alternates plus `x-default`, and Arabic flips `dir` to `rtl` at the document root. Catalogues are checked for key parity against Spanish, so a missing translation is caught before it ships rather than showing as a blank label in production. Every screen is covered, dashboard and admin panel included; the terms and privacy texts stay in Spanish on purpose, with a notice in the reader's language saying the Spanish version is the one that prevails.
 - **Rate limiting is proxy-aware.** Behind Render's proxy, without `trust proxy` every request appears to come from the same address and one attacker would lock out every user.
 
 ---
@@ -131,11 +134,16 @@ servilocal/
         migrations/         Schema history — the only source of truth
         seeds/              Reproducible demo data
   frontend/                 Next.js 14 App Router + Tailwind
+    messages/               Translation catalogues, one JSON per locale
     src/
-      app/                  Routes, including robots.ts and sitemap.ts
+      app/
+        [locale]/           Every route, prerendered once per language
+        robots.ts, sitemap.ts
+      i18n/                 Locale list, localised navigation, per-request config
+      middleware.ts         Locale detection and URL prefixing
       components/
         atoms/              Button, Input, Badge, Avatar, Spinner
-        molecules/          SearchBar, ServiceCard, ServiceImage, Pagination
+        molecules/          SearchBar, ServiceCard, SelectorTema, SelectorIdioma, Pagination
         organisms/          FilterPanel, ResultsList, ServiceMap, forms
         templates/          DashboardLayout
         layout/             Header, Footer
@@ -259,7 +267,8 @@ npm run e2e
 
 The end-to-end suite covers search with accent-insensitive matching, pagination,
 city filtering, the collapsible mobile filter panel, the map, demo login, failed
-login, route protection, and a full booking paid with a Stripe test card.
+login, route protection, theme switching, language detection and switching, and a
+full booking paid with a Stripe test card.
 
 The payment test skips itself, with an explicit reason, when Stripe keys are not
 configured — the booking is still created, but there is nothing to charge. Add
