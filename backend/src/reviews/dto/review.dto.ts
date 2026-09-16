@@ -6,6 +6,7 @@ import {
   IsNumber,
   Min,
   Max,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateReviewDto {
@@ -25,6 +26,7 @@ export class CreateReviewDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   comment?: string;
 }
 
@@ -34,6 +36,7 @@ export class ProviderResponseDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(1000)
   providerResponse: string;
 }
 
@@ -41,5 +44,6 @@ export class ReportReviewDto {
   @ApiProperty({ example: 'Contenido ofensivo o spam' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(500)
   reportReason: string;
 }

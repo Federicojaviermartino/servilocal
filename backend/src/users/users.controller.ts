@@ -58,10 +58,15 @@ export class UsersController {
     return result;
   }
 
+  // Devuelve la ficha completa de cualquier usuario: correo, teléfono,
+  // dirección y coordenadas. Con solo el guardia de sesión bastaba con
+  // registrarse para leer los datos de contacto de todos los demás.
   @Get(':id')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obtener usuario por ID' })
+  @ApiOperation({ summary: 'Obtener usuario por ID (administración)' })
+  @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
   @ApiResponse({ status: 200, description: 'Datos del usuario' })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {

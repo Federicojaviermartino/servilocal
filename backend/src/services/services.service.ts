@@ -13,6 +13,25 @@ import {
 } from './dto/service.dto';
 
 /**
+ * Columnas del proveedor que pueden salir por una ruta pública.
+ *
+ * La entidad User trae correo, teléfono, dirección, código postal y
+ * coordenadas, y solo la contraseña está marcada como no seleccionable. Un
+ * leftJoinAndSelect sobre ella publicaba todo eso a cualquiera que llamase a
+ * la búsqueda sin identificarse. El contacto ocurre por la mensajería de la
+ * plataforma, así que la ficha pública no necesita ninguno de esos campos.
+ */
+const COLUMNAS_PUBLICAS_PROVEEDOR = [
+  'provider.id',
+  'provider.firstName',
+  'provider.lastName',
+  'provider.bio',
+  'provider.city',
+  'provider.avatarUrl',
+  'provider.isActive',
+];
+
+/**
  * Devuelve una expresión SQL que compara texto ignorando mayúsculas y acentos.
  *
  * Tanto la ciudad como el texto libre los teclean personas: quien busque
@@ -50,10 +69,13 @@ export class ServicesService {
   }
 
   async findById(id: string): Promise<Service> {
-    const service = await this.serviceRepository.findOne({
-      where: { id },
-      relations: ['provider', 'category'],
-    });
+    const service = await this.serviceRepository
+      .createQueryBuilder('service')
+      .leftJoin('service.provider', 'provider')
+      .addSelect(COLUMNAS_PUBLICAS_PROVEEDOR)
+      .leftJoinAndSelect('service.category', 'category')
+      .where('service.id = :id', { id })
+      .getOne();
 
     if (!service) {
       throw new NotFoundException('Servicio no encontrado');
@@ -116,7 +138,8 @@ export class ServicesService {
 
     const qb = this.serviceRepository
       .createQueryBuilder('service')
-      .leftJoinAndSelect('service.provider', 'provider')
+      .leftJoin('service.provider', 'provider')
+      .addSelect(COLUMNAS_PUBLICAS_PROVEEDOR)
       .leftJoinAndSelect('service.category', 'category')
       .where('service.isActive = :active', { active: true })
       .andWhere('provider.isActive = :providerActive', {

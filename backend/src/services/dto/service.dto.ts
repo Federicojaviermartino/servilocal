@@ -23,6 +23,7 @@ export class CreateServiceDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(3000)
   description: string;
 
   @ApiProperty({ example: 'uuid-category' })
@@ -92,6 +93,7 @@ export class UpdateServiceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(3000)
   description?: string;
 
   @ApiPropertyOptional()

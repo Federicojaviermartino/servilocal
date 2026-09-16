@@ -1,3 +1,5 @@
+import { resolve } from 'path';
+import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../../entities/user.entity';
@@ -83,6 +85,11 @@ const COMENTARIOS = [
   'Buen acabado y materiales de calidad. Recomendable.',
   'Cumplió con lo presupuestado y no hubo sorpresas.',
 ];
+
+// El data source de las migraciones ya carga el .env; la semilla leía
+// process.env a secas, así que seguir el README al pie de la letra
+// terminaba en un fallo de autenticación.
+dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
 async function runSeed() {
   const databaseUrl = process.env.DATABASE_URL;

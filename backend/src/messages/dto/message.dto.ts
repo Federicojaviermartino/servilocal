@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class SendMessageDto {
   @ApiProperty({
@@ -16,6 +16,7 @@ export class SendMessageDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   content: string;
 }
 
@@ -25,5 +26,6 @@ export class ReplyMessageDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   content: string;
 }
