@@ -10,7 +10,17 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
-import { Users, Tag, Flag, Pencil, Check, X, Briefcase } from 'lucide-react';
+import {
+  Users,
+  Tag,
+  Flag,
+  Pencil,
+  Check,
+  X,
+  Briefcase,
+  TrendingUp,
+  Star,
+} from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { adminApi, usersApi, categoriesApi, reviewsApi } from '@/lib/api';
 import { User, Category, Review, UserRole } from '@/types';
@@ -19,10 +29,11 @@ import Input from '@/components/atoms/Input';
 import Badge from '@/components/atoms/Badge';
 import Spinner from '@/components/atoms/Spinner';
 
-type Tab = 'users' | 'categories' | 'reviews';
+type Tab = 'users' | 'reputation' | 'categories' | 'reviews';
 
 const TABS = [
   { key: 'users', clave: 'usuarios', icon: Users },
+  { key: 'reputation', clave: 'reputacion', icon: TrendingUp },
   { key: 'categories', clave: 'categorias', icon: Tag },
   { key: 'reviews', clave: 'valoracionesReportadas', icon: Flag },
 ] as const;
@@ -132,7 +143,9 @@ export default function AdminPage() {
               icon={Flag}
               label={t('reportesPendientes')}
               value={stats.valoraciones.reportadas}
-              variant={stats.valoraciones.reportadas > 0 ? 'warning' : 'default'}
+              variant={
+                stats.valoraciones.reportadas > 0 ? 'warning' : 'default'
+              }
             />
           </div>
         )}
@@ -168,6 +181,15 @@ export default function AdminPage() {
             {tab === 'users' && (
               <div role="tabpanel" id="panel-users" aria-labelledby="tab-users">
                 <UsersSection onMutate={loadStats} />
+              </div>
+            )}
+            {tab === 'reputation' && (
+              <div
+                role="tabpanel"
+                id="panel-reputation"
+                aria-labelledby="tab-reputation"
+              >
+                <ReputacionSection />
               </div>
             )}
             {tab === 'categories' && (
@@ -830,5 +852,139 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+interface Reputacion {
+  proveedorId: string;
+  nombre: string;
+  ciudad: string | null;
+  activo: boolean;
+  servicios: number;
+  serviciosActivos: number;
+  valoraciones: number;
+  media: number | null;
+  reservasCompletadas: number;
+  tasaRespuesta: number | null;
+}
+
+/**
+ * Reputación agregada por profesional.
+ *
+ * Los datos llegan ya calculados y ordenados del servidor: aquí no se suma ni
+ * se ordena nada, solo se pinta. Quien no tiene valoraciones aparece al final
+ * con la nota en blanco, no con un cero, porque cero es una nota pésima y lo
+ * que ocurre es que todavía no hay de qué opinar.
+ */
+function ReputacionSection() {
+  const t = useTranslations('administracion');
+  const tComun = useTranslations('comun');
+  const [filas, setFilas] = useState<Reputacion[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const load = useCallback(() => {
+    setIsLoading(true);
+    adminApi
+      .reputacion()
+      .then((res) => setFilas(res.data || []))
+      .catch(() => toast.error(t('errorReputacion')))
+      .finally(() => setIsLoading(false));
+  }, [t]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-secundario">{t('reputacionAyuda')}</p>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm" aria-label={t('listaReputacion')}>
+          <thead className="bg-fondo text-secundario">
+            <tr>
+              <th className="text-start px-3 py-2 font-medium">
+                {t('nombre')}
+              </th>
+              <th className="text-start px-3 py-2 font-medium">
+                {tComun('ciudad')}
+              </th>
+              <th className="text-end px-3 py-2 font-medium">{t('media')}</th>
+              <th className="text-end px-3 py-2 font-medium">
+                {t('valoracionesCol')}
+              </th>
+              <th className="text-end px-3 py-2 font-medium">
+                {t('serviciosCol')}
+              </th>
+              <th className="text-end px-3 py-2 font-medium">
+                {t('completadas')}
+              </th>
+              <th className="text-end px-3 py-2 font-medium">
+                {t('tasaRespuesta')}
+              </th>
+              <th className="text-start px-3 py-2 font-medium">
+                {t('estado')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filas.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-3 py-8 text-center text-tenue">
+                  {t('sinReputacion')}
+                </td>
+              </tr>
+            )}
+            {filas.map((p) => (
+              <tr key={p.proveedorId} className="border-t border-borde">
+                <td className="px-3 py-2 font-medium text-principal">
+                  {p.nombre}
+                </td>
+                <td className="px-3 py-2 text-secundario">{p.ciudad || '—'}</td>
+                <td className="px-3 py-2 text-end">
+                  {p.media === null ? (
+                    <span className="text-tenue">{t('sinNota')}</span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 font-medium text-principal">
+                      <Star
+                        size={14}
+                        className="fill-warning-500 text-warning-500"
+                        aria-hidden="true"
+                      />
+                      {p.media.toFixed(2)}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-2 text-end text-secundario">
+                  {p.valoraciones}
+                </td>
+                <td className="px-3 py-2 text-end text-secundario">
+                  {p.serviciosActivos}/{p.servicios}
+                </td>
+                <td className="px-3 py-2 text-end text-secundario">
+                  {p.reservasCompletadas}
+                </td>
+                <td className="px-3 py-2 text-end text-secundario">
+                  {p.tasaRespuesta === null ? '—' : `${p.tasaRespuesta}%`}
+                </td>
+                <td className="px-3 py-2">
+                  <Badge variant={p.activo ? 'success' : 'danger'}>
+                    {p.activo ? t('activa') : t('inactiva')}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
