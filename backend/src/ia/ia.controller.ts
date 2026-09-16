@@ -1,4 +1,5 @@
-import { Controller, Get, Inject, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -8,6 +9,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
+import { AsistenteService } from './asistente.service';
+import { AsistenteDto } from './dto/asistente.dto';
 import { PresupuestoService } from './presupuesto.service';
 import {
   PROVEEDOR_MODELO,
@@ -21,6 +24,7 @@ export class IaController {
     @Inject(PROVEEDOR_MODELO)
     private readonly proveedor: ProveedorModelo,
     private readonly presupuesto: PresupuestoService,
+    private readonly asistente: AsistenteService,
   ) {}
 
   /**
@@ -59,5 +63,34 @@ export class IaController {
   @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
   consumo() {
     return this.presupuesto.resumen();
+  }
+
+  /**
+   * Búsqueda en lenguaje natural.
+   *
+   * POST y no GET a propósito: el cliente reintenta los GET que agotan el
+   * tiempo, y un reintento de algo que cuesta dinero se paga dos veces.
+   *
+   * El límite propio va en la ruta y no en el ThrottlerModule global: añadir
+   * un throttler con nombre al array hace que el guardia lo evalúe en TODAS
+   * las peticiones de la API, y dejaría los diez controladores con cinco por
+   * minuto.
+   */
+  @Post('asistente')
+  @Throttle({ default: { limit: 6, ttl: 60000 } })
+  @ApiOperation({
+    summary: 'Interpreta una necesidad en lenguaje natural y busca servicios',
+    description:
+      'El modelo solo elige entre categorías y ciudades existentes; los ' +
+      'servicios los devuelve siempre la búsqueda leyendo de la base de ' +
+      'datos. Sin clave o sin presupuesto responde igual, en modo básico.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Servicios reales y criterios aplicados',
+  })
+  @ApiResponse({ status: 429, description: 'Demasiadas peticiones' })
+  asistenteBuscar(@Body() dto: AsistenteDto) {
+    return this.asistente.responder(dto.mensaje);
   }
 }

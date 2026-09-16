@@ -1,7 +1,10 @@
 import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { Category, Service } from '../entities';
 import { UsoIa } from '../entities/uso-ia.entity';
+import { ServicesModule } from '../services/services.module';
+import { AsistenteService } from './asistente.service';
 import { ConfiguracionIa } from './ia.config';
 import { IaController } from './ia.controller';
 import { PresupuestoService } from './presupuesto.service';
@@ -26,10 +29,14 @@ import {
  * levanta sin ella. Una funcionalidad opcional no puede comportarse así.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([UsoIa])],
+  imports: [
+    TypeOrmModule.forFeature([UsoIa, Category, Service]),
+    ServicesModule,
+  ],
   controllers: [IaController],
   providers: [
     PresupuestoService,
+    AsistenteService,
     {
       provide: PROVEEDOR_MODELO,
       inject: [ConfigService],
