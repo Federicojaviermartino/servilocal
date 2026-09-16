@@ -14,12 +14,17 @@ import { PaymentsModule } from './payments/payments.module';
 import { MessagesModule } from './messages/messages.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
+import { IaModule } from './ia/ia.module';
+import configIa from './ia/ia.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      // Sin este load, configService.get('ia.x') devuelve undefined en
+      // silencio y toda la capa se comporta como si no estuviera configurada.
+      load: [configIa],
     }),
     // Límite general por IP. Las rutas sensibles lo endurecen con @Throttle.
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
@@ -38,6 +43,7 @@ import { AdminModule } from './admin/admin.module';
     MessagesModule,
     HealthModule,
     AdminModule,
+    IaModule,
   ],
   providers: [
     {

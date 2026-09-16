@@ -138,6 +138,7 @@ Password for both, if you prefer to type it: `Password123!`
 | Payments | Stripe Payment Element, manual capture, signed webhook |
 | Component catalogue | Storybook 10, with locale and theme switchers in the toolbar |
 | Observability | Sentry for unhandled errors, `/api/health` with a real database probe |
+| AI layer | Anthropic SDK behind a one-method interface, with a null provider, persisted usage accounting and a hard monthly spend ceiling |
 | Testing | Jest (19 unit tests), Playwright (28 end-to-end tests, desktop and mobile) |
 | CI | GitHub Actions: lint, type-check, tests, build and catalogue on every push |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
@@ -179,6 +180,8 @@ UML diagrams live in [`diagrams/`](diagrams/) and responsive wireframes in [`wir
 - **Dark mode uses semantic tokens, not a second set of classes.** Components name the role of a colour (`bg-superficie`, `text-principal`), never the colour itself. The theme is applied by a blocking inline script before first paint, so there is no flash of the wrong theme.
 - **Ten languages, statically generated.** Every page is prerendered once per locale rather than translated in the browser, so a crawler and a first-time visitor get the same HTML. The locale comes from the URL, each page declares `hreflang` alternates plus `x-default`, and Arabic flips `dir` to `rtl` at the document root. Catalogues are checked for key parity against Spanish, so a missing translation is caught before it ships rather than showing as a blank label in production. Every screen is covered, dashboard and admin panel included; the terms and privacy texts stay in Spanish on purpose, with a notice in the reader's language saying the Spanish version is the one that prevails.
 - **The component catalogue renders components the way the app does.** Stories run inside the same locale provider and theme tokens as the application, and the toolbar switches both, so a card can be checked in Arabic on a dark background without starting the API. CI builds the catalogue on every push, because a broken story breaks nothing in production and would otherwise rot unnoticed.
+- **The spend ceiling is asked before spending, not measured after.** Usage is accumulated in PostgreSQL with an `ON CONFLICT DO UPDATE`, never in process memory: on a free tier the instance sleeps several times a day, so an in-memory counter resets with it and a ceiling built on one only looks like a ceiling. Failed calls are recorded too — a call that timed out still cost latency, and one that appears nowhere is one nobody notices. Costs are integer cents, computed from the token counts the provider returns rather than estimated.
+- **No API key means no AI, not no application.** The provider is chosen once, by injection: with a key it is the real one, without it a null provider that fails immediately with a typed cause so the caller takes its deterministic path. The app logs which one it got, next to the equivalent line for Sentry. Nothing in the layer throws at boot.
 - **Rate limiting is proxy-aware.** Behind Render's proxy, without `trust proxy` every request appears to come from the same address and one attacker would lock out every user.
 - **Lock files are generated on Linux, not on the development machine.** npm resolves peer dependencies differently per operating system: `next-intl` pulls in `@swc/core`, which declares `@swc/helpers >=0.5.17` as an optional peer while Next pins `0.5.5` exactly, and Storybook brings the same clash with `ajv`. Linux resolves each into two entries, Windows into one, and `npm ci` rejects the Windows tree outright. `npm run lock` rebuilds the tree inside a `node:22` container and refuses to write the file until `npm ci` accepts it.
 
@@ -365,6 +368,10 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `CORS_ORIGINS` | Comma-separated list of allowed origins |
 | `SENTRY_DSN` | Optional. Without it, error reporting stays off and the app boots normally |
 | `THROTTLE_AUTH_LIMIT` | Optional. Raises the login rate limit in test environments |
+| `ANTHROPIC_API_KEY` | Optional. Without it the AI layer stays inactive and the app boots normally |
+| `IA_ACTIVA` | Optional. `false` turns the AI layer off even when a key is present |
+| `IA_MODELO` | Optional. Defaults to `claude-haiku-4-5-20251001` |
+| `IA_TOPE_MENSUAL_CENTIMOS` | Optional. Hard monthly ceiling in cents, checked before every call. Defaults to `100` (1 €) |
 
 **Front end (`servilocal-web`)**
 

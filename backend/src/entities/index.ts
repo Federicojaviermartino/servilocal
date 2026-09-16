@@ -6,3 +6,4 @@ export { Review } from './review.entity';
 export { Conversation, Message } from './message.entity';
 export { Payment, PaymentStatus } from './payment.entity';
 export { Notification, NotificationType } from './notification.entity';
+export { UsoIa } from './uso-ia.entity';
