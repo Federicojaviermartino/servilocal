@@ -20,6 +20,7 @@ import {
   Briefcase,
   TrendingUp,
   Star,
+  Eye,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { adminApi, usersApi, categoriesApi, reviewsApi } from '@/lib/api';
@@ -115,6 +116,29 @@ export default function AdminPage() {
           <h1 className="text-2xl font-bold text-principal">{t('titulo')}</h1>
           <p className="text-secundario mt-1">{t('subtitulo')}</p>
         </div>
+
+        {/* Se avisa antes de que alguien pulse, no después con un error: el
+            bloqueo es deliberado y tiene que parecerlo. Quien manda es el
+            servidor; esto solo lo cuenta. */}
+        {user.soloLectura && (
+          <div
+            role="status"
+            className="mb-6 flex items-start gap-3 rounded-lg border border-warning-500/30 bg-warning-50 p-4"
+          >
+            <Eye
+              className="mt-0.5 h-5 w-5 shrink-0 text-warning-600"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="text-sm font-medium text-principal">
+                {t('soloLecturaTitulo')}
+              </p>
+              <p className="mt-1 text-sm text-secundario">
+                {t('soloLecturaTexto')}
+              </p>
+            </div>
+          </div>
+        )}
 
         {stats && (
           <div
@@ -260,6 +284,7 @@ function MetricCard({
 
 function UsersSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
+  const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | UserRole>('all');
@@ -384,6 +409,8 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
                     variant={u.isActive ? 'danger' : 'primary'}
                     size="sm"
                     onClick={() => handleToggle(u)}
+                    disabled={soloLectura}
+                    title={soloLectura ? t('soloLecturaTexto') : undefined}
                   >
                     {u.isActive ? t('desactivar') : t('activar')}
                   </Button>

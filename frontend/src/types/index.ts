@@ -18,12 +18,18 @@ export interface User {
   postalCode?: string;
   isActive: boolean;
   isEmailVerified: boolean;
+  /** Cuenta de escaparate: entra y lo ve todo, pero el servidor le rechaza
+   *  cualquier escritura. */
+  soloLectura: boolean;
   createdAt: string;
 }
 
 export interface AuthResponse {
   accessToken: string;
-  user: Pick<User, 'id' | 'email' | 'firstName' | 'lastName' | 'role'>;
+  user: Pick<
+    User,
+    'id' | 'email' | 'firstName' | 'lastName' | 'role' | 'soloLectura'
+  >;
 }
 
 export interface Category {

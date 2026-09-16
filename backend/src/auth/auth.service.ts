@@ -53,6 +53,7 @@ export class AuthService {
         firstName: true,
         lastName: true,
         isActive: true,
+        soloLectura: true,
       },
     });
 
@@ -103,6 +104,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        soloLectura: user.soloLectura ?? false,
       },
     };
   }

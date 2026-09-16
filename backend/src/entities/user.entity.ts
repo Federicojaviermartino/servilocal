@@ -69,6 +69,14 @@ export class User {
   @Column({ default: false })
   isEmailVerified: boolean;
 
+  /**
+   * Cuenta de escaparate: puede entrar y mirarlo todo, pero no modificar nada.
+   * Existe para poder publicar un administrador en la pantalla de acceso sin
+   * que el primer visitante deje la demostración inservible para el siguiente.
+   */
+  @Column({ default: false })
+  soloLectura: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

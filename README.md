@@ -65,8 +65,14 @@ The login page has **one-click demo access** — no need to type anything:
 |------|---------|-----------------|
 | Client | `laura@ejemplo.com` | Search, book, pay, review, message providers |
 | Provider | `carlos@ejemplo.com` | Publish services, accept or reject bookings |
+| Administration | `demo@servilocal.com` | Read the metrics, reputation and moderation panels |
 
-Password for both, if you prefer to type it: `Password123!`
+Password for all three, if you prefer to type it: `Password123!`
+
+The administration account is **read-only**, enforced on the server: it can read
+everything and write nothing, so the demo survives the next visitor. The rule is
+applied by HTTP method rather than by a list of routes, so an endpoint added
+later is blocked without anyone having to remember it.
 
 > **Note on the first load.** Both services run on Render's free tier and sleep after 15 minutes without traffic. The first request can take up to a minute while they wake up; after that it is fast. A scheduled job pings them during working hours to reduce the chance of a cold start.
 

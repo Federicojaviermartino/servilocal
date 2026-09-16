@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities';
@@ -50,7 +54,17 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
-  async toggleActive(id: string): Promise<User> {
+  async toggleActive(id: string, idSolicitante: string): Promise<User> {
+    // Desactivarse a uno mismo es un viaje sin billete de vuelta: la
+    // estrategia JWT rechaza a los usuarios inactivos y esta misma ruta exige
+    // un administrador activo, así que con un solo administrador la
+    // plataforma queda cerrada hasta que alguien entre por la base de datos.
+    if (id === idSolicitante) {
+      throw new BadRequestException(
+        'No puedes desactivar tu propia cuenta de administración.',
+      );
+    }
+
     const user = await this.findById(id);
     user.isActive = !user.isActive;
     return this.userRepository.save(user);

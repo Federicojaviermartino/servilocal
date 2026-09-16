@@ -81,7 +81,14 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Activar/desactivar usuario (solo admin)' })
   @ApiResponse({ status: 200, description: 'Estado del usuario actualizado' })
-  async toggleActive(@Param('id', ParseUUIDPipe) id: string) {
-    return this.usersService.toggleActive(id);
+  @ApiResponse({
+    status: 400,
+    description: 'No se puede desactivar la propia cuenta',
+  })
+  async toggleActive(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.usersService.toggleActive(id, req.user.id);
   }
 }

@@ -162,6 +162,18 @@ async function runSeed() {
     role: UserRole.ADMIN,
   });
 
+  // El administrador que se publica en la pantalla de acceso. Va aparte del
+  // anterior a propósito: el completo sigue existiendo para operar de verdad,
+  // y el visitante recorre el panel sin poder dejarlo inservible al siguiente.
+  const adminDemo = userRepo.create({
+    ...base,
+    firstName: 'Demo',
+    lastName: 'Administración',
+    email: 'demo@servilocal.com',
+    role: UserRole.ADMIN,
+    soloLectura: true,
+  });
+
   const definicionClientes = [
     {
       firstName: 'Laura',
@@ -310,7 +322,7 @@ async function runSeed() {
     }),
   );
 
-  await userRepo.save([admin, ...clientes, ...proveedores]);
+  await userRepo.save([admin, adminDemo, ...clientes, ...proveedores]);
 
   const proveedorPorClave: Record<string, User> = {};
   definicionProveedores.forEach((p, i) => {
@@ -860,6 +872,7 @@ async function runSeed() {
 
   console.log('\n=== CREDENCIALES DE PRUEBA ===');
   console.log('Admin:      admin@servilocal.com');
+  console.log('Admin demo: demo@servilocal.com (solo lectura)');
   console.log('Cliente:    laura@ejemplo.com');
   console.log('Proveedor:  carlos@ejemplo.com');
   console.log('Proveedora: elena@ejemplo.com');

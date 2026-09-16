@@ -21,6 +21,10 @@ const PASSWORD_DEMO = 'Password123!';
 const CUENTAS_DEMO = [
   { clave: 'Cliente', email: 'laura@ejemplo.com' },
   { clave: 'Profesional', email: 'carlos@ejemplo.com' },
+  // Administración va en solo lectura: quien la use ve el panel entero, y el
+  // servidor le rechaza cualquier escritura. Sin eso, el primer visitante
+  // podría desactivar usuarios y dejar la demostración rota para el siguiente.
+  { clave: 'Administracion', email: 'demo@servilocal.com' },
 ] as const;
 
 function LoginPageContent() {
@@ -168,7 +172,7 @@ function LoginPageContent() {
               {t('demoTitulo')}
             </p>
             <p className="mt-1 text-xs text-secundario">{t('demoTexto')}</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
               {CUENTAS_DEMO.map((cuenta) => (
                 <button
                   key={cuenta.email}
