@@ -15,6 +15,11 @@ const apiOrigen = (() => {
   }
 })();
 
+// El socket usa ws:// o wss://, que para el CSP son esquemas distintos de
+// http:// y https://: permitir el origen de la API no permite su socket, y
+// el navegador lo bloquea sin que el código se entere de nada.
+const apiOrigenSocket = apiOrigen.replace(/^http/, 'ws');
+
 const csp = [
   "default-src 'self'",
   // 'unsafe-inline' es obligatorio mientras Next inyecte scripts en línea sin
@@ -24,7 +29,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://images.unsplash.com https://res.cloudinary.com https://*.tile.openstreetmap.org https://unpkg.com https://*.stripe.com",
   "font-src 'self' data:",
-  `connect-src 'self' ${apiOrigen} https://api.stripe.com https://maps.stripe.com https://m.stripe.network`,
+  `connect-src 'self' ${apiOrigen} ${apiOrigenSocket} https://api.stripe.com https://maps.stripe.com https://m.stripe.network`,
   'frame-src https://js.stripe.com https://hooks.stripe.com',
   "object-src 'none'",
   "base-uri 'self'",

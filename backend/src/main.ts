@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import { origenesPermitidos } from './common/origenes';
 import { AppModule } from './app.module';
 import { iniciarSentry } from './common/observabilidad/sentry';
 import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
@@ -22,17 +23,8 @@ async function bootstrap() {
 
   app.use(helmet());
 
-  const corsOrigins = (
-    process.env.CORS_ORIGINS ||
-    process.env.FRONTEND_URL ||
-    'http://localhost:3000'
-  )
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-
   app.enableCors({
-    origin: corsOrigins,
+    origin: origenesPermitidos(),
     credentials: true,
   });
 

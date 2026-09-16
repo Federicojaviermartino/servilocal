@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Conversation, Message } from '../entities';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
+import { MensajesGateway } from './mensajes.gateway';
 
 export interface ResumenConversacion {
   partnerId: string;
@@ -31,7 +32,25 @@ export class MessagesService {
     private conversationRepository: Repository<Conversation>,
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
+    private readonly gateway: MensajesGateway,
   ) {}
+
+  /**
+   * Avisa por socket a quien esté mirando.
+   *
+   * Va aquí y no en el controlador porque hay dos caminos que guardan un
+   * mensaje: acordarse en uno y olvidarlo en el otro daría una mensajería
+   * que funciona a veces, que es peor que una que no funciona nunca.
+   *
+   * Los destinatarios salen de la conversación guardada, jamás de lo que
+   * mande el cliente.
+   */
+  private avisar(conversacion: Conversation, mensaje: Message): void {
+    this.gateway.notificarMensaje(
+      [conversacion.participantOneId, conversacion.participantTwoId],
+      mensaje,
+    );
+  }
 
   async sendMessage(senderId: string, dto: SendMessageDto): Promise<Message> {
     const conversation = await this.findOrCreateConversation(
@@ -53,6 +72,8 @@ export class MessagesService {
         : dto.content;
     conversation.lastMessageAt = new Date();
     await this.conversationRepository.save(conversation);
+
+    this.avisar(conversation, savedMessage);
 
     return savedMessage;
   }
@@ -91,6 +112,8 @@ export class MessagesService {
         : dto.content;
     conversation.lastMessageAt = new Date();
     await this.conversationRepository.save(conversation);
+
+    this.avisar(conversation, savedMessage);
 
     return savedMessage;
   }

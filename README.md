@@ -145,6 +145,7 @@ later is blocked without anyone having to remember it.
 | Component catalogue | Storybook 10, with locale and theme switchers in the toolbar |
 | Observability | Sentry for unhandled errors, `/api/health` with a real database probe |
 | AI layer | Anthropic SDK behind a one-method interface, with a null provider, persisted usage accounting and a hard monthly spend ceiling |
+| Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Testing | Jest (19 unit tests), Playwright (28 end-to-end tests, desktop and mobile) |
 | CI | GitHub Actions: lint, type-check, tests, build and catalogue on every push |
 | Hosting | Render (web services) + Neon (PostgreSQL) |

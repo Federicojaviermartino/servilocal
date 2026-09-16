@@ -1,11 +1,12 @@
 'use client';
-import { useState, useEffect, useRef, FormEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { Message } from '@/types';
 import { messagesApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useMensajesEnVivo, type AvisoMensaje } from '@/lib/socket-mensajes';
 import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
 import Spinner from '@/components/atoms/Spinner';
@@ -23,7 +24,7 @@ export default function ConversationPage() {
   const [isSending, setIsSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const { data } = await messagesApi.getConversation(partnerId);
       setMessages(data || []);
@@ -32,13 +33,44 @@ export default function ConversationPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [partnerId]);
+
+  // Llega por socket: se añade en el sitio en lugar de recargar la
+  // conversación entera. El servidor manda el mensaje a los dos, así que
+  // también se recibe el propio y no hace falta pintarlo por adelantado.
+  const { conectado } = useMensajesEnVivo(
+    useCallback(
+      ({ mensaje, interlocutorId }: AvisoMensaje) => {
+        // El servidor dice con quién es cada conversación. Mirar el remitente
+        // no bastaría: en los mensajes propios el remitente soy yo, así que
+        // no se distinguiría de lo que escribo en otra conversación.
+        if (interlocutorId !== partnerId) return;
+
+        setMessages((previos) =>
+          // Con dos pestañas abiertas el mismo mensaje puede llegar dos
+          // veces; sin esta comprobación React avisaría de claves repetidas
+          // y la conversación mostraría el texto duplicado.
+          previos.some((m) => m.id === mensaje.id)
+            ? previos
+            : [...previos, mensaje],
+        );
+      },
+      [partnerId],
+    ),
+  );
 
   useEffect(() => {
     if (partnerId) load();
-    const interval = setInterval(load, 10000);
-    return () => clearInterval(interval);
-  }, [partnerId]);
+  }, [partnerId, load]);
+
+  // Red de seguridad mientras el socket no esté conectado: en Render el
+  // servicio se duerme y hay redes que cortan los sockets. Dejar de recibir
+  // mensajes sin enterarse es la peor forma de fallar de una mensajería.
+  useEffect(() => {
+    if (conectado) return;
+    const intervalo = setInterval(load, 10000);
+    return () => clearInterval(intervalo);
+  }, [conectado, load]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -54,7 +86,9 @@ export default function ConversationPage() {
         content: content.trim(),
       });
       setContent('');
-      load();
+      // Con socket, el propio mensaje vuelve por él. Sin socket hay que
+      // pedirlo, o quien escribe no vería lo que acaba de enviar.
+      if (!conectado) load();
     } finally {
       setIsSending(false);
     }
@@ -137,8 +171,9 @@ export default function ConversationPage() {
           type="submit"
           isLoading={isSending}
           disabled={!content.trim() || isSending}
+          aria-label={t('enviar')}
         >
-          <Send size={18} />
+          <Send size={18} aria-hidden="true" />
         </Button>
       </form>
     </div>
