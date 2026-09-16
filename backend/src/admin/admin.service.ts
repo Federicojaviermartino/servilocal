@@ -269,7 +269,8 @@ export class AdminService {
           servicios: Number(f.servicios),
           serviciosActivos: Number(f.serviciosActivos),
           valoraciones,
-          media: f.media === null ? null : Math.round(Number(f.media) * 100) / 100,
+          media:
+            f.media === null ? null : Math.round(Number(f.media) * 100) / 100,
           reservasCompletadas: Number(f.reservasCompletadas),
           tasaRespuesta:
             valoraciones === 0
