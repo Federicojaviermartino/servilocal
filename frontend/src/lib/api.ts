@@ -89,6 +89,11 @@ export const usersApi = {
   toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`),
 };
 
+export const adminApi = {
+  metricas: () => api.get('/admin/metricas'),
+  reputacion: () => api.get('/admin/reputacion'),
+};
+
 export const categoriesApi = {
   getAll: () => api.get('/categories'),
   getById: (id: string) => api.get(`/categories/${id}`),

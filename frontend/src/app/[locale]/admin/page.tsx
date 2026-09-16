@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 import clsx from 'clsx';
 import { Users, Tag, Flag, Pencil, Check, X, Briefcase } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
-import { usersApi, categoriesApi, reviewsApi } from '@/lib/api';
+import { adminApi, usersApi, categoriesApi, reviewsApi } from '@/lib/api';
 import { User, Category, Review, UserRole } from '@/types';
 import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
@@ -27,12 +27,35 @@ const TABS = [
   { key: 'reviews', clave: 'valoracionesReportadas', icon: Flag },
 ] as const;
 
-interface Stats {
-  totalUsers: number;
-  totalProviders: number;
-  totalCategories: number;
-  reportedReviews: number;
+interface Recuento {
+  clave: string;
+  total: number;
 }
+
+/** Forma de GET /api/admin/metricas. */
+interface Stats {
+  usuarios: { total: number; porRol: Recuento[]; inactivos: number };
+  servicios: {
+    total: number;
+    activos: number;
+    sinFoto: number;
+    porCategoria: Recuento[];
+    porCiudad: Recuento[];
+  };
+  reservas: { total: number; porEstado: Recuento[]; facturado: number };
+  valoraciones: {
+    total: number;
+    media: number | null;
+    porNota: Recuento[];
+    reportadas: number;
+    sinResponder: number;
+  };
+  categorias: { total: number; sinServicios: number };
+}
+
+/** Número de usuarios con un rol, desde el agregado del servidor. */
+const contarRol = (stats: Stats, rol: string) =>
+  stats.usuarios.porRol.find((r) => r.clave === rol)?.total ?? 0;
 
 export default function AdminPage() {
   const t = useTranslations('administracion');
@@ -56,23 +79,13 @@ export default function AdminPage() {
     }
   }, [user, router]);
 
+  // Antes esto se descargaba la lista entera de usuarios, la de categorías y
+  // la de valoraciones reportadas para contar longitudes aquí. Ahora los
+  // agregados llegan calculados y el navegador solo los pinta.
   const loadStats = useCallback(async () => {
     try {
-      const [usersRes, catsRes, repRes] = await Promise.all([
-        usersApi.getAll(),
-        categoriesApi.getAll(),
-        reviewsApi.getReported(),
-      ]);
-      const allUsers: User[] = usersRes.data || [];
-      const allCats: Category[] = flatten(catsRes.data || []);
-      const reported: Review[] = repRes.data || [];
-      setStats({
-        totalUsers: allUsers.length,
-        totalProviders: allUsers.filter((u) => u.role === UserRole.PROVIDER)
-          .length,
-        totalCategories: allCats.length,
-        reportedReviews: reported.length,
-      });
+      const { data } = await adminApi.metricas();
+      setStats(data);
     } catch {
       // si falla, dejamos stats en null y los contadores no se muestran
     }
@@ -100,26 +113,26 @@ export default function AdminPage() {
             <MetricCard
               icon={Users}
               label={t('usuarios')}
-              value={stats.totalUsers}
+              value={stats.usuarios.total}
               variant="info"
             />
             <MetricCard
               icon={Briefcase}
               label={t('proveedores')}
-              value={stats.totalProviders}
+              value={contarRol(stats, 'provider')}
               variant="success"
             />
             <MetricCard
               icon={Tag}
               label={t('categorias')}
-              value={stats.totalCategories}
+              value={stats.categorias.total}
               variant="default"
             />
             <MetricCard
               icon={Flag}
               label={t('reportesPendientes')}
-              value={stats.reportedReviews}
-              variant={stats.reportedReviews > 0 ? 'warning' : 'default'}
+              value={stats.valoraciones.reportadas}
+              variant={stats.valoraciones.reportadas > 0 ? 'warning' : 'default'}
             />
           </div>
         )}
