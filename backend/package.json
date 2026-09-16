@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "ServiLocal - API REST para marketplace de servicios locales",
   "author": "Federico Javier Martino",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "build": "nest build",
