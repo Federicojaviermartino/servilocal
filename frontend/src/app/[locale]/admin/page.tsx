@@ -21,23 +21,49 @@ import {
   TrendingUp,
   Star,
   Eye,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
-import { adminApi, usersApi, categoriesApi, reviewsApi } from '@/lib/api';
+import {
+  adminApi,
+  usersApi,
+  categoriesApi,
+  reviewsApi,
+  iaApi,
+} from '@/lib/api';
 import { User, Category, Review, UserRole } from '@/types';
 import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
 import Badge from '@/components/atoms/Badge';
 import Spinner from '@/components/atoms/Spinner';
 
-type Tab = 'users' | 'reputation' | 'categories' | 'reviews';
+type Tab = (typeof TABS)[number]['key'];
 
 const TABS = [
   { key: 'users', clave: 'usuarios', icon: Users },
   { key: 'reputation', clave: 'reputacion', icon: TrendingUp },
   { key: 'categories', clave: 'categorias', icon: Tag },
   { key: 'reviews', clave: 'valoracionesReportadas', icon: Flag },
+  { key: 'ia', clave: 'ia', icon: Sparkles },
 ] as const;
+
+/** Forma de GET /api/ia/consumo. */
+interface ConsumoIa {
+  mes: string;
+  llamadas: number;
+  fallos: number;
+  tokensEntrada: number;
+  tokensSalida: number;
+  costeCentimos: number;
+  topeCentimos: number;
+  porcentaje: number;
+  porFuncionalidad: {
+    funcionalidad: string;
+    llamadas: number;
+    fallos: number;
+    costeCentimos: number;
+  }[];
+}
 
 interface Recuento {
   clave: string;
@@ -232,6 +258,11 @@ export default function AdminPage() {
                 aria-labelledby="tab-reviews"
               >
                 <ReportedReviewsSection onMutate={loadStats} />
+              </div>
+            )}
+            {tab === 'ia' && (
+              <div role="tabpanel" id="panel-ia" aria-labelledby="tab-ia">
+                <IaSection />
               </div>
             )}
           </div>
@@ -1012,6 +1043,168 @@ function ReputacionSection() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Consumo de la capa de IA.
+ *
+ * Se consulta también el estado porque con la capa apagada todas las cifras
+ * son cero, y un cero sin explicación se lee como una avería. Aquí el panel
+ * dice si está inactiva, si se ha agotado el tope o si funciona.
+ */
+function IaSection() {
+  const t = useTranslations('administracion');
+  const [consumo, setConsumo] = useState<ConsumoIa | null>(null);
+  const [motivo, setMotivo] = useState<string | null>(null);
+  const [disponible, setDisponible] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all([iaApi.consumo(), iaApi.estado()])
+      .then(([resConsumo, resEstado]) => {
+        setConsumo(resConsumo.data);
+        setDisponible(resEstado.data?.disponible ?? false);
+        setMotivo(resEstado.data?.motivo ?? null);
+      })
+      .catch(() => toast.error(t('errorConsumoIa')))
+      .finally(() => setIsLoading(false));
+  }, [t]);
+
+  if (isLoading) {
+    return <p className="p-4 text-secundario">{t('cargando')}</p>;
+  }
+
+  if (!consumo) return null;
+
+  const euros = (centimos: number) => (centimos / 100).toFixed(2);
+
+  // El tope es un techo, no una previsión: pasado el 100 % la capa deja de
+  // llamar al modelo, así que la barra se recorta ahí en lugar de desbordarse.
+  const ocupado = Math.min(consumo.porcentaje, 100);
+
+  const estado = disponible
+    ? { texto: t('iaActiva'), variante: 'success' as const }
+    : motivo === 'presupuesto'
+      ? { texto: t('iaSinPresupuesto'), variante: 'warning' as const }
+      : { texto: t('iaInactiva'), variante: 'default' as const };
+
+  return (
+    <div className="p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="font-semibold text-principal">{t('iaTitulo')}</p>
+          <p className="mt-1 text-sm text-secundario">
+            {t('iaMes', { mes: consumo.mes })}
+          </p>
+        </div>
+        <Badge variant={estado.variante}>{estado.texto}</Badge>
+      </div>
+
+      {!disponible && motivo === 'inactiva' && (
+        <p className="mt-3 rounded-lg bg-superficie-alt p-3 text-sm text-secundario">
+          {t('iaInactivaTexto')}
+        </p>
+      )}
+
+      <div className="mt-6">
+        <div className="flex items-baseline justify-between text-sm">
+          <span className="font-medium text-principal">
+            {t('iaGasto', {
+              gastado: euros(consumo.costeCentimos),
+              tope: euros(consumo.topeCentimos),
+            })}
+          </span>
+          <span className="text-secundario">{consumo.porcentaje} %</span>
+        </div>
+        <div
+          className="mt-2 h-2 w-full overflow-hidden rounded-full bg-superficie-alt"
+          role="progressbar"
+          aria-valuenow={ocupado}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={t('iaGastoEtiqueta')}
+        >
+          <div
+            className={clsx(
+              'h-full rounded-full transition-all',
+              consumo.porcentaje >= 100 ? 'bg-warning-500' : 'bg-primary-600',
+            )}
+            style={{ width: `${ocupado}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <MetricCard
+          icon={Sparkles}
+          label={t('iaLlamadas')}
+          value={consumo.llamadas}
+          variant="info"
+        />
+        <MetricCard
+          icon={X}
+          label={t('iaFallos')}
+          value={consumo.fallos}
+          variant={consumo.fallos > 0 ? 'warning' : 'default'}
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label={t('iaTokensEntrada')}
+          value={consumo.tokensEntrada}
+          variant="default"
+        />
+        <MetricCard
+          icon={TrendingUp}
+          label={t('iaTokensSalida')}
+          value={consumo.tokensSalida}
+          variant="default"
+        />
+      </div>
+
+      {consumo.porFuncionalidad.length > 0 && (
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full text-sm">
+            <caption className="sr-only">{t('iaRepartoTitulo')}</caption>
+            <thead>
+              <tr className="border-b border-borde text-start text-secundario">
+                <th className="px-3 py-2 text-start font-medium">
+                  {t('iaFuncionalidad')}
+                </th>
+                <th className="px-3 py-2 text-end font-medium">
+                  {t('iaLlamadas')}
+                </th>
+                <th className="px-3 py-2 text-end font-medium">
+                  {t('iaFallos')}
+                </th>
+                <th className="px-3 py-2 text-end font-medium">
+                  {t('iaCoste')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {consumo.porFuncionalidad.map((f) => (
+                <tr key={f.funcionalidad} className="border-b border-borde">
+                  <td className="px-3 py-2 text-principal">
+                    {f.funcionalidad}
+                  </td>
+                  <td className="px-3 py-2 text-end text-secundario">
+                    {f.llamadas}
+                  </td>
+                  <td className="px-3 py-2 text-end text-secundario">
+                    {f.fallos}
+                  </td>
+                  <td className="px-3 py-2 text-end text-secundario">
+                    {euros(f.costeCentimos)} €
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

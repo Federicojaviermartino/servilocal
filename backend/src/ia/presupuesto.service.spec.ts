@@ -23,8 +23,16 @@ function repositorioFalso(gastado: number) {
       tokensSalida: '500',
       costeCentimos: String(gastado),
     })),
+    getRawMany: jest.fn(async () => [
+      {
+        funcionalidad: 'asistente',
+        llamadas: '3',
+        fallos: '1',
+        costeCentimos: String(gastado),
+      },
+    ]),
   };
-  for (const metodo of ['select', 'addSelect', 'where']) {
+  for (const metodo of ['select', 'addSelect', 'where', 'groupBy', 'orderBy']) {
     qb[metodo] = jest.fn(() => qb);
   }
 
@@ -161,6 +169,23 @@ describe('PresupuestoService', () => {
       expect(r.topeCentimos).toBe(100);
       expect(r.porcentaje).toBe(25);
       expect(r.fallos).toBe(1);
+    });
+
+    it('reparte el gasto por funcionalidad, con los números ya convertidos', async () => {
+      // La consulta devuelve cadenas; si no se convierten, el panel suma
+      // textos y enseña «31» seguido de «14» en lugar de un total.
+      const { servicio } = await construir(25);
+
+      const r = await servicio.resumen();
+
+      expect(r.porFuncionalidad).toEqual([
+        {
+          funcionalidad: 'asistente',
+          llamadas: 3,
+          fallos: 1,
+          costeCentimos: 25,
+        },
+      ]);
     });
   });
 });

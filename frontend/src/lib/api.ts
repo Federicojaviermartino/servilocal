@@ -93,6 +93,8 @@ export const iaApi = {
   // POST y no GET: el interceptor reintenta los GET que agotan el
   // tiempo, y esta llamada puede costar dinero.
   asistente: (mensaje: string) => api.post('/ia/asistente', { mensaje }),
+  estado: () => api.get('/ia/estado'),
+  consumo: () => api.get('/ia/consumo'),
 };
 
 export const adminApi = {

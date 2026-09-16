@@ -6,6 +6,13 @@ import { UsoIa } from '../entities/uso-ia.entity';
 import { ConfiguracionIa, TARIFAS, TARIFA_POR_DEFECTO } from './ia.config';
 import { RespuestaModelo } from './proveedores/proveedor-modelo.interface';
 
+export interface ConsumoPorFuncionalidad {
+  funcionalidad: string;
+  llamadas: number;
+  fallos: number;
+  costeCentimos: number;
+}
+
 export interface ResumenConsumo {
   mes: string;
   llamadas: number;
@@ -15,6 +22,9 @@ export interface ResumenConsumo {
   costeCentimos: number;
   topeCentimos: number;
   porcentaje: number;
+  /** Quién se está gastando el tope. Un total sin reparto dice que hay un
+   *  problema, pero no dónde. */
+  porFuncionalidad: ConsumoPorFuncionalidad[];
 }
 
 /** Día natural en ISO, que es como se guarda la columna. */
@@ -206,6 +216,17 @@ export class PresupuestoService {
       .where('u.fecha >= :desde', { desde: inicioDeMes() })
       .getRawOne<Record<string, string>>();
 
+    const reparto = await this.uso
+      .createQueryBuilder('u')
+      .select('u.funcionalidad', 'funcionalidad')
+      .addSelect('COALESCE(SUM(u.llamadas), 0)', 'llamadas')
+      .addSelect('COALESCE(SUM(u.fallos), 0)', 'fallos')
+      .addSelect('COALESCE(SUM(u.costeCentimos), 0)', 'costeCentimos')
+      .where('u.fecha >= :desde', { desde: inicioDeMes() })
+      .groupBy('u.funcionalidad')
+      .orderBy('SUM(u."costeCentimos")', 'DESC')
+      .getRawMany<Record<string, string>>();
+
     const tope = this.ajustes.topeMensualCentimos;
     const coste = Number(fila?.costeCentimos ?? 0);
 
@@ -218,6 +239,12 @@ export class PresupuestoService {
       costeCentimos: coste,
       topeCentimos: tope,
       porcentaje: tope > 0 ? Math.round((coste / tope) * 100) : 100,
+      porFuncionalidad: reparto.map((f) => ({
+        funcionalidad: f.funcionalidad,
+        llamadas: Number(f.llamadas),
+        fallos: Number(f.fallos),
+        costeCentimos: Number(f.costeCentimos),
+      })),
     };
   }
 }
