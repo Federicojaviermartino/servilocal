@@ -11,6 +11,7 @@ import {
   UpdateServiceDto,
   SearchServicesDto,
 } from './dto/service.dto';
+import { ampliarBusqueda } from './sinonimos';
 
 /**
  * Columnas del proveedor que pueden salir por una ruta pública.
@@ -150,10 +151,24 @@ export class ServicesService {
     // busca por oficio ("jardinería", "cerrajería") y esa palabra rara vez
     // aparece en el título o la descripción del servicio.
     if (query) {
-      qb.andWhere(
-        `(${sinAcentos('service.title')} LIKE ${sinAcentos(':query')} OR ${sinAcentos('service.description')} LIKE ${sinAcentos(':query')} OR ${sinAcentos('category.name')} LIKE ${sinAcentos(':query')})`,
-        { query: `%${query}%` },
-      );
+      // Quien tiene una avería escribe el oficio o el síntoma, no el nombre
+      // de la categoría: «fontanero» y «grifo que gotea» no casaban con
+      // «Fontanería» porque normalizar acentos no acerca dos palabras
+      // distintas. El diccionario añade términos, nunca sustituye los suyos.
+      const terminos = [query, ...ampliarBusqueda(query)];
+      const campos = ['service.title', 'service.description', 'category.name'];
+
+      const ramas: string[] = [];
+      const parametros: Record<string, string> = {};
+      terminos.forEach((termino, i) => {
+        const clave = `q${i}`;
+        parametros[clave] = `%${termino}%`;
+        campos.forEach((campo) => {
+          ramas.push(`${sinAcentos(campo)} LIKE ${sinAcentos(':' + clave)}`);
+        });
+      });
+
+      qb.andWhere(`(${ramas.join(' OR ')})`, parametros);
     }
 
     // Filtro por categoría
