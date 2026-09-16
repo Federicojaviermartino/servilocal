@@ -3,6 +3,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { MapPin, Shield, Star } from 'lucide-react';
 import SearchBar from '@/components/molecules/SearchBar';
+import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
 
 export default function HomePage() {
   const router = useRouter();
@@ -106,6 +107,7 @@ export default function HomePage() {
           </ol>
         </div>
       </section>
+      <AsistenteBusqueda />
     </>
   );
 }

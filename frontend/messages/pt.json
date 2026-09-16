@@ -435,5 +435,20 @@
     "valoracionEliminada": "Avaliação eliminada.",
     "valoracionesCol": "Avaliações",
     "valoracionesReportadas": "Avaliações denunciadas"
+  },
+  "asistente": {
+    "abrir": "Abrir o assistente de pesquisa",
+    "ayuda": "Descreva por palavras suas e mostramos-lhe profissionais a sério.",
+    "buscando": "A procurar...",
+    "cerrar": "Fechar o assistente",
+    "criterios": "Procurámos:",
+    "enviar": "Procurar",
+    "error": "Não foi possível concluir a pesquisa. Tente de novo.",
+    "modoBasico": "Pesquisa sem assistente",
+    "placeholder": "Partiu-se a torneira da cozinha...",
+    "sinResultados": "Não encontrámos nada com isso. Tente descrever de outra forma.",
+    "titulo": "Diga-nos do que precisa",
+    "todaEspana": "em toda a Espanha",
+    "verTodos": "Ver todos os resultados"
   }
 }

@@ -89,6 +89,12 @@ export const usersApi = {
   toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`),
 };
 
+export const iaApi = {
+  // POST y no GET: el interceptor reintenta los GET que agotan el
+  // tiempo, y esta llamada puede costar dinero.
+  asistente: (mensaje: string) => api.post('/ia/asistente', { mensaje }),
+};
+
 export const adminApi = {
   metricas: () => api.get('/admin/metricas'),
   reputacion: () => api.get('/admin/reputacion'),

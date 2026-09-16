@@ -13,6 +13,7 @@ import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
 import Pagination from '@/components/molecules/Pagination';
 import ServiceCardSkeleton from '@/components/molecules/ServiceCardSkeleton';
+import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
 
 type Vista = 'list' | 'map';
 
@@ -276,8 +277,11 @@ function SearchPageContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense fallback={<div className="bg-fondo min-h-screen" />}>
-      <SearchPageContent />
-    </Suspense>
+    <>
+      <Suspense fallback={<div className="bg-fondo min-h-screen" />}>
+        <SearchPageContent />
+      </Suspense>
+      <AsistenteBusqueda />
+    </>
   );
 }

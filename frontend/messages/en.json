@@ -435,5 +435,20 @@
     "valoracionEliminada": "Review deleted.",
     "valoracionesCol": "Reviews",
     "valoracionesReportadas": "Reported reviews"
+  },
+  "asistente": {
+    "abrir": "Open the search assistant",
+    "ayuda": "Describe it in your own words and we will show you real professionals.",
+    "buscando": "Searching...",
+    "cerrar": "Close the assistant",
+    "criterios": "We searched for:",
+    "enviar": "Search",
+    "error": "The search could not be completed. Please try again.",
+    "modoBasico": "Search without the assistant",
+    "placeholder": "My kitchen tap is broken...",
+    "sinResultados": "We found nothing for that. Try describing it differently.",
+    "titulo": "Tell us what you need",
+    "todaEspana": "across Spain",
+    "verTodos": "See all results"
   }
 }

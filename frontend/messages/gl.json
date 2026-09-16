@@ -435,5 +435,20 @@
     "valoracionEliminada": "Valoración eliminada.",
     "valoracionesCol": "Valoracións",
     "valoracionesReportadas": "Valoracións reportadas"
+  },
+  "asistente": {
+    "abrir": "Abrir o asistente de busca",
+    "ayuda": "Descríbeo coas túas palabras e amosámosche profesionais de verdade.",
+    "buscando": "Buscando...",
+    "cerrar": "Pechar o asistente",
+    "criterios": "Buscamos:",
+    "enviar": "Buscar",
+    "error": "Non se puido completar a busca. Téntao de novo.",
+    "modoBasico": "Busca sen asistente",
+    "placeholder": "Rompeuseme a billa da cociña...",
+    "sinResultados": "Non atopamos nada con iso. Proba a describilo doutro xeito.",
+    "titulo": "Cóntanos que precisas",
+    "todaEspana": "en toda España",
+    "verTodos": "Ver todos os resultados"
   }
 }

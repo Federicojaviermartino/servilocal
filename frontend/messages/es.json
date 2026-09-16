@@ -435,5 +435,20 @@
     "valoracionEliminada": "Valoración eliminada.",
     "valoracionesCol": "Valoraciones",
     "valoracionesReportadas": "Valoraciones reportadas"
+  },
+  "asistente": {
+    "abrir": "Abrir el asistente de búsqueda",
+    "ayuda": "Descríbelo con tus palabras y te enseñamos profesionales de verdad.",
+    "buscando": "Buscando...",
+    "cerrar": "Cerrar el asistente",
+    "criterios": "Hemos buscado:",
+    "enviar": "Buscar",
+    "error": "No se ha podido completar la búsqueda. Inténtalo de nuevo.",
+    "modoBasico": "Búsqueda sin asistente",
+    "placeholder": "Se me ha roto el grifo de la cocina...",
+    "sinResultados": "No hemos encontrado nada con eso. Prueba a describirlo de otra forma.",
+    "titulo": "Cuéntanos qué necesitas",
+    "todaEspana": "en toda España",
+    "verTodos": "Ver todos los resultados"
   }
 }

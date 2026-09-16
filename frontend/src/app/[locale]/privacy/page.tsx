@@ -33,6 +33,19 @@ const datos = [
       'Identificadores de la operación. Los datos de la tarjeta los trata Stripe, nunca ServiLocal.',
     finalidad: 'Procesar el cobro de la reserva.',
   },
+  {
+    categoria: 'Consultas al asistente',
+    detalle:
+      'El texto que escribes en el asistente de búsqueda, que puede usarse sin cuenta. No conservamos ese texto: de cada consulta guardamos únicamente contadores agregados de uso y coste, sin vincularlos a ninguna persona.',
+    finalidad:
+      'Interpretar lo que necesitas y traducirlo a filtros de búsqueda sobre nuestro propio catálogo.',
+  },
+  {
+    categoria: 'Datos técnicos de errores',
+    detalle:
+      'Cuando algo falla, la traza del error y datos técnicos de la petición.',
+    finalidad: 'Detectar y corregir fallos de la plataforma.',
+  },
 ];
 
 const derechos = [
@@ -134,8 +147,31 @@ export default function PrivacyPage() {
         </h2>
         <p className="mt-3 text-secundario">
           Con la otra parte de una reserva, en la medida necesaria para
-          prestarla, y con Stripe como proveedor de pagos. No vendemos datos
-          personales ni los cedemos con fines publicitarios.
+          prestarla, y con estos proveedores, que tratan los datos por cuenta
+          nuestra y solo para lo que se indica: Stripe para los pagos, Anthropic
+          para interpretar las consultas del asistente de búsqueda, y Sentry
+          para el registro de errores. No vendemos datos personales ni los
+          cedemos con fines publicitarios.
+        </p>
+        <p className="mt-3 text-secundario">
+          Al asistente de búsqueda solo viaja el texto que escribes, junto con
+          nuestra lista de categorías y ciudades. No se envía tu nombre, tu
+          correo ni ningún identificador de tu cuenta, y el proveedor no decide
+          qué profesionales ves: esa consulta la resuelve ServiLocal contra su
+          propia base de datos.
+        </p>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-principal">
+          Transferencias internacionales
+        </h2>
+        <p className="mt-3 text-secundario">
+          Anthropic y Sentry pueden tratar datos fuera del Espacio Económico
+          Europeo. Esas transferencias se amparan en las cláusulas contractuales
+          tipo aprobadas por la Comisión Europea. Puedes evitar por completo la
+          primera sin perder el servicio: el buscador con filtros no usa el
+          asistente.
         </p>
       </section>
 

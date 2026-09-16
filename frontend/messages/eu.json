@@ -435,5 +435,20 @@
     "valoracionEliminada": "Balorazioa ezabatuta.",
     "valoracionesCol": "Balorazioak",
     "valoracionesReportadas": "Salatutako balorazioak"
+  },
+  "asistente": {
+    "abrir": "Ireki bilaketa-laguntzailea",
+    "ayuda": "Azaldu zure hitzekin eta benetako profesionalak erakutsiko dizkizugu.",
+    "buscando": "Bilatzen...",
+    "cerrar": "Itxi laguntzailea",
+    "criterios": "Hau bilatu dugu:",
+    "enviar": "Bilatu",
+    "error": "Ezin izan da bilaketa osatu. Saiatu berriro.",
+    "modoBasico": "Bilaketa laguntzailerik gabe",
+    "placeholder": "Sukaldeko txorrota hautsi zait...",
+    "sinResultados": "Ez dugu ezer aurkitu horrekin. Saiatu beste modu batera azaltzen.",
+    "titulo": "Esaiguzu zer behar duzun",
+    "todaEspana": "Espainia osoan",
+    "verTodos": "Ikusi emaitza guztiak"
   }
 }

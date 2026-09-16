@@ -435,5 +435,20 @@
     "valoracionEliminada": "Avis supprimé.",
     "valoracionesCol": "Avis",
     "valoracionesReportadas": "Avis signalés"
+  },
+  "asistente": {
+    "abrir": "Ouvrir l'assistant de recherche",
+    "ayuda": "Décrivez-le avec vos mots et nous vous montrons de vrais professionnels.",
+    "buscando": "Recherche en cours...",
+    "cerrar": "Fermer l'assistant",
+    "criterios": "Nous avons cherché :",
+    "enviar": "Rechercher",
+    "error": "La recherche n'a pas pu aboutir. Réessayez.",
+    "modoBasico": "Recherche sans assistant",
+    "placeholder": "Le robinet de ma cuisine est cassé...",
+    "sinResultados": "Nous n'avons rien trouvé. Essayez de le décrire autrement.",
+    "titulo": "Dites-nous ce dont vous avez besoin",
+    "todaEspana": "dans toute l'Espagne",
+    "verTodos": "Voir tous les résultats"
   }
 }

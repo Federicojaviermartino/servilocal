@@ -435,5 +435,20 @@
     "valoracionEliminada": "Bewertung gelöscht.",
     "valoracionesCol": "Bewertungen",
     "valoracionesReportadas": "Gemeldete Bewertungen"
+  },
+  "asistente": {
+    "abrir": "Suchassistent öffnen",
+    "ayuda": "Beschreiben Sie es in eigenen Worten, und wir zeigen Ihnen echte Fachleute.",
+    "buscando": "Wird gesucht...",
+    "cerrar": "Assistent schließen",
+    "criterios": "Gesucht wurde:",
+    "enviar": "Suchen",
+    "error": "Die Suche konnte nicht abgeschlossen werden. Bitte erneut versuchen.",
+    "modoBasico": "Suche ohne Assistent",
+    "placeholder": "Mein Wasserhahn in der Küche ist kaputt...",
+    "sinResultados": "Dazu haben wir nichts gefunden. Beschreiben Sie es anders.",
+    "titulo": "Sagen Sie uns, was Sie brauchen",
+    "todaEspana": "in ganz Spanien",
+    "verTodos": "Alle Ergebnisse ansehen"
   }
 }

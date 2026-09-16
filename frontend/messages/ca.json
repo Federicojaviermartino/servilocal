@@ -435,5 +435,20 @@
     "valoracionEliminada": "Valoració eliminada.",
     "valoracionesCol": "Valoracions",
     "valoracionesReportadas": "Valoracions reportades"
+  },
+  "asistente": {
+    "abrir": "Obre l'assistent de cerca",
+    "ayuda": "Descriu-ho amb les teves paraules i et mostrem professionals de veritat.",
+    "buscando": "Cercant...",
+    "cerrar": "Tanca l'assistent",
+    "criterios": "Hem cercat:",
+    "enviar": "Cerca",
+    "error": "No s'ha pogut completar la cerca. Torna-ho a provar.",
+    "modoBasico": "Cerca sense assistent",
+    "placeholder": "Se m'ha trencat l'aixeta de la cuina...",
+    "sinResultados": "No hem trobat res amb això. Prova a descriure-ho d'una altra manera.",
+    "titulo": "Explica'ns què necessites",
+    "todaEspana": "a tot Espanya",
+    "verTodos": "Mostra tots els resultats"
   }
 }

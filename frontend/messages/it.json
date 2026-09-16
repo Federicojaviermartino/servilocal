@@ -435,5 +435,20 @@
     "valoracionEliminada": "Recensione eliminata.",
     "valoracionesCol": "Recensioni",
     "valoracionesReportadas": "Recensioni segnalate"
+  },
+  "asistente": {
+    "abrir": "Apri l'assistente di ricerca",
+    "ayuda": "Descrivilo con parole tue e ti mostriamo professionisti veri.",
+    "buscando": "Ricerca in corso...",
+    "cerrar": "Chiudi l'assistente",
+    "criterios": "Abbiamo cercato:",
+    "enviar": "Cerca",
+    "error": "Non è stato possibile completare la ricerca. Riprova.",
+    "modoBasico": "Ricerca senza assistente",
+    "placeholder": "Mi si è rotto il rubinetto della cucina...",
+    "sinResultados": "Non abbiamo trovato nulla. Prova a descriverlo in altro modo.",
+    "titulo": "Raccontaci di cosa hai bisogno",
+    "todaEspana": "in tutta la Spagna",
+    "verTodos": "Vedi tutti i risultati"
   }
 }
