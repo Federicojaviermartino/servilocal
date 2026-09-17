@@ -6,6 +6,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { getDatabaseConfig } from './config/database.config';
 import { SoloLecturaInterceptor } from './common/interceptores/solo-lectura.interceptor';
 import { RedisModule } from './common/redis/redis.module';
+import { DiagnosticoController } from './common/diagnostico/diagnostico.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -48,6 +49,7 @@ import configIa from './ia/ia.config';
     AdminModule,
     IaModule,
   ],
+  controllers: [DiagnosticoController],
   providers: [
     {
       provide: APP_GUARD,
