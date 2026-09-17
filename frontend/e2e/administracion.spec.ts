@@ -45,6 +45,30 @@ test.describe('Panel de administración', () => {
     }
   });
 
+  test('las gráficas se pintan con los datos del servidor', async ({
+    page,
+  }) => {
+    await entrarComo(page, 'Administración');
+    await page.goto('/admin');
+
+    await expect(
+      page.getByRole('heading', { name: 'Reservas por semana' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Reparto de valoraciones' }),
+    ).toBeVisible();
+
+    // Recharts dibuja en SVG: comprobar el título solo diría que la caja
+    // existe, no que dentro haya una gráfica. Una serie sin puntos deja el
+    // marco pintado y la caja vacía, y eso es lo que hay que descartar.
+    const svg = page.locator('.recharts-surface');
+    await expect(svg.first()).toBeVisible();
+    expect(await svg.count()).toBeGreaterThanOrEqual(4);
+
+    await expect(page.locator('.recharts-area-area').first()).toBeVisible();
+    await expect(page.locator('.recharts-bar-rectangle').first()).toBeVisible();
+  });
+
   test('el consumo de IA se explica en lugar de mostrar ceros a secas', async ({
     page,
   }) => {

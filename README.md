@@ -146,6 +146,7 @@ later is blocked without anyone having to remember it.
 | Observability | Sentry for unhandled errors, `/api/health` with a real database probe |
 | AI layer | Anthropic SDK behind a one-method interface, with a null provider, persisted usage accounting and a hard monthly spend ceiling |
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
+| Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
 | Testing | Jest (19 unit tests), Playwright (28 end-to-end tests, desktop and mobile) |
 | CI | GitHub Actions: lint, type-check, tests, build and catalogue on every push |
 | Hosting | Render (web services) + Neon (PostgreSQL) |

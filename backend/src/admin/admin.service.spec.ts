@@ -59,6 +59,68 @@ describe('AdminService', () => {
   }
 
   describe('metricas', () => {
+    /** Repos mínimos; solo interesa la serie de reservas. */
+    function conSerie(raws: unknown[]) {
+      return {
+        usuarios: repositorioFalso([]),
+        servicios: repositorioFalso([]),
+        reservas: repositorioFalso([
+          consultaFalsa({ raws: [] }),
+          consultaFalsa({ raw: { suma: '0' } }),
+          consultaFalsa({ raws }),
+        ]),
+        valoraciones: repositorioFalso([]),
+        categorias: repositorioFalso([]),
+      };
+    }
+
+    describe('serie semanal', () => {
+      it('devuelve doce lunes consecutivos, también los vacíos', async () => {
+        // Un GROUP BY solo trae las semanas con filas. Pintar solo esas uniría
+        // dos fechas lejanas como si fueran contiguas y la línea mentiría
+        // sobre la tendencia.
+        const servicio = await construir(conSerie([]));
+
+        const { porSemana } = (await servicio.metricas()).reservas;
+
+        expect(porSemana).toHaveLength(12);
+        for (const punto of porSemana) {
+          // 1 es lunes, que es donde corta date_trunc('week') en PostgreSQL.
+          expect(new Date(`${punto.semana}T00:00:00Z`).getUTCDay()).toBe(1);
+          expect(punto.reservas).toBe(0);
+          expect(punto.facturado).toBe(0);
+        }
+
+        const dias = porSemana.map((p) => Date.parse(`${p.semana}T00:00:00Z`));
+        for (let i = 1; i < dias.length; i++) {
+          expect(dias[i] - dias[i - 1]).toBe(7 * 24 * 60 * 60 * 1000);
+        }
+      });
+
+      it('conserva los números de las semanas que sí tienen datos', async () => {
+        // Se pregunta primero qué semanas espera el servicio y luego se le
+        // devuelve una de ellas: así el test no recalcula el lunes por su
+        // cuenta, que sería copiar la implementación y no comprobarla.
+        const vacio = await construir(conSerie([]));
+        const esperadas = (await vacio.metricas()).reservas.porSemana;
+        const objetivo = esperadas[esperadas.length - 2].semana;
+
+        const servicio = await construir(
+          conSerie([{ semana: objetivo, reservas: '7', facturado: '250.5' }]),
+        );
+
+        const { porSemana } = (await servicio.metricas()).reservas;
+        const punto = porSemana.find((p) => p.semana === objetivo);
+
+        expect(punto).toEqual({
+          semana: objetivo,
+          reservas: 7,
+          facturado: 250.5,
+        });
+        expect(porSemana).toHaveLength(12);
+      });
+    });
+
     it('convierte los agregados en recuentos con números, no cadenas', async () => {
       // Postgres devuelve los COUNT como cadena; si no se convierten, el panel
       // ordena "10" antes que "9" y suma concatenando.

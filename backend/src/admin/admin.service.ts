@@ -17,6 +17,13 @@ interface Recuento {
   total: number;
 }
 
+export interface PuntoSemana {
+  /** Lunes de la semana, en ISO. */
+  semana: string;
+  reservas: number;
+  facturado: number;
+}
+
 export interface Metricas {
   usuarios: { total: number; porRol: Recuento[]; inactivos: number };
   servicios: {
@@ -26,7 +33,13 @@ export interface Metricas {
     porCategoria: Recuento[];
     porCiudad: Recuento[];
   };
-  reservas: { total: number; porEstado: Recuento[]; facturado: number };
+  reservas: {
+    total: number;
+    porEstado: Recuento[];
+    facturado: number;
+    /** Doce semanas, incluidas las vacías. */
+    porSemana: PuntoSemana[];
+  };
   valoraciones: {
     total: number;
     media: number | null;
@@ -48,6 +61,32 @@ export interface ReputacionProveedor {
   media: number | null;
   reservasCompletadas: number;
   tasaRespuesta: number | null;
+}
+
+/** Cuántas semanas enseña la serie. */
+const SEMANAS = 12;
+
+/** Fecha en ISO corto, que es como la devuelve la consulta. */
+function enIso(fecha: Date): string {
+  return fecha.toISOString().slice(0, 10);
+}
+
+/**
+ * Lunes de hace n semanas, en UTC.
+ *
+ * Lunes porque es donde corta date_trunc('week') de PostgreSQL: calcularlo de
+ * otra forma desplazaría las etiquetas un día respecto a los datos y los
+ * huecos se rellenarían en la semana equivocada.
+ */
+function lunesHace(semanas: number): Date {
+  const hoy = new Date();
+  const fecha = new Date(
+    Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate()),
+  );
+  // getUTCDay(): 0 es domingo, así que el domingo retrocede seis días.
+  const desdeLunes = (fecha.getUTCDay() + 6) % 7;
+  fecha.setUTCDate(fecha.getUTCDate() - desdeLunes - semanas * 7);
+  return fecha;
 }
 
 /**
@@ -83,6 +122,29 @@ export class AdminService {
       .map((f) => ({ clave: String(f.clave), total: Number(f.total) }));
   }
 
+  /**
+   * Rellena las semanas sin reservas.
+   *
+   * Un GROUP BY solo devuelve las semanas que tienen filas. Pintarlas tal cual
+   * uniría el 3 de agosto con el 24 como si fueran contiguos, y una gráfica
+   * que se salta los huecos miente sobre la tendencia.
+   */
+  private completarSemanas(
+    filas: { semana: string; reservas: string; facturado: string }[],
+  ): PuntoSemana[] {
+    const porClave = new Map(filas.map((f) => [f.semana, f]));
+
+    return Array.from({ length: SEMANAS }, (_, i) => {
+      const semana = enIso(lunesHace(SEMANAS - 1 - i));
+      const fila = porClave.get(semana);
+      return {
+        semana,
+        reservas: Number(fila?.reservas ?? 0),
+        facturado: Number(fila?.facturado ?? 0),
+      };
+    });
+  }
+
   async metricas(): Promise<Metricas> {
     const [
       totalUsuarios,
@@ -96,6 +158,7 @@ export class AdminService {
       totalReservas,
       porEstado,
       facturado,
+      porSemana,
       totalValoraciones,
       mediaGlobal,
       porNota,
@@ -152,6 +215,25 @@ export class AdminService {
         .where('b.status = :estado', { estado: BookingStatus.COMPLETED })
         .getRawOne(),
 
+      // Se agrupa por scheduledDate y no por createdAt: createdAt es cuándo
+      // se registró la reserva y en la semilla es el mismo instante para
+      // todas, así que daría una sola columna. Lo que interesa además es
+      // cuándo se presta el servicio.
+      this.reservas
+        .createQueryBuilder('b')
+        .select(
+          "to_char(date_trunc('week', b.scheduledDate), 'YYYY-MM-DD')",
+          'semana',
+        )
+        .addSelect('COUNT(*)', 'reservas')
+        .addSelect(
+          `COALESCE(SUM(CASE WHEN b.status = '${BookingStatus.COMPLETED}' THEN b.totalPrice ELSE 0 END), 0)`,
+          'facturado',
+        )
+        .where('b.scheduledDate >= :desde', { desde: lunesHace(SEMANAS - 1) })
+        .groupBy("date_trunc('week', b.scheduledDate)")
+        .getRawMany(),
+
       this.valoraciones.count(),
       this.valoraciones
         .createQueryBuilder('r')
@@ -197,6 +279,7 @@ export class AdminService {
         total: totalReservas,
         porEstado: this.aRecuentos(porEstado),
         facturado: Number(facturado?.suma ?? 0),
+        porSemana: this.completarSemanas(porSemana),
       },
       valoraciones: {
         total: totalValoraciones,

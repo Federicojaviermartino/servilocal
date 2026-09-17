@@ -24,6 +24,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
+import GraficasPanel from '@/components/organisms/GraficasPanel';
 import {
   adminApi,
   usersApi,
@@ -80,7 +81,12 @@ interface Stats {
     porCategoria: Recuento[];
     porCiudad: Recuento[];
   };
-  reservas: { total: number; porEstado: Recuento[]; facturado: number };
+  reservas: {
+    total: number;
+    porEstado: Recuento[];
+    facturado: number;
+    porSemana: { semana: string; reservas: number; facturado: number }[];
+  };
   valoraciones: {
     total: number;
     media: number | null;
@@ -198,6 +204,17 @@ export default function AdminPage() {
               }
             />
           </div>
+        )}
+
+        {stats && (
+          <GraficasPanel
+            datos={{
+              porSemana: stats.reservas.porSemana,
+              porEstado: stats.reservas.porEstado,
+              porNota: stats.valoraciones.porNota,
+              porCategoria: stats.servicios.porCategoria,
+            }}
+          />
         )}
 
         <div className="bg-superficie rounded-lg shadow-card">
