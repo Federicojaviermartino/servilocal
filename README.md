@@ -146,6 +146,7 @@ later is blocked without anyone having to remember it.
 | Observability | Sentry for unhandled errors, `/api/health` with a real database probe |
 | AI layer | Anthropic SDK behind a one-method interface, with a null provider, persisted usage accounting and a hard monthly spend ceiling |
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
+| Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
 | Testing | Jest (19 unit tests), Playwright (28 end-to-end tests, desktop and mobile) |
 | CI | GitHub Actions: lint, type-check, tests, build and catalogue on every push |
@@ -380,6 +381,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `IA_ACTIVA` | Optional. `false` turns the AI layer off even when a key is present |
 | `IA_MODELO` | Optional. Defaults to `claude-haiku-4-5-20251001` |
 | `IA_TOPE_MENSUAL_CENTIMOS` | Optional. Hard monthly ceiling in cents, checked before every call. Defaults to `100` (1 €) |
+| `REDIS_URL` | Optional. Without it the rate limiter counts in memory, sockets stay on one instance and nothing is cached. On Render, create a free Key Value instance **in the same region as the API** (the private network does not cross regions) and copy its internal URL. Recommended eviction policy: `allkeys-lru` |
 
 **Front end (`servilocal-web`)**
 

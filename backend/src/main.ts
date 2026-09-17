@@ -4,6 +4,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import { origenesPermitidos } from './common/origenes';
+import { AdaptadorSocketRedis } from './common/redis/adaptador-socket';
+import { RedisService } from './common/redis/redis.service';
 import { AppModule } from './app.module';
 import { iniciarSentry } from './common/observabilidad/sentry';
 import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
@@ -27,6 +29,11 @@ async function bootstrap() {
     origin: origenesPermitidos(),
     credentials: true,
   });
+
+  // Con Redis los sockets se reparten entre instancias; sin él se usa el
+  // adaptador normal, que es lo correcto con una sola.
+  const adaptador = AdaptadorSocketRedis.crear(app, app.get(RedisService));
+  if (adaptador) app.useWebSocketAdapter(adaptador);
 
   app.setGlobalPrefix('api');
 

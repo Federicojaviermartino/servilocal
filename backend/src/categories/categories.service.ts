@@ -3,20 +3,35 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { Category } from '../entities';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import { CacheService } from '../common/redis/cache.service';
+
+/** El catálogo cambia una vez cada muchos meses; un minuto es conservador. */
+const CLAVE = 'categorias:arbol';
+const SEGUNDOS = 300;
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
+    private readonly cache: CacheService,
   ) {}
 
+  /**
+   * El árbol entero, cacheado.
+   *
+   * Es la consulta más repetida de la aplicación —la piden el buscador, el
+   * formulario de alta y el asistente— sobre una tabla de diez filas que no
+   * cambia casi nunca. Sin Redis se resuelve igual, contra PostgreSQL.
+   */
   async findAll(): Promise<Category[]> {
-    return this.categoryRepository.find({
-      where: { parentId: IsNull() },
-      relations: ['children'],
-      order: { sortOrder: 'ASC', name: 'ASC' },
-    });
+    return this.cache.recordar(CLAVE, SEGUNDOS, () =>
+      this.categoryRepository.find({
+        where: { parentId: IsNull() },
+        relations: ['children'],
+        order: { sortOrder: 'ASC', name: 'ASC' },
+      }),
+    );
   }
 
   async findById(id: string): Promise<Category> {
@@ -34,17 +49,24 @@ export class CategoriesService {
 
   async create(createDto: CreateCategoryDto): Promise<Category> {
     const category = this.categoryRepository.create(createDto);
-    return this.categoryRepository.save(category);
+    const guardada = await this.categoryRepository.save(category);
+    await this.cache.olvidar(CLAVE);
+    return guardada;
   }
 
   async update(id: string, updateDto: UpdateCategoryDto): Promise<Category> {
     const category = await this.findById(id);
     Object.assign(category, updateDto);
-    return this.categoryRepository.save(category);
+    const guardada = await this.categoryRepository.save(category);
+    await this.cache.olvidar(CLAVE);
+    return guardada;
   }
 
   async remove(id: string): Promise<void> {
     const category = await this.findById(id);
     await this.categoryRepository.remove(category);
+    // Quien borra una categoría tiene que verla desaparecer, no esperar a
+    // que venza el tiempo de vida.
+    await this.cache.olvidar(CLAVE);
   }
 }
