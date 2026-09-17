@@ -19,12 +19,16 @@ import { Link } from '@/i18n/navigation';
 import Button from '../atoms/Button';
 import Badge from '../atoms/Badge';
 import ServiceCard from '../molecules/ServiceCard';
+import { useNombreCategoria } from '@/lib/categorias';
 
 export interface RespuestaAsistente {
   /** De dónde salió la interpretación: del modelo o del diccionario. */
   modo: 'ia' | 'basico';
   criterios: {
     categoria: string | null;
+    /** Acompaña al nombre para poder traducirlo: el nombre llega de la base
+     *  de datos siempre en castellano. */
+    categoriaSlug: string | null;
     ciudad: string | null;
     texto: string | null;
   };
@@ -52,6 +56,7 @@ export default function PanelAsistente({
   respuesta = null,
 }: PanelAsistenteProps) {
   const t = useTranslations('asistente');
+  const nombreCategoria = useNombreCategoria();
   const campo = useRef<HTMLInputElement>(null);
 
   // Al abrir, el botón flotante que tenía el foco deja de existir: sin esto
@@ -135,7 +140,12 @@ export default function PanelAsistente({
             >
               <span>{t('criterios')}</span>
               {respuesta.criterios.categoria && (
-                <Badge variant="info">{respuesta.criterios.categoria}</Badge>
+                <Badge variant="info">
+                  {nombreCategoria({
+                    slug: respuesta.criterios.categoriaSlug ?? undefined,
+                    name: respuesta.criterios.categoria,
+                  })}
+                </Badge>
               )}
               {/* Si el servidor relajó la ciudad, lo dice: afirmar una que no
                   se aplicó sería mentir sobre la búsqueda. */}

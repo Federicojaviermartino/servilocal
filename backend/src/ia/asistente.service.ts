@@ -25,6 +25,9 @@ export interface RespuestaAsistente {
   modo: 'ia' | 'basico';
   criterios: {
     categoria: string | null;
+    /** El slug acompaña al nombre para que la interfaz pueda traducirlo:
+     *  el nombre llega de la base de datos siempre en castellano. */
+    categoriaSlug: string | null;
     ciudad: string | null;
     texto: string | null;
   };
@@ -294,6 +297,7 @@ export class AsistenteService {
       modo,
       criterios: {
         categoria: categoria?.nombre ?? null,
+        categoriaSlug: categoria?.slug ?? null,
         // Se devuelve lo que de verdad se aplicó tras relajar, no lo que
         // se pidió: decir «en Madrid» sobre resultados de toda España
         // sería mentir al usuario.

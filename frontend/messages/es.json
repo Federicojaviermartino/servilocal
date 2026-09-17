@@ -1,135 +1,4 @@
 {
-  "meta": {
-    "titulo": "ServiLocal - Servicios locales cerca de ti",
-    "descripcion": "Encuentra profesionales de confianza en tu zona. Fontanería, electricidad, clases particulares y más. Reserva, paga y valora de forma segura."
-  },
-  "comun": {
-    "buscar": "Buscar",
-    "cancelar": "Cancelar",
-    "cargando": "Cargando",
-    "ciudad": "Ciudad",
-    "descripcionSitio": "Marketplace de servicios del hogar que conecta clientes con profesionales de su zona.",
-    "editar": "Editar",
-    "eliminar": "Eliminar",
-    "irAlContenido": "Ir al contenido principal",
-    "reintentar": "Reintentar"
-  },
-  "navegacion": {
-    "principal": "Navegación principal",
-    "buscarServicios": "Buscar servicios",
-    "misReservas": "Mis reservas",
-    "reservasRecibidas": "Reservas recibidas",
-    "mensajes": "Mensajes",
-    "administracion": "Administración",
-    "miPerfil": "Mi perfil",
-    "iniciarSesion": "Iniciar sesión",
-    "registrarse": "Registrarse",
-    "salir": "Salir",
-    "cerrarSesion": "Cerrar sesión",
-    "abrirMenu": "Abrir menú",
-    "cerrarMenu": "Cerrar menú",
-    "menuMovil": "Menú móvil"
-  },
-  "pie": {
-    "enlaces": "Enlaces del pie de página",
-    "acercaDe": "Acerca de",
-    "terminos": "Términos",
-    "privacidad": "Privacidad",
-    "derechos": "© 2026 ServiLocal. TFM UOC."
-  },
-  "tema": {
-    "activarClaro": "Activar tema claro",
-    "activarOscuro": "Activar tema oscuro"
-  },
-  "idioma": {
-    "cambiar": "Cambiar idioma"
-  },
-  "buscador": {
-    "queNecesitas": "¿Qué servicio necesitas?",
-    "buscarServicios": "Buscar servicios"
-  },
-  "inicio": {
-    "heroTitulo": "Profesionales de confianza, cerca de ti",
-    "heroSubtitulo": "Encuentra al profesional adecuado para cualquier servicio del hogar. Valoraciones reales, presupuestos transparentes y reserva inmediata.",
-    "porQueTitulo": "¿Por qué elegir ServiLocal?",
-    "cercanosTitulo": "Profesionales cercanos",
-    "cercanosTexto": "Búsqueda por geolocalización para encontrar a los mejores profesionales de tu zona.",
-    "pagosTitulo": "Pagos seguros",
-    "pagosTexto": "Plataforma de pago integrada con Stripe. Tu dinero está protegido hasta que el servicio se complete.",
-    "valoracionesTitulo": "Valoraciones verificadas",
-    "valoracionesTexto": "Solo los clientes que han completado un servicio pueden dejar su opinión.",
-    "comoFunciona": "Cómo funciona",
-    "paso1Titulo": "Busca el servicio",
-    "paso1Texto": "Indica qué necesitas y dónde. Nuestro sistema te muestra los profesionales más cercanos y mejor valorados.",
-    "paso2Titulo": "Reserva y paga",
-    "paso2Texto": "Elige fecha, deja la señal y recibe la confirmación al instante.",
-    "paso3Titulo": "Valora tu experiencia",
-    "paso3Texto": "Tras el servicio, deja tu opinión para ayudar a otros usuarios."
-  },
-  "noEncontrado": {
-    "titulo": "Página no encontrada",
-    "texto": "El enlace que has seguido no existe o el contenido se ha movido.",
-    "volver": "Volver al inicio"
-  },
-  "resultados": {
-    "cargando": "Cargando resultados",
-    "cuenta": "{total, plural, =0 {Ningún resultado} one {# resultado encontrado} other {# resultados encontrados}}",
-    "despertando": "El servidor está despertando tras un periodo de inactividad. Puede tardar hasta un minuto.",
-    "errorRed": "No se pudo contactar con el servidor. Inténtalo de nuevo en unos segundos.",
-    "errorServicio": "Servicio no disponible. Inténtalo de nuevo más tarde.",
-    "errorTimeout": "El servidor ha tardado demasiado en responder. Puede estar reactivándose tras un periodo de inactividad.",
-    "filtros": "Filtros",
-    "sinResultados": "No se han encontrado servicios con los filtros aplicados.",
-    "sinResultadosPista": "Prueba a ampliar el radio de búsqueda o eliminar algún filtro.",
-    "titulo": "Resultados de la búsqueda",
-    "vistaLista": "Lista",
-    "vistaMapa": "Mapa"
-  },
-  "filtros": {
-    "aplicar": "Aplicar filtros",
-    "categoria": "Categoría",
-    "ciudad": "Ciudad",
-    "limpiar": "Limpiar",
-    "precioMaximo": "Precio máximo (euros)",
-    "radio": "Radio de búsqueda: {km} km",
-    "sinLimite": "Sin límite",
-    "todasCategorias": "Todas las categorías",
-    "todasCiudades": "Todas las ciudades",
-    "valoracionMinima": "Valoración mínima"
-  },
-  "paginacion": {
-    "anterior": "Página anterior",
-    "navegacion": "Paginación de resultados",
-    "pagina": "Página {numero}",
-    "siguiente": "Página siguiente"
-  },
-  "tarjeta": {
-    "precioRango": "{min} a {max} {unidad}",
-    "precioUnico": "{min} {unidad}"
-  },
-  "valoracion": {
-    "valorar": "Valorar con {estrellas} estrellas"
-  },
-  "detalle": {
-    "cargando": "Cargando el servicio",
-    "contactar": "Contactar",
-    "descripcion": "Descripción del servicio",
-    "errorRedTexto": "Comprueba tu conexión e inténtalo de nuevo en unos segundos.",
-    "errorRedTitulo": "No se pudo contactar con el servidor",
-    "noDisponibleTexto": "Inténtalo de nuevo más tarde.",
-    "noDisponibleTitulo": "Servicio no disponible",
-    "noEncontradoTexto": "El servicio que buscas no existe o ha sido eliminado.",
-    "noEncontradoTitulo": "Servicio no encontrado",
-    "reservar": "Reservar ahora",
-    "respuestaProfesional": "Respuesta del profesional",
-    "sinValoraciones": "Este servicio aún no tiene valoraciones.",
-    "sobreProfesional": "Sobre el profesional",
-    "valoraciones": "Valoraciones ({total})"
-  },
-  "mapa": {
-    "desde": "Desde {precio} {unidad}",
-    "verDetalle": "Ver detalle"
-  },
   "acceso": {
     "apellidos": "Apellidos",
     "confirmar": "Confirmar contraseña",
@@ -170,15 +39,6 @@
     "sinCuenta": "¿No tienes cuenta?",
     "yaTienesCuenta": "¿Ya tienes cuenta?"
   },
-  "validacion": {
-    "confirmaPassword": "Confirma la contraseña",
-    "emailInvalido": "Introduce un email válido",
-    "emailObligatorio": "El email es obligatorio",
-    "minimoCaracteres": "Mínimo 8 caracteres",
-    "obligatorio": "Obligatorio",
-    "passwordObligatoria": "La contraseña es obligatoria",
-    "passwordsNoCoinciden": "Las contraseñas no coinciden"
-  },
   "acercaDe": {
     "academicoTexto": "ServiLocal es el Trabajo de Fin de Máster de Federico Javier Martino en la Universitat Oberta de Catalunya. Es una plataforma funcional en fase de demostración: los datos que verás son de prueba y los pagos se ejecutan en el entorno de pruebas de Stripe, sin cargos reales.",
     "academicoTitulo": "Proyecto académico",
@@ -200,162 +60,6 @@
     "tecnologiaTexto": "La plataforma está construida con Next.js y React en el cliente, una API REST en NestJS y PostgreSQL con la extensión PostGIS para las búsquedas por proximidad. Los pagos se procesan con Stripe y la documentación de la API se publica con OpenAPI.",
     "tecnologiaTitulo": "Tecnología",
     "titulo": "Acerca de ServiLocal"
-  },
-  "legal": {
-    "avisoIdioma": "Este texto legal se publica únicamente en español, que es la versión que prevalece."
-  },
-  "reserva": {
-    "continuar": "Continuar al pago",
-    "creada": "Reserva creada. Vamos al pago.",
-    "descripcionCorta": "Describe brevemente el trabajo (mínimo 10 caracteres)",
-    "descripcionPlaceholder": "Describe brevemente el trabajo a realizar, ubicación exacta, materiales necesarios...",
-    "descripcionTrabajo": "Descripción del trabajo",
-    "errorCrear": "No se ha podido crear la reserva. Inténtalo de nuevo.",
-    "fecha": "Fecha",
-    "fechaObligatoria": "La fecha es obligatoria",
-    "hora": "Hora",
-    "horaObligatoria": "La hora es obligatoria",
-    "precioMaximo": "El precio máximo es {max} euros",
-    "precioMinimo": "El precio mínimo es {min} euros",
-    "precioMinimoEtiqueta": "Precio acordado en euros (mínimo {min})",
-    "precioPista": "Este importe puede ajustarse tras hablar con el profesional.",
-    "precioRango": "Precio acordado en euros (entre {min} y {max})",
-    "resumen": "Resumen",
-    "resumenFecha": "Fecha: {fecha} a las {hora}",
-    "resumenServicio": "Servicio: {titulo}",
-    "resumenTotal": "Total: {precio} euros",
-    "servicioNoDisponible": "Servicio no disponible",
-    "titulo": "Reservar: {servicio}"
-  },
-  "pago": {
-    "avisoStripe": "Pago procesado de forma segura por Stripe. ServiLocal no almacena los datos de tu tarjeta.",
-    "caducada": "La sesión de pago ha caducado. Generando una nueva...",
-    "completado": "Pago completado. Reserva confirmada.",
-    "cvcIncorrecto": "El CVC introducido no es correcto.",
-    "desconocido": "desconocido",
-    "errorCodigo": "No se ha podido iniciar el pago (código {codigo}).",
-    "errorGenerico": "Error procesando el pago.",
-    "errorIniciar": "No se ha podido iniciar el pago",
-    "errorTemporal": "Error temporal procesando el pago. Inténtalo de nuevo.",
-    "fondosInsuficientes": "Fondos insuficientes en la tarjeta.",
-    "formularioCargando": "El formulario de pago aún se está cargando. Espera un momento.",
-    "importe": "{importe} euros",
-    "noConfirmado": "Pago recibido pero no confirmado. Contacta con soporte.",
-    "noEncontrada": "Reserva no encontrada.",
-    "noRegenerar": "No se pudo regenerar la sesión de pago. Recarga la página.",
-    "pagandoReserva": "Estás pagando la reserva de <servicio>{titulo}</servicio>",
-    "pagar": "Pagar {importe} euros",
-    "pagoEnCurso": "Esta reserva ya tiene un pago en curso o completado.",
-    "rechazada": "Tu tarjeta ha sido rechazada.",
-    "sinPermiso": "No tienes permiso para pagar esta reserva.",
-    "sinServidor": "No se pudo contactar con el servidor.",
-    "tarjetaCaducada": "Tu tarjeta ha caducado.",
-    "titulo": "Confirmar pago",
-    "totalPagar": "Total a pagar",
-    "verificacion": "Se requiere verificación adicional de tu banco.",
-    "volverDetalle": "Volver al detalle de la reserva"
-  },
-  "panel": {
-    "accesosRapidos": "Accesos rápidos",
-    "buscarServicio": "Buscar un servicio",
-    "buscarServicioTexto": "Encuentra profesionales cerca de ti.",
-    "gestionarServicios": "Gestionar mis servicios",
-    "gestionarServiciosTexto": "Crea, edita o pausa tus servicios publicados.",
-    "hola": "Hola, {nombre}",
-    "misServicios": "Mis servicios",
-    "perfil": "Perfil",
-    "reservasRecibidasTexto": "Acepta, rechaza o marca trabajos como completados.",
-    "resumen": "Resumen",
-    "resumenCliente": "Aquí tienes el resumen de tus reservas y valoraciones.",
-    "resumenProfesional": "Aquí tienes el resumen de tu actividad como profesional.",
-    "valoraciones": "Valoraciones",
-    "verReservas": "Ver mis reservas",
-    "verReservasTexto": "Consulta el estado de tus reservas en curso."
-  },
-  "estados": {
-    "activo": "Activo",
-    "cancelada": "Cancelada",
-    "completada": "Completada",
-    "completadas": "Completadas",
-    "confirmada": "Confirmada",
-    "confirmadas": "Confirmadas",
-    "pausado": "Pausado",
-    "pendiente": "Pendiente",
-    "pendientes": "Pendientes",
-    "rechazada": "Rechazada",
-    "todas": "Todas"
-  },
-  "reservasPanel": {
-    "aceptar": "Aceptar reserva",
-    "actualizada": "Reserva actualizada",
-    "cancelar": "Cancelar",
-    "completar": "Marcar como completada",
-    "confirmar": "Confirmar",
-    "descripcion": "Descripción",
-    "errorActualizar": "No se ha podido actualizar la reserva",
-    "misReservas": "Mis reservas",
-    "noEncontrada": "Reserva no encontrada.",
-    "pagarAhora": "Pagar ahora",
-    "rechazar": "Rechazar",
-    "reservasRecibidas": "Reservas recibidas",
-    "sinReservas": "No tienes reservas en esta sección."
-  },
-  "perfilPanel": {
-    "actualizado": "Perfil actualizado",
-    "biografia": "Biografía",
-    "biografiaPlaceholder": "Cuéntanos sobre ti...",
-    "codigoPostal": "Código postal",
-    "direccion": "Dirección",
-    "errorActualizar": "No se ha podido actualizar el perfil",
-    "guardar": "Guardar cambios",
-    "telefono": "Teléfono",
-    "titulo": "Mi perfil"
-  },
-  "valoracionesPanel": {
-    "comentarioPlaceholder": "Comentario opcional sobre el servicio...",
-    "con": "Con {nombre}",
-    "enviada": "Valoración enviada. ¡Gracias!",
-    "enviadas": "Valoraciones enviadas ({total})",
-    "enviar": "Enviar valoración",
-    "errorEnviar": "No se ha podido enviar la valoración",
-    "pendientes": "Valoraciones pendientes",
-    "selecciona": "Selecciona una valoración",
-    "sinEnviadas": "Aún no has enviado ninguna valoración.",
-    "sinPendientes": "No tienes valoraciones pendientes.",
-    "tuValoracion": "Tu valoración"
-  },
-  "serviciosPanel": {
-    "actualizado": "Servicio actualizado",
-    "confirmarEliminar": "¿Quieres eliminar este servicio? No se podrá deshacer.",
-    "creado": "Servicio creado",
-    "editar": "Editar servicio",
-    "eliminado": "Servicio eliminado",
-    "errorActualizar": "No se ha podido actualizar el servicio",
-    "errorCrear": "No se ha podido crear el servicio",
-    "errorEliminar": "No se ha podido eliminar",
-    "nuevo": "Nuevo servicio",
-    "sinServicios": "Aún no has publicado ningún servicio.",
-    "sinServiciosPista": "Crea tu primer servicio para empezar a recibir reservas.",
-    "titulo": "Mis servicios"
-  },
-  "formularioServicio": {
-    "categoria": "Categoría",
-    "descripcion": "Descripción",
-    "direccion": "Dirección de referencia",
-    "precioMaximo": "Precio máximo (opcional)",
-    "precioMinimo": "Precio mínimo (euros)",
-    "radio": "Radio de cobertura (km)",
-    "seleccionaCategoria": "Selecciona una categoría",
-    "seleccionaCiudad": "Selecciona una ciudad",
-    "titulo": "Título del servicio"
-  },
-  "mensajesPanel": {
-    "enviar": "Enviar",
-    "escribePlaceholder": "Escribe un mensaje...",
-    "sinConversaciones": "No tienes conversaciones.",
-    "sinConversacionesPista": "Las conversaciones se crean al contactar con un profesional desde un servicio o reserva.",
-    "sinMensajes": "Aún no hay mensajes en esta conversación.",
-    "titulo": "Mensajes"
   },
   "administracion": {
     "accion": "Acción",
@@ -478,5 +182,313 @@
     "titulo": "Cuéntanos qué necesitas",
     "todaEspana": "en toda España",
     "verTodos": "Ver todos los resultados"
+  },
+  "buscador": {
+    "queNecesitas": "¿Qué servicio necesitas?",
+    "buscarServicios": "Buscar servicios"
+  },
+  "categorias": {
+    "cerrajeria": "Cerrajería",
+    "clases-particulares": "Clases particulares",
+    "diseno-grafico": "Diseño gráfico",
+    "electricidad": "Electricidad",
+    "fontaneria": "Fontanería",
+    "jardineria": "Jardinería",
+    "limpieza": "Limpieza",
+    "mudanzas": "Mudanzas",
+    "pintura": "Pintura",
+    "reformas": "Reformas"
+  },
+  "comun": {
+    "buscar": "Buscar",
+    "cancelar": "Cancelar",
+    "cargando": "Cargando",
+    "ciudad": "Ciudad",
+    "descripcionSitio": "Marketplace de servicios del hogar que conecta clientes con profesionales de su zona.",
+    "editar": "Editar",
+    "eliminar": "Eliminar",
+    "irAlContenido": "Ir al contenido principal",
+    "reintentar": "Reintentar"
+  },
+  "detalle": {
+    "cargando": "Cargando el servicio",
+    "contactar": "Contactar",
+    "descripcion": "Descripción del servicio",
+    "errorRedTexto": "Comprueba tu conexión e inténtalo de nuevo en unos segundos.",
+    "errorRedTitulo": "No se pudo contactar con el servidor",
+    "noDisponibleTexto": "Inténtalo de nuevo más tarde.",
+    "noDisponibleTitulo": "Servicio no disponible",
+    "noEncontradoTexto": "El servicio que buscas no existe o ha sido eliminado.",
+    "noEncontradoTitulo": "Servicio no encontrado",
+    "reservar": "Reservar ahora",
+    "respuestaProfesional": "Respuesta del profesional",
+    "sinValoraciones": "Este servicio aún no tiene valoraciones.",
+    "sobreProfesional": "Sobre el profesional",
+    "valoraciones": "Valoraciones ({total})"
+  },
+  "estados": {
+    "activo": "Activo",
+    "cancelada": "Cancelada",
+    "completada": "Completada",
+    "completadas": "Completadas",
+    "confirmada": "Confirmada",
+    "confirmadas": "Confirmadas",
+    "pausado": "Pausado",
+    "pendiente": "Pendiente",
+    "pendientes": "Pendientes",
+    "rechazada": "Rechazada",
+    "todas": "Todas"
+  },
+  "filtros": {
+    "aplicar": "Aplicar filtros",
+    "categoria": "Categoría",
+    "ciudad": "Ciudad",
+    "limpiar": "Limpiar",
+    "precioMaximo": "Precio máximo (euros)",
+    "radio": "Radio de búsqueda: {km} km",
+    "sinLimite": "Sin límite",
+    "todasCategorias": "Todas las categorías",
+    "todasCiudades": "Todas las ciudades",
+    "valoracionMinima": "Valoración mínima"
+  },
+  "formularioServicio": {
+    "categoria": "Categoría",
+    "descripcion": "Descripción",
+    "direccion": "Dirección de referencia",
+    "precioMaximo": "Precio máximo (opcional)",
+    "precioMinimo": "Precio mínimo (euros)",
+    "radio": "Radio de cobertura (km)",
+    "seleccionaCategoria": "Selecciona una categoría",
+    "seleccionaCiudad": "Selecciona una ciudad",
+    "titulo": "Título del servicio"
+  },
+  "idioma": {
+    "cambiar": "Cambiar idioma"
+  },
+  "inicio": {
+    "heroTitulo": "Profesionales de confianza, cerca de ti",
+    "heroSubtitulo": "Encuentra al profesional adecuado para cualquier servicio del hogar. Valoraciones reales, presupuestos transparentes y reserva inmediata.",
+    "porQueTitulo": "¿Por qué elegir ServiLocal?",
+    "cercanosTitulo": "Profesionales cercanos",
+    "cercanosTexto": "Búsqueda por geolocalización para encontrar a los mejores profesionales de tu zona.",
+    "pagosTitulo": "Pagos seguros",
+    "pagosTexto": "Plataforma de pago integrada con Stripe. Tu dinero está protegido hasta que el servicio se complete.",
+    "valoracionesTitulo": "Valoraciones verificadas",
+    "valoracionesTexto": "Solo los clientes que han completado un servicio pueden dejar su opinión.",
+    "comoFunciona": "Cómo funciona",
+    "paso1Titulo": "Busca el servicio",
+    "paso1Texto": "Indica qué necesitas y dónde. Nuestro sistema te muestra los profesionales más cercanos y mejor valorados.",
+    "paso2Titulo": "Reserva y paga",
+    "paso2Texto": "Elige fecha, deja la señal y recibe la confirmación al instante.",
+    "paso3Titulo": "Valora tu experiencia",
+    "paso3Texto": "Tras el servicio, deja tu opinión para ayudar a otros usuarios."
+  },
+  "legal": {
+    "avisoIdioma": "Este texto legal se publica únicamente en español, que es la versión que prevalece."
+  },
+  "mapa": {
+    "desde": "Desde {precio} {unidad}",
+    "verDetalle": "Ver detalle"
+  },
+  "mensajesPanel": {
+    "enviar": "Enviar",
+    "escribePlaceholder": "Escribe un mensaje...",
+    "sinConversaciones": "No tienes conversaciones.",
+    "sinConversacionesPista": "Las conversaciones se crean al contactar con un profesional desde un servicio o reserva.",
+    "sinMensajes": "Aún no hay mensajes en esta conversación.",
+    "titulo": "Mensajes"
+  },
+  "meta": {
+    "titulo": "ServiLocal - Servicios locales cerca de ti",
+    "descripcion": "Encuentra profesionales de confianza en tu zona. Fontanería, electricidad, clases particulares y más. Reserva, paga y valora de forma segura."
+  },
+  "navegacion": {
+    "principal": "Navegación principal",
+    "buscarServicios": "Buscar servicios",
+    "misReservas": "Mis reservas",
+    "reservasRecibidas": "Reservas recibidas",
+    "mensajes": "Mensajes",
+    "administracion": "Administración",
+    "miPerfil": "Mi perfil",
+    "iniciarSesion": "Iniciar sesión",
+    "registrarse": "Registrarse",
+    "salir": "Salir",
+    "cerrarSesion": "Cerrar sesión",
+    "abrirMenu": "Abrir menú",
+    "cerrarMenu": "Cerrar menú",
+    "menuMovil": "Menú móvil"
+  },
+  "noEncontrado": {
+    "titulo": "Página no encontrada",
+    "texto": "El enlace que has seguido no existe o el contenido se ha movido.",
+    "volver": "Volver al inicio"
+  },
+  "paginacion": {
+    "anterior": "Página anterior",
+    "navegacion": "Paginación de resultados",
+    "pagina": "Página {numero}",
+    "siguiente": "Página siguiente"
+  },
+  "pago": {
+    "avisoStripe": "Pago procesado de forma segura por Stripe. ServiLocal no almacena los datos de tu tarjeta.",
+    "caducada": "La sesión de pago ha caducado. Generando una nueva...",
+    "completado": "Pago completado. Reserva confirmada.",
+    "cvcIncorrecto": "El CVC introducido no es correcto.",
+    "desconocido": "desconocido",
+    "errorCodigo": "No se ha podido iniciar el pago (código {codigo}).",
+    "errorGenerico": "Error procesando el pago.",
+    "errorIniciar": "No se ha podido iniciar el pago",
+    "errorTemporal": "Error temporal procesando el pago. Inténtalo de nuevo.",
+    "fondosInsuficientes": "Fondos insuficientes en la tarjeta.",
+    "formularioCargando": "El formulario de pago aún se está cargando. Espera un momento.",
+    "importe": "{importe} euros",
+    "noConfirmado": "Pago recibido pero no confirmado. Contacta con soporte.",
+    "noEncontrada": "Reserva no encontrada.",
+    "noRegenerar": "No se pudo regenerar la sesión de pago. Recarga la página.",
+    "pagandoReserva": "Estás pagando la reserva de <servicio>{titulo}</servicio>",
+    "pagar": "Pagar {importe} euros",
+    "pagoEnCurso": "Esta reserva ya tiene un pago en curso o completado.",
+    "rechazada": "Tu tarjeta ha sido rechazada.",
+    "sinPermiso": "No tienes permiso para pagar esta reserva.",
+    "sinServidor": "No se pudo contactar con el servidor.",
+    "tarjetaCaducada": "Tu tarjeta ha caducado.",
+    "titulo": "Confirmar pago",
+    "totalPagar": "Total a pagar",
+    "verificacion": "Se requiere verificación adicional de tu banco.",
+    "volverDetalle": "Volver al detalle de la reserva"
+  },
+  "panel": {
+    "accesosRapidos": "Accesos rápidos",
+    "buscarServicio": "Buscar un servicio",
+    "buscarServicioTexto": "Encuentra profesionales cerca de ti.",
+    "gestionarServicios": "Gestionar mis servicios",
+    "gestionarServiciosTexto": "Crea, edita o pausa tus servicios publicados.",
+    "hola": "Hola, {nombre}",
+    "misServicios": "Mis servicios",
+    "perfil": "Perfil",
+    "reservasRecibidasTexto": "Acepta, rechaza o marca trabajos como completados.",
+    "resumen": "Resumen",
+    "resumenCliente": "Aquí tienes el resumen de tus reservas y valoraciones.",
+    "resumenProfesional": "Aquí tienes el resumen de tu actividad como profesional.",
+    "valoraciones": "Valoraciones",
+    "verReservas": "Ver mis reservas",
+    "verReservasTexto": "Consulta el estado de tus reservas en curso."
+  },
+  "perfilPanel": {
+    "actualizado": "Perfil actualizado",
+    "biografia": "Biografía",
+    "biografiaPlaceholder": "Cuéntanos sobre ti...",
+    "codigoPostal": "Código postal",
+    "direccion": "Dirección",
+    "errorActualizar": "No se ha podido actualizar el perfil",
+    "guardar": "Guardar cambios",
+    "telefono": "Teléfono",
+    "titulo": "Mi perfil"
+  },
+  "pie": {
+    "enlaces": "Enlaces del pie de página",
+    "acercaDe": "Acerca de",
+    "terminos": "Términos",
+    "privacidad": "Privacidad",
+    "derechos": "© 2026 ServiLocal. TFM UOC."
+  },
+  "reserva": {
+    "continuar": "Continuar al pago",
+    "creada": "Reserva creada. Vamos al pago.",
+    "descripcionCorta": "Describe brevemente el trabajo (mínimo 10 caracteres)",
+    "descripcionPlaceholder": "Describe brevemente el trabajo a realizar, ubicación exacta, materiales necesarios...",
+    "descripcionTrabajo": "Descripción del trabajo",
+    "errorCrear": "No se ha podido crear la reserva. Inténtalo de nuevo.",
+    "fecha": "Fecha",
+    "fechaObligatoria": "La fecha es obligatoria",
+    "hora": "Hora",
+    "horaObligatoria": "La hora es obligatoria",
+    "precioMaximo": "El precio máximo es {max} euros",
+    "precioMinimo": "El precio mínimo es {min} euros",
+    "precioMinimoEtiqueta": "Precio acordado en euros (mínimo {min})",
+    "precioPista": "Este importe puede ajustarse tras hablar con el profesional.",
+    "precioRango": "Precio acordado en euros (entre {min} y {max})",
+    "resumen": "Resumen",
+    "resumenFecha": "Fecha: {fecha} a las {hora}",
+    "resumenServicio": "Servicio: {titulo}",
+    "resumenTotal": "Total: {precio} euros",
+    "servicioNoDisponible": "Servicio no disponible",
+    "titulo": "Reservar: {servicio}"
+  },
+  "reservasPanel": {
+    "aceptar": "Aceptar reserva",
+    "actualizada": "Reserva actualizada",
+    "cancelar": "Cancelar",
+    "completar": "Marcar como completada",
+    "confirmar": "Confirmar",
+    "descripcion": "Descripción",
+    "errorActualizar": "No se ha podido actualizar la reserva",
+    "misReservas": "Mis reservas",
+    "noEncontrada": "Reserva no encontrada.",
+    "pagarAhora": "Pagar ahora",
+    "rechazar": "Rechazar",
+    "reservasRecibidas": "Reservas recibidas",
+    "sinReservas": "No tienes reservas en esta sección."
+  },
+  "resultados": {
+    "cargando": "Cargando resultados",
+    "cuenta": "{total, plural, =0 {Ningún resultado} one {# resultado encontrado} other {# resultados encontrados}}",
+    "despertando": "El servidor está despertando tras un periodo de inactividad. Puede tardar hasta un minuto.",
+    "errorRed": "No se pudo contactar con el servidor. Inténtalo de nuevo en unos segundos.",
+    "errorServicio": "Servicio no disponible. Inténtalo de nuevo más tarde.",
+    "errorTimeout": "El servidor ha tardado demasiado en responder. Puede estar reactivándose tras un periodo de inactividad.",
+    "filtros": "Filtros",
+    "sinResultados": "No se han encontrado servicios con los filtros aplicados.",
+    "sinResultadosPista": "Prueba a ampliar el radio de búsqueda o eliminar algún filtro.",
+    "titulo": "Resultados de la búsqueda",
+    "vistaLista": "Lista",
+    "vistaMapa": "Mapa"
+  },
+  "serviciosPanel": {
+    "actualizado": "Servicio actualizado",
+    "confirmarEliminar": "¿Quieres eliminar este servicio? No se podrá deshacer.",
+    "creado": "Servicio creado",
+    "editar": "Editar servicio",
+    "eliminado": "Servicio eliminado",
+    "errorActualizar": "No se ha podido actualizar el servicio",
+    "errorCrear": "No se ha podido crear el servicio",
+    "errorEliminar": "No se ha podido eliminar",
+    "nuevo": "Nuevo servicio",
+    "sinServicios": "Aún no has publicado ningún servicio.",
+    "sinServiciosPista": "Crea tu primer servicio para empezar a recibir reservas.",
+    "titulo": "Mis servicios"
+  },
+  "tarjeta": {
+    "precioRango": "{min} a {max} {unidad}",
+    "precioUnico": "{min} {unidad}"
+  },
+  "tema": {
+    "activarClaro": "Activar tema claro",
+    "activarOscuro": "Activar tema oscuro"
+  },
+  "validacion": {
+    "confirmaPassword": "Confirma la contraseña",
+    "emailInvalido": "Introduce un email válido",
+    "emailObligatorio": "El email es obligatorio",
+    "minimoCaracteres": "Mínimo 8 caracteres",
+    "obligatorio": "Obligatorio",
+    "passwordObligatoria": "La contraseña es obligatoria",
+    "passwordsNoCoinciden": "Las contraseñas no coinciden"
+  },
+  "valoracion": {
+    "valorar": "Valorar con {estrellas} estrellas"
+  },
+  "valoracionesPanel": {
+    "comentarioPlaceholder": "Comentario opcional sobre el servicio...",
+    "con": "Con {nombre}",
+    "enviada": "Valoración enviada. ¡Gracias!",
+    "enviadas": "Valoraciones enviadas ({total})",
+    "enviar": "Enviar valoración",
+    "errorEnviar": "No se ha podido enviar la valoración",
+    "pendientes": "Valoraciones pendientes",
+    "selecciona": "Selecciona una valoración",
+    "sinEnviadas": "Aún no has enviado ninguna valoración.",
+    "sinPendientes": "No tienes valoraciones pendientes.",
+    "tuValoracion": "Tu valoración"
   }
 }

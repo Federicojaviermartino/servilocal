@@ -1,135 +1,4 @@
 {
-  "meta": {
-    "titulo": "ServiLocal - Local services near you",
-    "descripcion": "Find trusted professionals in your area. Plumbing, electrical work, private tutoring and more. Book, pay and review securely."
-  },
-  "comun": {
-    "buscar": "Search",
-    "cancelar": "Cancel",
-    "cargando": "Loading",
-    "ciudad": "City",
-    "descripcionSitio": "A home services marketplace connecting customers with professionals in their area.",
-    "editar": "Edit",
-    "eliminar": "Delete",
-    "irAlContenido": "Skip to main content",
-    "reintentar": "Try again"
-  },
-  "navegacion": {
-    "principal": "Main navigation",
-    "buscarServicios": "Find services",
-    "misReservas": "My bookings",
-    "reservasRecibidas": "Incoming bookings",
-    "mensajes": "Messages",
-    "administracion": "Admin",
-    "miPerfil": "My profile",
-    "iniciarSesion": "Sign in",
-    "registrarse": "Sign up",
-    "salir": "Sign out",
-    "cerrarSesion": "Sign out",
-    "abrirMenu": "Open menu",
-    "cerrarMenu": "Close menu",
-    "menuMovil": "Mobile menu"
-  },
-  "pie": {
-    "enlaces": "Footer links",
-    "acercaDe": "About",
-    "terminos": "Terms",
-    "privacidad": "Privacy",
-    "derechos": "© 2026 ServiLocal. UOC master's thesis."
-  },
-  "tema": {
-    "activarClaro": "Switch to light theme",
-    "activarOscuro": "Switch to dark theme"
-  },
-  "idioma": {
-    "cambiar": "Change language"
-  },
-  "buscador": {
-    "queNecesitas": "What service do you need?",
-    "buscarServicios": "Search services"
-  },
-  "inicio": {
-    "heroTitulo": "Trusted professionals, close to you",
-    "heroSubtitulo": "Find the right professional for any home service. Real reviews, transparent quotes and instant booking.",
-    "porQueTitulo": "Why choose ServiLocal?",
-    "cercanosTitulo": "Nearby professionals",
-    "cercanosTexto": "Location-based search to find the best professionals in your area.",
-    "pagosTitulo": "Secure payments",
-    "pagosTexto": "Payments handled by Stripe. Your money is held safely until the job is complete.",
-    "valoracionesTitulo": "Verified reviews",
-    "valoracionesTexto": "Only customers who have completed a service can leave a review.",
-    "comoFunciona": "How it works",
-    "paso1Titulo": "Search for a service",
-    "paso1Texto": "Tell us what you need and where. We show you the closest and best rated professionals.",
-    "paso2Titulo": "Book and pay",
-    "paso2Texto": "Pick a date, pay the deposit and get instant confirmation.",
-    "paso3Titulo": "Rate your experience",
-    "paso3Texto": "After the job, leave a review to help other customers."
-  },
-  "noEncontrado": {
-    "titulo": "Page not found",
-    "texto": "The link you followed doesn't exist, or the content has moved.",
-    "volver": "Back to home"
-  },
-  "resultados": {
-    "cargando": "Loading results",
-    "cuenta": "{total, plural, =0 {No results} one {# result found} other {# results found}}",
-    "despertando": "The server is waking up after a period of inactivity. This can take up to a minute.",
-    "errorRed": "The server could not be reached. Try again in a few seconds.",
-    "errorServicio": "Service unavailable. Please try again later.",
-    "errorTimeout": "The server took too long to respond. It may be waking up after a period of inactivity.",
-    "filtros": "Filters",
-    "sinResultados": "No services match the filters you applied.",
-    "sinResultadosPista": "Try widening the search radius or removing a filter.",
-    "titulo": "Search results",
-    "vistaLista": "List",
-    "vistaMapa": "Map"
-  },
-  "filtros": {
-    "aplicar": "Apply filters",
-    "categoria": "Category",
-    "ciudad": "City",
-    "limpiar": "Clear",
-    "precioMaximo": "Maximum price (euros)",
-    "radio": "Search radius: {km} km",
-    "sinLimite": "No limit",
-    "todasCategorias": "All categories",
-    "todasCiudades": "All cities",
-    "valoracionMinima": "Minimum rating"
-  },
-  "paginacion": {
-    "anterior": "Previous page",
-    "navegacion": "Results pagination",
-    "pagina": "Page {numero}",
-    "siguiente": "Next page"
-  },
-  "tarjeta": {
-    "precioRango": "{min} to {max} {unidad}",
-    "precioUnico": "{min} {unidad}"
-  },
-  "valoracion": {
-    "valorar": "Rate {estrellas} stars"
-  },
-  "detalle": {
-    "cargando": "Loading the service",
-    "contactar": "Message",
-    "descripcion": "About this service",
-    "errorRedTexto": "Check your connection and try again in a few seconds.",
-    "errorRedTitulo": "The server could not be reached",
-    "noDisponibleTexto": "Please try again later.",
-    "noDisponibleTitulo": "Service unavailable",
-    "noEncontradoTexto": "The service you are looking for does not exist or has been removed.",
-    "noEncontradoTitulo": "Service not found",
-    "reservar": "Book now",
-    "respuestaProfesional": "Reply from the professional",
-    "sinValoraciones": "This service has no reviews yet.",
-    "sobreProfesional": "About the professional",
-    "valoraciones": "Reviews ({total})"
-  },
-  "mapa": {
-    "desde": "From {precio} {unidad}",
-    "verDetalle": "View details"
-  },
   "acceso": {
     "apellidos": "Last name",
     "confirmar": "Confirm password",
@@ -170,15 +39,6 @@
     "sinCuenta": "Don't have an account?",
     "yaTienesCuenta": "Already have an account?"
   },
-  "validacion": {
-    "confirmaPassword": "Confirm the password",
-    "emailInvalido": "Enter a valid email address",
-    "emailObligatorio": "Email is required",
-    "minimoCaracteres": "At least 8 characters",
-    "obligatorio": "Required",
-    "passwordObligatoria": "Password is required",
-    "passwordsNoCoinciden": "The passwords do not match"
-  },
   "acercaDe": {
     "academicoTexto": "ServiLocal is Federico Javier Martino's master's thesis at the Universitat Oberta de Catalunya. It is a working platform in demonstration phase: the data you see is sample data and payments run in Stripe's test environment, with no real charges.",
     "academicoTitulo": "Academic project",
@@ -200,162 +60,6 @@
     "tecnologiaTexto": "The platform is built with Next.js and React on the client, a REST API in NestJS, and PostgreSQL with the PostGIS extension for proximity searches. Payments are processed with Stripe and the API documentation is published with OpenAPI.",
     "tecnologiaTitulo": "Technology",
     "titulo": "About ServiLocal"
-  },
-  "legal": {
-    "avisoIdioma": "This legal text is published in Spanish only, and the Spanish version is the one that prevails."
-  },
-  "reserva": {
-    "continuar": "Continue to payment",
-    "creada": "Booking created. On to the payment.",
-    "descripcionCorta": "Briefly describe the job (at least 10 characters)",
-    "descripcionPlaceholder": "Briefly describe the job, the exact location, any materials needed...",
-    "descripcionTrabajo": "Description of the job",
-    "errorCrear": "The booking could not be created. Please try again.",
-    "fecha": "Date",
-    "fechaObligatoria": "The date is required",
-    "hora": "Time",
-    "horaObligatoria": "The time is required",
-    "precioMaximo": "The maximum price is {max} euros",
-    "precioMinimo": "The minimum price is {min} euros",
-    "precioMinimoEtiqueta": "Agreed price in euros (minimum {min})",
-    "precioPista": "This amount can be adjusted after speaking with the professional.",
-    "precioRango": "Agreed price in euros (between {min} and {max})",
-    "resumen": "Summary",
-    "resumenFecha": "Date: {fecha} at {hora}",
-    "resumenServicio": "Service: {titulo}",
-    "resumenTotal": "Total: {precio} euros",
-    "servicioNoDisponible": "Service unavailable",
-    "titulo": "Book: {servicio}"
-  },
-  "pago": {
-    "avisoStripe": "Payment processed securely by Stripe. ServiLocal does not store your card details.",
-    "caducada": "The payment session has expired. Creating a new one...",
-    "completado": "Payment complete. Booking confirmed.",
-    "cvcIncorrecto": "The CVC you entered is not correct.",
-    "desconocido": "unknown",
-    "errorCodigo": "The payment could not be started (code {codigo}).",
-    "errorGenerico": "Error processing the payment.",
-    "errorIniciar": "The payment could not be started",
-    "errorTemporal": "Temporary error processing the payment. Please try again.",
-    "fondosInsuficientes": "Insufficient funds on the card.",
-    "formularioCargando": "The payment form is still loading. Please wait a moment.",
-    "importe": "{importe} euros",
-    "noConfirmado": "Payment received but not confirmed. Please contact support.",
-    "noEncontrada": "Booking not found.",
-    "noRegenerar": "The payment session could not be regenerated. Reload the page.",
-    "pagandoReserva": "You are paying for the booking of <servicio>{titulo}</servicio>",
-    "pagar": "Pay {importe} euros",
-    "pagoEnCurso": "This booking already has a payment in progress or completed.",
-    "rechazada": "Your card was declined.",
-    "sinPermiso": "You do not have permission to pay for this booking.",
-    "sinServidor": "The server could not be reached.",
-    "tarjetaCaducada": "Your card has expired.",
-    "titulo": "Confirm payment",
-    "totalPagar": "Total to pay",
-    "verificacion": "Your bank requires additional verification.",
-    "volverDetalle": "Back to the booking details"
-  },
-  "panel": {
-    "accesosRapidos": "Quick links",
-    "buscarServicio": "Find a service",
-    "buscarServicioTexto": "Find professionals near you.",
-    "gestionarServicios": "Manage my services",
-    "gestionarServiciosTexto": "Create, edit or pause your published services.",
-    "hola": "Hello, {nombre}",
-    "misServicios": "My services",
-    "perfil": "Profile",
-    "reservasRecibidasTexto": "Accept, decline or mark jobs as completed.",
-    "resumen": "Overview",
-    "resumenCliente": "Here is a summary of your bookings and reviews.",
-    "resumenProfesional": "Here is a summary of your activity as a professional.",
-    "valoraciones": "Reviews",
-    "verReservas": "See my bookings",
-    "verReservasTexto": "Check the status of your ongoing bookings."
-  },
-  "estados": {
-    "activo": "Active",
-    "cancelada": "Cancelled",
-    "completada": "Completed",
-    "completadas": "Completed",
-    "confirmada": "Confirmed",
-    "confirmadas": "Confirmed",
-    "pausado": "Paused",
-    "pendiente": "Pending",
-    "pendientes": "Pending",
-    "rechazada": "Rejected",
-    "todas": "All"
-  },
-  "reservasPanel": {
-    "aceptar": "Accept booking",
-    "actualizada": "Booking updated",
-    "cancelar": "Cancel",
-    "completar": "Mark as completed",
-    "confirmar": "Confirm",
-    "descripcion": "Description",
-    "errorActualizar": "The booking could not be updated",
-    "misReservas": "My bookings",
-    "noEncontrada": "Booking not found.",
-    "pagarAhora": "Pay now",
-    "rechazar": "Decline",
-    "reservasRecibidas": "Incoming bookings",
-    "sinReservas": "You have no bookings in this section."
-  },
-  "perfilPanel": {
-    "actualizado": "Profile updated",
-    "biografia": "Bio",
-    "biografiaPlaceholder": "Tell us about yourself...",
-    "codigoPostal": "Postcode",
-    "direccion": "Address",
-    "errorActualizar": "The profile could not be updated",
-    "guardar": "Save changes",
-    "telefono": "Phone",
-    "titulo": "My profile"
-  },
-  "valoracionesPanel": {
-    "comentarioPlaceholder": "Optional comment about the service...",
-    "con": "With {nombre}",
-    "enviada": "Review submitted. Thank you!",
-    "enviadas": "Reviews submitted ({total})",
-    "enviar": "Submit review",
-    "errorEnviar": "The review could not be submitted",
-    "pendientes": "Pending reviews",
-    "selecciona": "Choose a rating",
-    "sinEnviadas": "You have not submitted any reviews yet.",
-    "sinPendientes": "You have no pending reviews.",
-    "tuValoracion": "Your rating"
-  },
-  "serviciosPanel": {
-    "actualizado": "Service updated",
-    "confirmarEliminar": "Delete this service? This cannot be undone.",
-    "creado": "Service created",
-    "editar": "Edit service",
-    "eliminado": "Service deleted",
-    "errorActualizar": "The service could not be updated",
-    "errorCrear": "The service could not be created",
-    "errorEliminar": "It could not be deleted",
-    "nuevo": "New service",
-    "sinServicios": "You have not published any services yet.",
-    "sinServiciosPista": "Create your first service to start receiving bookings.",
-    "titulo": "My services"
-  },
-  "formularioServicio": {
-    "categoria": "Category",
-    "descripcion": "Description",
-    "direccion": "Reference address",
-    "precioMaximo": "Maximum price (optional)",
-    "precioMinimo": "Minimum price (euros)",
-    "radio": "Coverage radius (km)",
-    "seleccionaCategoria": "Choose a category",
-    "seleccionaCiudad": "Choose a city",
-    "titulo": "Service title"
-  },
-  "mensajesPanel": {
-    "enviar": "Send",
-    "escribePlaceholder": "Write a message...",
-    "sinConversaciones": "You have no conversations.",
-    "sinConversacionesPista": "Conversations start when you contact a professional from a service or a booking.",
-    "sinMensajes": "There are no messages in this conversation yet.",
-    "titulo": "Messages"
   },
   "administracion": {
     "accion": "Action",
@@ -478,5 +182,313 @@
     "titulo": "Tell us what you need",
     "todaEspana": "across Spain",
     "verTodos": "See all results"
+  },
+  "buscador": {
+    "queNecesitas": "What service do you need?",
+    "buscarServicios": "Search services"
+  },
+  "categorias": {
+    "cerrajeria": "Locksmithing",
+    "clases-particulares": "Private tuition",
+    "diseno-grafico": "Graphic design",
+    "electricidad": "Electrical work",
+    "fontaneria": "Plumbing",
+    "jardineria": "Gardening",
+    "limpieza": "Cleaning",
+    "mudanzas": "Removals",
+    "pintura": "Painting",
+    "reformas": "Renovations"
+  },
+  "comun": {
+    "buscar": "Search",
+    "cancelar": "Cancel",
+    "cargando": "Loading",
+    "ciudad": "City",
+    "descripcionSitio": "A home services marketplace connecting customers with professionals in their area.",
+    "editar": "Edit",
+    "eliminar": "Delete",
+    "irAlContenido": "Skip to main content",
+    "reintentar": "Try again"
+  },
+  "detalle": {
+    "cargando": "Loading the service",
+    "contactar": "Message",
+    "descripcion": "About this service",
+    "errorRedTexto": "Check your connection and try again in a few seconds.",
+    "errorRedTitulo": "The server could not be reached",
+    "noDisponibleTexto": "Please try again later.",
+    "noDisponibleTitulo": "Service unavailable",
+    "noEncontradoTexto": "The service you are looking for does not exist or has been removed.",
+    "noEncontradoTitulo": "Service not found",
+    "reservar": "Book now",
+    "respuestaProfesional": "Reply from the professional",
+    "sinValoraciones": "This service has no reviews yet.",
+    "sobreProfesional": "About the professional",
+    "valoraciones": "Reviews ({total})"
+  },
+  "estados": {
+    "activo": "Active",
+    "cancelada": "Cancelled",
+    "completada": "Completed",
+    "completadas": "Completed",
+    "confirmada": "Confirmed",
+    "confirmadas": "Confirmed",
+    "pausado": "Paused",
+    "pendiente": "Pending",
+    "pendientes": "Pending",
+    "rechazada": "Rejected",
+    "todas": "All"
+  },
+  "filtros": {
+    "aplicar": "Apply filters",
+    "categoria": "Category",
+    "ciudad": "City",
+    "limpiar": "Clear",
+    "precioMaximo": "Maximum price (euros)",
+    "radio": "Search radius: {km} km",
+    "sinLimite": "No limit",
+    "todasCategorias": "All categories",
+    "todasCiudades": "All cities",
+    "valoracionMinima": "Minimum rating"
+  },
+  "formularioServicio": {
+    "categoria": "Category",
+    "descripcion": "Description",
+    "direccion": "Reference address",
+    "precioMaximo": "Maximum price (optional)",
+    "precioMinimo": "Minimum price (euros)",
+    "radio": "Coverage radius (km)",
+    "seleccionaCategoria": "Choose a category",
+    "seleccionaCiudad": "Choose a city",
+    "titulo": "Service title"
+  },
+  "idioma": {
+    "cambiar": "Change language"
+  },
+  "inicio": {
+    "heroTitulo": "Trusted professionals, close to you",
+    "heroSubtitulo": "Find the right professional for any home service. Real reviews, transparent quotes and instant booking.",
+    "porQueTitulo": "Why choose ServiLocal?",
+    "cercanosTitulo": "Nearby professionals",
+    "cercanosTexto": "Location-based search to find the best professionals in your area.",
+    "pagosTitulo": "Secure payments",
+    "pagosTexto": "Payments handled by Stripe. Your money is held safely until the job is complete.",
+    "valoracionesTitulo": "Verified reviews",
+    "valoracionesTexto": "Only customers who have completed a service can leave a review.",
+    "comoFunciona": "How it works",
+    "paso1Titulo": "Search for a service",
+    "paso1Texto": "Tell us what you need and where. We show you the closest and best rated professionals.",
+    "paso2Titulo": "Book and pay",
+    "paso2Texto": "Pick a date, pay the deposit and get instant confirmation.",
+    "paso3Titulo": "Rate your experience",
+    "paso3Texto": "After the job, leave a review to help other customers."
+  },
+  "legal": {
+    "avisoIdioma": "This legal text is published in Spanish only, and the Spanish version is the one that prevails."
+  },
+  "mapa": {
+    "desde": "From {precio} {unidad}",
+    "verDetalle": "View details"
+  },
+  "mensajesPanel": {
+    "enviar": "Send",
+    "escribePlaceholder": "Write a message...",
+    "sinConversaciones": "You have no conversations.",
+    "sinConversacionesPista": "Conversations start when you contact a professional from a service or a booking.",
+    "sinMensajes": "There are no messages in this conversation yet.",
+    "titulo": "Messages"
+  },
+  "meta": {
+    "titulo": "ServiLocal - Local services near you",
+    "descripcion": "Find trusted professionals in your area. Plumbing, electrical work, private tutoring and more. Book, pay and review securely."
+  },
+  "navegacion": {
+    "principal": "Main navigation",
+    "buscarServicios": "Find services",
+    "misReservas": "My bookings",
+    "reservasRecibidas": "Incoming bookings",
+    "mensajes": "Messages",
+    "administracion": "Admin",
+    "miPerfil": "My profile",
+    "iniciarSesion": "Sign in",
+    "registrarse": "Sign up",
+    "salir": "Sign out",
+    "cerrarSesion": "Sign out",
+    "abrirMenu": "Open menu",
+    "cerrarMenu": "Close menu",
+    "menuMovil": "Mobile menu"
+  },
+  "noEncontrado": {
+    "titulo": "Page not found",
+    "texto": "The link you followed doesn't exist, or the content has moved.",
+    "volver": "Back to home"
+  },
+  "paginacion": {
+    "anterior": "Previous page",
+    "navegacion": "Results pagination",
+    "pagina": "Page {numero}",
+    "siguiente": "Next page"
+  },
+  "pago": {
+    "avisoStripe": "Payment processed securely by Stripe. ServiLocal does not store your card details.",
+    "caducada": "The payment session has expired. Creating a new one...",
+    "completado": "Payment complete. Booking confirmed.",
+    "cvcIncorrecto": "The CVC you entered is not correct.",
+    "desconocido": "unknown",
+    "errorCodigo": "The payment could not be started (code {codigo}).",
+    "errorGenerico": "Error processing the payment.",
+    "errorIniciar": "The payment could not be started",
+    "errorTemporal": "Temporary error processing the payment. Please try again.",
+    "fondosInsuficientes": "Insufficient funds on the card.",
+    "formularioCargando": "The payment form is still loading. Please wait a moment.",
+    "importe": "{importe} euros",
+    "noConfirmado": "Payment received but not confirmed. Please contact support.",
+    "noEncontrada": "Booking not found.",
+    "noRegenerar": "The payment session could not be regenerated. Reload the page.",
+    "pagandoReserva": "You are paying for the booking of <servicio>{titulo}</servicio>",
+    "pagar": "Pay {importe} euros",
+    "pagoEnCurso": "This booking already has a payment in progress or completed.",
+    "rechazada": "Your card was declined.",
+    "sinPermiso": "You do not have permission to pay for this booking.",
+    "sinServidor": "The server could not be reached.",
+    "tarjetaCaducada": "Your card has expired.",
+    "titulo": "Confirm payment",
+    "totalPagar": "Total to pay",
+    "verificacion": "Your bank requires additional verification.",
+    "volverDetalle": "Back to the booking details"
+  },
+  "panel": {
+    "accesosRapidos": "Quick links",
+    "buscarServicio": "Find a service",
+    "buscarServicioTexto": "Find professionals near you.",
+    "gestionarServicios": "Manage my services",
+    "gestionarServiciosTexto": "Create, edit or pause your published services.",
+    "hola": "Hello, {nombre}",
+    "misServicios": "My services",
+    "perfil": "Profile",
+    "reservasRecibidasTexto": "Accept, decline or mark jobs as completed.",
+    "resumen": "Overview",
+    "resumenCliente": "Here is a summary of your bookings and reviews.",
+    "resumenProfesional": "Here is a summary of your activity as a professional.",
+    "valoraciones": "Reviews",
+    "verReservas": "See my bookings",
+    "verReservasTexto": "Check the status of your ongoing bookings."
+  },
+  "perfilPanel": {
+    "actualizado": "Profile updated",
+    "biografia": "Bio",
+    "biografiaPlaceholder": "Tell us about yourself...",
+    "codigoPostal": "Postcode",
+    "direccion": "Address",
+    "errorActualizar": "The profile could not be updated",
+    "guardar": "Save changes",
+    "telefono": "Phone",
+    "titulo": "My profile"
+  },
+  "pie": {
+    "enlaces": "Footer links",
+    "acercaDe": "About",
+    "terminos": "Terms",
+    "privacidad": "Privacy",
+    "derechos": "© 2026 ServiLocal. UOC master's thesis."
+  },
+  "reserva": {
+    "continuar": "Continue to payment",
+    "creada": "Booking created. On to the payment.",
+    "descripcionCorta": "Briefly describe the job (at least 10 characters)",
+    "descripcionPlaceholder": "Briefly describe the job, the exact location, any materials needed...",
+    "descripcionTrabajo": "Description of the job",
+    "errorCrear": "The booking could not be created. Please try again.",
+    "fecha": "Date",
+    "fechaObligatoria": "The date is required",
+    "hora": "Time",
+    "horaObligatoria": "The time is required",
+    "precioMaximo": "The maximum price is {max} euros",
+    "precioMinimo": "The minimum price is {min} euros",
+    "precioMinimoEtiqueta": "Agreed price in euros (minimum {min})",
+    "precioPista": "This amount can be adjusted after speaking with the professional.",
+    "precioRango": "Agreed price in euros (between {min} and {max})",
+    "resumen": "Summary",
+    "resumenFecha": "Date: {fecha} at {hora}",
+    "resumenServicio": "Service: {titulo}",
+    "resumenTotal": "Total: {precio} euros",
+    "servicioNoDisponible": "Service unavailable",
+    "titulo": "Book: {servicio}"
+  },
+  "reservasPanel": {
+    "aceptar": "Accept booking",
+    "actualizada": "Booking updated",
+    "cancelar": "Cancel",
+    "completar": "Mark as completed",
+    "confirmar": "Confirm",
+    "descripcion": "Description",
+    "errorActualizar": "The booking could not be updated",
+    "misReservas": "My bookings",
+    "noEncontrada": "Booking not found.",
+    "pagarAhora": "Pay now",
+    "rechazar": "Decline",
+    "reservasRecibidas": "Incoming bookings",
+    "sinReservas": "You have no bookings in this section."
+  },
+  "resultados": {
+    "cargando": "Loading results",
+    "cuenta": "{total, plural, =0 {No results} one {# result found} other {# results found}}",
+    "despertando": "The server is waking up after a period of inactivity. This can take up to a minute.",
+    "errorRed": "The server could not be reached. Try again in a few seconds.",
+    "errorServicio": "Service unavailable. Please try again later.",
+    "errorTimeout": "The server took too long to respond. It may be waking up after a period of inactivity.",
+    "filtros": "Filters",
+    "sinResultados": "No services match the filters you applied.",
+    "sinResultadosPista": "Try widening the search radius or removing a filter.",
+    "titulo": "Search results",
+    "vistaLista": "List",
+    "vistaMapa": "Map"
+  },
+  "serviciosPanel": {
+    "actualizado": "Service updated",
+    "confirmarEliminar": "Delete this service? This cannot be undone.",
+    "creado": "Service created",
+    "editar": "Edit service",
+    "eliminado": "Service deleted",
+    "errorActualizar": "The service could not be updated",
+    "errorCrear": "The service could not be created",
+    "errorEliminar": "It could not be deleted",
+    "nuevo": "New service",
+    "sinServicios": "You have not published any services yet.",
+    "sinServiciosPista": "Create your first service to start receiving bookings.",
+    "titulo": "My services"
+  },
+  "tarjeta": {
+    "precioRango": "{min} to {max} {unidad}",
+    "precioUnico": "{min} {unidad}"
+  },
+  "tema": {
+    "activarClaro": "Switch to light theme",
+    "activarOscuro": "Switch to dark theme"
+  },
+  "validacion": {
+    "confirmaPassword": "Confirm the password",
+    "emailInvalido": "Enter a valid email address",
+    "emailObligatorio": "Email is required",
+    "minimoCaracteres": "At least 8 characters",
+    "obligatorio": "Required",
+    "passwordObligatoria": "Password is required",
+    "passwordsNoCoinciden": "The passwords do not match"
+  },
+  "valoracion": {
+    "valorar": "Rate {estrellas} stars"
+  },
+  "valoracionesPanel": {
+    "comentarioPlaceholder": "Optional comment about the service...",
+    "con": "With {nombre}",
+    "enviada": "Review submitted. Thank you!",
+    "enviadas": "Reviews submitted ({total})",
+    "enviar": "Submit review",
+    "errorEnviar": "The review could not be submitted",
+    "pendientes": "Pending reviews",
+    "selecciona": "Choose a rating",
+    "sinEnviadas": "You have not submitted any reviews yet.",
+    "sinPendientes": "You have no pending reviews.",
+    "tuValoracion": "Your rating"
   }
 }

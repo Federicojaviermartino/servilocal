@@ -12,6 +12,36 @@ async function selectorIdioma(pagina: Page) {
 }
 
 test.describe('Idioma', () => {
+  test('las categorías del catálogo también cambian de idioma', async ({
+    page,
+  }) => {
+    // Los nombres viven en la base de datos en castellano. Si no se
+    // tradujeran, quien navega en alemán vería la interfaz en alemán y
+    // «Fontanería» dentro de cada tarjeta, que es el agujero que esto tapa.
+    // Se mira dentro de las tarjetas: el desplegable de filtros también
+    // lleva el nombre, pero sus <option> cuentan como ocultas y la
+    // comprobación fallaria por el motivo equivocado.
+    const tarjetas = page.locator(
+      'a[href*="/services/"]:not([href*="search"])',
+    );
+
+    // Y solo al distintivo de categoría: los títulos y las descripciones los
+    // escriben los profesionales y siguen en castellano, así que buscar la
+    // palabra en la tarjeta entera daría positivo por otro motivo.
+    const distintivos = tarjetas.locator('span.rounded-full');
+
+    await page.goto('/services/search?q=fontaneria');
+    await expect(tarjetas.first()).toBeVisible();
+    await expect(distintivos.getByText('Fontanería').first()).toBeVisible();
+
+    await page.goto('/de/services/search?q=fontaneria');
+    await expect(tarjetas.first()).toBeVisible();
+    await expect(
+      distintivos.getByText('Sanitärinstallation').first(),
+    ).toBeVisible();
+    await expect(distintivos.getByText('Fontanería')).toHaveCount(0);
+  });
+
   test('sirve el sitio en el idioma del navegador', async ({ browser }) => {
     const contexto = await browser.newContext({ locale: 'en-US' });
     const pagina = await contexto.newPage();

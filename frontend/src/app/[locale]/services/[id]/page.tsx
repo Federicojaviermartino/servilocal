@@ -13,9 +13,11 @@ import Avatar from '@/components/atoms/Avatar';
 import Skeleton from '@/components/atoms/Skeleton';
 import RatingStars from '@/components/molecules/RatingStars';
 import ServiceImage from '@/components/molecules/ServiceImage';
+import { useNombreCategoria } from '@/lib/categorias';
 
 export default function ServiceDetailPage() {
   const t = useTranslations('detalle');
+  const nombreCategoria = useNombreCategoria();
   const tTarjeta = useTranslations('tarjeta');
   const params = useParams();
   const router = useRouter();
@@ -171,7 +173,7 @@ export default function ServiceDetailPage() {
               <div className="p-6">
                 {service.category && (
                   <Badge variant="info" className="mb-3">
-                    {service.category.name}
+                    {nombreCategoria(service.category)}
                   </Badge>
                 )}
                 <h1 className="text-2xl font-bold text-principal">

@@ -10,6 +10,7 @@ import { categoriesApi } from '@/lib/api';
 import { CIUDADES } from '@/lib/ciudades';
 import Input from '../atoms/Input';
 import Button from '../atoms/Button';
+import { useNombreCategoria } from '@/lib/categorias';
 
 interface ServiceFormProps {
   initial?: Partial<Service>;
@@ -25,6 +26,7 @@ export default function ServiceForm({
   isSubmitting,
 }: ServiceFormProps) {
   const t = useTranslations('formularioServicio');
+  const nombreCategoria = useNombreCategoria();
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState({
     title: initial?.title || '',
@@ -102,7 +104,7 @@ export default function ServiceForm({
           <option value="">{t('seleccionaCategoria')}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {nombreCategoria(c)}
             </option>
           ))}
         </select>

@@ -1,135 +1,4 @@
 {
-  "meta": {
-    "titulo": "ServiLocal - Zure inguruko zerbitzuak",
-    "descripcion": "Aurkitu zure inguruko profesional fidagarriak. Iturgintza, elektrizitatea, klase partikularrak eta gehiago. Erreserbatu, ordaindu eta balioetsi seguru."
-  },
-  "comun": {
-    "buscar": "Bilatu",
-    "cancelar": "Utzi",
-    "cargando": "Kargatzen",
-    "ciudad": "Hiria",
-    "descripcionSitio": "Etxeko zerbitzuen merkatua, bezeroak eta inguruko profesionalak lotzen dituena.",
-    "editar": "Editatu",
-    "eliminar": "Ezabatu",
-    "irAlContenido": "Joan eduki nagusira",
-    "reintentar": "Saiatu berriro"
-  },
-  "navegacion": {
-    "principal": "Nabigazio nagusia",
-    "buscarServicios": "Bilatu zerbitzuak",
-    "misReservas": "Nire erreserbak",
-    "reservasRecibidas": "Jasotako erreserbak",
-    "mensajes": "Mezuak",
-    "administracion": "Administrazioa",
-    "miPerfil": "Nire profila",
-    "iniciarSesion": "Hasi saioa",
-    "registrarse": "Erregistratu",
-    "salir": "Irten",
-    "cerrarSesion": "Itxi saioa",
-    "abrirMenu": "Ireki menua",
-    "cerrarMenu": "Itxi menua",
-    "menuMovil": "Mugikorreko menua"
-  },
-  "pie": {
-    "enlaces": "Orri-oineko estekak",
-    "acercaDe": "Guri buruz",
-    "terminos": "Baldintzak",
-    "privacidad": "Pribatutasuna",
-    "derechos": "© 2026 ServiLocal. UOC Master Amaierako Lana."
-  },
-  "tema": {
-    "activarClaro": "Aktibatu gai argia",
-    "activarOscuro": "Aktibatu gai iluna"
-  },
-  "idioma": {
-    "cambiar": "Aldatu hizkuntza"
-  },
-  "buscador": {
-    "queNecesitas": "Zer zerbitzu behar duzu?",
-    "buscarServicios": "Bilatu zerbitzuak"
-  },
-  "inicio": {
-    "heroTitulo": "Profesional fidagarriak, zure ondoan",
-    "heroSubtitulo": "Aurkitu etxeko edozein zerbitzutarako profesional egokia. Benetako balorazioak, aurrekontu gardenak eta berehalako erreserba.",
-    "porQueTitulo": "Zergatik aukeratu ServiLocal?",
-    "cercanosTitulo": "Inguruko profesionalak",
-    "cercanosTexto": "Geolokalizazio bidezko bilaketa zure inguruko profesional onenak aurkitzeko.",
-    "pagosTitulo": "Ordainketa seguruak",
-    "pagosTexto": "Stripe-rekin bateratutako ordainketa plataforma. Zure dirua babestuta dago zerbitzua amaitu arte.",
-    "valoracionesTitulo": "Egiaztatutako balorazioak",
-    "valoracionesTexto": "Zerbitzua osatu duten bezeroek soilik utz dezakete iritzia.",
-    "comoFunciona": "Nola funtzionatzen duen",
-    "paso1Titulo": "Bilatu zerbitzua",
-    "paso1Texto": "Adierazi zer behar duzun eta non. Gure sistemak inguruko eta ondoen baloratutako profesionalak erakusten dizkizu.",
-    "paso2Titulo": "Erreserbatu eta ordaindu",
-    "paso2Texto": "Aukeratu eguna, utzi seinalea eta jaso berrespena berehala.",
-    "paso3Titulo": "Balioetsi zure esperientzia",
-    "paso3Texto": "Zerbitzuaren ondoren, utzi zure iritzia beste erabiltzaileei laguntzeko."
-  },
-  "noEncontrado": {
-    "titulo": "Orria ez da aurkitu",
-    "texto": "Jarraitu duzun esteka ez da existitzen edo edukia lekuz aldatu da.",
-    "volver": "Itzuli hasierara"
-  },
-  "resultados": {
-    "cargando": "Emaitzak kargatzen",
-    "cuenta": "{total, plural, =0 {Emaitzarik ez} one {# emaitza aurkitu da} other {# emaitza aurkitu dira}}",
-    "despertando": "Zerbitzaria esnatzen ari da geldialdi baten ondoren. Minutu bat arte behar dezake.",
-    "errorRed": "Ezin izan da zerbitzariarekin harremanetan jarri. Saiatu berriro segundo batzuk barru.",
-    "errorServicio": "Zerbitzua ez dago erabilgarri. Saiatu berriro geroago.",
-    "errorTimeout": "Zerbitzariak luzeegi behar izan du erantzuteko. Geldialdi baten ondoren esnatzen ari izan daiteke.",
-    "filtros": "Iragazkiak",
-    "sinResultados": "Ez da zerbitzurik aurkitu ezarritako iragazkiekin.",
-    "sinResultadosPista": "Saiatu bilaketa-erradioa zabaltzen edo iragazkiren bat kentzen.",
-    "titulo": "Bilaketaren emaitzak",
-    "vistaLista": "Zerrenda",
-    "vistaMapa": "Mapa"
-  },
-  "filtros": {
-    "aplicar": "Aplikatu iragazkiak",
-    "categoria": "Kategoria",
-    "ciudad": "Hiria",
-    "limpiar": "Garbitu",
-    "precioMaximo": "Gehieneko prezioa (euroak)",
-    "radio": "Bilaketa-erradioa: {km} km",
-    "sinLimite": "Mugarik gabe",
-    "todasCategorias": "Kategoria guztiak",
-    "todasCiudades": "Hiri guztiak",
-    "valoracionMinima": "Gutxieneko balorazioa"
-  },
-  "paginacion": {
-    "anterior": "Aurreko orria",
-    "navegacion": "Emaitzen orrikatzea",
-    "pagina": "{numero}. orria",
-    "siguiente": "Hurrengo orria"
-  },
-  "tarjeta": {
-    "precioRango": "{min} - {max} {unidad}",
-    "precioUnico": "{min} {unidad}"
-  },
-  "valoracion": {
-    "valorar": "Baloratu {estrellas} izarrekin"
-  },
-  "detalle": {
-    "cargando": "Zerbitzua kargatzen",
-    "contactar": "Harremanetan jarri",
-    "descripcion": "Zerbitzuaren deskribapena",
-    "errorRedTexto": "Egiaztatu zure konexioa eta saiatu berriro segundo batzuk barru.",
-    "errorRedTitulo": "Ezin izan da zerbitzariarekin harremanetan jarri",
-    "noDisponibleTexto": "Saiatu berriro geroago.",
-    "noDisponibleTitulo": "Zerbitzua ez dago erabilgarri",
-    "noEncontradoTexto": "Bilatzen ari zaren zerbitzua ez da existitzen edo ezabatu da.",
-    "noEncontradoTitulo": "Zerbitzua ez da aurkitu",
-    "reservar": "Erreserbatu orain",
-    "respuestaProfesional": "Profesionalaren erantzuna",
-    "sinValoraciones": "Zerbitzu honek ez du baloraziorik oraindik.",
-    "sobreProfesional": "Profesionalari buruz",
-    "valoraciones": "Balorazioak ({total})"
-  },
-  "mapa": {
-    "desde": "{precio} {unidad}(e)tik",
-    "verDetalle": "Ikusi xehetasuna"
-  },
   "acceso": {
     "apellidos": "Abizenak",
     "confirmar": "Berretsi pasahitza",
@@ -170,15 +39,6 @@
     "sinCuenta": "Ez duzu konturik?",
     "yaTienesCuenta": "Baduzu konturik?"
   },
-  "validacion": {
-    "confirmaPassword": "Berretsi pasahitza",
-    "emailInvalido": "Sartu baliozko helbide elektroniko bat",
-    "emailObligatorio": "Helbide elektronikoa derrigorrezkoa da",
-    "minimoCaracteres": "Gutxienez 8 karaktere",
-    "obligatorio": "Derrigorrezkoa",
-    "passwordObligatoria": "Pasahitza derrigorrezkoa da",
-    "passwordsNoCoinciden": "Pasahitzak ez datoz bat"
-  },
   "acercaDe": {
     "academicoTexto": "ServiLocal Federico Javier Martinoren Master Amaierako Lana da, Universitat Oberta de Catalunyan. Erakustaldi-fasean dagoen plataforma funtzional bat da: ikusiko dituzun datuak probakoak dira eta ordainketak Striperen proba-ingurunean egiten dira, benetako karguik gabe.",
     "academicoTitulo": "Proiektu akademikoa",
@@ -200,162 +60,6 @@
     "tecnologiaTexto": "Plataforma Next.js eta React-ekin eraikita dago bezeroan, NestJS-eko REST API batekin eta PostgreSQL-ekin, PostGIS luzapena erabiliz hurbiltasun-bilaketetarako. Ordainketak Striperekin prozesatzen dira eta APIaren dokumentazioa OpenAPI-rekin argitaratzen da.",
     "tecnologiaTitulo": "Teknologia",
     "titulo": "ServiLocal-i buruz"
-  },
-  "legal": {
-    "avisoIdioma": "Testu legal hau gaztelaniaz soilik argitaratzen da, eta gaztelaniazko bertsioa da nagusi."
-  },
-  "reserva": {
-    "continuar": "Jarraitu ordainketara",
-    "creada": "Erreserba sortuta. Goazen ordainketara.",
-    "descripcionCorta": "Deskribatu labur lana (gutxienez 10 karaktere)",
-    "descripcionPlaceholder": "Deskribatu labur egin beharreko lana, kokapen zehatza, beharrezko materialak...",
-    "descripcionTrabajo": "Lanaren deskribapena",
-    "errorCrear": "Ezin izan da erreserba sortu. Saiatu berriro.",
-    "fecha": "Data",
-    "fechaObligatoria": "Data derrigorrezkoa da",
-    "hora": "Ordua",
-    "horaObligatoria": "Ordua derrigorrezkoa da",
-    "precioMaximo": "Gehieneko prezioa {max} euro da",
-    "precioMinimo": "Gutxieneko prezioa {min} euro da",
-    "precioMinimoEtiqueta": "Adostutako prezioa eurotan (gutxienez {min})",
-    "precioPista": "Zenbateko hau doitu daiteke profesionalarekin hitz egin ondoren.",
-    "precioRango": "Adostutako prezioa eurotan ({min} eta {max} artean)",
-    "resumen": "Laburpena",
-    "resumenFecha": "Data: {fecha}, {hora}",
-    "resumenServicio": "Zerbitzua: {titulo}",
-    "resumenTotal": "Guztira: {precio} euro",
-    "servicioNoDisponible": "Zerbitzua ez dago erabilgarri",
-    "titulo": "Erreserbatu: {servicio}"
-  },
-  "pago": {
-    "avisoStripe": "Ordainketa Stripek prozesatzen du modu seguruan. ServiLocal-ek ez ditu zure txartelaren datuak gordetzen.",
-    "caducada": "Ordainketa-saioa iraungi da. Berri bat sortzen...",
-    "completado": "Ordainketa osatuta. Erreserba berretsita.",
-    "cvcIncorrecto": "Sartutako CVCa ez da zuzena.",
-    "desconocido": "ezezaguna",
-    "errorCodigo": "Ezin izan da ordainketa hasi ({codigo} kodea).",
-    "errorGenerico": "Errorea ordainketa prozesatzean.",
-    "errorIniciar": "Ezin izan da ordainketa hasi",
-    "errorTemporal": "Aldi baterako errorea ordainketa prozesatzean. Saiatu berriro.",
-    "fondosInsuficientes": "Txartelean funts nahikorik ez.",
-    "formularioCargando": "Ordainketa-formularioa kargatzen ari da oraindik. Itxaron une bat.",
-    "importe": "{importe} euro",
-    "noConfirmado": "Ordainketa jaso da baina ez da berretsi. Jarri harremanetan laguntzarekin.",
-    "noEncontrada": "Ez da erreserba aurkitu.",
-    "noRegenerar": "Ezin izan da ordainketa-saioa birsortu. Kargatu orria berriro.",
-    "pagandoReserva": "<servicio>{titulo}</servicio> zerbitzuaren erreserba ordaintzen ari zara",
-    "pagar": "Ordaindu {importe} euro",
-    "pagoEnCurso": "Erreserba honek jada baditu ordainketa bat abian edo osatuta.",
-    "rechazada": "Zure txartela ukatu da.",
-    "sinPermiso": "Ez duzu erreserba hau ordaintzeko baimenik.",
-    "sinServidor": "Ezin izan da zerbitzariarekin harremanetan jarri.",
-    "tarjetaCaducada": "Zure txartela iraungi da.",
-    "titulo": "Berretsi ordainketa",
-    "totalPagar": "Ordaindu beharrekoa",
-    "verificacion": "Zure bankuak egiaztapen gehigarria eskatzen du.",
-    "volverDetalle": "Itzuli erreserbaren xehetasunetara"
-  },
-  "panel": {
-    "accesosRapidos": "Sarbide azkarrak",
-    "buscarServicio": "Bilatu zerbitzu bat",
-    "buscarServicioTexto": "Aurkitu zure inguruko profesionalak.",
-    "gestionarServicios": "Kudeatu nire zerbitzuak",
-    "gestionarServiciosTexto": "Sortu, editatu edo eten zure zerbitzu argitaratuak.",
-    "hola": "Kaixo, {nombre}",
-    "misServicios": "Nire zerbitzuak",
-    "perfil": "Profila",
-    "reservasRecibidasTexto": "Onartu, baztertu edo markatu lanak osatutzat.",
-    "resumen": "Laburpena",
-    "resumenCliente": "Hona hemen zure erreserben eta balorazioen laburpena.",
-    "resumenProfesional": "Hona hemen profesional gisa duzun jardueraren laburpena.",
-    "valoraciones": "Balorazioak",
-    "verReservas": "Ikusi nire erreserbak",
-    "verReservasTexto": "Begiratu abian dituzun erreserben egoera."
-  },
-  "estados": {
-    "activo": "Aktibo",
-    "cancelada": "Bertan behera",
-    "completada": "Osatuta",
-    "completadas": "Osatuak",
-    "confirmada": "Berretsita",
-    "confirmadas": "Berretsiak",
-    "pausado": "Etenda",
-    "pendiente": "Zain",
-    "pendientes": "Zain",
-    "rechazada": "Ukatuta",
-    "todas": "Guztiak"
-  },
-  "reservasPanel": {
-    "aceptar": "Onartu erreserba",
-    "actualizada": "Erreserba eguneratuta",
-    "cancelar": "Bertan behera utzi",
-    "completar": "Markatu osatutzat",
-    "confirmar": "Berretsi",
-    "descripcion": "Deskribapena",
-    "errorActualizar": "Ezin izan da erreserba eguneratu",
-    "misReservas": "Nire erreserbak",
-    "noEncontrada": "Ez da erreserba aurkitu.",
-    "pagarAhora": "Ordaindu orain",
-    "rechazar": "Baztertu",
-    "reservasRecibidas": "Jasotako erreserbak",
-    "sinReservas": "Ez duzu erreserbarik atal honetan."
-  },
-  "perfilPanel": {
-    "actualizado": "Profila eguneratuta",
-    "biografia": "Biografia",
-    "biografiaPlaceholder": "Kontaguzu zure berri...",
-    "codigoPostal": "Posta-kodea",
-    "direccion": "Helbidea",
-    "errorActualizar": "Ezin izan da profila eguneratu",
-    "guardar": "Gorde aldaketak",
-    "telefono": "Telefonoa",
-    "titulo": "Nire profila"
-  },
-  "valoracionesPanel": {
-    "comentarioPlaceholder": "Zerbitzuari buruzko iruzkin aukerakoa...",
-    "con": "{nombre}(r)ekin",
-    "enviada": "Balorazioa bidalita. Eskerrik asko!",
-    "enviadas": "Bidalitako balorazioak ({total})",
-    "enviar": "Bidali balorazioa",
-    "errorEnviar": "Ezin izan da balorazioa bidali",
-    "pendientes": "Balorazio pendienteak",
-    "selecciona": "Aukeratu balorazio bat",
-    "sinEnviadas": "Oraindik ez duzu baloraziorik bidali.",
-    "sinPendientes": "Ez duzu balorazio pendienterik.",
-    "tuValoracion": "Zure balorazioa"
-  },
-  "serviciosPanel": {
-    "actualizado": "Zerbitzua eguneratuta",
-    "confirmarEliminar": "Zerbitzu hau ezabatu nahi duzu? Ezin izango da desegin.",
-    "creado": "Zerbitzua sortuta",
-    "editar": "Editatu zerbitzua",
-    "eliminado": "Zerbitzua ezabatuta",
-    "errorActualizar": "Ezin izan da zerbitzua eguneratu",
-    "errorCrear": "Ezin izan da zerbitzua sortu",
-    "errorEliminar": "Ezin izan da ezabatu",
-    "nuevo": "Zerbitzu berria",
-    "sinServicios": "Oraindik ez duzu zerbitzurik argitaratu.",
-    "sinServiciosPista": "Sortu zure lehen zerbitzua erreserbak jasotzen hasteko.",
-    "titulo": "Nire zerbitzuak"
-  },
-  "formularioServicio": {
-    "categoria": "Kategoria",
-    "descripcion": "Deskribapena",
-    "direccion": "Erreferentziazko helbidea",
-    "precioMaximo": "Gehieneko prezioa (aukerakoa)",
-    "precioMinimo": "Gutxieneko prezioa (euroak)",
-    "radio": "Estaldura-erradioa (km)",
-    "seleccionaCategoria": "Aukeratu kategoria bat",
-    "seleccionaCiudad": "Aukeratu hiri bat",
-    "titulo": "Zerbitzuaren izenburua"
-  },
-  "mensajesPanel": {
-    "enviar": "Bidali",
-    "escribePlaceholder": "Idatzi mezu bat...",
-    "sinConversaciones": "Ez duzu elkarrizketarik.",
-    "sinConversacionesPista": "Elkarrizketak profesional batekin harremanetan jartzean sortzen dira, zerbitzu edo erreserba batetik.",
-    "sinMensajes": "Ez dago mezurik elkarrizketa honetan oraindik.",
-    "titulo": "Mezuak"
   },
   "administracion": {
     "accion": "Ekintza",
@@ -478,5 +182,313 @@
     "titulo": "Esaiguzu zer behar duzun",
     "todaEspana": "Espainia osoan",
     "verTodos": "Ikusi emaitza guztiak"
+  },
+  "buscador": {
+    "queNecesitas": "Zer zerbitzu behar duzu?",
+    "buscarServicios": "Bilatu zerbitzuak"
+  },
+  "categorias": {
+    "cerrajeria": "Sarrailagintza",
+    "clases-particulares": "Eskola partikularrak",
+    "diseno-grafico": "Diseinu grafikoa",
+    "electricidad": "Elektrizitatea",
+    "fontaneria": "Iturgintza",
+    "jardineria": "Lorezaintza",
+    "limpieza": "Garbiketa",
+    "mudanzas": "Etxe aldaketak",
+    "pintura": "Pintura",
+    "reformas": "Erreformak"
+  },
+  "comun": {
+    "buscar": "Bilatu",
+    "cancelar": "Utzi",
+    "cargando": "Kargatzen",
+    "ciudad": "Hiria",
+    "descripcionSitio": "Etxeko zerbitzuen merkatua, bezeroak eta inguruko profesionalak lotzen dituena.",
+    "editar": "Editatu",
+    "eliminar": "Ezabatu",
+    "irAlContenido": "Joan eduki nagusira",
+    "reintentar": "Saiatu berriro"
+  },
+  "detalle": {
+    "cargando": "Zerbitzua kargatzen",
+    "contactar": "Harremanetan jarri",
+    "descripcion": "Zerbitzuaren deskribapena",
+    "errorRedTexto": "Egiaztatu zure konexioa eta saiatu berriro segundo batzuk barru.",
+    "errorRedTitulo": "Ezin izan da zerbitzariarekin harremanetan jarri",
+    "noDisponibleTexto": "Saiatu berriro geroago.",
+    "noDisponibleTitulo": "Zerbitzua ez dago erabilgarri",
+    "noEncontradoTexto": "Bilatzen ari zaren zerbitzua ez da existitzen edo ezabatu da.",
+    "noEncontradoTitulo": "Zerbitzua ez da aurkitu",
+    "reservar": "Erreserbatu orain",
+    "respuestaProfesional": "Profesionalaren erantzuna",
+    "sinValoraciones": "Zerbitzu honek ez du baloraziorik oraindik.",
+    "sobreProfesional": "Profesionalari buruz",
+    "valoraciones": "Balorazioak ({total})"
+  },
+  "estados": {
+    "activo": "Aktibo",
+    "cancelada": "Bertan behera",
+    "completada": "Osatuta",
+    "completadas": "Osatuak",
+    "confirmada": "Berretsita",
+    "confirmadas": "Berretsiak",
+    "pausado": "Etenda",
+    "pendiente": "Zain",
+    "pendientes": "Zain",
+    "rechazada": "Ukatuta",
+    "todas": "Guztiak"
+  },
+  "filtros": {
+    "aplicar": "Aplikatu iragazkiak",
+    "categoria": "Kategoria",
+    "ciudad": "Hiria",
+    "limpiar": "Garbitu",
+    "precioMaximo": "Gehieneko prezioa (euroak)",
+    "radio": "Bilaketa-erradioa: {km} km",
+    "sinLimite": "Mugarik gabe",
+    "todasCategorias": "Kategoria guztiak",
+    "todasCiudades": "Hiri guztiak",
+    "valoracionMinima": "Gutxieneko balorazioa"
+  },
+  "formularioServicio": {
+    "categoria": "Kategoria",
+    "descripcion": "Deskribapena",
+    "direccion": "Erreferentziazko helbidea",
+    "precioMaximo": "Gehieneko prezioa (aukerakoa)",
+    "precioMinimo": "Gutxieneko prezioa (euroak)",
+    "radio": "Estaldura-erradioa (km)",
+    "seleccionaCategoria": "Aukeratu kategoria bat",
+    "seleccionaCiudad": "Aukeratu hiri bat",
+    "titulo": "Zerbitzuaren izenburua"
+  },
+  "idioma": {
+    "cambiar": "Aldatu hizkuntza"
+  },
+  "inicio": {
+    "heroTitulo": "Profesional fidagarriak, zure ondoan",
+    "heroSubtitulo": "Aurkitu etxeko edozein zerbitzutarako profesional egokia. Benetako balorazioak, aurrekontu gardenak eta berehalako erreserba.",
+    "porQueTitulo": "Zergatik aukeratu ServiLocal?",
+    "cercanosTitulo": "Inguruko profesionalak",
+    "cercanosTexto": "Geolokalizazio bidezko bilaketa zure inguruko profesional onenak aurkitzeko.",
+    "pagosTitulo": "Ordainketa seguruak",
+    "pagosTexto": "Stripe-rekin bateratutako ordainketa plataforma. Zure dirua babestuta dago zerbitzua amaitu arte.",
+    "valoracionesTitulo": "Egiaztatutako balorazioak",
+    "valoracionesTexto": "Zerbitzua osatu duten bezeroek soilik utz dezakete iritzia.",
+    "comoFunciona": "Nola funtzionatzen duen",
+    "paso1Titulo": "Bilatu zerbitzua",
+    "paso1Texto": "Adierazi zer behar duzun eta non. Gure sistemak inguruko eta ondoen baloratutako profesionalak erakusten dizkizu.",
+    "paso2Titulo": "Erreserbatu eta ordaindu",
+    "paso2Texto": "Aukeratu eguna, utzi seinalea eta jaso berrespena berehala.",
+    "paso3Titulo": "Balioetsi zure esperientzia",
+    "paso3Texto": "Zerbitzuaren ondoren, utzi zure iritzia beste erabiltzaileei laguntzeko."
+  },
+  "legal": {
+    "avisoIdioma": "Testu legal hau gaztelaniaz soilik argitaratzen da, eta gaztelaniazko bertsioa da nagusi."
+  },
+  "mapa": {
+    "desde": "{precio} {unidad}(e)tik",
+    "verDetalle": "Ikusi xehetasuna"
+  },
+  "mensajesPanel": {
+    "enviar": "Bidali",
+    "escribePlaceholder": "Idatzi mezu bat...",
+    "sinConversaciones": "Ez duzu elkarrizketarik.",
+    "sinConversacionesPista": "Elkarrizketak profesional batekin harremanetan jartzean sortzen dira, zerbitzu edo erreserba batetik.",
+    "sinMensajes": "Ez dago mezurik elkarrizketa honetan oraindik.",
+    "titulo": "Mezuak"
+  },
+  "meta": {
+    "titulo": "ServiLocal - Zure inguruko zerbitzuak",
+    "descripcion": "Aurkitu zure inguruko profesional fidagarriak. Iturgintza, elektrizitatea, klase partikularrak eta gehiago. Erreserbatu, ordaindu eta balioetsi seguru."
+  },
+  "navegacion": {
+    "principal": "Nabigazio nagusia",
+    "buscarServicios": "Bilatu zerbitzuak",
+    "misReservas": "Nire erreserbak",
+    "reservasRecibidas": "Jasotako erreserbak",
+    "mensajes": "Mezuak",
+    "administracion": "Administrazioa",
+    "miPerfil": "Nire profila",
+    "iniciarSesion": "Hasi saioa",
+    "registrarse": "Erregistratu",
+    "salir": "Irten",
+    "cerrarSesion": "Itxi saioa",
+    "abrirMenu": "Ireki menua",
+    "cerrarMenu": "Itxi menua",
+    "menuMovil": "Mugikorreko menua"
+  },
+  "noEncontrado": {
+    "titulo": "Orria ez da aurkitu",
+    "texto": "Jarraitu duzun esteka ez da existitzen edo edukia lekuz aldatu da.",
+    "volver": "Itzuli hasierara"
+  },
+  "paginacion": {
+    "anterior": "Aurreko orria",
+    "navegacion": "Emaitzen orrikatzea",
+    "pagina": "{numero}. orria",
+    "siguiente": "Hurrengo orria"
+  },
+  "pago": {
+    "avisoStripe": "Ordainketa Stripek prozesatzen du modu seguruan. ServiLocal-ek ez ditu zure txartelaren datuak gordetzen.",
+    "caducada": "Ordainketa-saioa iraungi da. Berri bat sortzen...",
+    "completado": "Ordainketa osatuta. Erreserba berretsita.",
+    "cvcIncorrecto": "Sartutako CVCa ez da zuzena.",
+    "desconocido": "ezezaguna",
+    "errorCodigo": "Ezin izan da ordainketa hasi ({codigo} kodea).",
+    "errorGenerico": "Errorea ordainketa prozesatzean.",
+    "errorIniciar": "Ezin izan da ordainketa hasi",
+    "errorTemporal": "Aldi baterako errorea ordainketa prozesatzean. Saiatu berriro.",
+    "fondosInsuficientes": "Txartelean funts nahikorik ez.",
+    "formularioCargando": "Ordainketa-formularioa kargatzen ari da oraindik. Itxaron une bat.",
+    "importe": "{importe} euro",
+    "noConfirmado": "Ordainketa jaso da baina ez da berretsi. Jarri harremanetan laguntzarekin.",
+    "noEncontrada": "Ez da erreserba aurkitu.",
+    "noRegenerar": "Ezin izan da ordainketa-saioa birsortu. Kargatu orria berriro.",
+    "pagandoReserva": "<servicio>{titulo}</servicio> zerbitzuaren erreserba ordaintzen ari zara",
+    "pagar": "Ordaindu {importe} euro",
+    "pagoEnCurso": "Erreserba honek jada baditu ordainketa bat abian edo osatuta.",
+    "rechazada": "Zure txartela ukatu da.",
+    "sinPermiso": "Ez duzu erreserba hau ordaintzeko baimenik.",
+    "sinServidor": "Ezin izan da zerbitzariarekin harremanetan jarri.",
+    "tarjetaCaducada": "Zure txartela iraungi da.",
+    "titulo": "Berretsi ordainketa",
+    "totalPagar": "Ordaindu beharrekoa",
+    "verificacion": "Zure bankuak egiaztapen gehigarria eskatzen du.",
+    "volverDetalle": "Itzuli erreserbaren xehetasunetara"
+  },
+  "panel": {
+    "accesosRapidos": "Sarbide azkarrak",
+    "buscarServicio": "Bilatu zerbitzu bat",
+    "buscarServicioTexto": "Aurkitu zure inguruko profesionalak.",
+    "gestionarServicios": "Kudeatu nire zerbitzuak",
+    "gestionarServiciosTexto": "Sortu, editatu edo eten zure zerbitzu argitaratuak.",
+    "hola": "Kaixo, {nombre}",
+    "misServicios": "Nire zerbitzuak",
+    "perfil": "Profila",
+    "reservasRecibidasTexto": "Onartu, baztertu edo markatu lanak osatutzat.",
+    "resumen": "Laburpena",
+    "resumenCliente": "Hona hemen zure erreserben eta balorazioen laburpena.",
+    "resumenProfesional": "Hona hemen profesional gisa duzun jardueraren laburpena.",
+    "valoraciones": "Balorazioak",
+    "verReservas": "Ikusi nire erreserbak",
+    "verReservasTexto": "Begiratu abian dituzun erreserben egoera."
+  },
+  "perfilPanel": {
+    "actualizado": "Profila eguneratuta",
+    "biografia": "Biografia",
+    "biografiaPlaceholder": "Kontaguzu zure berri...",
+    "codigoPostal": "Posta-kodea",
+    "direccion": "Helbidea",
+    "errorActualizar": "Ezin izan da profila eguneratu",
+    "guardar": "Gorde aldaketak",
+    "telefono": "Telefonoa",
+    "titulo": "Nire profila"
+  },
+  "pie": {
+    "enlaces": "Orri-oineko estekak",
+    "acercaDe": "Guri buruz",
+    "terminos": "Baldintzak",
+    "privacidad": "Pribatutasuna",
+    "derechos": "© 2026 ServiLocal. UOC Master Amaierako Lana."
+  },
+  "reserva": {
+    "continuar": "Jarraitu ordainketara",
+    "creada": "Erreserba sortuta. Goazen ordainketara.",
+    "descripcionCorta": "Deskribatu labur lana (gutxienez 10 karaktere)",
+    "descripcionPlaceholder": "Deskribatu labur egin beharreko lana, kokapen zehatza, beharrezko materialak...",
+    "descripcionTrabajo": "Lanaren deskribapena",
+    "errorCrear": "Ezin izan da erreserba sortu. Saiatu berriro.",
+    "fecha": "Data",
+    "fechaObligatoria": "Data derrigorrezkoa da",
+    "hora": "Ordua",
+    "horaObligatoria": "Ordua derrigorrezkoa da",
+    "precioMaximo": "Gehieneko prezioa {max} euro da",
+    "precioMinimo": "Gutxieneko prezioa {min} euro da",
+    "precioMinimoEtiqueta": "Adostutako prezioa eurotan (gutxienez {min})",
+    "precioPista": "Zenbateko hau doitu daiteke profesionalarekin hitz egin ondoren.",
+    "precioRango": "Adostutako prezioa eurotan ({min} eta {max} artean)",
+    "resumen": "Laburpena",
+    "resumenFecha": "Data: {fecha}, {hora}",
+    "resumenServicio": "Zerbitzua: {titulo}",
+    "resumenTotal": "Guztira: {precio} euro",
+    "servicioNoDisponible": "Zerbitzua ez dago erabilgarri",
+    "titulo": "Erreserbatu: {servicio}"
+  },
+  "reservasPanel": {
+    "aceptar": "Onartu erreserba",
+    "actualizada": "Erreserba eguneratuta",
+    "cancelar": "Bertan behera utzi",
+    "completar": "Markatu osatutzat",
+    "confirmar": "Berretsi",
+    "descripcion": "Deskribapena",
+    "errorActualizar": "Ezin izan da erreserba eguneratu",
+    "misReservas": "Nire erreserbak",
+    "noEncontrada": "Ez da erreserba aurkitu.",
+    "pagarAhora": "Ordaindu orain",
+    "rechazar": "Baztertu",
+    "reservasRecibidas": "Jasotako erreserbak",
+    "sinReservas": "Ez duzu erreserbarik atal honetan."
+  },
+  "resultados": {
+    "cargando": "Emaitzak kargatzen",
+    "cuenta": "{total, plural, =0 {Emaitzarik ez} one {# emaitza aurkitu da} other {# emaitza aurkitu dira}}",
+    "despertando": "Zerbitzaria esnatzen ari da geldialdi baten ondoren. Minutu bat arte behar dezake.",
+    "errorRed": "Ezin izan da zerbitzariarekin harremanetan jarri. Saiatu berriro segundo batzuk barru.",
+    "errorServicio": "Zerbitzua ez dago erabilgarri. Saiatu berriro geroago.",
+    "errorTimeout": "Zerbitzariak luzeegi behar izan du erantzuteko. Geldialdi baten ondoren esnatzen ari izan daiteke.",
+    "filtros": "Iragazkiak",
+    "sinResultados": "Ez da zerbitzurik aurkitu ezarritako iragazkiekin.",
+    "sinResultadosPista": "Saiatu bilaketa-erradioa zabaltzen edo iragazkiren bat kentzen.",
+    "titulo": "Bilaketaren emaitzak",
+    "vistaLista": "Zerrenda",
+    "vistaMapa": "Mapa"
+  },
+  "serviciosPanel": {
+    "actualizado": "Zerbitzua eguneratuta",
+    "confirmarEliminar": "Zerbitzu hau ezabatu nahi duzu? Ezin izango da desegin.",
+    "creado": "Zerbitzua sortuta",
+    "editar": "Editatu zerbitzua",
+    "eliminado": "Zerbitzua ezabatuta",
+    "errorActualizar": "Ezin izan da zerbitzua eguneratu",
+    "errorCrear": "Ezin izan da zerbitzua sortu",
+    "errorEliminar": "Ezin izan da ezabatu",
+    "nuevo": "Zerbitzu berria",
+    "sinServicios": "Oraindik ez duzu zerbitzurik argitaratu.",
+    "sinServiciosPista": "Sortu zure lehen zerbitzua erreserbak jasotzen hasteko.",
+    "titulo": "Nire zerbitzuak"
+  },
+  "tarjeta": {
+    "precioRango": "{min} - {max} {unidad}",
+    "precioUnico": "{min} {unidad}"
+  },
+  "tema": {
+    "activarClaro": "Aktibatu gai argia",
+    "activarOscuro": "Aktibatu gai iluna"
+  },
+  "validacion": {
+    "confirmaPassword": "Berretsi pasahitza",
+    "emailInvalido": "Sartu baliozko helbide elektroniko bat",
+    "emailObligatorio": "Helbide elektronikoa derrigorrezkoa da",
+    "minimoCaracteres": "Gutxienez 8 karaktere",
+    "obligatorio": "Derrigorrezkoa",
+    "passwordObligatoria": "Pasahitza derrigorrezkoa da",
+    "passwordsNoCoinciden": "Pasahitzak ez datoz bat"
+  },
+  "valoracion": {
+    "valorar": "Baloratu {estrellas} izarrekin"
+  },
+  "valoracionesPanel": {
+    "comentarioPlaceholder": "Zerbitzuari buruzko iruzkin aukerakoa...",
+    "con": "{nombre}(r)ekin",
+    "enviada": "Balorazioa bidalita. Eskerrik asko!",
+    "enviadas": "Bidalitako balorazioak ({total})",
+    "enviar": "Bidali balorazioa",
+    "errorEnviar": "Ezin izan da balorazioa bidali",
+    "pendientes": "Balorazio pendienteak",
+    "selecciona": "Aukeratu balorazio bat",
+    "sinEnviadas": "Oraindik ez duzu baloraziorik bidali.",
+    "sinPendientes": "Ez duzu balorazio pendienterik.",
+    "tuValoracion": "Zure balorazioa"
   }
 }

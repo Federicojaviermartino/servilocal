@@ -59,7 +59,12 @@ export const ConResultados: Historia = {
     mensaje: 'Se me ha roto el grifo de la cocina',
     respuesta: {
       modo: 'ia',
-      criterios: { categoria: 'Fontanería', ciudad: 'Madrid', texto: null },
+      criterios: {
+        categoria: 'Fontanería',
+        categoriaSlug: 'fontaneria',
+        ciudad: 'Madrid',
+        texto: null,
+      },
       servicios: FONTANEROS,
       total: FONTANEROS.length,
     },
@@ -75,7 +80,12 @@ export const CiudadRelajada: Historia = {
     mensaje: 'Un electricista en Soria',
     respuesta: {
       modo: 'ia',
-      criterios: { categoria: 'Electricidad', ciudad: null, texto: null },
+      criterios: {
+        categoria: 'Electricidad',
+        categoriaSlug: 'electricidad',
+        ciudad: null,
+        texto: null,
+      },
       servicios: [SERVICIO_EJEMPLO],
       total: 1,
     },
@@ -90,7 +100,12 @@ export const ModoBasico: Historia = {
     mensaje: 'un fontanero',
     respuesta: {
       modo: 'basico',
-      criterios: { categoria: 'Fontanería', ciudad: null, texto: null },
+      criterios: {
+        categoria: 'Fontanería',
+        categoriaSlug: 'fontaneria',
+        ciudad: null,
+        texto: null,
+      },
       servicios: [SERVICIO_EJEMPLO],
       total: 1,
     },
@@ -103,7 +118,12 @@ export const SinResultados: Historia = {
     mensaje: 'necesito un domador de leones',
     respuesta: {
       modo: 'ia',
-      criterios: { categoria: null, ciudad: null, texto: 'domador leones' },
+      criterios: {
+        categoria: null,
+        categoriaSlug: null,
+        ciudad: null,
+        texto: 'domador leones',
+      },
       servicios: [],
       total: 0,
     },

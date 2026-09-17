@@ -10,6 +10,7 @@ import { categoriesApi } from '@/lib/api';
 import { CIUDADES } from '@/lib/ciudades';
 import Button from '../atoms/Button';
 import RatingStars from '../molecules/RatingStars';
+import { useNombreCategoria } from '@/lib/categorias';
 
 interface FilterPanelProps {
   initial?: ServiceSearchParams;
@@ -21,6 +22,7 @@ export default function FilterPanel({
   onApply,
 }: FilterPanelProps) {
   const t = useTranslations('filtros');
+  const nombreCategoria = useNombreCategoria();
   const tResultados = useTranslations('resultados');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryId, setCategoryId] = useState(initial.categoryId || '');
@@ -83,7 +85,7 @@ export default function FilterPanel({
           <option value="">{t('todasCategorias')}</option>
           {categories.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {nombreCategoria(c)}
             </option>
           ))}
         </select>

@@ -1,135 +1,4 @@
 {
-  "meta": {
-    "titulo": "ServiLocal - Lokale Dienstleistungen in Ihrer Nähe",
-    "descripcion": "Finden Sie vertrauenswürdige Fachleute in Ihrer Nähe. Sanitär, Elektrik, Nachhilfe und mehr. Sicher buchen, bezahlen und bewerten."
-  },
-  "comun": {
-    "buscar": "Suchen",
-    "cancelar": "Abbrechen",
-    "cargando": "Wird geladen",
-    "ciudad": "Stadt",
-    "descripcionSitio": "Marktplatz für Haushaltsdienstleistungen, der Kunden mit Fachleuten aus ihrer Umgebung verbindet.",
-    "editar": "Bearbeiten",
-    "eliminar": "Löschen",
-    "irAlContenido": "Zum Hauptinhalt springen",
-    "reintentar": "Erneut versuchen"
-  },
-  "navegacion": {
-    "principal": "Hauptnavigation",
-    "buscarServicios": "Dienstleistungen suchen",
-    "misReservas": "Meine Buchungen",
-    "reservasRecibidas": "Erhaltene Buchungen",
-    "mensajes": "Nachrichten",
-    "administracion": "Verwaltung",
-    "miPerfil": "Mein Profil",
-    "iniciarSesion": "Anmelden",
-    "registrarse": "Registrieren",
-    "salir": "Abmelden",
-    "cerrarSesion": "Abmelden",
-    "abrirMenu": "Menü öffnen",
-    "cerrarMenu": "Menü schließen",
-    "menuMovil": "Mobiles Menü"
-  },
-  "pie": {
-    "enlaces": "Links in der Fußzeile",
-    "acercaDe": "Über uns",
-    "terminos": "Nutzungsbedingungen",
-    "privacidad": "Datenschutz",
-    "derechos": "© 2026 ServiLocal. UOC-Masterarbeit."
-  },
-  "tema": {
-    "activarClaro": "Helles Design aktivieren",
-    "activarOscuro": "Dunkles Design aktivieren"
-  },
-  "idioma": {
-    "cambiar": "Sprache wechseln"
-  },
-  "buscador": {
-    "queNecesitas": "Welche Dienstleistung brauchen Sie?",
-    "buscarServicios": "Dienstleistungen suchen"
-  },
-  "inicio": {
-    "heroTitulo": "Vertrauenswürdige Fachleute in Ihrer Nähe",
-    "heroSubtitulo": "Finden Sie die passende Fachkraft für jede Dienstleistung rund ums Haus. Echte Bewertungen, transparente Angebote und sofortige Buchung.",
-    "porQueTitulo": "Warum ServiLocal?",
-    "cercanosTitulo": "Fachleute in der Nähe",
-    "cercanosTexto": "Suche per Standort, um die besten Fachleute in Ihrer Umgebung zu finden.",
-    "pagosTitulo": "Sichere Zahlungen",
-    "pagosTexto": "Zahlungsabwicklung über Stripe. Ihr Geld ist geschützt, bis die Leistung erbracht ist.",
-    "valoracionesTitulo": "Geprüfte Bewertungen",
-    "valoracionesTexto": "Nur Kundinnen und Kunden, die eine Leistung abgeschlossen haben, können bewerten.",
-    "comoFunciona": "So funktioniert es",
-    "paso1Titulo": "Dienstleistung suchen",
-    "paso1Texto": "Sagen Sie uns, was Sie brauchen und wo. Wir zeigen Ihnen die nächstgelegenen und bestbewerteten Fachleute.",
-    "paso2Titulo": "Buchen und bezahlen",
-    "paso2Texto": "Datum wählen, Anzahlung leisten und sofort die Bestätigung erhalten.",
-    "paso3Titulo": "Bewerten Sie Ihre Erfahrung",
-    "paso3Texto": "Hinterlassen Sie nach der Leistung eine Bewertung, um anderen zu helfen."
-  },
-  "noEncontrado": {
-    "titulo": "Seite nicht gefunden",
-    "texto": "Der Link, dem Sie gefolgt sind, existiert nicht oder der Inhalt wurde verschoben.",
-    "volver": "Zurück zur Startseite"
-  },
-  "resultados": {
-    "cargando": "Ergebnisse werden geladen",
-    "cuenta": "{total, plural, =0 {Keine Ergebnisse} one {# Ergebnis gefunden} other {# Ergebnisse gefunden}}",
-    "despertando": "Der Server wacht nach einer Ruhephase auf. Das kann bis zu einer Minute dauern.",
-    "errorRed": "Der Server war nicht erreichbar. Versuchen Sie es in ein paar Sekunden erneut.",
-    "errorServicio": "Dienst nicht verfügbar. Bitte versuchen Sie es später erneut.",
-    "errorTimeout": "Der Server hat zu lange gebraucht. Möglicherweise wacht er gerade nach einer Ruhephase auf.",
-    "filtros": "Filter",
-    "sinResultados": "Mit den gesetzten Filtern wurden keine Dienstleistungen gefunden.",
-    "sinResultadosPista": "Vergrößern Sie den Suchradius oder entfernen Sie einen Filter.",
-    "titulo": "Suchergebnisse",
-    "vistaLista": "Liste",
-    "vistaMapa": "Karte"
-  },
-  "filtros": {
-    "aplicar": "Filter anwenden",
-    "categoria": "Kategorie",
-    "ciudad": "Stadt",
-    "limpiar": "Zurücksetzen",
-    "precioMaximo": "Höchstpreis (Euro)",
-    "radio": "Suchradius: {km} km",
-    "sinLimite": "Ohne Limit",
-    "todasCategorias": "Alle Kategorien",
-    "todasCiudades": "Alle Städte",
-    "valoracionMinima": "Mindestbewertung"
-  },
-  "paginacion": {
-    "anterior": "Vorherige Seite",
-    "navegacion": "Seitennavigation der Ergebnisse",
-    "pagina": "Seite {numero}",
-    "siguiente": "Nächste Seite"
-  },
-  "tarjeta": {
-    "precioRango": "{min} bis {max} {unidad}",
-    "precioUnico": "{min} {unidad}"
-  },
-  "valoracion": {
-    "valorar": "Mit {estrellas} Sternen bewerten"
-  },
-  "detalle": {
-    "cargando": "Dienstleistung wird geladen",
-    "contactar": "Kontaktieren",
-    "descripcion": "Beschreibung der Dienstleistung",
-    "errorRedTexto": "Prüfen Sie Ihre Verbindung und versuchen Sie es in ein paar Sekunden erneut.",
-    "errorRedTitulo": "Der Server war nicht erreichbar",
-    "noDisponibleTexto": "Bitte versuchen Sie es später erneut.",
-    "noDisponibleTitulo": "Dienst nicht verfügbar",
-    "noEncontradoTexto": "Die gesuchte Dienstleistung existiert nicht oder wurde entfernt.",
-    "noEncontradoTitulo": "Dienstleistung nicht gefunden",
-    "reservar": "Jetzt buchen",
-    "respuestaProfesional": "Antwort der Fachkraft",
-    "sinValoraciones": "Für diese Dienstleistung gibt es noch keine Bewertungen.",
-    "sobreProfesional": "Über die Fachkraft",
-    "valoraciones": "Bewertungen ({total})"
-  },
-  "mapa": {
-    "desde": "Ab {precio} {unidad}",
-    "verDetalle": "Details ansehen"
-  },
   "acceso": {
     "apellidos": "Nachname",
     "confirmar": "Passwort bestätigen",
@@ -170,15 +39,6 @@
     "sinCuenta": "Noch kein Konto?",
     "yaTienesCuenta": "Sie haben bereits ein Konto?"
   },
-  "validacion": {
-    "confirmaPassword": "Bestätigen Sie das Passwort",
-    "emailInvalido": "Geben Sie eine gültige E-Mail-Adresse ein",
-    "emailObligatorio": "Die E-Mail-Adresse ist erforderlich",
-    "minimoCaracteres": "Mindestens 8 Zeichen",
-    "obligatorio": "Pflichtfeld",
-    "passwordObligatoria": "Das Passwort ist erforderlich",
-    "passwordsNoCoinciden": "Die Passwörter stimmen nicht überein"
-  },
   "acercaDe": {
     "academicoTexto": "ServiLocal ist die Masterarbeit von Federico Javier Martino an der Universitat Oberta de Catalunya. Es ist eine funktionsfähige Plattform in der Demonstrationsphase: Die angezeigten Daten sind Testdaten und Zahlungen laufen in der Testumgebung von Stripe, ohne echte Belastung.",
     "academicoTitulo": "Studienprojekt",
@@ -200,162 +60,6 @@
     "tecnologiaTexto": "Die Plattform ist mit Next.js und React im Client gebaut, einer REST-API in NestJS und PostgreSQL mit der Erweiterung PostGIS für die Umkreissuche. Zahlungen laufen über Stripe, die API-Dokumentation wird mit OpenAPI veröffentlicht.",
     "tecnologiaTitulo": "Technik",
     "titulo": "Über ServiLocal"
-  },
-  "legal": {
-    "avisoIdioma": "Dieser Rechtstext wird nur auf Spanisch veröffentlicht; die spanische Fassung ist maßgeblich."
-  },
-  "reserva": {
-    "continuar": "Weiter zur Zahlung",
-    "creada": "Buchung erstellt. Weiter zur Zahlung.",
-    "descripcionCorta": "Beschreiben Sie die Arbeit kurz (mindestens 10 Zeichen)",
-    "descripcionPlaceholder": "Beschreiben Sie kurz die Arbeit, den genauen Ort und benötigtes Material...",
-    "descripcionTrabajo": "Beschreibung der Arbeit",
-    "errorCrear": "Die Buchung konnte nicht erstellt werden. Bitte erneut versuchen.",
-    "fecha": "Datum",
-    "fechaObligatoria": "Das Datum ist erforderlich",
-    "hora": "Uhrzeit",
-    "horaObligatoria": "Die Uhrzeit ist erforderlich",
-    "precioMaximo": "Der Höchstpreis beträgt {max} Euro",
-    "precioMinimo": "Der Mindestpreis beträgt {min} Euro",
-    "precioMinimoEtiqueta": "Vereinbarter Preis in Euro (mindestens {min})",
-    "precioPista": "Dieser Betrag kann nach dem Gespräch mit der Fachkraft angepasst werden.",
-    "precioRango": "Vereinbarter Preis in Euro (zwischen {min} und {max})",
-    "resumen": "Zusammenfassung",
-    "resumenFecha": "Datum: {fecha} um {hora}",
-    "resumenServicio": "Dienstleistung: {titulo}",
-    "resumenTotal": "Gesamt: {precio} Euro",
-    "servicioNoDisponible": "Dienst nicht verfügbar",
-    "titulo": "Buchen: {servicio}"
-  },
-  "pago": {
-    "avisoStripe": "Die Zahlung wird sicher von Stripe verarbeitet. ServiLocal speichert Ihre Kartendaten nicht.",
-    "caducada": "Die Zahlungssitzung ist abgelaufen. Eine neue wird erstellt...",
-    "completado": "Zahlung abgeschlossen. Buchung bestätigt.",
-    "cvcIncorrecto": "Die eingegebene Prüfnummer ist nicht korrekt.",
-    "desconocido": "unbekannt",
-    "errorCodigo": "Die Zahlung konnte nicht gestartet werden (Code {codigo}).",
-    "errorGenerico": "Fehler bei der Zahlungsverarbeitung.",
-    "errorIniciar": "Die Zahlung konnte nicht gestartet werden",
-    "errorTemporal": "Vorübergehender Fehler bei der Zahlung. Bitte erneut versuchen.",
-    "fondosInsuficientes": "Nicht genügend Guthaben auf der Karte.",
-    "formularioCargando": "Das Zahlungsformular wird noch geladen. Einen Moment bitte.",
-    "importe": "{importe} Euro",
-    "noConfirmado": "Zahlung eingegangen, aber nicht bestätigt. Bitte wenden Sie sich an den Support.",
-    "noEncontrada": "Buchung nicht gefunden.",
-    "noRegenerar": "Die Zahlungssitzung konnte nicht erneuert werden. Laden Sie die Seite neu.",
-    "pagandoReserva": "Sie bezahlen die Buchung von <servicio>{titulo}</servicio>",
-    "pagar": "{importe} Euro bezahlen",
-    "pagoEnCurso": "Für diese Buchung läuft bereits eine Zahlung oder sie ist abgeschlossen.",
-    "rechazada": "Ihre Karte wurde abgelehnt.",
-    "sinPermiso": "Sie haben keine Berechtigung, diese Buchung zu bezahlen.",
-    "sinServidor": "Der Server war nicht erreichbar.",
-    "tarjetaCaducada": "Ihre Karte ist abgelaufen.",
-    "titulo": "Zahlung bestätigen",
-    "totalPagar": "Zu zahlender Betrag",
-    "verificacion": "Ihre Bank verlangt eine zusätzliche Verifizierung.",
-    "volverDetalle": "Zurück zu den Buchungsdetails"
-  },
-  "panel": {
-    "accesosRapidos": "Schnellzugriff",
-    "buscarServicio": "Dienstleistung suchen",
-    "buscarServicioTexto": "Finden Sie Fachleute in Ihrer Nähe.",
-    "gestionarServicios": "Meine Dienstleistungen verwalten",
-    "gestionarServiciosTexto": "Erstellen, bearbeiten oder pausieren Sie Ihre Dienstleistungen.",
-    "hola": "Hallo, {nombre}",
-    "misServicios": "Meine Dienstleistungen",
-    "perfil": "Profil",
-    "reservasRecibidasTexto": "Nehmen Sie Aufträge an, lehnen Sie ab oder markieren Sie sie als abgeschlossen.",
-    "resumen": "Übersicht",
-    "resumenCliente": "Hier ist die Übersicht Ihrer Buchungen und Bewertungen.",
-    "resumenProfesional": "Hier ist die Übersicht Ihrer Tätigkeit als Fachkraft.",
-    "valoraciones": "Bewertungen",
-    "verReservas": "Meine Buchungen ansehen",
-    "verReservasTexto": "Sehen Sie den Stand Ihrer laufenden Buchungen."
-  },
-  "estados": {
-    "activo": "Aktiv",
-    "cancelada": "Storniert",
-    "completada": "Abgeschlossen",
-    "completadas": "Abgeschlossen",
-    "confirmada": "Bestätigt",
-    "confirmadas": "Bestätigt",
-    "pausado": "Pausiert",
-    "pendiente": "Offen",
-    "pendientes": "Offen",
-    "rechazada": "Abgelehnt",
-    "todas": "Alle"
-  },
-  "reservasPanel": {
-    "aceptar": "Buchung annehmen",
-    "actualizada": "Buchung aktualisiert",
-    "cancelar": "Stornieren",
-    "completar": "Als abgeschlossen markieren",
-    "confirmar": "Bestätigen",
-    "descripcion": "Beschreibung",
-    "errorActualizar": "Die Buchung konnte nicht aktualisiert werden",
-    "misReservas": "Meine Buchungen",
-    "noEncontrada": "Buchung nicht gefunden.",
-    "pagarAhora": "Jetzt bezahlen",
-    "rechazar": "Ablehnen",
-    "reservasRecibidas": "Erhaltene Buchungen",
-    "sinReservas": "In diesem Bereich haben Sie keine Buchungen."
-  },
-  "perfilPanel": {
-    "actualizado": "Profil aktualisiert",
-    "biografia": "Über mich",
-    "biografiaPlaceholder": "Erzählen Sie etwas über sich...",
-    "codigoPostal": "Postleitzahl",
-    "direccion": "Adresse",
-    "errorActualizar": "Das Profil konnte nicht aktualisiert werden",
-    "guardar": "Änderungen speichern",
-    "telefono": "Telefon",
-    "titulo": "Mein Profil"
-  },
-  "valoracionesPanel": {
-    "comentarioPlaceholder": "Optionaler Kommentar zur Dienstleistung...",
-    "con": "Mit {nombre}",
-    "enviada": "Bewertung gesendet. Vielen Dank!",
-    "enviadas": "Abgegebene Bewertungen ({total})",
-    "enviar": "Bewertung senden",
-    "errorEnviar": "Die Bewertung konnte nicht gesendet werden",
-    "pendientes": "Offene Bewertungen",
-    "selecciona": "Wählen Sie eine Bewertung",
-    "sinEnviadas": "Sie haben noch keine Bewertung abgegeben.",
-    "sinPendientes": "Sie haben keine offenen Bewertungen.",
-    "tuValoracion": "Ihre Bewertung"
-  },
-  "serviciosPanel": {
-    "actualizado": "Dienstleistung aktualisiert",
-    "confirmarEliminar": "Diese Dienstleistung löschen? Das lässt sich nicht rückgängig machen.",
-    "creado": "Dienstleistung erstellt",
-    "editar": "Dienstleistung bearbeiten",
-    "eliminado": "Dienstleistung gelöscht",
-    "errorActualizar": "Die Dienstleistung konnte nicht aktualisiert werden",
-    "errorCrear": "Die Dienstleistung konnte nicht erstellt werden",
-    "errorEliminar": "Löschen fehlgeschlagen",
-    "nuevo": "Neue Dienstleistung",
-    "sinServicios": "Sie haben noch keine Dienstleistung veröffentlicht.",
-    "sinServiciosPista": "Erstellen Sie Ihre erste Dienstleistung, um Buchungen zu erhalten.",
-    "titulo": "Meine Dienstleistungen"
-  },
-  "formularioServicio": {
-    "categoria": "Kategorie",
-    "descripcion": "Beschreibung",
-    "direccion": "Referenzadresse",
-    "precioMaximo": "Höchstpreis (optional)",
-    "precioMinimo": "Mindestpreis (Euro)",
-    "radio": "Einsatzradius (km)",
-    "seleccionaCategoria": "Kategorie wählen",
-    "seleccionaCiudad": "Stadt wählen",
-    "titulo": "Titel der Dienstleistung"
-  },
-  "mensajesPanel": {
-    "enviar": "Senden",
-    "escribePlaceholder": "Nachricht schreiben...",
-    "sinConversaciones": "Sie haben keine Unterhaltungen.",
-    "sinConversacionesPista": "Unterhaltungen entstehen, wenn Sie eine Fachkraft über eine Dienstleistung oder eine Buchung kontaktieren.",
-    "sinMensajes": "In dieser Unterhaltung gibt es noch keine Nachrichten.",
-    "titulo": "Nachrichten"
   },
   "administracion": {
     "accion": "Aktion",
@@ -478,5 +182,313 @@
     "titulo": "Sagen Sie uns, was Sie brauchen",
     "todaEspana": "in ganz Spanien",
     "verTodos": "Alle Ergebnisse ansehen"
+  },
+  "buscador": {
+    "queNecesitas": "Welche Dienstleistung brauchen Sie?",
+    "buscarServicios": "Dienstleistungen suchen"
+  },
+  "categorias": {
+    "cerrajeria": "Schlüsseldienst",
+    "clases-particulares": "Nachhilfe",
+    "diseno-grafico": "Grafikdesign",
+    "electricidad": "Elektroarbeiten",
+    "fontaneria": "Sanitärinstallation",
+    "jardineria": "Gartenarbeit",
+    "limpieza": "Reinigung",
+    "mudanzas": "Umzüge",
+    "pintura": "Malerarbeiten",
+    "reformas": "Renovierungen"
+  },
+  "comun": {
+    "buscar": "Suchen",
+    "cancelar": "Abbrechen",
+    "cargando": "Wird geladen",
+    "ciudad": "Stadt",
+    "descripcionSitio": "Marktplatz für Haushaltsdienstleistungen, der Kunden mit Fachleuten aus ihrer Umgebung verbindet.",
+    "editar": "Bearbeiten",
+    "eliminar": "Löschen",
+    "irAlContenido": "Zum Hauptinhalt springen",
+    "reintentar": "Erneut versuchen"
+  },
+  "detalle": {
+    "cargando": "Dienstleistung wird geladen",
+    "contactar": "Kontaktieren",
+    "descripcion": "Beschreibung der Dienstleistung",
+    "errorRedTexto": "Prüfen Sie Ihre Verbindung und versuchen Sie es in ein paar Sekunden erneut.",
+    "errorRedTitulo": "Der Server war nicht erreichbar",
+    "noDisponibleTexto": "Bitte versuchen Sie es später erneut.",
+    "noDisponibleTitulo": "Dienst nicht verfügbar",
+    "noEncontradoTexto": "Die gesuchte Dienstleistung existiert nicht oder wurde entfernt.",
+    "noEncontradoTitulo": "Dienstleistung nicht gefunden",
+    "reservar": "Jetzt buchen",
+    "respuestaProfesional": "Antwort der Fachkraft",
+    "sinValoraciones": "Für diese Dienstleistung gibt es noch keine Bewertungen.",
+    "sobreProfesional": "Über die Fachkraft",
+    "valoraciones": "Bewertungen ({total})"
+  },
+  "estados": {
+    "activo": "Aktiv",
+    "cancelada": "Storniert",
+    "completada": "Abgeschlossen",
+    "completadas": "Abgeschlossen",
+    "confirmada": "Bestätigt",
+    "confirmadas": "Bestätigt",
+    "pausado": "Pausiert",
+    "pendiente": "Offen",
+    "pendientes": "Offen",
+    "rechazada": "Abgelehnt",
+    "todas": "Alle"
+  },
+  "filtros": {
+    "aplicar": "Filter anwenden",
+    "categoria": "Kategorie",
+    "ciudad": "Stadt",
+    "limpiar": "Zurücksetzen",
+    "precioMaximo": "Höchstpreis (Euro)",
+    "radio": "Suchradius: {km} km",
+    "sinLimite": "Ohne Limit",
+    "todasCategorias": "Alle Kategorien",
+    "todasCiudades": "Alle Städte",
+    "valoracionMinima": "Mindestbewertung"
+  },
+  "formularioServicio": {
+    "categoria": "Kategorie",
+    "descripcion": "Beschreibung",
+    "direccion": "Referenzadresse",
+    "precioMaximo": "Höchstpreis (optional)",
+    "precioMinimo": "Mindestpreis (Euro)",
+    "radio": "Einsatzradius (km)",
+    "seleccionaCategoria": "Kategorie wählen",
+    "seleccionaCiudad": "Stadt wählen",
+    "titulo": "Titel der Dienstleistung"
+  },
+  "idioma": {
+    "cambiar": "Sprache wechseln"
+  },
+  "inicio": {
+    "heroTitulo": "Vertrauenswürdige Fachleute in Ihrer Nähe",
+    "heroSubtitulo": "Finden Sie die passende Fachkraft für jede Dienstleistung rund ums Haus. Echte Bewertungen, transparente Angebote und sofortige Buchung.",
+    "porQueTitulo": "Warum ServiLocal?",
+    "cercanosTitulo": "Fachleute in der Nähe",
+    "cercanosTexto": "Suche per Standort, um die besten Fachleute in Ihrer Umgebung zu finden.",
+    "pagosTitulo": "Sichere Zahlungen",
+    "pagosTexto": "Zahlungsabwicklung über Stripe. Ihr Geld ist geschützt, bis die Leistung erbracht ist.",
+    "valoracionesTitulo": "Geprüfte Bewertungen",
+    "valoracionesTexto": "Nur Kundinnen und Kunden, die eine Leistung abgeschlossen haben, können bewerten.",
+    "comoFunciona": "So funktioniert es",
+    "paso1Titulo": "Dienstleistung suchen",
+    "paso1Texto": "Sagen Sie uns, was Sie brauchen und wo. Wir zeigen Ihnen die nächstgelegenen und bestbewerteten Fachleute.",
+    "paso2Titulo": "Buchen und bezahlen",
+    "paso2Texto": "Datum wählen, Anzahlung leisten und sofort die Bestätigung erhalten.",
+    "paso3Titulo": "Bewerten Sie Ihre Erfahrung",
+    "paso3Texto": "Hinterlassen Sie nach der Leistung eine Bewertung, um anderen zu helfen."
+  },
+  "legal": {
+    "avisoIdioma": "Dieser Rechtstext wird nur auf Spanisch veröffentlicht; die spanische Fassung ist maßgeblich."
+  },
+  "mapa": {
+    "desde": "Ab {precio} {unidad}",
+    "verDetalle": "Details ansehen"
+  },
+  "mensajesPanel": {
+    "enviar": "Senden",
+    "escribePlaceholder": "Nachricht schreiben...",
+    "sinConversaciones": "Sie haben keine Unterhaltungen.",
+    "sinConversacionesPista": "Unterhaltungen entstehen, wenn Sie eine Fachkraft über eine Dienstleistung oder eine Buchung kontaktieren.",
+    "sinMensajes": "In dieser Unterhaltung gibt es noch keine Nachrichten.",
+    "titulo": "Nachrichten"
+  },
+  "meta": {
+    "titulo": "ServiLocal - Lokale Dienstleistungen in Ihrer Nähe",
+    "descripcion": "Finden Sie vertrauenswürdige Fachleute in Ihrer Nähe. Sanitär, Elektrik, Nachhilfe und mehr. Sicher buchen, bezahlen und bewerten."
+  },
+  "navegacion": {
+    "principal": "Hauptnavigation",
+    "buscarServicios": "Dienstleistungen suchen",
+    "misReservas": "Meine Buchungen",
+    "reservasRecibidas": "Erhaltene Buchungen",
+    "mensajes": "Nachrichten",
+    "administracion": "Verwaltung",
+    "miPerfil": "Mein Profil",
+    "iniciarSesion": "Anmelden",
+    "registrarse": "Registrieren",
+    "salir": "Abmelden",
+    "cerrarSesion": "Abmelden",
+    "abrirMenu": "Menü öffnen",
+    "cerrarMenu": "Menü schließen",
+    "menuMovil": "Mobiles Menü"
+  },
+  "noEncontrado": {
+    "titulo": "Seite nicht gefunden",
+    "texto": "Der Link, dem Sie gefolgt sind, existiert nicht oder der Inhalt wurde verschoben.",
+    "volver": "Zurück zur Startseite"
+  },
+  "paginacion": {
+    "anterior": "Vorherige Seite",
+    "navegacion": "Seitennavigation der Ergebnisse",
+    "pagina": "Seite {numero}",
+    "siguiente": "Nächste Seite"
+  },
+  "pago": {
+    "avisoStripe": "Die Zahlung wird sicher von Stripe verarbeitet. ServiLocal speichert Ihre Kartendaten nicht.",
+    "caducada": "Die Zahlungssitzung ist abgelaufen. Eine neue wird erstellt...",
+    "completado": "Zahlung abgeschlossen. Buchung bestätigt.",
+    "cvcIncorrecto": "Die eingegebene Prüfnummer ist nicht korrekt.",
+    "desconocido": "unbekannt",
+    "errorCodigo": "Die Zahlung konnte nicht gestartet werden (Code {codigo}).",
+    "errorGenerico": "Fehler bei der Zahlungsverarbeitung.",
+    "errorIniciar": "Die Zahlung konnte nicht gestartet werden",
+    "errorTemporal": "Vorübergehender Fehler bei der Zahlung. Bitte erneut versuchen.",
+    "fondosInsuficientes": "Nicht genügend Guthaben auf der Karte.",
+    "formularioCargando": "Das Zahlungsformular wird noch geladen. Einen Moment bitte.",
+    "importe": "{importe} Euro",
+    "noConfirmado": "Zahlung eingegangen, aber nicht bestätigt. Bitte wenden Sie sich an den Support.",
+    "noEncontrada": "Buchung nicht gefunden.",
+    "noRegenerar": "Die Zahlungssitzung konnte nicht erneuert werden. Laden Sie die Seite neu.",
+    "pagandoReserva": "Sie bezahlen die Buchung von <servicio>{titulo}</servicio>",
+    "pagar": "{importe} Euro bezahlen",
+    "pagoEnCurso": "Für diese Buchung läuft bereits eine Zahlung oder sie ist abgeschlossen.",
+    "rechazada": "Ihre Karte wurde abgelehnt.",
+    "sinPermiso": "Sie haben keine Berechtigung, diese Buchung zu bezahlen.",
+    "sinServidor": "Der Server war nicht erreichbar.",
+    "tarjetaCaducada": "Ihre Karte ist abgelaufen.",
+    "titulo": "Zahlung bestätigen",
+    "totalPagar": "Zu zahlender Betrag",
+    "verificacion": "Ihre Bank verlangt eine zusätzliche Verifizierung.",
+    "volverDetalle": "Zurück zu den Buchungsdetails"
+  },
+  "panel": {
+    "accesosRapidos": "Schnellzugriff",
+    "buscarServicio": "Dienstleistung suchen",
+    "buscarServicioTexto": "Finden Sie Fachleute in Ihrer Nähe.",
+    "gestionarServicios": "Meine Dienstleistungen verwalten",
+    "gestionarServiciosTexto": "Erstellen, bearbeiten oder pausieren Sie Ihre Dienstleistungen.",
+    "hola": "Hallo, {nombre}",
+    "misServicios": "Meine Dienstleistungen",
+    "perfil": "Profil",
+    "reservasRecibidasTexto": "Nehmen Sie Aufträge an, lehnen Sie ab oder markieren Sie sie als abgeschlossen.",
+    "resumen": "Übersicht",
+    "resumenCliente": "Hier ist die Übersicht Ihrer Buchungen und Bewertungen.",
+    "resumenProfesional": "Hier ist die Übersicht Ihrer Tätigkeit als Fachkraft.",
+    "valoraciones": "Bewertungen",
+    "verReservas": "Meine Buchungen ansehen",
+    "verReservasTexto": "Sehen Sie den Stand Ihrer laufenden Buchungen."
+  },
+  "perfilPanel": {
+    "actualizado": "Profil aktualisiert",
+    "biografia": "Über mich",
+    "biografiaPlaceholder": "Erzählen Sie etwas über sich...",
+    "codigoPostal": "Postleitzahl",
+    "direccion": "Adresse",
+    "errorActualizar": "Das Profil konnte nicht aktualisiert werden",
+    "guardar": "Änderungen speichern",
+    "telefono": "Telefon",
+    "titulo": "Mein Profil"
+  },
+  "pie": {
+    "enlaces": "Links in der Fußzeile",
+    "acercaDe": "Über uns",
+    "terminos": "Nutzungsbedingungen",
+    "privacidad": "Datenschutz",
+    "derechos": "© 2026 ServiLocal. UOC-Masterarbeit."
+  },
+  "reserva": {
+    "continuar": "Weiter zur Zahlung",
+    "creada": "Buchung erstellt. Weiter zur Zahlung.",
+    "descripcionCorta": "Beschreiben Sie die Arbeit kurz (mindestens 10 Zeichen)",
+    "descripcionPlaceholder": "Beschreiben Sie kurz die Arbeit, den genauen Ort und benötigtes Material...",
+    "descripcionTrabajo": "Beschreibung der Arbeit",
+    "errorCrear": "Die Buchung konnte nicht erstellt werden. Bitte erneut versuchen.",
+    "fecha": "Datum",
+    "fechaObligatoria": "Das Datum ist erforderlich",
+    "hora": "Uhrzeit",
+    "horaObligatoria": "Die Uhrzeit ist erforderlich",
+    "precioMaximo": "Der Höchstpreis beträgt {max} Euro",
+    "precioMinimo": "Der Mindestpreis beträgt {min} Euro",
+    "precioMinimoEtiqueta": "Vereinbarter Preis in Euro (mindestens {min})",
+    "precioPista": "Dieser Betrag kann nach dem Gespräch mit der Fachkraft angepasst werden.",
+    "precioRango": "Vereinbarter Preis in Euro (zwischen {min} und {max})",
+    "resumen": "Zusammenfassung",
+    "resumenFecha": "Datum: {fecha} um {hora}",
+    "resumenServicio": "Dienstleistung: {titulo}",
+    "resumenTotal": "Gesamt: {precio} Euro",
+    "servicioNoDisponible": "Dienst nicht verfügbar",
+    "titulo": "Buchen: {servicio}"
+  },
+  "reservasPanel": {
+    "aceptar": "Buchung annehmen",
+    "actualizada": "Buchung aktualisiert",
+    "cancelar": "Stornieren",
+    "completar": "Als abgeschlossen markieren",
+    "confirmar": "Bestätigen",
+    "descripcion": "Beschreibung",
+    "errorActualizar": "Die Buchung konnte nicht aktualisiert werden",
+    "misReservas": "Meine Buchungen",
+    "noEncontrada": "Buchung nicht gefunden.",
+    "pagarAhora": "Jetzt bezahlen",
+    "rechazar": "Ablehnen",
+    "reservasRecibidas": "Erhaltene Buchungen",
+    "sinReservas": "In diesem Bereich haben Sie keine Buchungen."
+  },
+  "resultados": {
+    "cargando": "Ergebnisse werden geladen",
+    "cuenta": "{total, plural, =0 {Keine Ergebnisse} one {# Ergebnis gefunden} other {# Ergebnisse gefunden}}",
+    "despertando": "Der Server wacht nach einer Ruhephase auf. Das kann bis zu einer Minute dauern.",
+    "errorRed": "Der Server war nicht erreichbar. Versuchen Sie es in ein paar Sekunden erneut.",
+    "errorServicio": "Dienst nicht verfügbar. Bitte versuchen Sie es später erneut.",
+    "errorTimeout": "Der Server hat zu lange gebraucht. Möglicherweise wacht er gerade nach einer Ruhephase auf.",
+    "filtros": "Filter",
+    "sinResultados": "Mit den gesetzten Filtern wurden keine Dienstleistungen gefunden.",
+    "sinResultadosPista": "Vergrößern Sie den Suchradius oder entfernen Sie einen Filter.",
+    "titulo": "Suchergebnisse",
+    "vistaLista": "Liste",
+    "vistaMapa": "Karte"
+  },
+  "serviciosPanel": {
+    "actualizado": "Dienstleistung aktualisiert",
+    "confirmarEliminar": "Diese Dienstleistung löschen? Das lässt sich nicht rückgängig machen.",
+    "creado": "Dienstleistung erstellt",
+    "editar": "Dienstleistung bearbeiten",
+    "eliminado": "Dienstleistung gelöscht",
+    "errorActualizar": "Die Dienstleistung konnte nicht aktualisiert werden",
+    "errorCrear": "Die Dienstleistung konnte nicht erstellt werden",
+    "errorEliminar": "Löschen fehlgeschlagen",
+    "nuevo": "Neue Dienstleistung",
+    "sinServicios": "Sie haben noch keine Dienstleistung veröffentlicht.",
+    "sinServiciosPista": "Erstellen Sie Ihre erste Dienstleistung, um Buchungen zu erhalten.",
+    "titulo": "Meine Dienstleistungen"
+  },
+  "tarjeta": {
+    "precioRango": "{min} bis {max} {unidad}",
+    "precioUnico": "{min} {unidad}"
+  },
+  "tema": {
+    "activarClaro": "Helles Design aktivieren",
+    "activarOscuro": "Dunkles Design aktivieren"
+  },
+  "validacion": {
+    "confirmaPassword": "Bestätigen Sie das Passwort",
+    "emailInvalido": "Geben Sie eine gültige E-Mail-Adresse ein",
+    "emailObligatorio": "Die E-Mail-Adresse ist erforderlich",
+    "minimoCaracteres": "Mindestens 8 Zeichen",
+    "obligatorio": "Pflichtfeld",
+    "passwordObligatoria": "Das Passwort ist erforderlich",
+    "passwordsNoCoinciden": "Die Passwörter stimmen nicht überein"
+  },
+  "valoracion": {
+    "valorar": "Mit {estrellas} Sternen bewerten"
+  },
+  "valoracionesPanel": {
+    "comentarioPlaceholder": "Optionaler Kommentar zur Dienstleistung...",
+    "con": "Mit {nombre}",
+    "enviada": "Bewertung gesendet. Vielen Dank!",
+    "enviadas": "Abgegebene Bewertungen ({total})",
+    "enviar": "Bewertung senden",
+    "errorEnviar": "Die Bewertung konnte nicht gesendet werden",
+    "pendientes": "Offene Bewertungen",
+    "selecciona": "Wählen Sie eine Bewertung",
+    "sinEnviadas": "Sie haben noch keine Bewertung abgegeben.",
+    "sinPendientes": "Sie haben keine offenen Bewertungen.",
+    "tuValoracion": "Ihre Bewertung"
   }
 }

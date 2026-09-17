@@ -1,135 +1,4 @@
 {
-  "meta": {
-    "titulo": "ServiLocal - Serveis locals a prop teu",
-    "descripcion": "Troba professionals de confiança a la teva zona. Lampisteria, electricitat, classes particulars i més. Reserva, paga i valora amb seguretat."
-  },
-  "comun": {
-    "buscar": "Cerca",
-    "cancelar": "Cancel·la",
-    "cargando": "Carregant",
-    "ciudad": "Ciutat",
-    "descripcionSitio": "Marketplace de serveis per a la llar que connecta clients amb professionals de la seva zona.",
-    "editar": "Edita",
-    "eliminar": "Elimina",
-    "irAlContenido": "Vés al contingut principal",
-    "reintentar": "Torna-ho a provar"
-  },
-  "navegacion": {
-    "principal": "Navegació principal",
-    "buscarServicios": "Cerca serveis",
-    "misReservas": "Les meves reserves",
-    "reservasRecibidas": "Reserves rebudes",
-    "mensajes": "Missatges",
-    "administracion": "Administració",
-    "miPerfil": "El meu perfil",
-    "iniciarSesion": "Inicia la sessió",
-    "registrarse": "Registra't",
-    "salir": "Surt",
-    "cerrarSesion": "Tanca la sessió",
-    "abrirMenu": "Obre el menú",
-    "cerrarMenu": "Tanca el menú",
-    "menuMovil": "Menú mòbil"
-  },
-  "pie": {
-    "enlaces": "Enllaços del peu de pàgina",
-    "acercaDe": "Quant a",
-    "terminos": "Termes",
-    "privacidad": "Privadesa",
-    "derechos": "© 2026 ServiLocal. TFM UOC."
-  },
-  "tema": {
-    "activarClaro": "Activa el tema clar",
-    "activarOscuro": "Activa el tema fosc"
-  },
-  "idioma": {
-    "cambiar": "Canvia d'idioma"
-  },
-  "buscador": {
-    "queNecesitas": "Quin servei necessites?",
-    "buscarServicios": "Cerca serveis"
-  },
-  "inicio": {
-    "heroTitulo": "Professionals de confiança, a prop teu",
-    "heroSubtitulo": "Troba el professional adequat per a qualsevol servei de la llar. Valoracions reals, pressupostos transparents i reserva immediata.",
-    "porQueTitulo": "Per què triar ServiLocal?",
-    "cercanosTitulo": "Professionals propers",
-    "cercanosTexto": "Cerca per geolocalització per trobar els millors professionals de la teva zona.",
-    "pagosTitulo": "Pagaments segurs",
-    "pagosTexto": "Plataforma de pagament integrada amb Stripe. Els teus diners estan protegits fins que el servei es completi.",
-    "valoracionesTitulo": "Valoracions verificades",
-    "valoracionesTexto": "Només els clients que han completat un servei hi poden deixar la seva opinió.",
-    "comoFunciona": "Com funciona",
-    "paso1Titulo": "Cerca el servei",
-    "paso1Texto": "Indica què necessites i on. El nostre sistema et mostra els professionals més propers i més ben valorats.",
-    "paso2Titulo": "Reserva i paga",
-    "paso2Texto": "Tria la data, deixa el senyal i rep la confirmació a l'instant.",
-    "paso3Titulo": "Valora la teva experiència",
-    "paso3Texto": "Després del servei, deixa la teva opinió per ajudar altres usuaris."
-  },
-  "noEncontrado": {
-    "titulo": "Pàgina no trobada",
-    "texto": "L'enllaç que has seguit no existeix o el contingut s'ha mogut.",
-    "volver": "Torna a l'inici"
-  },
-  "resultados": {
-    "cargando": "Carregant resultats",
-    "cuenta": "{total, plural, =0 {Cap resultat} one {# resultat trobat} other {# resultats trobats}}",
-    "despertando": "El servidor s'està despertant després d'un període d'inactivitat. Pot trigar fins a un minut.",
-    "errorRed": "No s'ha pogut contactar amb el servidor. Torna-ho a provar d'aquí a uns segons.",
-    "errorServicio": "Servei no disponible. Torna-ho a provar més tard.",
-    "errorTimeout": "El servidor ha trigat massa a respondre. Pot ser que s'estigui reactivant després d'un període d'inactivitat.",
-    "filtros": "Filtres",
-    "sinResultados": "No s'ha trobat cap servei amb els filtres aplicats.",
-    "sinResultadosPista": "Prova d'ampliar el radi de cerca o de treure algun filtre.",
-    "titulo": "Resultats de la cerca",
-    "vistaLista": "Llista",
-    "vistaMapa": "Mapa"
-  },
-  "filtros": {
-    "aplicar": "Aplica els filtres",
-    "categoria": "Categoria",
-    "ciudad": "Ciutat",
-    "limpiar": "Neteja",
-    "precioMaximo": "Preu màxim (euros)",
-    "radio": "Radi de cerca: {km} km",
-    "sinLimite": "Sense límit",
-    "todasCategorias": "Totes les categories",
-    "todasCiudades": "Totes les ciutats",
-    "valoracionMinima": "Valoració mínima"
-  },
-  "paginacion": {
-    "anterior": "Pàgina anterior",
-    "navegacion": "Paginació de resultats",
-    "pagina": "Pàgina {numero}",
-    "siguiente": "Pàgina següent"
-  },
-  "tarjeta": {
-    "precioRango": "{min} a {max} {unidad}",
-    "precioUnico": "{min} {unidad}"
-  },
-  "valoracion": {
-    "valorar": "Valora amb {estrellas} estrelles"
-  },
-  "detalle": {
-    "cargando": "Carregant el servei",
-    "contactar": "Contacta",
-    "descripcion": "Descripció del servei",
-    "errorRedTexto": "Comprova la connexió i torna-ho a provar d'aquí a uns segons.",
-    "errorRedTitulo": "No s'ha pogut contactar amb el servidor",
-    "noDisponibleTexto": "Torna-ho a provar més tard.",
-    "noDisponibleTitulo": "Servei no disponible",
-    "noEncontradoTexto": "El servei que busques no existeix o s'ha eliminat.",
-    "noEncontradoTitulo": "Servei no trobat",
-    "reservar": "Reserva ara",
-    "respuestaProfesional": "Resposta del professional",
-    "sinValoraciones": "Aquest servei encara no té valoracions.",
-    "sobreProfesional": "Sobre el professional",
-    "valoraciones": "Valoracions ({total})"
-  },
-  "mapa": {
-    "desde": "Des de {precio} {unidad}",
-    "verDetalle": "Veure detall"
-  },
   "acceso": {
     "apellidos": "Cognoms",
     "confirmar": "Confirma la contrasenya",
@@ -170,15 +39,6 @@
     "sinCuenta": "No tens compte?",
     "yaTienesCuenta": "Ja tens compte?"
   },
-  "validacion": {
-    "confirmaPassword": "Confirma la contrasenya",
-    "emailInvalido": "Introdueix un correu vàlid",
-    "emailObligatorio": "El correu és obligatori",
-    "minimoCaracteres": "Mínim 8 caràcters",
-    "obligatorio": "Obligatori",
-    "passwordObligatoria": "La contrasenya és obligatòria",
-    "passwordsNoCoinciden": "Les contrasenyes no coincideixen"
-  },
   "acercaDe": {
     "academicoTexto": "ServiLocal és el Treball de Fi de Màster de Federico Javier Martino a la Universitat Oberta de Catalunya. És una plataforma funcional en fase de demostració: les dades que hi veuràs són de prova i els pagaments s'executen a l'entorn de proves de Stripe, sense càrrecs reals.",
     "academicoTitulo": "Projecte acadèmic",
@@ -200,162 +60,6 @@
     "tecnologiaTexto": "La plataforma està construïda amb Next.js i React al client, una API REST en NestJS i PostgreSQL amb l'extensió PostGIS per a les cerques per proximitat. Els pagaments es processen amb Stripe i la documentació de l'API es publica amb OpenAPI.",
     "tecnologiaTitulo": "Tecnologia",
     "titulo": "Quant a ServiLocal"
-  },
-  "legal": {
-    "avisoIdioma": "Aquest text legal es publica únicament en castellà, que és la versió que preval."
-  },
-  "reserva": {
-    "continuar": "Continua al pagament",
-    "creada": "Reserva creada. Anem al pagament.",
-    "descripcionCorta": "Descriu breument la feina (mínim 10 caràcters)",
-    "descripcionPlaceholder": "Descriu breument la feina a fer, la ubicació exacta, els materials necessaris...",
-    "descripcionTrabajo": "Descripció de la feina",
-    "errorCrear": "No s'ha pogut crear la reserva. Torna-ho a provar.",
-    "fecha": "Data",
-    "fechaObligatoria": "La data és obligatòria",
-    "hora": "Hora",
-    "horaObligatoria": "L'hora és obligatòria",
-    "precioMaximo": "El preu màxim és {max} euros",
-    "precioMinimo": "El preu mínim és {min} euros",
-    "precioMinimoEtiqueta": "Preu acordat en euros (mínim {min})",
-    "precioPista": "Aquest import es pot ajustar després de parlar amb el professional.",
-    "precioRango": "Preu acordat en euros (entre {min} i {max})",
-    "resumen": "Resum",
-    "resumenFecha": "Data: {fecha} a les {hora}",
-    "resumenServicio": "Servei: {titulo}",
-    "resumenTotal": "Total: {precio} euros",
-    "servicioNoDisponible": "Servei no disponible",
-    "titulo": "Reservar: {servicio}"
-  },
-  "pago": {
-    "avisoStripe": "Pagament processat de manera segura per Stripe. ServiLocal no desa les dades de la teva targeta.",
-    "caducada": "La sessió de pagament ha caducat. Generant-ne una de nova...",
-    "completado": "Pagament completat. Reserva confirmada.",
-    "cvcIncorrecto": "El CVC introduït no és correcte.",
-    "desconocido": "desconegut",
-    "errorCodigo": "No s'ha pogut iniciar el pagament (codi {codigo}).",
-    "errorGenerico": "Error processant el pagament.",
-    "errorIniciar": "No s'ha pogut iniciar el pagament",
-    "errorTemporal": "Error temporal processant el pagament. Torna-ho a provar.",
-    "fondosInsuficientes": "Fons insuficients a la targeta.",
-    "formularioCargando": "El formulari de pagament encara s'està carregant. Espera un moment.",
-    "importe": "{importe} euros",
-    "noConfirmado": "Pagament rebut però no confirmat. Contacta amb el suport.",
-    "noEncontrada": "Reserva no trobada.",
-    "noRegenerar": "No s'ha pogut regenerar la sessió de pagament. Torna a carregar la pàgina.",
-    "pagandoReserva": "Estàs pagant la reserva de <servicio>{titulo}</servicio>",
-    "pagar": "Paga {importe} euros",
-    "pagoEnCurso": "Aquesta reserva ja té un pagament en curs o completat.",
-    "rechazada": "La teva targeta ha estat rebutjada.",
-    "sinPermiso": "No tens permís per pagar aquesta reserva.",
-    "sinServidor": "No s'ha pogut contactar amb el servidor.",
-    "tarjetaCaducada": "La teva targeta ha caducat.",
-    "titulo": "Confirma el pagament",
-    "totalPagar": "Total a pagar",
-    "verificacion": "El teu banc requereix una verificació addicional.",
-    "volverDetalle": "Torna al detall de la reserva"
-  },
-  "panel": {
-    "accesosRapidos": "Accessos ràpids",
-    "buscarServicio": "Cerca un servei",
-    "buscarServicioTexto": "Troba professionals a prop teu.",
-    "gestionarServicios": "Gestiona els meus serveis",
-    "gestionarServiciosTexto": "Crea, edita o posa en pausa els teus serveis publicats.",
-    "hola": "Hola, {nombre}",
-    "misServicios": "Els meus serveis",
-    "perfil": "Perfil",
-    "reservasRecibidasTexto": "Accepta, rebutja o marca feines com a completades.",
-    "resumen": "Resum",
-    "resumenCliente": "Aquí tens el resum de les teves reserves i valoracions.",
-    "resumenProfesional": "Aquí tens el resum de la teva activitat com a professional.",
-    "valoraciones": "Valoracions",
-    "verReservas": "Mira les meves reserves",
-    "verReservasTexto": "Consulta l'estat de les teves reserves en curs."
-  },
-  "estados": {
-    "activo": "Actiu",
-    "cancelada": "Cancel·lada",
-    "completada": "Completada",
-    "completadas": "Completades",
-    "confirmada": "Confirmada",
-    "confirmadas": "Confirmades",
-    "pausado": "En pausa",
-    "pendiente": "Pendent",
-    "pendientes": "Pendents",
-    "rechazada": "Rebutjada",
-    "todas": "Totes"
-  },
-  "reservasPanel": {
-    "aceptar": "Accepta la reserva",
-    "actualizada": "Reserva actualitzada",
-    "cancelar": "Cancel·la",
-    "completar": "Marca com a completada",
-    "confirmar": "Confirma",
-    "descripcion": "Descripció",
-    "errorActualizar": "No s'ha pogut actualitzar la reserva",
-    "misReservas": "Les meves reserves",
-    "noEncontrada": "Reserva no trobada.",
-    "pagarAhora": "Paga ara",
-    "rechazar": "Rebutja",
-    "reservasRecibidas": "Reserves rebudes",
-    "sinReservas": "No tens reserves en aquesta secció."
-  },
-  "perfilPanel": {
-    "actualizado": "Perfil actualitzat",
-    "biografia": "Biografia",
-    "biografiaPlaceholder": "Explica'ns coses sobre tu...",
-    "codigoPostal": "Codi postal",
-    "direccion": "Adreça",
-    "errorActualizar": "No s'ha pogut actualitzar el perfil",
-    "guardar": "Desa els canvis",
-    "telefono": "Telèfon",
-    "titulo": "El meu perfil"
-  },
-  "valoracionesPanel": {
-    "comentarioPlaceholder": "Comentari opcional sobre el servei...",
-    "con": "Amb {nombre}",
-    "enviada": "Valoració enviada. Gràcies!",
-    "enviadas": "Valoracions enviades ({total})",
-    "enviar": "Envia la valoració",
-    "errorEnviar": "No s'ha pogut enviar la valoració",
-    "pendientes": "Valoracions pendents",
-    "selecciona": "Tria una valoració",
-    "sinEnviadas": "Encara no has enviat cap valoració.",
-    "sinPendientes": "No tens valoracions pendents.",
-    "tuValoracion": "La teva valoració"
-  },
-  "serviciosPanel": {
-    "actualizado": "Servei actualitzat",
-    "confirmarEliminar": "Vols eliminar aquest servei? No es podrà desfer.",
-    "creado": "Servei creat",
-    "editar": "Edita el servei",
-    "eliminado": "Servei eliminat",
-    "errorActualizar": "No s'ha pogut actualitzar el servei",
-    "errorCrear": "No s'ha pogut crear el servei",
-    "errorEliminar": "No s'ha pogut eliminar",
-    "nuevo": "Servei nou",
-    "sinServicios": "Encara no has publicat cap servei.",
-    "sinServiciosPista": "Crea el teu primer servei per començar a rebre reserves.",
-    "titulo": "Els meus serveis"
-  },
-  "formularioServicio": {
-    "categoria": "Categoria",
-    "descripcion": "Descripció",
-    "direccion": "Adreça de referència",
-    "precioMaximo": "Preu màxim (opcional)",
-    "precioMinimo": "Preu mínim (euros)",
-    "radio": "Radi de cobertura (km)",
-    "seleccionaCategoria": "Tria una categoria",
-    "seleccionaCiudad": "Tria una ciutat",
-    "titulo": "Títol del servei"
-  },
-  "mensajesPanel": {
-    "enviar": "Envia",
-    "escribePlaceholder": "Escriu un missatge...",
-    "sinConversaciones": "No tens converses.",
-    "sinConversacionesPista": "Les converses es creen en contactar amb un professional des d'un servei o una reserva.",
-    "sinMensajes": "Encara no hi ha missatges en aquesta conversa.",
-    "titulo": "Missatges"
   },
   "administracion": {
     "accion": "Acció",
@@ -478,5 +182,313 @@
     "titulo": "Explica'ns què necessites",
     "todaEspana": "a tot Espanya",
     "verTodos": "Mostra tots els resultats"
+  },
+  "buscador": {
+    "queNecesitas": "Quin servei necessites?",
+    "buscarServicios": "Cerca serveis"
+  },
+  "categorias": {
+    "cerrajeria": "Serralleria",
+    "clases-particulares": "Classes particulars",
+    "diseno-grafico": "Disseny gràfic",
+    "electricidad": "Electricitat",
+    "fontaneria": "Lampisteria",
+    "jardineria": "Jardineria",
+    "limpieza": "Neteja",
+    "mudanzas": "Mudances",
+    "pintura": "Pintura",
+    "reformas": "Reformes"
+  },
+  "comun": {
+    "buscar": "Cerca",
+    "cancelar": "Cancel·la",
+    "cargando": "Carregant",
+    "ciudad": "Ciutat",
+    "descripcionSitio": "Marketplace de serveis per a la llar que connecta clients amb professionals de la seva zona.",
+    "editar": "Edita",
+    "eliminar": "Elimina",
+    "irAlContenido": "Vés al contingut principal",
+    "reintentar": "Torna-ho a provar"
+  },
+  "detalle": {
+    "cargando": "Carregant el servei",
+    "contactar": "Contacta",
+    "descripcion": "Descripció del servei",
+    "errorRedTexto": "Comprova la connexió i torna-ho a provar d'aquí a uns segons.",
+    "errorRedTitulo": "No s'ha pogut contactar amb el servidor",
+    "noDisponibleTexto": "Torna-ho a provar més tard.",
+    "noDisponibleTitulo": "Servei no disponible",
+    "noEncontradoTexto": "El servei que busques no existeix o s'ha eliminat.",
+    "noEncontradoTitulo": "Servei no trobat",
+    "reservar": "Reserva ara",
+    "respuestaProfesional": "Resposta del professional",
+    "sinValoraciones": "Aquest servei encara no té valoracions.",
+    "sobreProfesional": "Sobre el professional",
+    "valoraciones": "Valoracions ({total})"
+  },
+  "estados": {
+    "activo": "Actiu",
+    "cancelada": "Cancel·lada",
+    "completada": "Completada",
+    "completadas": "Completades",
+    "confirmada": "Confirmada",
+    "confirmadas": "Confirmades",
+    "pausado": "En pausa",
+    "pendiente": "Pendent",
+    "pendientes": "Pendents",
+    "rechazada": "Rebutjada",
+    "todas": "Totes"
+  },
+  "filtros": {
+    "aplicar": "Aplica els filtres",
+    "categoria": "Categoria",
+    "ciudad": "Ciutat",
+    "limpiar": "Neteja",
+    "precioMaximo": "Preu màxim (euros)",
+    "radio": "Radi de cerca: {km} km",
+    "sinLimite": "Sense límit",
+    "todasCategorias": "Totes les categories",
+    "todasCiudades": "Totes les ciutats",
+    "valoracionMinima": "Valoració mínima"
+  },
+  "formularioServicio": {
+    "categoria": "Categoria",
+    "descripcion": "Descripció",
+    "direccion": "Adreça de referència",
+    "precioMaximo": "Preu màxim (opcional)",
+    "precioMinimo": "Preu mínim (euros)",
+    "radio": "Radi de cobertura (km)",
+    "seleccionaCategoria": "Tria una categoria",
+    "seleccionaCiudad": "Tria una ciutat",
+    "titulo": "Títol del servei"
+  },
+  "idioma": {
+    "cambiar": "Canvia d'idioma"
+  },
+  "inicio": {
+    "heroTitulo": "Professionals de confiança, a prop teu",
+    "heroSubtitulo": "Troba el professional adequat per a qualsevol servei de la llar. Valoracions reals, pressupostos transparents i reserva immediata.",
+    "porQueTitulo": "Per què triar ServiLocal?",
+    "cercanosTitulo": "Professionals propers",
+    "cercanosTexto": "Cerca per geolocalització per trobar els millors professionals de la teva zona.",
+    "pagosTitulo": "Pagaments segurs",
+    "pagosTexto": "Plataforma de pagament integrada amb Stripe. Els teus diners estan protegits fins que el servei es completi.",
+    "valoracionesTitulo": "Valoracions verificades",
+    "valoracionesTexto": "Només els clients que han completat un servei hi poden deixar la seva opinió.",
+    "comoFunciona": "Com funciona",
+    "paso1Titulo": "Cerca el servei",
+    "paso1Texto": "Indica què necessites i on. El nostre sistema et mostra els professionals més propers i més ben valorats.",
+    "paso2Titulo": "Reserva i paga",
+    "paso2Texto": "Tria la data, deixa el senyal i rep la confirmació a l'instant.",
+    "paso3Titulo": "Valora la teva experiència",
+    "paso3Texto": "Després del servei, deixa la teva opinió per ajudar altres usuaris."
+  },
+  "legal": {
+    "avisoIdioma": "Aquest text legal es publica únicament en castellà, que és la versió que preval."
+  },
+  "mapa": {
+    "desde": "Des de {precio} {unidad}",
+    "verDetalle": "Veure detall"
+  },
+  "mensajesPanel": {
+    "enviar": "Envia",
+    "escribePlaceholder": "Escriu un missatge...",
+    "sinConversaciones": "No tens converses.",
+    "sinConversacionesPista": "Les converses es creen en contactar amb un professional des d'un servei o una reserva.",
+    "sinMensajes": "Encara no hi ha missatges en aquesta conversa.",
+    "titulo": "Missatges"
+  },
+  "meta": {
+    "titulo": "ServiLocal - Serveis locals a prop teu",
+    "descripcion": "Troba professionals de confiança a la teva zona. Lampisteria, electricitat, classes particulars i més. Reserva, paga i valora amb seguretat."
+  },
+  "navegacion": {
+    "principal": "Navegació principal",
+    "buscarServicios": "Cerca serveis",
+    "misReservas": "Les meves reserves",
+    "reservasRecibidas": "Reserves rebudes",
+    "mensajes": "Missatges",
+    "administracion": "Administració",
+    "miPerfil": "El meu perfil",
+    "iniciarSesion": "Inicia la sessió",
+    "registrarse": "Registra't",
+    "salir": "Surt",
+    "cerrarSesion": "Tanca la sessió",
+    "abrirMenu": "Obre el menú",
+    "cerrarMenu": "Tanca el menú",
+    "menuMovil": "Menú mòbil"
+  },
+  "noEncontrado": {
+    "titulo": "Pàgina no trobada",
+    "texto": "L'enllaç que has seguit no existeix o el contingut s'ha mogut.",
+    "volver": "Torna a l'inici"
+  },
+  "paginacion": {
+    "anterior": "Pàgina anterior",
+    "navegacion": "Paginació de resultats",
+    "pagina": "Pàgina {numero}",
+    "siguiente": "Pàgina següent"
+  },
+  "pago": {
+    "avisoStripe": "Pagament processat de manera segura per Stripe. ServiLocal no desa les dades de la teva targeta.",
+    "caducada": "La sessió de pagament ha caducat. Generant-ne una de nova...",
+    "completado": "Pagament completat. Reserva confirmada.",
+    "cvcIncorrecto": "El CVC introduït no és correcte.",
+    "desconocido": "desconegut",
+    "errorCodigo": "No s'ha pogut iniciar el pagament (codi {codigo}).",
+    "errorGenerico": "Error processant el pagament.",
+    "errorIniciar": "No s'ha pogut iniciar el pagament",
+    "errorTemporal": "Error temporal processant el pagament. Torna-ho a provar.",
+    "fondosInsuficientes": "Fons insuficients a la targeta.",
+    "formularioCargando": "El formulari de pagament encara s'està carregant. Espera un moment.",
+    "importe": "{importe} euros",
+    "noConfirmado": "Pagament rebut però no confirmat. Contacta amb el suport.",
+    "noEncontrada": "Reserva no trobada.",
+    "noRegenerar": "No s'ha pogut regenerar la sessió de pagament. Torna a carregar la pàgina.",
+    "pagandoReserva": "Estàs pagant la reserva de <servicio>{titulo}</servicio>",
+    "pagar": "Paga {importe} euros",
+    "pagoEnCurso": "Aquesta reserva ja té un pagament en curs o completat.",
+    "rechazada": "La teva targeta ha estat rebutjada.",
+    "sinPermiso": "No tens permís per pagar aquesta reserva.",
+    "sinServidor": "No s'ha pogut contactar amb el servidor.",
+    "tarjetaCaducada": "La teva targeta ha caducat.",
+    "titulo": "Confirma el pagament",
+    "totalPagar": "Total a pagar",
+    "verificacion": "El teu banc requereix una verificació addicional.",
+    "volverDetalle": "Torna al detall de la reserva"
+  },
+  "panel": {
+    "accesosRapidos": "Accessos ràpids",
+    "buscarServicio": "Cerca un servei",
+    "buscarServicioTexto": "Troba professionals a prop teu.",
+    "gestionarServicios": "Gestiona els meus serveis",
+    "gestionarServiciosTexto": "Crea, edita o posa en pausa els teus serveis publicats.",
+    "hola": "Hola, {nombre}",
+    "misServicios": "Els meus serveis",
+    "perfil": "Perfil",
+    "reservasRecibidasTexto": "Accepta, rebutja o marca feines com a completades.",
+    "resumen": "Resum",
+    "resumenCliente": "Aquí tens el resum de les teves reserves i valoracions.",
+    "resumenProfesional": "Aquí tens el resum de la teva activitat com a professional.",
+    "valoraciones": "Valoracions",
+    "verReservas": "Mira les meves reserves",
+    "verReservasTexto": "Consulta l'estat de les teves reserves en curs."
+  },
+  "perfilPanel": {
+    "actualizado": "Perfil actualitzat",
+    "biografia": "Biografia",
+    "biografiaPlaceholder": "Explica'ns coses sobre tu...",
+    "codigoPostal": "Codi postal",
+    "direccion": "Adreça",
+    "errorActualizar": "No s'ha pogut actualitzar el perfil",
+    "guardar": "Desa els canvis",
+    "telefono": "Telèfon",
+    "titulo": "El meu perfil"
+  },
+  "pie": {
+    "enlaces": "Enllaços del peu de pàgina",
+    "acercaDe": "Quant a",
+    "terminos": "Termes",
+    "privacidad": "Privadesa",
+    "derechos": "© 2026 ServiLocal. TFM UOC."
+  },
+  "reserva": {
+    "continuar": "Continua al pagament",
+    "creada": "Reserva creada. Anem al pagament.",
+    "descripcionCorta": "Descriu breument la feina (mínim 10 caràcters)",
+    "descripcionPlaceholder": "Descriu breument la feina a fer, la ubicació exacta, els materials necessaris...",
+    "descripcionTrabajo": "Descripció de la feina",
+    "errorCrear": "No s'ha pogut crear la reserva. Torna-ho a provar.",
+    "fecha": "Data",
+    "fechaObligatoria": "La data és obligatòria",
+    "hora": "Hora",
+    "horaObligatoria": "L'hora és obligatòria",
+    "precioMaximo": "El preu màxim és {max} euros",
+    "precioMinimo": "El preu mínim és {min} euros",
+    "precioMinimoEtiqueta": "Preu acordat en euros (mínim {min})",
+    "precioPista": "Aquest import es pot ajustar després de parlar amb el professional.",
+    "precioRango": "Preu acordat en euros (entre {min} i {max})",
+    "resumen": "Resum",
+    "resumenFecha": "Data: {fecha} a les {hora}",
+    "resumenServicio": "Servei: {titulo}",
+    "resumenTotal": "Total: {precio} euros",
+    "servicioNoDisponible": "Servei no disponible",
+    "titulo": "Reservar: {servicio}"
+  },
+  "reservasPanel": {
+    "aceptar": "Accepta la reserva",
+    "actualizada": "Reserva actualitzada",
+    "cancelar": "Cancel·la",
+    "completar": "Marca com a completada",
+    "confirmar": "Confirma",
+    "descripcion": "Descripció",
+    "errorActualizar": "No s'ha pogut actualitzar la reserva",
+    "misReservas": "Les meves reserves",
+    "noEncontrada": "Reserva no trobada.",
+    "pagarAhora": "Paga ara",
+    "rechazar": "Rebutja",
+    "reservasRecibidas": "Reserves rebudes",
+    "sinReservas": "No tens reserves en aquesta secció."
+  },
+  "resultados": {
+    "cargando": "Carregant resultats",
+    "cuenta": "{total, plural, =0 {Cap resultat} one {# resultat trobat} other {# resultats trobats}}",
+    "despertando": "El servidor s'està despertant després d'un període d'inactivitat. Pot trigar fins a un minut.",
+    "errorRed": "No s'ha pogut contactar amb el servidor. Torna-ho a provar d'aquí a uns segons.",
+    "errorServicio": "Servei no disponible. Torna-ho a provar més tard.",
+    "errorTimeout": "El servidor ha trigat massa a respondre. Pot ser que s'estigui reactivant després d'un període d'inactivitat.",
+    "filtros": "Filtres",
+    "sinResultados": "No s'ha trobat cap servei amb els filtres aplicats.",
+    "sinResultadosPista": "Prova d'ampliar el radi de cerca o de treure algun filtre.",
+    "titulo": "Resultats de la cerca",
+    "vistaLista": "Llista",
+    "vistaMapa": "Mapa"
+  },
+  "serviciosPanel": {
+    "actualizado": "Servei actualitzat",
+    "confirmarEliminar": "Vols eliminar aquest servei? No es podrà desfer.",
+    "creado": "Servei creat",
+    "editar": "Edita el servei",
+    "eliminado": "Servei eliminat",
+    "errorActualizar": "No s'ha pogut actualitzar el servei",
+    "errorCrear": "No s'ha pogut crear el servei",
+    "errorEliminar": "No s'ha pogut eliminar",
+    "nuevo": "Servei nou",
+    "sinServicios": "Encara no has publicat cap servei.",
+    "sinServiciosPista": "Crea el teu primer servei per començar a rebre reserves.",
+    "titulo": "Els meus serveis"
+  },
+  "tarjeta": {
+    "precioRango": "{min} a {max} {unidad}",
+    "precioUnico": "{min} {unidad}"
+  },
+  "tema": {
+    "activarClaro": "Activa el tema clar",
+    "activarOscuro": "Activa el tema fosc"
+  },
+  "validacion": {
+    "confirmaPassword": "Confirma la contrasenya",
+    "emailInvalido": "Introdueix un correu vàlid",
+    "emailObligatorio": "El correu és obligatori",
+    "minimoCaracteres": "Mínim 8 caràcters",
+    "obligatorio": "Obligatori",
+    "passwordObligatoria": "La contrasenya és obligatòria",
+    "passwordsNoCoinciden": "Les contrasenyes no coincideixen"
+  },
+  "valoracion": {
+    "valorar": "Valora amb {estrellas} estrelles"
+  },
+  "valoracionesPanel": {
+    "comentarioPlaceholder": "Comentari opcional sobre el servei...",
+    "con": "Amb {nombre}",
+    "enviada": "Valoració enviada. Gràcies!",
+    "enviadas": "Valoracions enviades ({total})",
+    "enviar": "Envia la valoració",
+    "errorEnviar": "No s'ha pogut enviar la valoració",
+    "pendientes": "Valoracions pendents",
+    "selecciona": "Tria una valoració",
+    "sinEnviadas": "Encara no has enviat cap valoració.",
+    "sinPendientes": "No tens valoracions pendents.",
+    "tuValoracion": "La teva valoració"
   }
 }

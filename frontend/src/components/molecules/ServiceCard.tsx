@@ -10,6 +10,7 @@ import { Service } from '@/types';
 import Badge from '../atoms/Badge';
 import RatingStars from './RatingStars';
 import ServiceImage from './ServiceImage';
+import { useNombreCategoria } from '../../lib/categorias';
 
 interface ServiceCardProps {
   service: Service;
@@ -17,6 +18,7 @@ interface ServiceCardProps {
 
 export default function ServiceCard({ service }: ServiceCardProps) {
   const t = useTranslations('tarjeta');
+  const nombreCategoria = useNombreCategoria();
 
   // La unidad de precio la escribe el profesional, así que va tal cual.
   const priceLabel =
@@ -42,7 +44,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         />
         {service.category && (
           <div className="absolute top-2 start-2">
-            <Badge variant="info">{service.category.name}</Badge>
+            <Badge variant="info">{nombreCategoria(service.category)}</Badge>
           </div>
         )}
       </div>

@@ -1,135 +1,4 @@
 {
-  "meta": {
-    "titulo": "سيرفي لوكال - خدمات محلية بالقرب منك",
-    "descripcion": "اعثر على محترفين موثوقين في منطقتك: السباكة والكهرباء والدروس الخصوصية والمزيد. احجز وادفع وقيّم بأمان."
-  },
-  "comun": {
-    "buscar": "بحث",
-    "cancelar": "إلغاء",
-    "cargando": "جارٍ التحميل",
-    "ciudad": "المدينة",
-    "descripcionSitio": "سوق لخدمات المنزل يربط العملاء بالمحترفين في منطقتهم.",
-    "editar": "تعديل",
-    "eliminar": "حذف",
-    "irAlContenido": "الانتقال إلى المحتوى الرئيسي",
-    "reintentar": "أعد المحاولة"
-  },
-  "navegacion": {
-    "principal": "التنقل الرئيسي",
-    "buscarServicios": "البحث عن خدمات",
-    "misReservas": "حجوزاتي",
-    "reservasRecibidas": "الحجوزات الواردة",
-    "mensajes": "الرسائل",
-    "administracion": "الإدارة",
-    "miPerfil": "ملفي الشخصي",
-    "iniciarSesion": "تسجيل الدخول",
-    "registrarse": "إنشاء حساب",
-    "salir": "خروج",
-    "cerrarSesion": "تسجيل الخروج",
-    "abrirMenu": "فتح القائمة",
-    "cerrarMenu": "إغلاق القائمة",
-    "menuMovil": "قائمة الجوال"
-  },
-  "pie": {
-    "enlaces": "روابط التذييل",
-    "acercaDe": "من نحن",
-    "terminos": "الشروط",
-    "privacidad": "الخصوصية",
-    "derechos": "© 2026 سيرفي لوكال. رسالة ماجستير من جامعة UOC."
-  },
-  "tema": {
-    "activarClaro": "تفعيل المظهر الفاتح",
-    "activarOscuro": "تفعيل المظهر الداكن"
-  },
-  "idioma": {
-    "cambiar": "تغيير اللغة"
-  },
-  "buscador": {
-    "queNecesitas": "ما الخدمة التي تحتاجها؟",
-    "buscarServicios": "البحث عن خدمات"
-  },
-  "inicio": {
-    "heroTitulo": "محترفون موثوقون بالقرب منك",
-    "heroSubtitulo": "اعثر على المحترف المناسب لأي خدمة منزلية. تقييمات حقيقية وعروض أسعار واضحة وحجز فوري.",
-    "porQueTitulo": "لماذا تختار سيرفي لوكال؟",
-    "cercanosTitulo": "محترفون قريبون",
-    "cercanosTexto": "بحث بتحديد الموقع للعثور على أفضل المحترفين في منطقتك.",
-    "pagosTitulo": "مدفوعات آمنة",
-    "pagosTexto": "منصة دفع متكاملة مع سترايب. أموالك محمية حتى اكتمال الخدمة.",
-    "valoracionesTitulo": "تقييمات موثقة",
-    "valoracionesTexto": "لا يمكن ترك تقييم إلا للعملاء الذين أتموا الخدمة.",
-    "comoFunciona": "كيف يعمل",
-    "paso1Titulo": "ابحث عن الخدمة",
-    "paso1Texto": "حدد ما تحتاجه وأين. يعرض لك نظامنا أقرب المحترفين وأفضلهم تقييمًا.",
-    "paso2Titulo": "احجز وادفع",
-    "paso2Texto": "اختر التاريخ وادفع العربون واحصل على التأكيد فورًا.",
-    "paso3Titulo": "قيّم تجربتك",
-    "paso3Texto": "بعد الخدمة، اترك تقييمك لمساعدة المستخدمين الآخرين."
-  },
-  "noEncontrado": {
-    "titulo": "الصفحة غير موجودة",
-    "texto": "الرابط الذي اتبعته غير موجود أو تم نقل المحتوى.",
-    "volver": "العودة إلى الصفحة الرئيسية"
-  },
-  "resultados": {
-    "cargando": "جارٍ تحميل النتائج",
-    "cuenta": "{total, plural, =0 {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
-    "despertando": "الخادم يستيقظ بعد فترة خمول. قد يستغرق ذلك دقيقة واحدة.",
-    "errorRed": "تعذّر الاتصال بالخادم. أعد المحاولة بعد لحظات.",
-    "errorServicio": "الخدمة غير متاحة. أعد المحاولة لاحقًا.",
-    "errorTimeout": "استغرق الخادم وقتًا طويلًا للرد. قد يكون قيد الاستيقاظ بعد فترة خمول.",
-    "filtros": "عوامل التصفية",
-    "sinResultados": "لم يُعثر على خدمات مطابقة لعوامل التصفية المختارة.",
-    "sinResultadosPista": "جرّب توسيع نطاق البحث أو إزالة أحد عوامل التصفية.",
-    "titulo": "نتائج البحث",
-    "vistaLista": "قائمة",
-    "vistaMapa": "خريطة"
-  },
-  "filtros": {
-    "aplicar": "تطبيق عوامل التصفية",
-    "categoria": "الفئة",
-    "ciudad": "المدينة",
-    "limpiar": "مسح",
-    "precioMaximo": "أقصى سعر (يورو)",
-    "radio": "نطاق البحث: {km} كم",
-    "sinLimite": "بلا حد",
-    "todasCategorias": "كل الفئات",
-    "todasCiudades": "كل المدن",
-    "valoracionMinima": "أدنى تقييم"
-  },
-  "paginacion": {
-    "anterior": "الصفحة السابقة",
-    "navegacion": "ترقيم صفحات النتائج",
-    "pagina": "الصفحة {numero}",
-    "siguiente": "الصفحة التالية"
-  },
-  "tarjeta": {
-    "precioRango": "{min} إلى {max} {unidad}",
-    "precioUnico": "{min} {unidad}"
-  },
-  "valoracion": {
-    "valorar": "قيّم بـ {estrellas} نجوم"
-  },
-  "detalle": {
-    "cargando": "جارٍ تحميل الخدمة",
-    "contactar": "تواصل",
-    "descripcion": "وصف الخدمة",
-    "errorRedTexto": "تحقّق من اتصالك وأعد المحاولة بعد لحظات.",
-    "errorRedTitulo": "تعذّر الاتصال بالخادم",
-    "noDisponibleTexto": "أعد المحاولة لاحقًا.",
-    "noDisponibleTitulo": "الخدمة غير متاحة",
-    "noEncontradoTexto": "الخدمة التي تبحث عنها غير موجودة أو تم حذفها.",
-    "noEncontradoTitulo": "لم يتم العثور على الخدمة",
-    "reservar": "احجز الآن",
-    "respuestaProfesional": "رد المحترف",
-    "sinValoraciones": "لا توجد تقييمات لهذه الخدمة بعد.",
-    "sobreProfesional": "عن المحترف",
-    "valoraciones": "التقييمات ({total})"
-  },
-  "mapa": {
-    "desde": "ابتداءً من {precio} {unidad}",
-    "verDetalle": "عرض التفاصيل"
-  },
   "acceso": {
     "apellidos": "اسم العائلة",
     "confirmar": "تأكيد كلمة المرور",
@@ -170,15 +39,6 @@
     "sinCuenta": "ليس لديك حساب؟",
     "yaTienesCuenta": "هل لديك حساب بالفعل؟"
   },
-  "validacion": {
-    "confirmaPassword": "أكّد كلمة المرور",
-    "emailInvalido": "أدخل بريدًا إلكترونيًا صالحًا",
-    "emailObligatorio": "البريد الإلكتروني مطلوب",
-    "minimoCaracteres": "8 أحرف على الأقل",
-    "obligatorio": "مطلوب",
-    "passwordObligatoria": "كلمة المرور مطلوبة",
-    "passwordsNoCoinciden": "كلمتا المرور غير متطابقتين"
-  },
   "acercaDe": {
     "academicoTexto": "سيرفي لوكال هي رسالة الماجستير لفيديريكو خابيير مارتينو في جامعة Universitat Oberta de Catalunya. إنها منصة عاملة في طور العرض: البيانات التي تراها تجريبية وتُنفَّذ المدفوعات في بيئة اختبار سترايب دون أي رسوم حقيقية.",
     "academicoTitulo": "مشروع أكاديمي",
@@ -200,162 +60,6 @@
     "tecnologiaTexto": "بُنيت المنصة باستخدام Next.js وReact في جانب العميل، وواجهة REST في NestJS، وقاعدة PostgreSQL مع امتداد PostGIS لعمليات البحث بالقرب. تُعالَج المدفوعات عبر سترايب، وتُنشر وثائق الواجهة باستخدام OpenAPI.",
     "tecnologiaTitulo": "التقنية",
     "titulo": "عن سيرفي لوكال"
-  },
-  "legal": {
-    "avisoIdioma": "يُنشر هذا النص القانوني بالإسبانية فقط، والنسخة الإسبانية هي النسخة المعتمدة."
-  },
-  "reserva": {
-    "continuar": "المتابعة إلى الدفع",
-    "creada": "تم إنشاء الحجز. ننتقل إلى الدفع.",
-    "descripcionCorta": "صف العمل باختصار (10 أحرف على الأقل)",
-    "descripcionPlaceholder": "صف باختصار العمل المطلوب والموقع الدقيق والمواد اللازمة...",
-    "descripcionTrabajo": "وصف العمل",
-    "errorCrear": "تعذّر إنشاء الحجز. أعد المحاولة.",
-    "fecha": "التاريخ",
-    "fechaObligatoria": "التاريخ مطلوب",
-    "hora": "الوقت",
-    "horaObligatoria": "الوقت مطلوب",
-    "precioMaximo": "الحد الأقصى للسعر {max} يورو",
-    "precioMinimo": "الحد الأدنى للسعر {min} يورو",
-    "precioMinimoEtiqueta": "السعر المتفق عليه باليورو (بحد أدنى {min})",
-    "precioPista": "يمكن تعديل هذا المبلغ بعد التحدث مع المحترف.",
-    "precioRango": "السعر المتفق عليه باليورو (بين {min} و{max})",
-    "resumen": "الملخص",
-    "resumenFecha": "التاريخ: {fecha} الساعة {hora}",
-    "resumenServicio": "الخدمة: {titulo}",
-    "resumenTotal": "الإجمالي: {precio} يورو",
-    "servicioNoDisponible": "الخدمة غير متاحة",
-    "titulo": "احجز: {servicio}"
-  },
-  "pago": {
-    "avisoStripe": "تُعالَج الدفعة بأمان عبر سترايب. لا تحتفظ سيرفي لوكال ببيانات بطاقتك.",
-    "caducada": "انتهت صلاحية جلسة الدفع. جارٍ إنشاء جلسة جديدة...",
-    "completado": "اكتمل الدفع. تم تأكيد الحجز.",
-    "cvcIncorrecto": "رمز التحقق المُدخل غير صحيح.",
-    "desconocido": "غير معروف",
-    "errorCodigo": "تعذّر بدء عملية الدفع (الرمز {codigo}).",
-    "errorGenerico": "خطأ أثناء معالجة الدفع.",
-    "errorIniciar": "تعذّر بدء عملية الدفع",
-    "errorTemporal": "خطأ مؤقت أثناء معالجة الدفع. أعد المحاولة.",
-    "fondosInsuficientes": "الرصيد غير كافٍ في البطاقة.",
-    "formularioCargando": "لا يزال نموذج الدفع قيد التحميل. انتظر لحظة.",
-    "importe": "{importe} يورو",
-    "noConfirmado": "تم استلام الدفعة دون تأكيد. تواصل مع الدعم.",
-    "noEncontrada": "لم يتم العثور على الحجز.",
-    "noRegenerar": "تعذّر تجديد جلسة الدفع. أعد تحميل الصفحة.",
-    "pagandoReserva": "أنت تدفع حجز <servicio>{titulo}</servicio>",
-    "pagar": "ادفع {importe} يورو",
-    "pagoEnCurso": "هذا الحجز لديه بالفعل عملية دفع جارية أو مكتملة.",
-    "rechazada": "تم رفض بطاقتك.",
-    "sinPermiso": "لا تملك إذنًا لدفع هذا الحجز.",
-    "sinServidor": "تعذّر الاتصال بالخادم.",
-    "tarjetaCaducada": "انتهت صلاحية بطاقتك.",
-    "titulo": "تأكيد الدفع",
-    "totalPagar": "الإجمالي المستحق",
-    "verificacion": "يطلب مصرفك تحققًا إضافيًا.",
-    "volverDetalle": "العودة إلى تفاصيل الحجز"
-  },
-  "panel": {
-    "accesosRapidos": "روابط سريعة",
-    "buscarServicio": "ابحث عن خدمة",
-    "buscarServicioTexto": "اعثر على محترفين بالقرب منك.",
-    "gestionarServicios": "إدارة خدماتي",
-    "gestionarServiciosTexto": "أنشئ خدماتك المنشورة أو عدّلها أو أوقفها مؤقتًا.",
-    "hola": "مرحبًا، {nombre}",
-    "misServicios": "خدماتي",
-    "perfil": "الملف الشخصي",
-    "reservasRecibidasTexto": "اقبل الأعمال أو ارفضها أو ضع علامة مكتمل عليها.",
-    "resumen": "نظرة عامة",
-    "resumenCliente": "هذا ملخص حجوزاتك وتقييماتك.",
-    "resumenProfesional": "هذا ملخص نشاطك كمحترف.",
-    "valoraciones": "التقييمات",
-    "verReservas": "عرض حجوزاتي",
-    "verReservasTexto": "تابع حالة حجوزاتك الجارية."
-  },
-  "estados": {
-    "activo": "نشطة",
-    "cancelada": "ملغى",
-    "completada": "مكتمل",
-    "completadas": "مكتملة",
-    "confirmada": "مؤكَّد",
-    "confirmadas": "مؤكَّدة",
-    "pausado": "موقوفة مؤقتًا",
-    "pendiente": "قيد الانتظار",
-    "pendientes": "قيد الانتظار",
-    "rechazada": "مرفوض",
-    "todas": "الكل"
-  },
-  "reservasPanel": {
-    "aceptar": "قبول الحجز",
-    "actualizada": "تم تحديث الحجز",
-    "cancelar": "إلغاء",
-    "completar": "وضع علامة مكتمل",
-    "confirmar": "تأكيد",
-    "descripcion": "الوصف",
-    "errorActualizar": "تعذّر تحديث الحجز",
-    "misReservas": "حجوزاتي",
-    "noEncontrada": "لم يتم العثور على الحجز.",
-    "pagarAhora": "ادفع الآن",
-    "rechazar": "رفض",
-    "reservasRecibidas": "الحجوزات الواردة",
-    "sinReservas": "لا توجد حجوزات في هذا القسم."
-  },
-  "perfilPanel": {
-    "actualizado": "تم تحديث الملف الشخصي",
-    "biografia": "نبذة",
-    "biografiaPlaceholder": "أخبرنا عن نفسك...",
-    "codigoPostal": "الرمز البريدي",
-    "direccion": "العنوان",
-    "errorActualizar": "تعذّر تحديث الملف الشخصي",
-    "guardar": "حفظ التغييرات",
-    "telefono": "الهاتف",
-    "titulo": "ملفي الشخصي"
-  },
-  "valoracionesPanel": {
-    "comentarioPlaceholder": "تعليق اختياري عن الخدمة...",
-    "con": "مع {nombre}",
-    "enviada": "تم إرسال التقييم. شكرًا لك!",
-    "enviadas": "التقييمات المُرسلة ({total})",
-    "enviar": "إرسال التقييم",
-    "errorEnviar": "تعذّر إرسال التقييم",
-    "pendientes": "تقييمات معلّقة",
-    "selecciona": "اختر تقييمًا",
-    "sinEnviadas": "لم ترسل أي تقييم بعد.",
-    "sinPendientes": "لا توجد تقييمات معلّقة.",
-    "tuValoracion": "تقييمك"
-  },
-  "serviciosPanel": {
-    "actualizado": "تم تحديث الخدمة",
-    "confirmarEliminar": "هل تريد حذف هذه الخدمة؟ لا يمكن التراجع عن ذلك.",
-    "creado": "تم إنشاء الخدمة",
-    "editar": "تعديل الخدمة",
-    "eliminado": "تم حذف الخدمة",
-    "errorActualizar": "تعذّر تحديث الخدمة",
-    "errorCrear": "تعذّر إنشاء الخدمة",
-    "errorEliminar": "تعذّر الحذف",
-    "nuevo": "خدمة جديدة",
-    "sinServicios": "لم تنشر أي خدمة بعد.",
-    "sinServiciosPista": "أنشئ خدمتك الأولى لتبدأ في استقبال الحجوزات.",
-    "titulo": "خدماتي"
-  },
-  "formularioServicio": {
-    "categoria": "الفئة",
-    "descripcion": "الوصف",
-    "direccion": "العنوان المرجعي",
-    "precioMaximo": "أقصى سعر (اختياري)",
-    "precioMinimo": "أدنى سعر (يورو)",
-    "radio": "نطاق التغطية (كم)",
-    "seleccionaCategoria": "اختر فئة",
-    "seleccionaCiudad": "اختر مدينة",
-    "titulo": "عنوان الخدمة"
-  },
-  "mensajesPanel": {
-    "enviar": "إرسال",
-    "escribePlaceholder": "اكتب رسالة...",
-    "sinConversaciones": "لا توجد لديك محادثات.",
-    "sinConversacionesPista": "تبدأ المحادثات عند التواصل مع محترف من خلال خدمة أو حجز.",
-    "sinMensajes": "لا توجد رسائل في هذه المحادثة بعد.",
-    "titulo": "الرسائل"
   },
   "administracion": {
     "accion": "الإجراء",
@@ -478,5 +182,313 @@
     "titulo": "أخبرنا بما تحتاجه",
     "todaEspana": "في جميع أنحاء إسبانيا",
     "verTodos": "عرض كل النتائج"
+  },
+  "buscador": {
+    "queNecesitas": "ما الخدمة التي تحتاجها؟",
+    "buscarServicios": "البحث عن خدمات"
+  },
+  "categorias": {
+    "cerrajeria": "أعمال الأقفال",
+    "clases-particulares": "دروس خصوصية",
+    "diseno-grafico": "تصميم جرافيكي",
+    "electricidad": "أعمال كهربائية",
+    "fontaneria": "سباكة",
+    "jardineria": "أعمال الحدائق",
+    "limpieza": "تنظيف",
+    "mudanzas": "نقل الأثاث",
+    "pintura": "دهان",
+    "reformas": "أعمال تجديد"
+  },
+  "comun": {
+    "buscar": "بحث",
+    "cancelar": "إلغاء",
+    "cargando": "جارٍ التحميل",
+    "ciudad": "المدينة",
+    "descripcionSitio": "سوق لخدمات المنزل يربط العملاء بالمحترفين في منطقتهم.",
+    "editar": "تعديل",
+    "eliminar": "حذف",
+    "irAlContenido": "الانتقال إلى المحتوى الرئيسي",
+    "reintentar": "أعد المحاولة"
+  },
+  "detalle": {
+    "cargando": "جارٍ تحميل الخدمة",
+    "contactar": "تواصل",
+    "descripcion": "وصف الخدمة",
+    "errorRedTexto": "تحقّق من اتصالك وأعد المحاولة بعد لحظات.",
+    "errorRedTitulo": "تعذّر الاتصال بالخادم",
+    "noDisponibleTexto": "أعد المحاولة لاحقًا.",
+    "noDisponibleTitulo": "الخدمة غير متاحة",
+    "noEncontradoTexto": "الخدمة التي تبحث عنها غير موجودة أو تم حذفها.",
+    "noEncontradoTitulo": "لم يتم العثور على الخدمة",
+    "reservar": "احجز الآن",
+    "respuestaProfesional": "رد المحترف",
+    "sinValoraciones": "لا توجد تقييمات لهذه الخدمة بعد.",
+    "sobreProfesional": "عن المحترف",
+    "valoraciones": "التقييمات ({total})"
+  },
+  "estados": {
+    "activo": "نشطة",
+    "cancelada": "ملغى",
+    "completada": "مكتمل",
+    "completadas": "مكتملة",
+    "confirmada": "مؤكَّد",
+    "confirmadas": "مؤكَّدة",
+    "pausado": "موقوفة مؤقتًا",
+    "pendiente": "قيد الانتظار",
+    "pendientes": "قيد الانتظار",
+    "rechazada": "مرفوض",
+    "todas": "الكل"
+  },
+  "filtros": {
+    "aplicar": "تطبيق عوامل التصفية",
+    "categoria": "الفئة",
+    "ciudad": "المدينة",
+    "limpiar": "مسح",
+    "precioMaximo": "أقصى سعر (يورو)",
+    "radio": "نطاق البحث: {km} كم",
+    "sinLimite": "بلا حد",
+    "todasCategorias": "كل الفئات",
+    "todasCiudades": "كل المدن",
+    "valoracionMinima": "أدنى تقييم"
+  },
+  "formularioServicio": {
+    "categoria": "الفئة",
+    "descripcion": "الوصف",
+    "direccion": "العنوان المرجعي",
+    "precioMaximo": "أقصى سعر (اختياري)",
+    "precioMinimo": "أدنى سعر (يورو)",
+    "radio": "نطاق التغطية (كم)",
+    "seleccionaCategoria": "اختر فئة",
+    "seleccionaCiudad": "اختر مدينة",
+    "titulo": "عنوان الخدمة"
+  },
+  "idioma": {
+    "cambiar": "تغيير اللغة"
+  },
+  "inicio": {
+    "heroTitulo": "محترفون موثوقون بالقرب منك",
+    "heroSubtitulo": "اعثر على المحترف المناسب لأي خدمة منزلية. تقييمات حقيقية وعروض أسعار واضحة وحجز فوري.",
+    "porQueTitulo": "لماذا تختار سيرفي لوكال؟",
+    "cercanosTitulo": "محترفون قريبون",
+    "cercanosTexto": "بحث بتحديد الموقع للعثور على أفضل المحترفين في منطقتك.",
+    "pagosTitulo": "مدفوعات آمنة",
+    "pagosTexto": "منصة دفع متكاملة مع سترايب. أموالك محمية حتى اكتمال الخدمة.",
+    "valoracionesTitulo": "تقييمات موثقة",
+    "valoracionesTexto": "لا يمكن ترك تقييم إلا للعملاء الذين أتموا الخدمة.",
+    "comoFunciona": "كيف يعمل",
+    "paso1Titulo": "ابحث عن الخدمة",
+    "paso1Texto": "حدد ما تحتاجه وأين. يعرض لك نظامنا أقرب المحترفين وأفضلهم تقييمًا.",
+    "paso2Titulo": "احجز وادفع",
+    "paso2Texto": "اختر التاريخ وادفع العربون واحصل على التأكيد فورًا.",
+    "paso3Titulo": "قيّم تجربتك",
+    "paso3Texto": "بعد الخدمة، اترك تقييمك لمساعدة المستخدمين الآخرين."
+  },
+  "legal": {
+    "avisoIdioma": "يُنشر هذا النص القانوني بالإسبانية فقط، والنسخة الإسبانية هي النسخة المعتمدة."
+  },
+  "mapa": {
+    "desde": "ابتداءً من {precio} {unidad}",
+    "verDetalle": "عرض التفاصيل"
+  },
+  "mensajesPanel": {
+    "enviar": "إرسال",
+    "escribePlaceholder": "اكتب رسالة...",
+    "sinConversaciones": "لا توجد لديك محادثات.",
+    "sinConversacionesPista": "تبدأ المحادثات عند التواصل مع محترف من خلال خدمة أو حجز.",
+    "sinMensajes": "لا توجد رسائل في هذه المحادثة بعد.",
+    "titulo": "الرسائل"
+  },
+  "meta": {
+    "titulo": "سيرفي لوكال - خدمات محلية بالقرب منك",
+    "descripcion": "اعثر على محترفين موثوقين في منطقتك: السباكة والكهرباء والدروس الخصوصية والمزيد. احجز وادفع وقيّم بأمان."
+  },
+  "navegacion": {
+    "principal": "التنقل الرئيسي",
+    "buscarServicios": "البحث عن خدمات",
+    "misReservas": "حجوزاتي",
+    "reservasRecibidas": "الحجوزات الواردة",
+    "mensajes": "الرسائل",
+    "administracion": "الإدارة",
+    "miPerfil": "ملفي الشخصي",
+    "iniciarSesion": "تسجيل الدخول",
+    "registrarse": "إنشاء حساب",
+    "salir": "خروج",
+    "cerrarSesion": "تسجيل الخروج",
+    "abrirMenu": "فتح القائمة",
+    "cerrarMenu": "إغلاق القائمة",
+    "menuMovil": "قائمة الجوال"
+  },
+  "noEncontrado": {
+    "titulo": "الصفحة غير موجودة",
+    "texto": "الرابط الذي اتبعته غير موجود أو تم نقل المحتوى.",
+    "volver": "العودة إلى الصفحة الرئيسية"
+  },
+  "paginacion": {
+    "anterior": "الصفحة السابقة",
+    "navegacion": "ترقيم صفحات النتائج",
+    "pagina": "الصفحة {numero}",
+    "siguiente": "الصفحة التالية"
+  },
+  "pago": {
+    "avisoStripe": "تُعالَج الدفعة بأمان عبر سترايب. لا تحتفظ سيرفي لوكال ببيانات بطاقتك.",
+    "caducada": "انتهت صلاحية جلسة الدفع. جارٍ إنشاء جلسة جديدة...",
+    "completado": "اكتمل الدفع. تم تأكيد الحجز.",
+    "cvcIncorrecto": "رمز التحقق المُدخل غير صحيح.",
+    "desconocido": "غير معروف",
+    "errorCodigo": "تعذّر بدء عملية الدفع (الرمز {codigo}).",
+    "errorGenerico": "خطأ أثناء معالجة الدفع.",
+    "errorIniciar": "تعذّر بدء عملية الدفع",
+    "errorTemporal": "خطأ مؤقت أثناء معالجة الدفع. أعد المحاولة.",
+    "fondosInsuficientes": "الرصيد غير كافٍ في البطاقة.",
+    "formularioCargando": "لا يزال نموذج الدفع قيد التحميل. انتظر لحظة.",
+    "importe": "{importe} يورو",
+    "noConfirmado": "تم استلام الدفعة دون تأكيد. تواصل مع الدعم.",
+    "noEncontrada": "لم يتم العثور على الحجز.",
+    "noRegenerar": "تعذّر تجديد جلسة الدفع. أعد تحميل الصفحة.",
+    "pagandoReserva": "أنت تدفع حجز <servicio>{titulo}</servicio>",
+    "pagar": "ادفع {importe} يورو",
+    "pagoEnCurso": "هذا الحجز لديه بالفعل عملية دفع جارية أو مكتملة.",
+    "rechazada": "تم رفض بطاقتك.",
+    "sinPermiso": "لا تملك إذنًا لدفع هذا الحجز.",
+    "sinServidor": "تعذّر الاتصال بالخادم.",
+    "tarjetaCaducada": "انتهت صلاحية بطاقتك.",
+    "titulo": "تأكيد الدفع",
+    "totalPagar": "الإجمالي المستحق",
+    "verificacion": "يطلب مصرفك تحققًا إضافيًا.",
+    "volverDetalle": "العودة إلى تفاصيل الحجز"
+  },
+  "panel": {
+    "accesosRapidos": "روابط سريعة",
+    "buscarServicio": "ابحث عن خدمة",
+    "buscarServicioTexto": "اعثر على محترفين بالقرب منك.",
+    "gestionarServicios": "إدارة خدماتي",
+    "gestionarServiciosTexto": "أنشئ خدماتك المنشورة أو عدّلها أو أوقفها مؤقتًا.",
+    "hola": "مرحبًا، {nombre}",
+    "misServicios": "خدماتي",
+    "perfil": "الملف الشخصي",
+    "reservasRecibidasTexto": "اقبل الأعمال أو ارفضها أو ضع علامة مكتمل عليها.",
+    "resumen": "نظرة عامة",
+    "resumenCliente": "هذا ملخص حجوزاتك وتقييماتك.",
+    "resumenProfesional": "هذا ملخص نشاطك كمحترف.",
+    "valoraciones": "التقييمات",
+    "verReservas": "عرض حجوزاتي",
+    "verReservasTexto": "تابع حالة حجوزاتك الجارية."
+  },
+  "perfilPanel": {
+    "actualizado": "تم تحديث الملف الشخصي",
+    "biografia": "نبذة",
+    "biografiaPlaceholder": "أخبرنا عن نفسك...",
+    "codigoPostal": "الرمز البريدي",
+    "direccion": "العنوان",
+    "errorActualizar": "تعذّر تحديث الملف الشخصي",
+    "guardar": "حفظ التغييرات",
+    "telefono": "الهاتف",
+    "titulo": "ملفي الشخصي"
+  },
+  "pie": {
+    "enlaces": "روابط التذييل",
+    "acercaDe": "من نحن",
+    "terminos": "الشروط",
+    "privacidad": "الخصوصية",
+    "derechos": "© 2026 سيرفي لوكال. رسالة ماجستير من جامعة UOC."
+  },
+  "reserva": {
+    "continuar": "المتابعة إلى الدفع",
+    "creada": "تم إنشاء الحجز. ننتقل إلى الدفع.",
+    "descripcionCorta": "صف العمل باختصار (10 أحرف على الأقل)",
+    "descripcionPlaceholder": "صف باختصار العمل المطلوب والموقع الدقيق والمواد اللازمة...",
+    "descripcionTrabajo": "وصف العمل",
+    "errorCrear": "تعذّر إنشاء الحجز. أعد المحاولة.",
+    "fecha": "التاريخ",
+    "fechaObligatoria": "التاريخ مطلوب",
+    "hora": "الوقت",
+    "horaObligatoria": "الوقت مطلوب",
+    "precioMaximo": "الحد الأقصى للسعر {max} يورو",
+    "precioMinimo": "الحد الأدنى للسعر {min} يورو",
+    "precioMinimoEtiqueta": "السعر المتفق عليه باليورو (بحد أدنى {min})",
+    "precioPista": "يمكن تعديل هذا المبلغ بعد التحدث مع المحترف.",
+    "precioRango": "السعر المتفق عليه باليورو (بين {min} و{max})",
+    "resumen": "الملخص",
+    "resumenFecha": "التاريخ: {fecha} الساعة {hora}",
+    "resumenServicio": "الخدمة: {titulo}",
+    "resumenTotal": "الإجمالي: {precio} يورو",
+    "servicioNoDisponible": "الخدمة غير متاحة",
+    "titulo": "احجز: {servicio}"
+  },
+  "reservasPanel": {
+    "aceptar": "قبول الحجز",
+    "actualizada": "تم تحديث الحجز",
+    "cancelar": "إلغاء",
+    "completar": "وضع علامة مكتمل",
+    "confirmar": "تأكيد",
+    "descripcion": "الوصف",
+    "errorActualizar": "تعذّر تحديث الحجز",
+    "misReservas": "حجوزاتي",
+    "noEncontrada": "لم يتم العثور على الحجز.",
+    "pagarAhora": "ادفع الآن",
+    "rechazar": "رفض",
+    "reservasRecibidas": "الحجوزات الواردة",
+    "sinReservas": "لا توجد حجوزات في هذا القسم."
+  },
+  "resultados": {
+    "cargando": "جارٍ تحميل النتائج",
+    "cuenta": "{total, plural, =0 {لا توجد نتائج} one {نتيجة واحدة} two {نتيجتان} few {# نتائج} many {# نتيجة} other {# نتيجة}}",
+    "despertando": "الخادم يستيقظ بعد فترة خمول. قد يستغرق ذلك دقيقة واحدة.",
+    "errorRed": "تعذّر الاتصال بالخادم. أعد المحاولة بعد لحظات.",
+    "errorServicio": "الخدمة غير متاحة. أعد المحاولة لاحقًا.",
+    "errorTimeout": "استغرق الخادم وقتًا طويلًا للرد. قد يكون قيد الاستيقاظ بعد فترة خمول.",
+    "filtros": "عوامل التصفية",
+    "sinResultados": "لم يُعثر على خدمات مطابقة لعوامل التصفية المختارة.",
+    "sinResultadosPista": "جرّب توسيع نطاق البحث أو إزالة أحد عوامل التصفية.",
+    "titulo": "نتائج البحث",
+    "vistaLista": "قائمة",
+    "vistaMapa": "خريطة"
+  },
+  "serviciosPanel": {
+    "actualizado": "تم تحديث الخدمة",
+    "confirmarEliminar": "هل تريد حذف هذه الخدمة؟ لا يمكن التراجع عن ذلك.",
+    "creado": "تم إنشاء الخدمة",
+    "editar": "تعديل الخدمة",
+    "eliminado": "تم حذف الخدمة",
+    "errorActualizar": "تعذّر تحديث الخدمة",
+    "errorCrear": "تعذّر إنشاء الخدمة",
+    "errorEliminar": "تعذّر الحذف",
+    "nuevo": "خدمة جديدة",
+    "sinServicios": "لم تنشر أي خدمة بعد.",
+    "sinServiciosPista": "أنشئ خدمتك الأولى لتبدأ في استقبال الحجوزات.",
+    "titulo": "خدماتي"
+  },
+  "tarjeta": {
+    "precioRango": "{min} إلى {max} {unidad}",
+    "precioUnico": "{min} {unidad}"
+  },
+  "tema": {
+    "activarClaro": "تفعيل المظهر الفاتح",
+    "activarOscuro": "تفعيل المظهر الداكن"
+  },
+  "validacion": {
+    "confirmaPassword": "أكّد كلمة المرور",
+    "emailInvalido": "أدخل بريدًا إلكترونيًا صالحًا",
+    "emailObligatorio": "البريد الإلكتروني مطلوب",
+    "minimoCaracteres": "8 أحرف على الأقل",
+    "obligatorio": "مطلوب",
+    "passwordObligatoria": "كلمة المرور مطلوبة",
+    "passwordsNoCoinciden": "كلمتا المرور غير متطابقتين"
+  },
+  "valoracion": {
+    "valorar": "قيّم بـ {estrellas} نجوم"
+  },
+  "valoracionesPanel": {
+    "comentarioPlaceholder": "تعليق اختياري عن الخدمة...",
+    "con": "مع {nombre}",
+    "enviada": "تم إرسال التقييم. شكرًا لك!",
+    "enviadas": "التقييمات المُرسلة ({total})",
+    "enviar": "إرسال التقييم",
+    "errorEnviar": "تعذّر إرسال التقييم",
+    "pendientes": "تقييمات معلّقة",
+    "selecciona": "اختر تقييمًا",
+    "sinEnviadas": "لم ترسل أي تقييم بعد.",
+    "sinPendientes": "لا توجد تقييمات معلّقة.",
+    "tuValoracion": "تقييمك"
   }
 }
