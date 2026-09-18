@@ -67,6 +67,17 @@ test.describe('Accesibilidad', () => {
     const { violations } = await analizar(page);
 
     expect(resumir(violations)).toEqual([]);
+
+    // El panel son pestañas: analizar la que sale por defecto deja sin mirar
+    // todo lo demás. La de auditoría es la que más texto tenue apila.
+    await page.getByRole('tab', { name: 'Auditoría' }).click();
+    await expect(
+      page.getByRole('table', {
+        name: 'Historial de acciones de administración',
+      }),
+    ).toBeVisible();
+
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
   });
 
   test('el tema oscuro también cumple', async ({ page }) => {

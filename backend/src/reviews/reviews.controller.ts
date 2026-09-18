@@ -100,8 +100,14 @@ export class ReviewsController {
   @ApiOperation({
     summary: 'Descartar el reporte de una valoración (solo admin - moderación)',
   })
-  async dismissReport(@Param('id', ParseUUIDPipe) id: string) {
-    return this.reviewsService.dismissReport(id);
+  async dismissReport(
+    @Request() req: any,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.reviewsService.dismissReport(id, {
+      id: req.user.id,
+      email: req.user.email,
+    });
   }
 
   @Delete(':id')
@@ -109,8 +115,11 @@ export class ReviewsController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar valoración (solo admin - moderación)' })
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.reviewsService.deleteReview(id);
+  async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    await this.reviewsService.deleteReview(id, {
+      id: req.user.id,
+      email: req.user.email,
+    });
     return { message: 'Valoración eliminada correctamente' };
   }
 }

@@ -123,6 +123,52 @@ test.describe('Panel de administración', () => {
     }
   });
 
+  test('el historial de auditoría se lee y no se puede tocar', async ({
+    page,
+  }) => {
+    await entrarComo(page, 'Administración');
+    await page.goto('/admin');
+
+    await page.getByRole('tab', { name: 'Auditoría' }).click();
+
+    const tabla = page.getByRole('table', {
+      name: 'Historial de acciones de administración',
+    });
+    await expect(tabla).toBeVisible();
+    await expect(
+      tabla.getByRole('columnheader', { name: 'Quién' }),
+    ).toBeVisible();
+    await expect(
+      tabla.getByRole('columnheader', { name: 'Acción' }),
+    ).toBeVisible();
+
+    // Sin esto el test pasaría con el historial roto: el panel deja la tabla
+    // vacía tanto si no hay nada anotado como si la petición ha fallado, y
+    // solo el aviso de error distingue un caso del otro.
+    await expect(
+      page.getByText('No se ha podido cargar el historial.'),
+    ).toBeHidden();
+
+    // Un historial que se puede editar no prueba nada. El servidor no expone
+    // ruta para ello y el panel tampoco ofrece por dónde: ni un botón dentro
+    // de la tabla.
+    expect(await tabla.getByRole('button').count()).toBe(0);
+
+    // Y o hay entradas, o se dice que no las hay: una tabla sin filas y sin
+    // explicación se lee como una avería.
+    const filas = tabla.getByRole('row');
+    const sinEntradas = page.getByText('No hay ninguna acción registrada');
+    if ((await filas.count()) <= 1) {
+      await expect(sinEntradas).toBeVisible();
+    } else {
+      await expect(sinEntradas).toBeHidden();
+
+      // Y lo que se lee es la frase, no el nombre interno de la acción: una
+      // clave que falte en el catálogo se vería en crudo, con su guion bajo.
+      await expect(tabla.getByText(/^[a-z]+_[a-z_]+$/)).toHaveCount(0);
+    }
+  });
+
   test('un cliente acaba en su panel y no en el de administración', async ({
     page,
   }) => {

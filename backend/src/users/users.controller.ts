@@ -89,6 +89,9 @@ export class UsersController {
     @Request() req: any,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.usersService.toggleActive(id, req.user.id);
+    return this.usersService.toggleActive(id, {
+      id: req.user.id,
+      email: req.user.email,
+    });
   }
 }

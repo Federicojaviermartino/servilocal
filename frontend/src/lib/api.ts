@@ -107,6 +107,8 @@ export const avisosApi = {
 export const adminApi = {
   metricas: () => api.get('/admin/metricas'),
   reputacion: () => api.get('/admin/reputacion'),
+  auditoria: (pagina: number) =>
+    api.get('/admin/auditoria', { params: { pagina } }),
 };
 
 export const categoriesApi = {

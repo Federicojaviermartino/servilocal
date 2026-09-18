@@ -7,7 +7,9 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
 import {
+  AccionAuditada,
   Review,
   Booking,
   BookingStatus,
@@ -30,6 +32,7 @@ export class ReviewsService {
     @InjectRepository(Service)
     private serviceRepository: Repository<Service>,
     private readonly avisos: NotificationsService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   async create(clientId: string, createDto: CreateReviewDto): Promise<Review> {
@@ -155,19 +158,32 @@ export class ReviewsService {
     });
   }
 
-  async dismissReport(reviewId: string): Promise<Review> {
+  async dismissReport(reviewId: string, actor: Actor): Promise<Review> {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },
     });
     if (!review) {
       throw new NotFoundException('Valoración no encontrada');
     }
+    // El motivo alegado se copia al historial antes de borrarlo de la
+    // valoración: si no, se pierde justo la razón por la que se moderó.
+    const motivo = review.reportReason ?? '';
     review.isReported = false;
     review.reportReason = null;
-    return this.reviewRepository.save(review);
+    const guardada = await this.reviewRepository.save(review);
+
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.REPORTE_DESCARTADO,
+      entidad: 'valoracion',
+      entidadId: guardada.id,
+      contexto: { motivo: motivo.slice(0, 200) },
+    });
+
+    return guardada;
   }
 
-  async deleteReview(reviewId: string): Promise<void> {
+  async deleteReview(reviewId: string, actor: Actor): Promise<void> {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },
     });
@@ -177,8 +193,23 @@ export class ReviewsService {
     }
 
     const serviceId = review.serviceId;
+    // Se guarda antes de borrar: después no habría nada de lo que copiarlo,
+    // y un historial que solo dice «se eliminó algo» no sirve de nada.
+    const contexto = {
+      nota: String(review.rating),
+      comentario: (review.comment ?? '').slice(0, 200),
+    };
+
     await this.reviewRepository.remove(review);
     await this.updateServiceRating(serviceId);
+
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.VALORACION_ELIMINADA,
+      entidad: 'valoracion',
+      entidadId: reviewId,
+      contexto,
+    });
   }
 
   private async updateServiceRating(serviceId: string): Promise<void> {

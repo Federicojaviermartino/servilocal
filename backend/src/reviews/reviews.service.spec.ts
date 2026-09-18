@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
@@ -41,6 +42,10 @@ describe('ReviewsService', () => {
         {
           provide: NotificationsService,
           useValue: { crear: jest.fn(async () => null) },
+        },
+        {
+          provide: AuditoriaService,
+          useValue: { anotar: jest.fn(async () => undefined) },
         },
       ],
     }).compile();

@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { Category } from '../entities';
+import { AccionAuditada, Category } from '../entities';
+import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CacheService } from '../common/redis/cache.service';
 
@@ -15,6 +16,7 @@ export class CategoriesService {
     @InjectRepository(Category)
     private categoryRepository: Repository<Category>,
     private readonly cache: CacheService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   /**
@@ -47,26 +49,55 @@ export class CategoriesService {
     return category;
   }
 
-  async create(createDto: CreateCategoryDto): Promise<Category> {
+  async create(createDto: CreateCategoryDto, actor: Actor): Promise<Category> {
     const category = this.categoryRepository.create(createDto);
     const guardada = await this.categoryRepository.save(category);
     await this.cache.olvidar(CLAVE);
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.CATEGORIA_CREADA,
+      entidad: 'categoria',
+      entidadId: guardada.id,
+      contexto: { nombre: guardada.name, slug: guardada.slug },
+    });
     return guardada;
   }
 
-  async update(id: string, updateDto: UpdateCategoryDto): Promise<Category> {
+  async update(
+    id: string,
+    updateDto: UpdateCategoryDto,
+    actor: Actor,
+  ): Promise<Category> {
     const category = await this.findById(id);
+    // El nombre anterior se guarda antes de pisarlo: un historial que dice
+    // «se editó» sin decir desde qué no permite deshacer nada.
+    const anterior = category.name;
     Object.assign(category, updateDto);
     const guardada = await this.categoryRepository.save(category);
     await this.cache.olvidar(CLAVE);
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.CATEGORIA_EDITADA,
+      entidad: 'categoria',
+      entidadId: guardada.id,
+      contexto: { antes: anterior, ahora: guardada.name },
+    });
     return guardada;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actor: Actor): Promise<void> {
     const category = await this.findById(id);
+    const contexto = { nombre: category.name, slug: category.slug };
     await this.categoryRepository.remove(category);
     // Quien borra una categoría tiene que verla desaparecer, no esperar a
     // que venza el tiempo de vida.
     await this.cache.olvidar(CLAVE);
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.CATEGORIA_ELIMINADA,
+      entidad: 'categoria',
+      entidadId: id,
+      contexto,
+    });
   }
 }

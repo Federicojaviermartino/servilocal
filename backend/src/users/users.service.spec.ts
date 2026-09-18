@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../entities';
 import { UsersService } from './users.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 describe('UsersService', () => {
   let servicio: UsersService;
@@ -10,6 +11,7 @@ describe('UsersService', () => {
 
   const OTRO = 'b2c3d4e5-0000-4000-8000-000000000002';
   const YO = 'a1b2c3d4-0000-4000-8000-000000000001';
+  const ACTOR = { id: YO, email: 'admin@servilocal.com' };
 
   beforeEach(async () => {
     repo = {
@@ -21,6 +23,10 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: repo },
+        {
+          provide: AuditoriaService,
+          useValue: { anotar: jest.fn(async () => undefined) },
+        },
       ],
     }).compile();
 
@@ -29,7 +35,7 @@ describe('UsersService', () => {
 
   describe('toggleActive', () => {
     it('cambia el estado de otra cuenta', async () => {
-      const resultado = await servicio.toggleActive(OTRO, YO);
+      const resultado = await servicio.toggleActive(OTRO, ACTOR);
 
       expect(resultado.isActive).toBe(false);
       expect(repo.save).toHaveBeenCalled();
@@ -39,7 +45,7 @@ describe('UsersService', () => {
       // Sería irreversible: la estrategia JWT rechaza a los inactivos y la
       // ruta exige un administrador activo, así que con un solo administrador
       // no queda nadie que pueda deshacerlo desde la aplicación.
-      await expect(servicio.toggleActive(YO, YO)).rejects.toThrow(
+      await expect(servicio.toggleActive(YO, ACTOR)).rejects.toThrow(
         BadRequestException,
       );
       expect(repo.save).not.toHaveBeenCalled();
@@ -48,7 +54,7 @@ describe('UsersService', () => {
     it('sigue avisando si la cuenta no existe', async () => {
       repo.findOne.mockResolvedValueOnce(null);
 
-      await expect(servicio.toggleActive(OTRO, YO)).rejects.toThrow(
+      await expect(servicio.toggleActive(OTRO, ACTOR)).rejects.toThrow(
         NotFoundException,
       );
     });

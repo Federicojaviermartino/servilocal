@@ -4,6 +4,9 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { CacheService } from '../common/redis/cache.service';
 import { Category } from '../entities';
 import { CategoriesService } from './categories.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
+
+const ACTOR = { id: 'admin-1', email: 'admin@servilocal.com' };
 
 const ARBOL = [{ id: 'c1', name: 'Fontanería', slug: 'fontaneria' }];
 
@@ -37,6 +40,10 @@ async function construir(existente: unknown = ARBOL[0]) {
       CategoriesService,
       { provide: getRepositoryToken(Category), useValue: repo },
       { provide: CacheService, useValue: cache },
+      {
+        provide: AuditoriaService,
+        useValue: { anotar: jest.fn(async () => undefined) },
+      },
     ],
   }).compile();
 
@@ -70,7 +77,7 @@ describe('CategoriesService', () => {
       const { servicio, cache, repo } = await construir();
       await servicio.findAll();
 
-      await servicio.create({ name: 'Nueva', slug: 'nueva' } as never);
+      await servicio.create({ name: 'Nueva', slug: 'nueva' } as never, ACTOR);
       await servicio.findAll();
 
       expect(cache.olvidar).toHaveBeenCalled();
@@ -81,7 +88,7 @@ describe('CategoriesService', () => {
       const { servicio, cache } = await construir();
       await servicio.findAll();
 
-      await servicio.update('c1', { name: 'Otro' } as never);
+      await servicio.update('c1', { name: 'Otro' } as never, ACTOR);
 
       expect(cache.olvidar).toHaveBeenCalled();
     });
@@ -90,7 +97,7 @@ describe('CategoriesService', () => {
       const { servicio, cache, repo } = await construir();
       await servicio.findAll();
 
-      await servicio.remove('c1');
+      await servicio.remove('c1', ACTOR);
       await servicio.findAll();
 
       expect(cache.olvidar).toHaveBeenCalled();

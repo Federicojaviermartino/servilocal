@@ -22,6 +22,7 @@ import {
   Star,
   Eye,
   Sparkles,
+  ScrollText,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import GraficasPanel from '@/components/organisms/GraficasPanel';
@@ -37,6 +38,7 @@ import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
 import Badge from '@/components/atoms/Badge';
 import Spinner from '@/components/atoms/Spinner';
+import Pagination from '@/components/molecules/Pagination';
 
 type Tab = (typeof TABS)[number]['key'];
 
@@ -45,6 +47,7 @@ const TABS = [
   { key: 'reputation', clave: 'reputacion', icon: TrendingUp },
   { key: 'categories', clave: 'categorias', icon: Tag },
   { key: 'reviews', clave: 'valoracionesReportadas', icon: Flag },
+  { key: 'auditoria', clave: 'auditoria', icon: ScrollText },
   { key: 'ia', clave: 'ia', icon: Sparkles },
 ] as const;
 
@@ -275,6 +278,15 @@ export default function AdminPage() {
                 aria-labelledby="tab-reviews"
               >
                 <ReportedReviewsSection onMutate={loadStats} />
+              </div>
+            )}
+            {tab === 'auditoria' && (
+              <div
+                role="tabpanel"
+                id="panel-auditoria"
+                aria-labelledby="tab-auditoria"
+              >
+                <AuditoriaSection />
               </div>
             )}
             {tab === 'ia' && (
@@ -1243,6 +1255,146 @@ function IaSection() {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Forma de una fila de GET /api/admin/auditoria. */
+interface EntradaAuditoria {
+  id: string;
+  actorEmail: string;
+  accion: string;
+  entidad: string;
+  entidadId: string | null;
+  contexto: Record<string, string> | null;
+  createdAt: string;
+}
+
+/**
+ * Historial de acciones de administración.
+ *
+ * No hay nada que pulsar, y es deliberado: el servidor no expone ninguna ruta
+ * para modificar ni para borrar una entrada, así que tampoco la hay aquí.
+ *
+ * El texto de cada acción y el de cada campo del contexto salen del catálogo,
+ * igual que en los avisos: el servidor anota el nombre en crudo y quien lo
+ * lee lo ve en su idioma. Si algún día se registra una acción que el catálogo
+ * todavía no conoce, se enseña el nombre tal cual en lugar de dejar el hueco
+ * en blanco.
+ */
+function AuditoriaSection() {
+  const t = useTranslations('auditoria');
+  const idioma = useLocale();
+  const [entradas, setEntradas] = useState<EntradaAuditoria[]>([]);
+  const [pagina, setPagina] = useState(1);
+  const [paginas, setPaginas] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Cambiar de página antes de que vuelva la anterior dejaría pintada la
+    // respuesta que llegue la última, que no tiene por qué ser la pedida.
+    let vigente = true;
+    setIsLoading(true);
+    adminApi
+      .auditoria(pagina)
+      .then(({ data }) => {
+        if (!vigente) return;
+        setEntradas(data.datos ?? []);
+        setPaginas(data.paginas ?? 1);
+      })
+      .catch(() => {
+        if (vigente) toast.error(t('error'));
+      })
+      .finally(() => {
+        if (vigente) setIsLoading(false);
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, [pagina, t]);
+
+  const traducir = (clave: string) =>
+    t.has(clave as never) ? t(clave as never) : clave;
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-secundario">{t('ayuda')}</p>
+
+      <div className="overflow-x-auto" tabIndex={0}>
+        <table className="min-w-full text-sm" aria-label={t('lista')}>
+          <thead className="bg-fondo text-secundario">
+            <tr>
+              <th className="text-start px-3 py-2 font-medium">
+                {t('cuando')}
+              </th>
+              <th className="text-start px-3 py-2 font-medium">{t('quien')}</th>
+              <th className="text-start px-3 py-2 font-medium">
+                {t('accion')}
+              </th>
+              <th className="text-start px-3 py-2 font-medium">
+                {t('detalle')}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {entradas.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-3 py-8 text-center text-tenue">
+                  {t('sinEntradas')}
+                </td>
+              </tr>
+            )}
+            {entradas.map((entrada) => (
+              <tr key={entrada.id} className="border-t border-borde align-top">
+                {/* La hora importa tanto como el día: dos moderaciones
+                    seguidas sobre la misma cuenta solo se distinguen así. */}
+                <td className="px-3 py-2 whitespace-nowrap text-secundario">
+                  {new Date(entrada.createdAt).toLocaleString(idioma, {
+                    dateStyle: 'short',
+                    timeStyle: 'short',
+                  })}
+                </td>
+                <td className="px-3 py-2 text-principal">
+                  {entrada.actorEmail}
+                </td>
+                <td className="px-3 py-2 font-medium text-principal">
+                  {traducir(entrada.accion)}
+                </td>
+                <td className="px-3 py-2">
+                  {entrada.contexto &&
+                  Object.keys(entrada.contexto).length > 0 ? (
+                    <ul className="space-y-0.5">
+                      {Object.entries(entrada.contexto).map(
+                        ([campo, valor]) => (
+                          <li key={campo} className="break-words">
+                            <span className="text-tenue">
+                              {traducir(`campo_${campo}`)}:{' '}
+                            </span>
+                            <span className="text-secundario">{valor}</span>
+                          </li>
+                        ),
+                      )}
+                    </ul>
+                  ) : (
+                    <span className="text-tenue">—</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <Pagination page={pagina} totalPages={paginas} onChange={setPagina} />
     </div>
   );
 }

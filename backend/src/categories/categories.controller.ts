@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   ParseUUIDPipe,
+  Request,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -50,8 +51,11 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Crear categoría (solo admin)' })
   @ApiResponse({ status: 201, description: 'Categoría creada' })
-  async create(@Body() createDto: CreateCategoryDto) {
-    return this.categoriesService.create(createDto);
+  async create(@Request() req: any, @Body() createDto: CreateCategoryDto) {
+    return this.categoriesService.create(createDto, {
+      id: req.user.id,
+      email: req.user.email,
+    });
   }
 
   @Put(':id')
@@ -61,10 +65,14 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Actualizar categoría (solo admin)' })
   @ApiResponse({ status: 200, description: 'Categoría actualizada' })
   async update(
+    @Request() req: any,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateCategoryDto,
   ) {
-    return this.categoriesService.update(id, updateDto);
+    return this.categoriesService.update(id, updateDto, {
+      id: req.user.id,
+      email: req.user.email,
+    });
   }
 
   @Delete(':id')
@@ -73,8 +81,11 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar categoría (solo admin)' })
   @ApiResponse({ status: 200, description: 'Categoría eliminada' })
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
-    await this.categoriesService.remove(id);
+  async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    await this.categoriesService.remove(id, {
+      id: req.user.id,
+      email: req.user.email,
+    });
     return { message: 'Categoría eliminada correctamente' };
   }
 }
