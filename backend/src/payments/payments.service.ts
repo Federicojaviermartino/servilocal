@@ -188,7 +188,15 @@ export class PaymentsService {
     }
 
     if (payment.stripePaymentIntentId) {
-      await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
+      if (payment.status === PaymentStatus.HELD) {
+        // Retenido y sin cobrar: se suelta la retención.
+        await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
+      } else {
+        // Ya cobrado: hay que devolver el dinero de verdad.
+        await this.stripe.refunds.create({
+          payment_intent: payment.stripePaymentIntentId,
+        });
+      }
     }
 
     payment.status = PaymentStatus.REFUNDED;

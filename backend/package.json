@@ -100,10 +100,10 @@
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
       "global": {
-        "statements": 15,
-        "branches": 10,
-        "functions": 12,
-        "lines": 15
+        "statements": 65,
+        "branches": 55,
+        "functions": 63,
+        "lines": 65
       },
       "./src/auth/auth.service.ts": {
         "statements": 85,
