@@ -546,7 +546,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !slug.trim()) {
-      toast.error('Nombre y slug son obligatorios.');
+      toast.error(t('nombreYSlugObligatorios'));
       return;
     }
     setIsCreating(true);
@@ -585,7 +585,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
 
   const saveEdit = async (id: string) => {
     if (!editName.trim() || !editSlug.trim()) {
-      toast.error('Nombre y slug son obligatorios.');
+      toast.error(t('nombreYSlugObligatorios'));
       return;
     }
     setIsSavingEdit(true);

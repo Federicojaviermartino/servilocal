@@ -146,7 +146,7 @@ export default function BookingDetailPage() {
 
         <div className="bg-fondo rounded-md p-4 mb-6">
           <h2 className="text-sm font-semibold text-principal mb-3">
-            {isProvider ? 'Cliente' : 'Profesional'}
+            {isProvider ? tComun('cliente') : tComun('profesional')}
           </h2>
           <div className="flex items-center gap-3">
             <Avatar
