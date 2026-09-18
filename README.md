@@ -175,6 +175,8 @@ Three-tier client–server. The front end consumes the REST API; the API persist
 
 UML diagrams live in [`diagrams/`](diagrams/) and responsive wireframes in [`wireframes/`](wireframes/), both as standalone HTML.
 
+**[`ARCHITECTURE.md`](ARCHITECTURE.md)** goes further: the request lifecycle, the module and data maps, the decisions behind each fork in the road, and the limitations that were accepted on purpose.
+
 ---
 
 ## Engineering Highlights
