@@ -25,7 +25,10 @@ export function urlDe(locale: string, ruta = ''): string {
  * Medido antes de arreglarlo: la portada servía once alternativas y el
  * buscador y las fichas, ninguna.
  */
-export function alternativas(locale: string, ruta = '') {
+export function alternativas(
+  locale: string,
+  ruta = '',
+): { canonical: string; languages: Record<string, string> } {
   const languages = Object.fromEntries(
     routing.locales.map((otro: Idioma) => [otro, urlDe(otro, ruta)]),
   );

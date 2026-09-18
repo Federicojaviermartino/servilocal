@@ -22,7 +22,8 @@ export default function ServiceCard({ service }: ServiceCardProps) {
   const nombreCategoria = useNombreCategoria();
   const nombreUnidad = useNombreUnidad();
 
-  // La unidad de precio la escribe el profesional, así que va tal cual.
+  // La unidad se guarda en castellano y se traduce al pintarla; el valor
+  // guardado no se toca, que es el contrato con la API.
   const priceLabel =
     service.priceMax && service.priceMax !== service.priceMin
       ? t('precioRango', {

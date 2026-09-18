@@ -93,6 +93,9 @@ jobs:
       - name: Comprobar tipos
         run: npm run type-check
 
+      - name: Pruebas unitarias con cobertura
+        run: npm run test:cov
+
       - name: Build
         run: npm run build
         env:
