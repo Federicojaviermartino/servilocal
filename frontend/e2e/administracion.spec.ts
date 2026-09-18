@@ -155,13 +155,15 @@ test.describe('Panel de administración', () => {
     expect(await tabla.getByRole('button').count()).toBe(0);
 
     // Y o hay entradas, o se dice que no las hay: una tabla sin filas y sin
-    // explicación se lee como una avería.
-    const filas = tabla.getByRole('row');
+    // explicación se lee como una avería. Con la base recién sembrada no hay
+    // nada anotado, así que las dos ramas ocurren de verdad.
+    const filas = tabla.locator('tbody tr');
     const sinEntradas = page.getByText('No hay ninguna acción registrada');
-    if ((await filas.count()) <= 1) {
-      await expect(sinEntradas).toBeVisible();
+
+    if (await sinEntradas.isVisible()) {
+      await expect(filas).toHaveCount(1);
     } else {
-      await expect(sinEntradas).toBeHidden();
+      await expect(filas.first()).toBeVisible();
 
       // Y lo que se lee es la frase, no el nombre interno de la acción: una
       // clave que falte en el catálogo se vería en crudo, con su guion bajo.
