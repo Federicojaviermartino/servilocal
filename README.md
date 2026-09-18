@@ -13,13 +13,14 @@
 
 [Live Demo](https://servilocal-web.onrender.com) ·
 [API Reference](https://servilocal-api.onrender.com/api/docs) ·
+[Architecture](ARCHITECTURE.md) ·
 [Diagrams](diagrams/) ·
 [Wireframes](wireframes/)
 
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-19%20unit%20%2B%2028%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-492%20unit%20%2B%2046%20e2e-475569)
 
 </div>
 
@@ -440,14 +441,16 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 19 unit tests across 3 suites
-npm run test:cov
+npm run test          # 274 unit tests across 23 suites
+npm run test:cov      # fails below 90% statements / 80% branches
 npm run build
 
 # Front end
 cd frontend
 npm run lint
 npm run type-check
+npm run test          # 218 unit tests (Vitest)
+npm run test:cov      # fails below 58% statements / 54% branches
 npm run build
 
 # End-to-end (Playwright, desktop and mobile viewports)
@@ -463,7 +466,7 @@ npm run storybook
 npm run lock
 ```
 
-The end-to-end suite covers search with accent-insensitive matching, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, theme switching, language detection and switching, and a full booking paid with a Stripe test card.
+46 end-to-end tests run against two viewports — desktop and a 375 px phone — for 92 executions per run. They cover search with accent-insensitive matching, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, theme switching, language detection and switching, the admin panel including its charts, moderation queue and audit log, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, and a full booking paid with a Stripe test card.
 
 The payment test skips itself, with an explicit reason, when Stripe keys are not configured — the booking is still created, but there is nothing to charge. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 
@@ -475,12 +478,16 @@ All of these run in CI on every push to `main`. The end-to-end job spins up the 
 
 | Status | Item |
 |--------|------|
-| Next | Reduce the public search response to a provider projection, so only the fields a visitor needs are returned |
-| Next | Aggregation endpoints for the admin panel, so metrics are computed in SQL instead of counting arrays in the browser |
-| Next | Provider-level reputation, aggregating ratings across all of a provider's services |
-| Planned | Natural-language search, so the nine non-Spanish locales can reach a catalogue written in Spanish |
-| Planned | Usage and budget accounting for any paid external API, persisted rather than held in memory |
-| Considering | Seed data with a realistic spread of booking states and ratings, to make the admin views meaningful |
+| Next | Seed cancelled and rejected bookings. Three of the five states are seeded today, so two bars of the admin chart are always empty |
+| Next | Redis in production, so rate-limit counters survive a deploy and sockets span instances. The application already runs without it, by design |
+| Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
+| Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
+| Done | Public search returns a provider projection, not the full row |
+| Done | Admin metrics aggregated in SQL instead of counting arrays in the browser |
+| Done | Provider-level reputation across all of a provider's services |
+| Done | Natural-language search, with a monthly spend ceiling checked before each call |
+| Done | Usage and budget accounting persisted in PostgreSQL rather than held in memory |
+| Done | Audit log of administration actions, append-only |
 
 ---
 
