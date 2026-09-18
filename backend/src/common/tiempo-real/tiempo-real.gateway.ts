@@ -9,9 +9,9 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Repository } from 'typeorm';
-import { User } from '../entities';
-import { JwtPayload } from '../auth/strategies/jwt.strategy';
-import { origenesPermitidos } from '../common/origenes';
+import { User } from '../../entities';
+import { JwtPayload } from '../../auth/strategies/jwt.strategy';
+import { origenesPermitidos } from '../origenes';
 
 /** Sala privada de cada persona. Nadie la pide: se la asigna el servidor. */
 function salaDe(usuarioId: string): string {
@@ -19,7 +19,7 @@ function salaDe(usuarioId: string): string {
 }
 
 /**
- * Mensajería en tiempo real.
+ * Tiempo real: mensajes y avisos.
  *
  * La decisión que ordena todo el diseño: **hay una sala por persona, no una
  * por conversación, y el cliente nunca pide entrar en ninguna**. Al conectarse
@@ -40,8 +40,8 @@ function salaDe(usuarioId: string): string {
   namespace: '/mensajes',
   cors: { origin: origenesPermitidos(), credentials: true },
 })
-export class MensajesGateway implements OnGatewayConnection {
-  private readonly logger = new Logger(MensajesGateway.name);
+export class TiempoRealGateway implements OnGatewayConnection {
+  private readonly logger = new Logger(TiempoRealGateway.name);
 
   @WebSocketServer()
   private server: Server;
@@ -105,6 +105,18 @@ export class MensajesGateway implements OnGatewayConnection {
    * pero no destinatario, así que quien escribe no reconocería el suyo.
    * No se revela nada: son los dos únicos de la conversación.
    */
+  /**
+   * Avisa a una sola persona.
+   *
+   * Comparte sala y conexión con los mensajes: abrir un segundo socket para
+   * las notificaciones gastaría el doble de ranuras del servidor sin ganar
+   * nada, y el reparto por salas ya estaba resuelto.
+   */
+  notificarAviso(usuarioId: string, aviso: unknown): void {
+    if (!this.server) return;
+    this.server.to(salaDe(usuarioId)).emit('aviso-nuevo', aviso);
+  }
+
   notificarMensaje(participantes: [string, string], mensaje: unknown): void {
     // Si nadie ha abierto todavía un socket no hay servidor que usar: la
     // mensajería tiene que seguir funcionando por HTTP igualmente.

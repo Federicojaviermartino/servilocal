@@ -184,6 +184,24 @@
     "todaEspana": "a tot Espanya",
     "verTodos": "Mostra tots els resultats"
   },
+  "avisos": {
+    "abrir": "Obre els avisos",
+    "abrirConPendientes": "Obre els avisos, {total} sense llegir",
+    "booking_cancelled": "La teva reserva s'ha cancel·lat.",
+    "booking_completed": "La teva reserva s'ha marcat com a completada.",
+    "booking_confirmed": "La teva reserva s'ha confirmat.",
+    "booking_request": "Tens una sol·licitud de reserva nova.",
+    "generico": "Tens un avís nou.",
+    "marcarTodos": "Marca'ls tots com a llegits",
+    "new_message": "Tens un missatge nou.",
+    "new_review": "Has rebut una valoració de {nota} estrelles.",
+    "payment_received": "S'ha registrat el teu pagament.",
+    "payment_refunded": "S'ha emès el reemborsament.",
+    "sinAvisos": "Encara no tens avisos.",
+    "sinLeer": "Sense llegir",
+    "system": "Avís de la plataforma.",
+    "titulo": "Avisos"
+  },
   "buscador": {
     "queNecesitas": "Quin servei necessites?",
     "buscarServicios": "Cerca serveis"

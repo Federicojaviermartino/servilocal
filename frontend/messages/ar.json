@@ -184,6 +184,24 @@
     "todaEspana": "في جميع أنحاء إسبانيا",
     "verTodos": "عرض كل النتائج"
   },
+  "avisos": {
+    "abrir": "فتح الإشعارات",
+    "abrirConPendientes": "فتح الإشعارات، {total} غير مقروءة",
+    "booking_cancelled": "تم إلغاء حجزك.",
+    "booking_completed": "تم وضع علامة مكتمل على حجزك.",
+    "booking_confirmed": "تم تأكيد حجزك.",
+    "booking_request": "لديك طلب حجز جديد.",
+    "generico": "لديك إشعار جديد.",
+    "marcarTodos": "تعليم الكل كمقروء",
+    "new_message": "لديك رسالة جديدة.",
+    "new_review": "تلقّيت تقييمًا بـ {nota} نجوم.",
+    "payment_received": "تم تسجيل دفعتك.",
+    "payment_refunded": "تم إصدار المبلغ المُعاد.",
+    "sinAvisos": "لا توجد إشعارات بعد.",
+    "sinLeer": "غير مقروء",
+    "system": "إشعار من المنصة.",
+    "titulo": "الإشعارات"
+  },
   "buscador": {
     "queNecesitas": "ما الخدمة التي تحتاجها؟",
     "buscarServicios": "البحث عن خدمات"

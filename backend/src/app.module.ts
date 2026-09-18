@@ -6,6 +6,7 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { getDatabaseConfig } from './config/database.config';
 import { SoloLecturaInterceptor } from './common/interceptores/solo-lectura.interceptor';
 import { RedisModule } from './common/redis/redis.module';
+import { TiempoRealModule } from './common/tiempo-real/tiempo-real.module';
 import { ThrottlerVisitanteGuard } from './common/guards/throttler-visitante.guard';
 import { DiagnosticoController } from './common/diagnostico/diagnostico.controller';
 import { AuthModule } from './auth/auth.module';
@@ -16,6 +17,7 @@ import { BookingsModule } from './bookings/bookings.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MessagesModule } from './messages/messages.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { IaModule } from './ia/ia.module';
@@ -32,6 +34,7 @@ import configIa from './ia/ia.config';
     }),
     // Límite general por IP. Las rutas sensibles lo endurecen con @Throttle.
     RedisModule,
+    TiempoRealModule,
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -46,6 +49,7 @@ import configIa from './ia/ia.config';
     ReviewsModule,
     PaymentsModule,
     MessagesModule,
+    NotificationsModule,
     HealthModule,
     AdminModule,
     IaModule,

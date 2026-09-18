@@ -184,6 +184,24 @@
     "todaEspana": "in ganz Spanien",
     "verTodos": "Alle Ergebnisse ansehen"
   },
+  "avisos": {
+    "abrir": "Benachrichtigungen öffnen",
+    "abrirConPendientes": "Benachrichtigungen öffnen, {total} ungelesen",
+    "booking_cancelled": "Ihre Buchung wurde storniert.",
+    "booking_completed": "Ihre Buchung wurde als abgeschlossen markiert.",
+    "booking_confirmed": "Ihre Buchung wurde bestätigt.",
+    "booking_request": "Sie haben eine neue Buchungsanfrage.",
+    "generico": "Sie haben eine neue Benachrichtigung.",
+    "marcarTodos": "Alle als gelesen markieren",
+    "new_message": "Sie haben eine neue Nachricht.",
+    "new_review": "Sie haben eine Bewertung mit {nota} Sternen erhalten.",
+    "payment_received": "Ihre Zahlung wurde erfasst.",
+    "payment_refunded": "Die Rückerstattung wurde veranlasst.",
+    "sinAvisos": "Noch keine Benachrichtigungen.",
+    "sinLeer": "Ungelesen",
+    "system": "Hinweis der Plattform.",
+    "titulo": "Benachrichtigungen"
+  },
   "buscador": {
     "queNecesitas": "Welche Dienstleistung brauchen Sie?",
     "buscarServicios": "Dienstleistungen suchen"

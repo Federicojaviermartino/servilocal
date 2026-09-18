@@ -2,7 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Conversation, Message } from '../entities';
-import { MensajesGateway } from './mensajes.gateway';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 import { MessagesService } from './messages.service';
 
 const YO = 'u-yo';
@@ -37,7 +37,7 @@ async function construir(hilo: ReturnType<typeof conversacion> | null) {
       MessagesService,
       { provide: getRepositoryToken(Conversation), useValue: conversaciones },
       { provide: getRepositoryToken(Message), useValue: mensajes },
-      { provide: MensajesGateway, useValue: gateway },
+      { provide: TiempoRealGateway, useValue: gateway },
     ],
   }).compile();
 

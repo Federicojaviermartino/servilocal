@@ -6,7 +6,14 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Review, Booking, BookingStatus, Service } from '../entities';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  Review,
+  Booking,
+  BookingStatus,
+  Service,
+  NotificationType,
+} from '../entities';
 import {
   CreateReviewDto,
   ProviderResponseDto,
@@ -22,6 +29,7 @@ export class ReviewsService {
     private bookingRepository: Repository<Booking>,
     @InjectRepository(Service)
     private serviceRepository: Repository<Service>,
+    private readonly avisos: NotificationsService,
   ) {}
 
   async create(clientId: string, createDto: CreateReviewDto): Promise<Review> {
@@ -64,6 +72,15 @@ export class ReviewsService {
     const savedReview = await this.reviewRepository.save(review);
 
     await this.updateServiceRating(booking.serviceId);
+
+    // El profesional se enteraba de una valoración nueva solo si entraba a
+    // mirarla, y es justo lo que quiere saber el mismo día.
+    await this.avisos.crear({
+      usuarioId: booking.providerId,
+      tipo: NotificationType.NEW_REVIEW,
+      datos: { nota: String(createDto.rating) },
+      enlace: '/dashboard/reviews',
+    });
 
     return savedReview;
   }

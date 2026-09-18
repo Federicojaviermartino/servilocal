@@ -97,6 +97,13 @@ export const iaApi = {
   consumo: () => api.get('/ia/consumo'),
 };
 
+export const avisosApi = {
+  listar: () => api.get('/notifications'),
+  sinLeer: () => api.get('/notifications/unread/count'),
+  marcarLeido: (id: string) => api.patch(`/notifications/${id}/read`),
+  marcarTodos: () => api.patch('/notifications/read-all'),
+};
+
 export const adminApi = {
   metricas: () => api.get('/admin/metricas'),
   reputacion: () => api.get('/admin/reputacion'),

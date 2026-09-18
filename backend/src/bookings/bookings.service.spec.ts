@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotificationsService } from '../notifications/notifications.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   BadRequestException,
@@ -33,6 +34,10 @@ describe('BookingsService', () => {
         {
           provide: getRepositoryToken(Service),
           useValue: mockServiceRepository,
+        },
+        {
+          provide: NotificationsService,
+          useValue: { crear: jest.fn(async () => null) },
         },
       ],
     }).compile();

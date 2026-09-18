@@ -8,6 +8,39 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Booking, BookingStatus, Service } from '../entities';
 import { CreateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../entities';
+
+/**
+ * Qué aviso corresponde a cada estado, y a quién.
+ *
+ * «destino» dice a cuál de las dos partes se avisa: al cliente cuando el
+ * profesional decide, y al profesional cuando el cliente cancela. Avisar al
+ * que acaba de pulsar el botón sería contarle lo que ya sabe.
+ */
+const AVISO_POR_ESTADO: Partial<
+  Record<
+    BookingStatus,
+    { tipo: NotificationType; destino: 'cliente' | 'profesional' }
+  >
+> = {
+  [BookingStatus.CONFIRMED]: {
+    tipo: NotificationType.BOOKING_CONFIRMED,
+    destino: 'cliente',
+  },
+  [BookingStatus.REJECTED]: {
+    tipo: NotificationType.BOOKING_CANCELLED,
+    destino: 'cliente',
+  },
+  [BookingStatus.COMPLETED]: {
+    tipo: NotificationType.BOOKING_COMPLETED,
+    destino: 'cliente',
+  },
+  [BookingStatus.CANCELLED]: {
+    tipo: NotificationType.BOOKING_CANCELLED,
+    destino: 'profesional',
+  },
+};
 
 @Injectable()
 export class BookingsService {
@@ -16,6 +49,7 @@ export class BookingsService {
     private bookingRepository: Repository<Booking>,
     @InjectRepository(Service)
     private serviceRepository: Repository<Service>,
+    private readonly avisos: NotificationsService,
   ) {}
 
   async create(
@@ -85,7 +119,29 @@ export class BookingsService {
       booking.cancellationReason = updateDto.cancellationReason || null;
     }
 
-    return this.bookingRepository.save(booking);
+    const guardada = await this.bookingRepository.save(booking);
+    await this.avisar(guardada, newStatus);
+    return guardada;
+  }
+
+  /**
+   * Avisa a la otra parte del cambio de estado.
+   *
+   * Hasta ahora no se avisaba a nadie: un cliente cuya reserva aceptaban se
+   * enteraba recargando la página. El aviso no puede hacer fallar el cambio
+   * de estado, así que el servicio de avisos no lanza nunca.
+   */
+  private async avisar(reserva: Booking, estado: BookingStatus): Promise<void> {
+    const aviso = AVISO_POR_ESTADO[estado];
+    if (!aviso) return;
+
+    await this.avisos.crear({
+      usuarioId:
+        aviso.destino === 'cliente' ? reserva.clientId : reserva.providerId,
+      tipo: aviso.tipo,
+      datos: { estado },
+      enlace: `/dashboard/bookings/${reserva.id}`,
+    });
   }
 
   async findByClient(clientId: string): Promise<Booking[]> {

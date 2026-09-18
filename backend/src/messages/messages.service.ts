@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Conversation, Message } from '../entities';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
-import { MensajesGateway } from './mensajes.gateway';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 
 export interface ResumenConversacion {
   partnerId: string;
@@ -32,7 +32,7 @@ export class MessagesService {
     private conversationRepository: Repository<Conversation>,
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
-    private readonly gateway: MensajesGateway,
+    private readonly gateway: TiempoRealGateway,
   ) {}
 
   /**

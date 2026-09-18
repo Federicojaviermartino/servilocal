@@ -2,8 +2,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { User } from '../entities';
-import { MensajesGateway } from './mensajes.gateway';
+import { User } from '../../entities';
+import { TiempoRealGateway } from './tiempo-real.gateway';
 
 const YO = 'a1111111-0000-4000-8000-000000000001';
 const OTRO = 'b2222222-0000-4000-8000-000000000002';
@@ -33,17 +33,17 @@ async function construir(opciones: {
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
-      MensajesGateway,
+      TiempoRealGateway,
       { provide: JwtService, useValue: { verifyAsync } },
       { provide: ConfigService, useValue: { get: () => 'secreto' } },
       { provide: getRepositoryToken(User), useValue: { findOne } },
     ],
   }).compile();
 
-  return { gateway: module.get(MensajesGateway), verifyAsync, findOne };
+  return { gateway: module.get(TiempoRealGateway), verifyAsync, findOne };
 }
 
-describe('MensajesGateway', () => {
+describe('TiempoRealGateway', () => {
   describe('apretón de manos', () => {
     it('mete a quien trae un token bueno en su propia sala', async () => {
       const { gateway } = await construir({});
@@ -92,7 +92,7 @@ describe('MensajesGateway', () => {
   });
 
   describe('notificarMensaje', () => {
-    function conServidor(gateway: MensajesGateway) {
+    function conServidor(gateway: TiempoRealGateway) {
       const emit = jest.fn(
         (_evento: string, _carga: { interlocutorId: string }) => undefined,
       );

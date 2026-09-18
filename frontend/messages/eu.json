@@ -184,6 +184,24 @@
     "todaEspana": "Espainia osoan",
     "verTodos": "Ikusi emaitza guztiak"
   },
+  "avisos": {
+    "abrir": "Ireki abisuak",
+    "abrirConPendientes": "Ireki abisuak, {total} irakurri gabe",
+    "booking_cancelled": "Zure erreserba bertan behera geratu da.",
+    "booking_completed": "Zure erreserba osatutzat eman da.",
+    "booking_confirmed": "Zure erreserba berretsi da.",
+    "booking_request": "Erreserba eskaera berri bat duzu.",
+    "generico": "Abisu berri bat duzu.",
+    "marcarTodos": "Markatu denak irakurritzat",
+    "new_message": "Mezu berri bat duzu.",
+    "new_review": "{nota} izarreko balorazioa jaso duzu.",
+    "payment_received": "Zure ordainketa erregistratu da.",
+    "payment_refunded": "Itzulketa egin da.",
+    "sinAvisos": "Oraindik ez duzu abisurik.",
+    "sinLeer": "Irakurri gabe",
+    "system": "Plataformaren abisua.",
+    "titulo": "Abisuak"
+  },
   "buscador": {
     "queNecesitas": "Zer zerbitzu behar duzu?",
     "buscarServicios": "Bilatu zerbitzuak"

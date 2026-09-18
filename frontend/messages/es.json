@@ -184,6 +184,24 @@
     "todaEspana": "en toda España",
     "verTodos": "Ver todos los resultados"
   },
+  "avisos": {
+    "abrir": "Abrir los avisos",
+    "abrirConPendientes": "Abrir los avisos, {total} sin leer",
+    "booking_cancelled": "Tu reserva se ha cancelado.",
+    "booking_completed": "Tu reserva se ha marcado como completada.",
+    "booking_confirmed": "Tu reserva ha sido confirmada.",
+    "booking_request": "Tienes una solicitud de reserva nueva.",
+    "generico": "Tienes un aviso nuevo.",
+    "marcarTodos": "Marcar todos como leídos",
+    "new_message": "Tienes un mensaje nuevo.",
+    "new_review": "Has recibido una valoración de {nota} estrellas.",
+    "payment_received": "Se ha registrado tu pago.",
+    "payment_refunded": "Se ha emitido el reembolso.",
+    "sinAvisos": "No tienes avisos todavía.",
+    "sinLeer": "Sin leer",
+    "system": "Aviso de la plataforma.",
+    "titulo": "Avisos"
+  },
   "buscador": {
     "queNecesitas": "¿Qué servicio necesitas?",
     "buscarServicios": "Buscar servicios"

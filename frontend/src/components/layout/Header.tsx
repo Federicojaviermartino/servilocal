@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { MapPin, Menu, X, User, LogOut, Search } from 'lucide-react';
 import SelectorTema from '../molecules/SelectorTema';
 import SelectorIdioma from '../molecules/SelectorIdioma';
+import CampanaAvisos from '../organisms/CampanaAvisos';
 
 export default function Header() {
   const { user, isAuthenticated, logout, loadFromStorage } = useAuthStore();
@@ -37,6 +38,7 @@ export default function Header() {
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-6 md:flex">
+          {isAuthenticated && user && <CampanaAvisos />}
           <SelectorIdioma />
           <SelectorTema />
           <Link
@@ -105,6 +107,7 @@ export default function Header() {
 
         {/* Mobile menu button */}
         <div className="flex items-center gap-1 md:hidden">
+          {isAuthenticated && user && <CampanaAvisos />}
           <SelectorTema />
           <button
             className="md:hidden"

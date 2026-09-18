@@ -52,11 +52,17 @@ export interface AvisoMensaje {
   interlocutorId: string;
 }
 
-export function useMensajesEnVivo(alRecibir: (aviso: AvisoMensaje) => void) {
+/**
+ * Suscripción genérica a un evento del socket.
+ *
+ * Los mensajes y los avisos viajan por la misma conexión: abrir una segunda
+ * gastaría el doble de ranuras del servidor para nada.
+ */
+function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
   const [conectado, setConectado] = useState(false);
 
   // El manejador cambia en cada render; guardarlo en una referencia evita
-  // desuscribir y volver a suscribir el socket con cada pulsación de tecla.
+  // desuscribir y volver a suscribir con cada pulsación de tecla.
   const manejador = useRef(alRecibir);
   manejador.current = alRecibir;
 
@@ -70,11 +76,11 @@ export function useMensajesEnVivo(alRecibir: (aviso: AvisoMensaje) => void) {
     const s = abrir(token);
     suscriptores += 1;
 
-    const alMensaje = (aviso: AvisoMensaje) => manejador.current(aviso);
+    const alDato = (dato: T) => manejador.current(dato);
     const alConectar = () => setConectado(true);
     const alDesconectar = () => setConectado(false);
 
-    s.on('mensaje-nuevo', alMensaje);
+    s.on(evento, alDato);
     s.on('connect', alConectar);
     s.on('disconnect', alDesconectar);
     // El servidor cierra la conexión cuando el token no vale. Reintentar
@@ -83,13 +89,31 @@ export function useMensajesEnVivo(alRecibir: (aviso: AvisoMensaje) => void) {
     setConectado(s.connected);
 
     return () => {
-      s.off('mensaje-nuevo', alMensaje);
+      s.off(evento, alDato);
       s.off('connect', alConectar);
       s.off('disconnect', alDesconectar);
       suscriptores -= 1;
       cerrar();
     };
-  }, []);
+  }, [evento]);
 
   return { conectado };
+}
+
+/** Un aviso de la plataforma, tal como lo guarda el servidor. */
+export interface Aviso {
+  id: string;
+  type: string;
+  content: string;
+  actionUrl: string | null;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export function useAvisosEnVivo(alRecibir: (aviso: Aviso) => void) {
+  return useEvento<Aviso>('aviso-nuevo', alRecibir);
+}
+
+export function useMensajesEnVivo(alRecibir: (aviso: AvisoMensaje) => void) {
+  return useEvento<AvisoMensaje>('mensaje-nuevo', alRecibir);
 }
