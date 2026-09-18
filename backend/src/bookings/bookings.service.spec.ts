@@ -20,6 +20,8 @@ const mockServiceRepository = {
   findOne: jest.fn(),
 };
 
+const avisos = { crear: jest.fn(async () => null) };
+
 describe('BookingsService', () => {
   let service: BookingsService;
 
@@ -35,10 +37,7 @@ describe('BookingsService', () => {
           provide: getRepositoryToken(Service),
           useValue: mockServiceRepository,
         },
-        {
-          provide: NotificationsService,
-          useValue: { crear: jest.fn(async () => null) },
-        },
+        { provide: NotificationsService, useValue: avisos },
       ],
     }).compile();
 
@@ -174,6 +173,207 @@ describe('BookingsService', () => {
           status: 'confirmed',
         }),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+  describe('la máquina de estados de una reserva', () => {
+    const reserva = (status: BookingStatus) => ({
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p1',
+      status,
+      service: {},
+      client: {},
+      provider: {},
+    });
+
+    const cambiar = async (
+      desde: BookingStatus,
+      hasta: string,
+      quien = 'p1',
+      rol = 'provider',
+      extra: Record<string, unknown> = {},
+    ) => {
+      mockBookingRepository.findOne.mockResolvedValue(reserva(desde));
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+      return service.updateStatus('b1', quien, rol, {
+        status: hasta,
+        ...extra,
+      } as never);
+    };
+
+    it('completar una reserva confirmada deja la fecha de cierre', async () => {
+      const r = await cambiar(BookingStatus.CONFIRMED, 'completed');
+
+      expect(r.status).toBe(BookingStatus.COMPLETED);
+      expect(r.completedAt).toBeInstanceOf(Date);
+    });
+
+    it('rechazar una pendiente guarda el motivo alegado', async () => {
+      const r = await cambiar(
+        BookingStatus.PENDING,
+        'rejected',
+        'p1',
+        'provider',
+        {
+          cancellationReason: 'Esa semana no tengo hueco',
+        },
+      );
+
+      expect(r.cancelledAt).toBeInstanceOf(Date);
+      expect(r.cancellationReason).toBe('Esa semana no tengo hueco');
+    });
+
+    it('cancelar sin motivo deja el campo a nulo, no a cadena vacía', async () => {
+      // Una cadena vacía en la pantalla se lee como «motivo: » sin nada
+      // detrás; el nulo permite no pintar la línea siquiera.
+      const r = await cambiar(
+        BookingStatus.PENDING,
+        'cancelled',
+        'c1',
+        'client',
+      );
+
+      expect(r.cancellationReason).toBeNull();
+    });
+
+    it('el cliente cancela su propia reserva', async () => {
+      const r = await cambiar(
+        BookingStatus.PENDING,
+        'cancelled',
+        'c1',
+        'client',
+      );
+
+      expect(r.status).toBe(BookingStatus.CANCELLED);
+    });
+
+    it('el profesional también puede cancelarla', async () => {
+      const r = await cambiar(BookingStatus.CONFIRMED, 'cancelled', 'p1');
+
+      expect(r.status).toBe(BookingStatus.CANCELLED);
+    });
+
+    it('un tercero no cancela la reserva de nadie', async () => {
+      await expect(
+        cambiar(BookingStatus.PENDING, 'cancelled', 'ajeno', 'client'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('administración sí puede, porque para eso modera', async () => {
+      const r = await cambiar(
+        BookingStatus.PENDING,
+        'confirmed',
+        'ajeno',
+        'admin',
+      );
+
+      expect(r.status).toBe(BookingStatus.CONFIRMED);
+    });
+
+    it.each([
+      [BookingStatus.PENDING, 'completed'],
+      [BookingStatus.CANCELLED, 'confirmed'],
+      [BookingStatus.REJECTED, 'confirmed'],
+      [BookingStatus.COMPLETED, 'cancelled'],
+    ])('de %s no se pasa a %s', async (desde, hasta) => {
+      // Saltarse la confirmación permitiría dar por hecho un trabajo que
+      // nadie aceptó, y con él la valoración y el cobro.
+      await expect(cambiar(desde, hasta)).rejects.toThrow(BadRequestException);
+    });
+
+    it('avisa si la reserva no existe', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.updateStatus('b1', 'p1', 'provider', {
+          status: 'confirmed',
+        } as never),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('a quién se avisa de cada cambio', () => {
+    const reserva = (status: BookingStatus) => ({
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p1',
+      status,
+      service: {},
+      client: {},
+      provider: {},
+    });
+
+    const cambiar = async (
+      desde: BookingStatus,
+      hasta: string,
+      quien: string,
+      rol: string,
+    ) => {
+      mockBookingRepository.findOne.mockResolvedValue(reserva(desde));
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+      await service.updateStatus('b1', quien, rol, { status: hasta } as never);
+    };
+
+    it.each([
+      ['confirmed', BookingStatus.PENDING, 'p1', 'provider'],
+      ['rejected', BookingStatus.PENDING, 'p1', 'provider'],
+      ['completed', BookingStatus.CONFIRMED, 'p1', 'provider'],
+    ])('%s se le cuenta al cliente', async (hasta, desde, quien, rol) => {
+      // El aviso va a quien no hizo el cambio: contárselo a quien acaba de
+      // pulsar el botón no informa de nada.
+      await cambiar(desde as BookingStatus, hasta, quien, rol);
+
+      expect(avisos.crear).toHaveBeenCalledWith(
+        expect.objectContaining({
+          usuarioId: 'c1',
+          enlace: '/dashboard/bookings/b1',
+        }),
+      );
+    });
+
+    it('la cancelación del cliente se le cuenta al profesional', async () => {
+      await cambiar(BookingStatus.PENDING, 'cancelled', 'c1', 'client');
+
+      expect(avisos.crear).toHaveBeenCalledWith(
+        expect.objectContaining({ usuarioId: 'p1' }),
+      );
+    });
+
+    it('un cambio rechazado no avisa a nadie', async () => {
+      await expect(
+        cambiar(BookingStatus.COMPLETED, 'cancelled', 'p1', 'provider'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(avisos.crear).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('listados de reservas', () => {
+    it('las del cliente traen el servicio y el profesional', async () => {
+      mockBookingRepository.find.mockResolvedValue([]);
+
+      await service.findByClient('c1');
+
+      expect(mockBookingRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: 'c1' },
+          relations: ['service', 'service.category', 'provider'],
+          order: { createdAt: 'DESC' },
+        }),
+      );
+    });
+
+    it('las del profesional traen al cliente en su lugar', async () => {
+      mockBookingRepository.find.mockResolvedValue([]);
+
+      await service.findByProvider('p1');
+
+      expect(mockBookingRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { providerId: 'p1' },
+          relations: ['service', 'service.category', 'client'],
+        }),
+      );
     });
   });
 });

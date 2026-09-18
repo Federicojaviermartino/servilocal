@@ -20,15 +20,67 @@ function conversacion() {
   };
 }
 
-async function construir(hilo: ReturnType<typeof conversacion> | null) {
+/** Constructor de consultas encadenable, con las salidas que se le pidan. */
+function qbFalso(salidas: Record<string, unknown> = {}) {
+  const qb: Record<string, jest.Mock> = {};
+  for (const metodo of [
+    'select',
+    'addSelect',
+    'where',
+    'orWhere',
+    'andWhere',
+    'groupBy',
+    'orderBy',
+    'leftJoinAndSelect',
+    'innerJoin',
+    'update',
+    'set',
+  ]) {
+    qb[metodo] = jest.fn(() => qb);
+  }
+  qb.execute = jest.fn(async () => ({ affected: 0 }));
+  qb.getMany = jest.fn(async () => salidas.getMany ?? []);
+  qb.getRawMany = jest.fn(async () => salidas.getRawMany ?? []);
+  qb.getOne = jest.fn(async () => salidas.getOne ?? null);
+  qb.getCount = jest.fn(async () => salidas.getCount ?? 0);
+  return qb;
+}
+
+interface Opciones {
+  /** Hilos que devuelve la lista de conversaciones. */
+  hilos?: unknown[];
+  /** Filas crudas del recuento de no leídos. */
+  noLeidos?: unknown[];
+  /** Hilo que encuentra la búsqueda entre dos personas. */
+  hiloEncontrado?: unknown;
+  /** Total del contador de pendientes. */
+  cuenta?: number;
+}
+
+async function construir(
+  hilo: ReturnType<typeof conversacion> | null,
+  opciones: Opciones = {},
+) {
+  const qbConversaciones = qbFalso({
+    getMany: opciones.hilos ?? [],
+    getOne: opciones.hiloEncontrado ?? hilo,
+  });
+  const qbMensajes = qbFalso({
+    getRawMany: opciones.noLeidos ?? [],
+    getCount: opciones.cuenta ?? 0,
+  });
+
   const conversaciones = {
     findOne: jest.fn(async () => hilo),
     save: jest.fn(async (c: unknown) => c),
     create: jest.fn((c: unknown) => c),
+    createQueryBuilder: jest.fn(() => qbConversaciones),
   };
   const mensajes = {
     create: jest.fn((m: unknown) => ({ id: 'm1', ...(m as object) })),
     save: jest.fn(async (m: unknown) => m),
+    find: jest.fn(async (_opciones?: unknown) => [] as unknown[]),
+    createQueryBuilder: jest.fn(() => qbMensajes),
   };
   const gateway = { notificarMensaje: jest.fn() };
 
@@ -46,6 +98,8 @@ async function construir(hilo: ReturnType<typeof conversacion> | null) {
     conversaciones,
     mensajes,
     gateway,
+    qbConversaciones,
+    qbMensajes,
   };
 }
 
@@ -143,6 +197,224 @@ describe('MessagesService', () => {
         lastMessagePreview: string;
       };
       expect(guardada.lastMessagePreview).toBe('Corto');
+    });
+  });
+  describe('empezar una conversación', () => {
+    it('reaprovecha el hilo que ya existía con esa persona', async () => {
+      // Dos hilos con la misma persona partirían el historial en dos y cada
+      // uno enseñaría media conversación.
+      const { servicio, conversaciones } = await construir(conversacion());
+
+      await servicio.sendMessage(YO, {
+        receiverId: OTRO,
+        content: 'Hola',
+      } as never);
+
+      expect(conversaciones.create).not.toHaveBeenCalled();
+    });
+
+    it('abre uno nuevo la primera vez', async () => {
+      const { servicio, conversaciones } = await construir(null);
+
+      await servicio.sendMessage(YO, {
+        receiverId: OTRO,
+        content: 'Hola',
+      } as never);
+
+      // objectContaining y no igualdad estricta: el servicio le añade después
+      // la vista previa al mismo objeto, y jest guarda la referencia.
+      expect(conversaciones.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participantOneId: YO,
+          participantTwoId: OTRO,
+        }),
+      );
+    });
+
+    it('el hilo se busca en los dos sentidos', async () => {
+      // Quien escribe primero queda como participante uno. Buscar solo por
+      // ese lado abriría un hilo nuevo en cuanto contestara el otro.
+      const { servicio, qbConversaciones } = await construir(conversacion());
+
+      await servicio.sendMessage(YO, {
+        receiverId: OTRO,
+        content: 'Hola',
+      } as never);
+
+      expect(qbConversaciones.orWhere).toHaveBeenCalledWith(
+        expect.stringContaining('participantOneId = :b'),
+        expect.objectContaining({ a: YO, b: OTRO }),
+      );
+    });
+  });
+
+  describe('lista de conversaciones', () => {
+    const conPersonas = () => ({
+      ...conversacion(),
+      lastMessagePreview: 'Buenas',
+      lastMessageAt: new Date('2026-09-01T10:00:00Z'),
+      participantOne: {
+        id: YO,
+        firstName: 'Federico',
+        lastName: 'Martino',
+        avatarUrl: 'a.png',
+        city: 'Málaga',
+        email: 'yo@ejemplo.com',
+        password: 'hash-secreto',
+      },
+      participantTwo: {
+        id: OTRO,
+        firstName: 'Laura',
+        lastName: 'Gil',
+        avatarUrl: 'b.png',
+        city: 'Sevilla',
+        email: 'laura@ejemplo.com',
+        password: 'hash-secreto',
+      },
+    });
+
+    it('enseña al interlocutor, no a uno mismo', async () => {
+      const { servicio } = await construir(null, { hilos: [conPersonas()] });
+
+      const r = await servicio.getConversations(YO);
+
+      expect(r[0].partnerId).toBe(OTRO);
+      expect(r[0].partner.firstName).toBe('Laura');
+    });
+
+    it('y lo hace bien mirándolo desde el otro lado', async () => {
+      const { servicio } = await construir(null, { hilos: [conPersonas()] });
+
+      const r = await servicio.getConversations(OTRO);
+
+      expect(r[0].partnerId).toBe(YO);
+      expect(r[0].partner.firstName).toBe('Federico');
+    });
+
+    it('del interlocutor solo salen los campos de la interfaz', async () => {
+      // La entidad completa lleva el correo y el hash de la contraseña.
+      const { servicio } = await construir(null, { hilos: [conPersonas()] });
+
+      const r = await servicio.getConversations(YO);
+
+      expect(Object.keys(r[0].partner).sort()).toEqual([
+        'avatarUrl',
+        'city',
+        'firstName',
+        'id',
+        'lastName',
+      ]);
+    });
+
+    it('un hilo sin ningún mensaje no aparece en la lista', async () => {
+      // Se crea al pulsar «Contactar», antes de escribir nada: enseñarlo
+      // dejaría una fila con la fecha en blanco.
+      const { servicio } = await construir(null, {
+        hilos: [conversacion() as never],
+      });
+
+      expect(await servicio.getConversations(YO)).toEqual([]);
+    });
+
+    it('cuenta los mensajes sin leer de cada hilo', async () => {
+      const { servicio } = await construir(null, {
+        hilos: [conPersonas()],
+        noLeidos: [{ conversationId: HILO, total: '3' }],
+      });
+
+      const r = await servicio.getConversations(YO);
+
+      expect(r[0].unreadCount).toBe(3);
+    });
+
+    it('un hilo sin pendientes cuenta cero, no indefinido', async () => {
+      const { servicio } = await construir(null, { hilos: [conPersonas()] });
+
+      expect((await servicio.getConversations(YO))[0].unreadCount).toBe(0);
+    });
+
+    it('los propios no cuentan como pendientes', async () => {
+      // Lo que uno escribe sale siempre sin leer para el otro; contarlo
+      // dejaría el contador permanentemente encendido.
+      const { servicio, qbMensajes } = await construir(null, {
+        hilos: [conPersonas()],
+      });
+
+      await servicio.getConversations(YO);
+
+      expect(qbMensajes.andWhere).toHaveBeenCalledWith(
+        'msg.senderId != :userId',
+        { userId: YO },
+      );
+    });
+  });
+
+  describe('abrir un hilo', () => {
+    it('sin conversación previa devuelve vacío, no un error', async () => {
+      // El hilo existe en la pantalla desde que se pulsa «Contactar».
+      const { servicio } = await construir(null, { hiloEncontrado: null });
+
+      expect(await servicio.findMessagesWithPartner(YO, OTRO)).toEqual([]);
+    });
+
+    it('marca como leídos los del otro, nunca los propios', async () => {
+      const { servicio, qbMensajes } = await construir(null, {
+        hiloEncontrado: conversacion(),
+      });
+
+      await servicio.findMessagesWithPartner(YO, OTRO);
+
+      expect(qbMensajes.set).toHaveBeenCalledWith(
+        expect.objectContaining({ isRead: true, readAt: expect.any(Date) }),
+      );
+      expect(qbMensajes.andWhere).toHaveBeenCalledWith('senderId != :userId', {
+        userId: YO,
+      });
+    });
+
+    it('el hilo se lee del más antiguo al más reciente', async () => {
+      const { servicio, mensajes } = await construir(null, {
+        hiloEncontrado: conversacion(),
+      });
+
+      await servicio.findMessagesWithPartner(YO, OTRO);
+
+      expect(mensajes.find).toHaveBeenCalledWith(
+        expect.objectContaining({ order: { createdAt: 'ASC' } }),
+      );
+    });
+
+    it('del remitente solo se traen los campos que se pintan', async () => {
+      const { servicio, mensajes } = await construir(null, {
+        hiloEncontrado: conversacion(),
+      });
+
+      await servicio.findMessagesWithPartner(YO, OTRO);
+
+      const opciones = mensajes.find.mock.calls[0][0] as unknown as {
+        select: { sender: Record<string, boolean> };
+      };
+      expect(Object.keys(opciones.select.sender).sort()).toEqual([
+        'avatarUrl',
+        'firstName',
+        'id',
+        'lastName',
+      ]);
+    });
+  });
+
+  describe('contador de pendientes', () => {
+    it('solo cuenta los de hilos propios y escritos por otro', async () => {
+      const { servicio, qbMensajes } = await construir(null, { cuenta: 7 });
+
+      expect(await servicio.getUnreadCount(YO)).toBe(7);
+      expect(qbMensajes.andWhere).toHaveBeenCalledWith(
+        'msg.senderId != :userId',
+        { userId: YO },
+      );
+      expect(qbMensajes.andWhere).toHaveBeenCalledWith('msg.isRead = :isRead', {
+        isRead: false,
+      });
     });
   });
 });

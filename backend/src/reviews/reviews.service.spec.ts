@@ -2,7 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { Review, Booking, BookingStatus, Service } from '../entities';
 
@@ -23,6 +27,9 @@ const mockServiceRepository = {
   update: jest.fn(),
 };
 
+const avisos = { crear: jest.fn(async () => null) };
+const auditoria = { anotar: jest.fn(async () => undefined) };
+
 describe('ReviewsService', () => {
   let service: ReviewsService;
 
@@ -39,20 +46,26 @@ describe('ReviewsService', () => {
           provide: getRepositoryToken(Service),
           useValue: mockServiceRepository,
         },
-        {
-          provide: NotificationsService,
-          useValue: { crear: jest.fn(async () => null) },
-        },
-        {
-          provide: AuditoriaService,
-          useValue: { anotar: jest.fn(async () => undefined) },
-        },
+        { provide: NotificationsService, useValue: avisos },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compile();
 
     service = module.get<ReviewsService>(ReviewsService);
     jest.clearAllMocks();
   });
+
+  /** Constructor de consultas para el recálculo de la media. */
+  function medias(avg: string | null, count: string) {
+    const qb = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ avg, count }),
+    };
+    mockReviewRepository.createQueryBuilder.mockReturnValue(qb);
+    return qb;
+  }
 
   it('debería estar definido', () => {
     expect(service).toBeDefined();
@@ -144,6 +157,239 @@ describe('ReviewsService', () => {
       expect(mockServiceRepository.update).toHaveBeenCalledWith(
         'service-uuid',
         { averageRating: 5, totalReviews: 1 },
+      );
+    });
+  });
+
+  describe('valorar', () => {
+    const DTO = { bookingId: 'b1', rating: 4, comment: 'Puntual' };
+
+    it('avisa al profesional con la nota recibida', async () => {
+      // Se entera el mismo día en lugar de al entrar a mirar, que es cuando
+      // una valoración mala todavía se puede contestar a tiempo.
+      mockBookingRepository.findOne.mockResolvedValue({
+        id: 'b1',
+        clientId: 'c1',
+        providerId: 'p1',
+        status: BookingStatus.COMPLETED,
+        serviceId: 's1',
+      });
+      mockReviewRepository.findOne.mockResolvedValue(null);
+      mockReviewRepository.create.mockReturnValue({ id: 'v1' });
+      mockReviewRepository.save.mockResolvedValue({ id: 'v1' });
+      medias('4.00', '1');
+
+      await service.create('c1', DTO);
+
+      expect(avisos.crear).toHaveBeenCalledWith(
+        expect.objectContaining({
+          usuarioId: 'p1',
+          datos: { nota: '4' },
+        }),
+      );
+    });
+
+    it('avisa si la reserva no existe', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.create('c1', DTO)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('responder a una valoración', () => {
+    it('solo la contesta el profesional del servicio', async () => {
+      // Quien responde en público a una queja tiene que ser quien la recibió.
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        bookingId: 'b1',
+      });
+      mockBookingRepository.findOne.mockResolvedValue({
+        id: 'b1',
+        providerId: 'p1',
+      });
+
+      await expect(
+        service.addProviderResponse('v1', 'otro', {
+          providerResponse: 'No fue así',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mockReviewRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('guarda la respuesta del profesional', async () => {
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        bookingId: 'b1',
+      });
+      mockBookingRepository.findOne.mockResolvedValue({
+        id: 'b1',
+        providerId: 'p1',
+      });
+      mockReviewRepository.save.mockImplementation(async (v: unknown) => v);
+
+      const r = await service.addProviderResponse('v1', 'p1', {
+        providerResponse: 'Gracias por avisar',
+      });
+
+      expect(r.providerResponse).toBe('Gracias por avisar');
+    });
+
+    it('avisa si la valoración no existe', async () => {
+      mockReviewRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.addProviderResponse('v1', 'p1', { providerResponse: 'Hola' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('avisa si la reserva asociada ya no está', async () => {
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        bookingId: 'b1',
+      });
+      mockBookingRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.addProviderResponse('v1', 'p1', { providerResponse: 'Hola' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('denunciar y moderar', () => {
+    const ACTOR = { id: 'admin-1', email: 'admin@servilocal.com' };
+
+    it('la denuncia guarda el motivo alegado', async () => {
+      mockReviewRepository.findOne.mockResolvedValue({ id: 'v1' });
+      mockReviewRepository.save.mockImplementation(async (v: unknown) => v);
+
+      const r = await service.reportReview('v1', {
+        reportReason: 'Habla de otro profesional',
+      });
+
+      expect(r.isReported).toBe(true);
+      expect(r.reportReason).toBe('Habla de otro profesional');
+    });
+
+    it('descartar la denuncia copia el motivo al historial antes de borrarlo', async () => {
+      // Se limpia de la valoración, así que si no se copia aquí se pierde
+      // justo la razón por la que alguien la moderó.
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        isReported: true,
+        reportReason: 'Habla de otro profesional',
+      });
+      mockReviewRepository.save.mockImplementation(async (v: unknown) => v);
+
+      const r = await service.dismissReport('v1', ACTOR);
+
+      expect(r.isReported).toBe(false);
+      expect(r.reportReason).toBeNull();
+      expect(auditoria.anotar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contexto: { motivo: 'Habla de otro profesional' },
+        }),
+      );
+    });
+
+    it('borrar una valoración anota la nota y el comentario que desaparecen', async () => {
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        serviceId: 's1',
+        rating: 1,
+        comment: 'No vino ni avisó',
+      });
+      medias(null, '0');
+
+      await service.deleteReview('v1', ACTOR);
+
+      expect(auditoria.anotar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entidadId: 'v1',
+          contexto: { nota: '1', comentario: 'No vino ni avisó' },
+        }),
+      );
+    });
+
+    it('al borrar la última valoración el servicio vuelve a cero, no a NaN', async () => {
+      // AVG sobre cero filas devuelve null, y parseFloat(null) es NaN: sin la
+      // salvaguarda el servicio se quedaría con una media ilegible.
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        serviceId: 's1',
+        rating: 5,
+        comment: null,
+      });
+      medias(null, '0');
+
+      await service.deleteReview('v1', ACTOR);
+
+      expect(mockReviewRepository.remove).toHaveBeenCalled();
+      expect(mockServiceRepository.update).toHaveBeenCalledWith('s1', {
+        averageRating: 0,
+        totalReviews: 0,
+      });
+    });
+
+    it('no se borra lo que no existe', async () => {
+      mockReviewRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.deleteReview('v1', ACTOR)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockReviewRepository.remove).not.toHaveBeenCalled();
+    });
+
+    it('descartar una denuncia que no existe avisa en lugar de callar', async () => {
+      mockReviewRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.dismissReport('v1', ACTOR)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('listados', () => {
+    it('la cola de moderación trae quién valoró y qué servicio', async () => {
+      // Sin las relaciones la cola sería una lista de identificadores y no
+      // habría forma de decidir nada sin abrir cada caso.
+      mockReviewRepository.find.mockResolvedValue([]);
+
+      await service.findReported();
+
+      expect(mockReviewRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { isReported: true },
+          relations: ['client', 'service'],
+          order: { createdAt: 'DESC' },
+        }),
+      );
+    });
+
+    it('las de un servicio salen de la más reciente a la más antigua', async () => {
+      mockReviewRepository.find.mockResolvedValue([]);
+
+      await service.findByService('s1');
+
+      expect(mockReviewRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { serviceId: 's1' },
+          order: { createdAt: 'DESC' },
+        }),
+      );
+    });
+
+    it('las de un cliente llegan con el servicio valorado', async () => {
+      mockReviewRepository.find.mockResolvedValue([]);
+
+      await service.findByClient('c1');
+
+      expect(mockReviewRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { clientId: 'c1' },
+          relations: ['service'],
+        }),
       );
     });
   });
