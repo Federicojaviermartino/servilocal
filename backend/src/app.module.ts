@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { getDatabaseConfig } from './config/database.config';
 import { SoloLecturaInterceptor } from './common/interceptores/solo-lectura.interceptor';
 import { RedisModule } from './common/redis/redis.module';
+import { ThrottlerVisitanteGuard } from './common/guards/throttler-visitante.guard';
 import { DiagnosticoController } from './common/diagnostico/diagnostico.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -53,7 +54,7 @@ import configIa from './ia/ia.config';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: ThrottlerVisitanteGuard,
     },
     {
       provide: APP_INTERCEPTOR,
