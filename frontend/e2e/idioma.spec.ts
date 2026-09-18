@@ -125,7 +125,16 @@ test.describe('Idioma', () => {
       'href',
       /\/de\/services\/search$/,
     );
+  });
 
+  test('una ficha no dice existir en diez idiomas, porque no existe', async ({
+    page,
+  }) => {
+    // El buscador es todo interfaz y sí está traducido. Una ficha no: su
+    // contenido principal es el título y la descripción que escribe el
+    // profesional, en castellano. Declarar diez alternativas afirmaría diez
+    // páginas donde hay una, y es lo que un buscador trata como duplicado.
+    // El mapa del sitio ya lo decidía así; esto lo hace coherente.
     await page.goto('/de/services/search');
     const ficha = page
       .locator('a[href*="/services/"]:not([href*="search"])')
@@ -135,15 +144,14 @@ test.describe('Idioma', () => {
     await page.waitForURL(/\/de\/services\/[0-9a-f-]{36}/);
 
     await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(
-      11,
+      0,
     );
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      /\/de\/services\//,
+      /onrender\.com\/services\//,
     );
 
-    // Y la frase que envuelve al precio va en el idioma de la página. La
-    // descripción del profesional sigue en castellano: eso es contenido.
+    // Lo que sí mejora para quien la lee en alemán: el marco del precio.
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       'content',
       /Preis:|Verfügbar in/,

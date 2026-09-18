@@ -99,6 +99,30 @@ test.describe('Panel de administración', () => {
     }
   });
 
+  test('la cola de moderación tiene casos y la demo no puede resolverlos', async ({
+    page,
+  }) => {
+    await entrarComo(page, 'Administración');
+    await page.goto('/admin');
+
+    await page.getByRole('tab', { name: /Valoraciones/i }).click();
+
+    // La semilla crea tres denuncias con su alegación. Una cola vacía no se
+    // puede enseñar, y una llena que no se pudiera resolver sería una
+    // bandeja de entrada sin salida.
+    await expect(page.getByText('Reportada').first()).toBeVisible();
+
+    const acciones = page.getByRole('button', { name: /Mantener|Eliminar/ });
+    await expect(acciones.first()).toBeVisible();
+
+    // Existen, y para esta cuenta están desactivadas.
+    const total = await acciones.count();
+    expect(total).toBeGreaterThan(0);
+    for (let i = 0; i < total; i++) {
+      await expect(acciones.nth(i)).toBeDisabled();
+    }
+  });
+
   test('un cliente acaba en su panel y no en el de administración', async ({
     page,
   }) => {

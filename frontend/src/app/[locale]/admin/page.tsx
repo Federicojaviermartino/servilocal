@@ -516,6 +516,7 @@ function FilterChip({
 
 function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
+  const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const tComun = useTranslations('comun');
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -664,7 +665,13 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
           onChange={(e) => setDescription(e.target.value)}
           placeholder={t('descripcionPlaceholder')}
         />
-        <Button type="submit" variant="primary" isLoading={isCreating}>
+        <Button
+          type="submit"
+          variant="primary"
+          isLoading={isCreating}
+          disabled={soloLectura}
+          title={soloLectura ? t('soloLecturaTexto') : undefined}
+        >
           {t('crearCategoria')}
         </Button>
       </form>
@@ -766,7 +773,11 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
                           variant="ghost"
                           size="sm"
                           onClick={() => startEdit(c)}
-                          aria-label={`Editar ${c.name}`}
+                          disabled={soloLectura}
+                          aria-label={`${tComun('editar')} ${c.name}`}
+                          title={
+                            soloLectura ? t('soloLecturaTexto') : undefined
+                          }
                         >
                           <Pencil size={14} aria-hidden="true" />
                           {tComun('editar')}
@@ -775,6 +786,11 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
                           variant="danger"
                           size="sm"
                           onClick={() => handleDelete(c)}
+                          disabled={soloLectura}
+                          aria-label={`${tComun('eliminar')} ${c.name}`}
+                          title={
+                            soloLectura ? t('soloLecturaTexto') : undefined
+                          }
                         >
                           {tComun('eliminar')}
                         </Button>
@@ -817,6 +833,7 @@ function slugify(s: string): string {
 
 function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
+  const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const idioma = useLocale();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -911,6 +928,8 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
                 variant="secondary"
                 size="sm"
                 onClick={() => handleDismiss(r)}
+                disabled={soloLectura}
+                title={soloLectura ? t('soloLecturaTexto') : undefined}
               >
                 <Check size={14} aria-hidden="true" />
                 {t('mantener')}
@@ -919,6 +938,8 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
                 variant="danger"
                 size="sm"
                 onClick={() => handleDelete(r)}
+                disabled={soloLectura}
+                title={soloLectura ? t('soloLecturaTexto') : undefined}
               >
                 {t('eliminar')}
               </Button>

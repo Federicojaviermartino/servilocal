@@ -15,6 +15,7 @@ import RatingStars from '@/components/molecules/RatingStars';
 import ServiceImage from '@/components/molecules/ServiceImage';
 import { useNombreCategoria } from '@/lib/categorias';
 import { useNombreUnidad } from '@/lib/unidades';
+import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
 
 export default function ServiceDetailPage() {
   const t = useTranslations('detalle');
@@ -306,6 +307,7 @@ export default function ServiceDetailPage() {
           </aside>
         </div>
       </div>
+      <AsistenteBusqueda />
     </main>
   );
 }

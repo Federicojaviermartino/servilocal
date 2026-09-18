@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { SITIO_URL } from '@/lib/sitio';
-import { alternativas } from '@/lib/seo';
+import { urlDe } from '@/lib/seo';
+import { routing } from '@/i18n/routing';
 import { claveUnidad } from '@/lib/unidad-clave';
 
 /**
@@ -95,7 +96,9 @@ export async function generateMetadata({
   return {
     title: titulo,
     description: descripcion,
-    alternates: alternativas(locale, `/services/${servicio.id}`),
+    alternates: {
+      canonical: urlDe(routing.defaultLocale, `/services/${servicio.id}`),
+    },
     openGraph: {
       type: 'article',
       title: titulo,
