@@ -75,7 +75,7 @@ interface DefinicionServicio {
   valoraciones: number[];
 }
 
-const COMENTARIOS = [
+const COMENTARIOS_BUENOS = [
   'Puntual y muy limpio. Dejó todo recogido al terminar.',
   'Explicó bien el problema antes de empezar y el precio fue el acordado.',
   'Trabajo impecable. Volvería a contratarle sin dudarlo.',
@@ -84,6 +84,58 @@ const COMENTARIOS = [
   'Muy atento: avisó por el camino de que llegaba con retraso.',
   'Buen acabado y materiales de calidad. Recomendable.',
   'Cumplió con lo presupuestado y no hubo sorpresas.',
+];
+
+/**
+ * El texto tiene que acompañar a la nota.
+ *
+ * Con un solo grupo de comentarios, todos elogiosos, un dos estrellas salía
+ * con un «trabajo impecable» debajo. Eso no es un detalle estético: la
+ * pantalla de moderación y el reparto de valoraciones se leen mirando nota y
+ * texto a la vez, y con esa incoherencia no hay nada que moderar ni que
+ * entender.
+ */
+const COMENTARIOS_TIBIOS = [
+  'Llegó dos horas tarde y sin avisar. El trabajo, correcto.',
+  'El presupuesto final subió algo sobre lo hablado por teléfono.',
+  'Cumplió, pero hubo que insistir para que volviera a rematar.',
+];
+
+/**
+ * Los casos que llegan a moderación, con su queja y su alegación pareadas.
+ *
+ * Van juntos a propósito. Emparejar un motivo cualquiera con una reseña
+ * cualquiera produce contradicciones que saltan a la vista: alegar «esta
+ * persona nunca contrató el servicio» debajo de una reseña que describe el
+ * trabajo al detalle deja la cola sin nada que decidir, que es justo lo que
+ * hay que poder enseñar.
+ */
+const DENUNCIAS = [
+  {
+    comentario:
+      'No vino ni avisó. Perdí la mañana esperando y encima me cobraron el desplazamiento.',
+    motivo:
+      'Esta persona canceló la reserva ella misma el día anterior y no hubo desplazamiento que cobrar. Adjunto la conversación.',
+  },
+  {
+    comentario:
+      'Mandaron a un tal Rubén, que apareció sin herramientas. Su teléfono es el 600 123 456 por si alguien lo necesita.',
+    motivo:
+      'La reseña publica el nombre y el teléfono de un empleado. Pido que se retiren esos datos.',
+  },
+  {
+    comentario:
+      'Rompieron dos azulejos y se marcharon sin decir nada. La empresa del bajo es un desastre.',
+    motivo:
+      'Describe un trabajo que no es el mío: confunde mi empresa con otra del mismo edificio. Yo no hago alicatados.',
+  },
+];
+
+/** Respuestas de profesionales, para que la tasa de respuesta no sea cero. */
+const RESPUESTAS = [
+  'Gracias por el comentario. Tomo nota de lo del retraso, tiene razón.',
+  'Lamento la diferencia de precio; al abrir apareció una avería que no estaba a la vista. Le he enviado el desglose.',
+  'Siento el desenlace. Le he escrito para volver y terminar sin coste.',
 ];
 
 // El data source de las migraciones ya carga el .env; la semilla leía
@@ -430,7 +482,7 @@ async function runSeed() {
       city: 'Madrid',
       coverageRadiusKm: 15,
       images: [FOTOS.fontaneriaSifon],
-      valoraciones: [5, 5, 4, 5, 4],
+      valoraciones: [5, 5, 4, 5, 2],
     },
     {
       proveedor: 'carlos',
@@ -472,7 +524,7 @@ async function runSeed() {
       address: 'Carrer de la Mar 18',
       city: 'Palma',
       coverageRadiusKm: 20,
-      valoraciones: [5, 4, 4],
+      valoraciones: [5, 4, 1],
     },
     {
       proveedor: 'maria',
@@ -529,7 +581,7 @@ async function runSeed() {
       city: 'Barcelona',
       coverageRadiusKm: 20,
       images: [FOTOS.limpiezaTapiceria],
-      valoraciones: [5, 4, 5, 5],
+      valoraciones: [5, 4, 3, 5],
     },
     {
       proveedor: 'lucia',
@@ -602,7 +654,7 @@ async function runSeed() {
       city: 'Zaragoza',
       coverageRadiusKm: 25,
       images: [FOTOS.cerrajeriaLlave],
-      valoraciones: [5, 5, 4, 5],
+      valoraciones: [5, 2, 4, 5],
     },
     {
       proveedor: 'sergio',
@@ -687,7 +739,7 @@ async function runSeed() {
       address: 'Passeig Marítim 4',
       city: 'Palma',
       coverageRadiusKm: 20,
-      valoraciones: [4, 5, 4],
+      valoraciones: [4, 5, 3],
     },
     {
       proveedor: 'antonio',
@@ -745,7 +797,7 @@ async function runSeed() {
       address: 'Calle Autonomía 22',
       city: 'Bilbao',
       coverageRadiusKm: 35,
-      valoraciones: [4, 4, 5],
+      valoraciones: [4, 3, 5],
     },
     {
       proveedor: 'marta',
@@ -812,6 +864,7 @@ async function runSeed() {
   // Reservas completadas con su valoración, para que las medias y los
   // contadores muestren datos y el filtro por valoración mínima sirva.
   let totalReservas = 0;
+  let denuncias = 0;
 
   for (let i = 0; i < serviciosGuardados.length; i++) {
     const servicio = serviciosGuardados[i];
@@ -845,13 +898,39 @@ async function runSeed() {
       );
       totalReservas++;
 
+      const nota = puntuaciones[j];
+
+      // Las peores se denuncian, que es el caso real: un profesional que
+      // considera injusta una reseña pide que la revisen. Sin ninguna, la
+      // pantalla de moderación está siempre vacía y no hay nada que enseñar.
+      const denuncia =
+        nota <= 2 && denuncias < DENUNCIAS.length
+          ? DENUNCIAS[denuncias++]
+          : null;
+
+      const comentario =
+        denuncia?.comentario ??
+        (nota >= 4
+          ? COMENTARIOS_BUENOS[(i + j) % COMENTARIOS_BUENOS.length]
+          : COMENTARIOS_TIBIOS[(i + j) % COMENTARIOS_TIBIOS.length]);
+
+      // Solo se responden algunas: una plataforma donde todo el mundo
+      // contesta siempre daría una tasa de respuesta del cien por cien, que
+      // no distingue a nadie y hace inútil la columna.
+      const responde = nota < 4 || (i + j) % 3 === 0;
+
       await reviewRepo.save(
         reviewRepo.create({
           bookingId: reserva.id,
           clientId: cliente.id,
           serviceId: servicio.id,
-          rating: puntuaciones[j],
-          comment: COMENTARIOS[(i + j) % COMENTARIOS.length],
+          rating: nota,
+          comment: comentario,
+          providerResponse: responde
+            ? RESPUESTAS[(i + j) % RESPUESTAS.length]
+            : undefined,
+          isReported: denuncia !== null,
+          reportReason: denuncia?.motivo,
         }),
       );
     }
