@@ -14,10 +14,12 @@ import Skeleton from '@/components/atoms/Skeleton';
 import RatingStars from '@/components/molecules/RatingStars';
 import ServiceImage from '@/components/molecules/ServiceImage';
 import { useNombreCategoria } from '@/lib/categorias';
+import { useNombreUnidad } from '@/lib/unidades';
 
 export default function ServiceDetailPage() {
   const t = useTranslations('detalle');
   const nombreCategoria = useNombreCategoria();
+  const nombreUnidad = useNombreUnidad();
   const tTarjeta = useTranslations('tarjeta');
   const params = useParams();
   const router = useRouter();
@@ -146,11 +148,11 @@ export default function ServiceDetailPage() {
       ? tTarjeta('precioRango', {
           min: service.priceMin,
           max: service.priceMax,
-          unidad: service.priceUnit,
+          unidad: nombreUnidad(service.priceUnit),
         })
       : tTarjeta('precioUnico', {
           min: service.priceMin,
-          unidad: service.priceUnit,
+          unidad: nombreUnidad(service.priceUnit),
         });
 
   return (

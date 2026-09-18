@@ -253,14 +253,17 @@
   },
   "formularioServicio": {
     "categoria": "Categoría",
+    "crearServicio": "Crear servicio",
     "descripcion": "Descripción",
     "direccion": "Dirección de referencia",
+    "guardarCambios": "Guardar cambios",
     "precioMaximo": "Precio máximo (opcional)",
     "precioMinimo": "Precio mínimo (euros)",
     "radio": "Radio de cobertura (km)",
     "seleccionaCategoria": "Selecciona una categoría",
     "seleccionaCiudad": "Selecciona una ciudad",
-    "titulo": "Título del servicio"
+    "titulo": "Título del servicio",
+    "unidad": "Unidad"
   },
   "idioma": {
     "cambiar": "Cambiar idioma"
@@ -465,6 +468,12 @@
   "tema": {
     "activarClaro": "Activar tema claro",
     "activarOscuro": "Activar tema oscuro"
+  },
+  "unidades": {
+    "por-dia": "por día",
+    "por-hora": "por hora",
+    "por-servicio": "por servicio",
+    "por-visita": "por visita"
   },
   "validacion": {
     "confirmaPassword": "Confirma la contraseña",

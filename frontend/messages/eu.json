@@ -253,14 +253,17 @@
   },
   "formularioServicio": {
     "categoria": "Kategoria",
+    "crearServicio": "Sortu zerbitzua",
     "descripcion": "Deskribapena",
     "direccion": "Erreferentziazko helbidea",
+    "guardarCambios": "Gorde aldaketak",
     "precioMaximo": "Gehieneko prezioa (aukerakoa)",
     "precioMinimo": "Gutxieneko prezioa (euroak)",
     "radio": "Estaldura-erradioa (km)",
     "seleccionaCategoria": "Aukeratu kategoria bat",
     "seleccionaCiudad": "Aukeratu hiri bat",
-    "titulo": "Zerbitzuaren izenburua"
+    "titulo": "Zerbitzuaren izenburua",
+    "unidad": "Unitatea"
   },
   "idioma": {
     "cambiar": "Aldatu hizkuntza"
@@ -465,6 +468,12 @@
   "tema": {
     "activarClaro": "Aktibatu gai argia",
     "activarOscuro": "Aktibatu gai iluna"
+  },
+  "unidades": {
+    "por-dia": "eguneko",
+    "por-hora": "orduko",
+    "por-servicio": "zerbitzuko",
+    "por-visita": "bisitako"
   },
   "validacion": {
     "confirmaPassword": "Berretsi pasahitza",

@@ -42,6 +42,9 @@ test.describe('Mensajería en tiempo real', () => {
       await cliente.goto(`/dashboard/messages/${idProfesional}`);
       await profesional.goto(`/dashboard/messages/${idCliente}`);
 
+      // La cabecera sale de la lista de conversaciones, no de los mensajes:
+      // deducirla del hilo dejaba sin nombre a quien escribe primero, porque
+      // ningún mensaje lleva todavía el del interlocutor.
       const texto = `Comprobación en vivo ${Date.now()}`;
       await profesional.getByRole('textbox').last().fill(texto);
       await profesional.getByRole('button', { name: /Enviar/i }).click();
@@ -54,6 +57,13 @@ test.describe('Mensajería en tiempo real', () => {
       // Y quien escribe también lo ve: el mensaje propio vuelve por el
       // socket, sin pintarlo por adelantado ni recargar la conversación.
       await expect(profesional.getByText(texto)).toBeVisible();
+
+      // Se comprueba en la pantalla de quien escribió, que es el caso que
+      // estaba roto: ahí no hay ningún mensaje del interlocutor del que
+      // sacar su nombre, porque todavía no ha contestado. Mirarlo en la otra
+      // pantalla daría verde igualmente, con el fallo puesto y todo.
+      await profesional.reload();
+      await expect(profesional.getByText('Laura Gómez').first()).toBeVisible();
     } finally {
       await contextoCliente.close();
       await contextoProfesional.close();

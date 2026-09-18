@@ -253,14 +253,17 @@
   },
   "formularioServicio": {
     "categoria": "Kategorie",
+    "crearServicio": "Dienstleistung anlegen",
     "descripcion": "Beschreibung",
     "direccion": "Referenzadresse",
+    "guardarCambios": "Änderungen speichern",
     "precioMaximo": "Höchstpreis (optional)",
     "precioMinimo": "Mindestpreis (Euro)",
     "radio": "Einsatzradius (km)",
     "seleccionaCategoria": "Kategorie wählen",
     "seleccionaCiudad": "Stadt wählen",
-    "titulo": "Titel der Dienstleistung"
+    "titulo": "Titel der Dienstleistung",
+    "unidad": "Einheit"
   },
   "idioma": {
     "cambiar": "Sprache wechseln"
@@ -465,6 +468,12 @@
   "tema": {
     "activarClaro": "Helles Design aktivieren",
     "activarOscuro": "Dunkles Design aktivieren"
+  },
+  "unidades": {
+    "por-dia": "pro Tag",
+    "por-hora": "pro Stunde",
+    "por-servicio": "pro Auftrag",
+    "por-visita": "pro Besuch"
   },
   "validacion": {
     "confirmaPassword": "Bestätigen Sie das Passwort",

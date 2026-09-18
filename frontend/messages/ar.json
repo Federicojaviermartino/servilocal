@@ -253,14 +253,17 @@
   },
   "formularioServicio": {
     "categoria": "الفئة",
+    "crearServicio": "إنشاء الخدمة",
     "descripcion": "الوصف",
     "direccion": "العنوان المرجعي",
+    "guardarCambios": "حفظ التغييرات",
     "precioMaximo": "أقصى سعر (اختياري)",
     "precioMinimo": "أدنى سعر (يورو)",
     "radio": "نطاق التغطية (كم)",
     "seleccionaCategoria": "اختر فئة",
     "seleccionaCiudad": "اختر مدينة",
-    "titulo": "عنوان الخدمة"
+    "titulo": "عنوان الخدمة",
+    "unidad": "الوحدة"
   },
   "idioma": {
     "cambiar": "تغيير اللغة"
@@ -465,6 +468,12 @@
   "tema": {
     "activarClaro": "تفعيل المظهر الفاتح",
     "activarOscuro": "تفعيل المظهر الداكن"
+  },
+  "unidades": {
+    "por-dia": "باليوم",
+    "por-hora": "بالساعة",
+    "por-servicio": "بالخدمة",
+    "por-visita": "بالزيارة"
   },
   "validacion": {
     "confirmaPassword": "أكّد كلمة المرور",

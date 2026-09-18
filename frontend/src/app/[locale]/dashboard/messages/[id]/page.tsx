@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { Send } from 'lucide-react';
-import { Message } from '@/types';
+import { Conversation, Message } from '@/types';
 import { messagesApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useMensajesEnVivo, type AvisoMensaje } from '@/lib/socket-mensajes';
@@ -19,6 +19,7 @@ export default function ConversationPage() {
   const { user } = useAuthStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [interlocutor, setInterlocutor] = useState<Conversation['partner']>();
   const [isLoading, setIsLoading] = useState(true);
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -63,6 +64,21 @@ export default function ConversationPage() {
     if (partnerId) load();
   }, [partnerId, load]);
 
+  // Quién es el interlocutor no se puede deducir de los mensajes: si aún no
+  // ha escrito, ninguno lleva su nombre. Viene de la lista de conversaciones,
+  // que sí lo trae.
+  useEffect(() => {
+    messagesApi
+      .getConversations()
+      .then(({ data }) => {
+        const hilo = (data as Conversation[] | undefined)?.find(
+          (c) => c.partnerId === partnerId,
+        );
+        setInterlocutor(hilo?.partner);
+      })
+      .catch(() => setInterlocutor(undefined));
+  }, [partnerId]);
+
   // Red de seguridad mientras el socket no esté conectado: en Render el
   // servicio se duerme y hay redes que cortan los sockets. Dejar de recibir
   // mensajes sin enterarse es la peor forma de fallar de una mensajería.
@@ -102,9 +118,7 @@ export default function ConversationPage() {
     );
   }
 
-  const partner =
-    messages.find((m) => m.senderId === partnerId)?.sender ||
-    messages.find((m) => m.receiverId === partnerId)?.receiver;
+  const partner = interlocutor;
 
   return (
     <div className="bg-superficie rounded-lg shadow-card flex flex-col h-[70vh]">

@@ -12,6 +12,24 @@ async function selectorIdioma(pagina: Page) {
 }
 
 test.describe('Idioma', () => {
+  test('la unidad de precio también cambia de idioma', async ({ page }) => {
+    // Se guarda en castellano («por hora») y se interpolaba en crudo dentro
+    // de la frase del precio, así que una tarjeta en alemán decía «45 a 90
+    // por hora». El valor guardado no cambia; cambia cómo se escribe.
+    const tarjetas = page.locator(
+      'a[href*="/services/"]:not([href*="search"])',
+    );
+
+    await page.goto('/services/search');
+    await expect(tarjetas.first()).toBeVisible();
+    await expect(tarjetas.getByText(/por hora/).first()).toBeVisible();
+
+    await page.goto('/de/services/search');
+    await expect(tarjetas.first()).toBeVisible();
+    await expect(tarjetas.getByText(/pro Stunde/).first()).toBeVisible();
+    await expect(tarjetas.getByText(/por hora/)).toHaveCount(0);
+  });
+
   test('las categorías del catálogo también cambian de idioma', async ({
     page,
   }) => {

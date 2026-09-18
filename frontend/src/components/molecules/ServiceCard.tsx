@@ -11,6 +11,7 @@ import Badge from '../atoms/Badge';
 import RatingStars from './RatingStars';
 import ServiceImage from './ServiceImage';
 import { useNombreCategoria } from '../../lib/categorias';
+import { useNombreUnidad } from '../../lib/unidades';
 
 interface ServiceCardProps {
   service: Service;
@@ -19,6 +20,7 @@ interface ServiceCardProps {
 export default function ServiceCard({ service }: ServiceCardProps) {
   const t = useTranslations('tarjeta');
   const nombreCategoria = useNombreCategoria();
+  const nombreUnidad = useNombreUnidad();
 
   // La unidad de precio la escribe el profesional, así que va tal cual.
   const priceLabel =
@@ -26,9 +28,12 @@ export default function ServiceCard({ service }: ServiceCardProps) {
       ? t('precioRango', {
           min: service.priceMin,
           max: service.priceMax,
-          unidad: service.priceUnit,
+          unidad: nombreUnidad(service.priceUnit),
         })
-      : t('precioUnico', { min: service.priceMin, unidad: service.priceUnit });
+      : t('precioUnico', {
+          min: service.priceMin,
+          unidad: nombreUnidad(service.priceUnit),
+        });
 
   return (
     <Link

@@ -141,13 +141,13 @@ export interface CreateReviewDto {
 
 export interface Message {
   id: string;
+  conversationId: string;
   senderId: string;
-  sender: User;
-  receiverId: string;
-  receiver: User;
-  bookingId?: string;
+  /** La API solo trae estos campos del remitente, no el usuario entero. */
+  sender: Pick<User, 'id' | 'firstName' | 'lastName' | 'avatarUrl'>;
   content: string;
   isRead: boolean;
+  readAt?: string;
   createdAt: string;
 }
 

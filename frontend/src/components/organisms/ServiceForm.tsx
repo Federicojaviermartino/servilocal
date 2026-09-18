@@ -11,6 +11,7 @@ import { CIUDADES } from '@/lib/ciudades';
 import Input from '../atoms/Input';
 import Button from '../atoms/Button';
 import { useNombreCategoria } from '@/lib/categorias';
+import { useNombreUnidad } from '@/lib/unidades';
 
 interface ServiceFormProps {
   initial?: Partial<Service>;
@@ -26,6 +27,8 @@ export default function ServiceForm({
   isSubmitting,
 }: ServiceFormProps) {
   const t = useTranslations('formularioServicio');
+  const tComun = useTranslations('comun');
+  const nombreUnidad = useNombreUnidad();
   const nombreCategoria = useNombreCategoria();
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState({
@@ -136,7 +139,7 @@ export default function ServiceForm({
             htmlFor="servicio-unidad"
             className="block text-sm font-medium text-secundario mb-1"
           >
-            Unidad
+            {t('unidad')}
           </label>
           <select
             id="servicio-unidad"
@@ -144,10 +147,10 @@ export default function ServiceForm({
             onChange={(e) => setForm({ ...form, priceUnit: e.target.value })}
             className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="por hora">por hora</option>
-            <option value="por servicio">por servicio</option>
-            <option value="por dia">por día</option>
-            <option value="por visita">por visita</option>
+            <option value="por hora">{nombreUnidad('por hora')}</option>
+            <option value="por servicio">{nombreUnidad('por servicio')}</option>
+            <option value="por dia">{nombreUnidad('por dia')}</option>
+            <option value="por visita">{nombreUnidad('por visita')}</option>
           </select>
         </div>
       </div>
@@ -163,7 +166,7 @@ export default function ServiceForm({
             htmlFor="servicio-ciudad"
             className="block text-sm font-medium text-secundario mb-1"
           >
-            Ciudad
+            {tComun('ciudad')}
           </label>
           <select
             id="servicio-ciudad"
@@ -194,10 +197,10 @@ export default function ServiceForm({
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onCancel}>
-          Cancelar
+          {tComun('cancelar')}
         </Button>
         <Button type="submit" isLoading={isSubmitting}>
-          {initial?.id ? 'Guardar cambios' : 'Crear servicio'}
+          {initial?.id ? t('guardarCambios') : t('crearServicio')}
         </Button>
       </div>
     </form>

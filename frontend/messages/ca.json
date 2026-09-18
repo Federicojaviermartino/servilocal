@@ -253,14 +253,17 @@
   },
   "formularioServicio": {
     "categoria": "Categoria",
+    "crearServicio": "Crea el servei",
     "descripcion": "Descripció",
     "direccion": "Adreça de referència",
+    "guardarCambios": "Desa els canvis",
     "precioMaximo": "Preu màxim (opcional)",
     "precioMinimo": "Preu mínim (euros)",
     "radio": "Radi de cobertura (km)",
     "seleccionaCategoria": "Tria una categoria",
     "seleccionaCiudad": "Tria una ciutat",
-    "titulo": "Títol del servei"
+    "titulo": "Títol del servei",
+    "unidad": "Unitat"
   },
   "idioma": {
     "cambiar": "Canvia d'idioma"
@@ -465,6 +468,12 @@
   "tema": {
     "activarClaro": "Activa el tema clar",
     "activarOscuro": "Activa el tema fosc"
+  },
+  "unidades": {
+    "por-dia": "per dia",
+    "por-hora": "per hora",
+    "por-servicio": "per servei",
+    "por-visita": "per visita"
   },
   "validacion": {
     "confirmaPassword": "Confirma la contrasenya",
