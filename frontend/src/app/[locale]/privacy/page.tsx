@@ -209,7 +209,7 @@ export default function PrivacyPage() {
 
       <p className="mt-10 text-sm text-secundario">
         Consulta también los{' '}
-        <Link href="/terms" className="text-primary-600 hover:underline">
+        <Link href="/terms" className="text-primary-600 underline">
           términos de uso
         </Link>
         .

@@ -16,7 +16,7 @@ interface BadgeProps {
 const variants: Record<BadgeVariant, string> = {
   default: 'bg-superficie-alt text-secundario',
   success: 'bg-success-50 text-success-700',
-  warning: 'bg-warning-50 text-warning-600',
+  warning: 'bg-warning-50 text-warning-700',
   danger: 'bg-danger-50 text-danger-700',
   info: 'bg-primary-50 text-primary-700',
 };

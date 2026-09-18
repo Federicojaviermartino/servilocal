@@ -124,7 +124,7 @@ export default function PanelAsistente({
         {error && (
           <p
             role="alert"
-            className="rounded-lg bg-warning-50 p-3 text-sm text-warning-600"
+            className="rounded-lg bg-warning-50 p-3 text-sm text-warning-700"
           >
             {t('error')}
           </p>

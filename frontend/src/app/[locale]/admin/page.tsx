@@ -413,7 +413,7 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
         </FilterChip>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0}>
         <table className="min-w-full text-sm" aria-label={t('listaUsuarios')}>
           <thead className="bg-fondo text-secundario">
             <tr>
@@ -669,7 +669,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
         </Button>
       </form>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0}>
         <table className="min-w-full text-sm" aria-label={t('listaCategorias')}>
           <thead className="bg-fondo text-secundario">
             <tr>
@@ -982,7 +982,7 @@ function ReputacionSection() {
     <div className="space-y-4">
       <p className="text-sm text-secundario">{t('reputacionAyuda')}</p>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0}>
         <table className="min-w-full text-sm" aria-label={t('listaReputacion')}>
           <thead className="bg-fondo text-secundario">
             <tr>
@@ -1182,7 +1182,7 @@ function IaSection() {
       </div>
 
       {consumo.porFuncionalidad.length > 0 && (
-        <div className="mt-6 overflow-x-auto">
+        <div className="mt-6 overflow-x-auto" tabIndex={0}>
           <table className="w-full text-sm">
             <caption className="sr-only">{t('iaRepartoTitulo')}</caption>
             <thead>

@@ -1,0 +1,100 @@
+import AxeBuilder from '@axe-core/playwright';
+import { test, expect, Page } from '@playwright/test';
+
+/**
+ * Accesibilidad comprobada, no declarada.
+ *
+ * Las cosas que se han ido arreglando al tropezar con ellas —un botón con
+ * solo un icono y sin nombre, el foco perdido al abrir un diálogo, un aviso
+ * que aparecía sin anunciarse— son justo las que una herramienta detecta
+ * sola. Lo que no detecta nadie es una regresión: por eso va aquí y no en una
+ * revisión de un día.
+ *
+ * Se comprueba contra WCAG 2.1 niveles A y AA, que es lo que se entiende por
+ * «accesible» sin más adjetivos.
+ */
+const NORMAS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+const RUTAS = [
+  ['portada', '/'],
+  ['buscador', '/services/search'],
+  ['acceso', '/auth/login'],
+  ['registro', '/auth/register'],
+  ['privacidad', '/privacy'],
+];
+
+async function analizar(page: Page) {
+  return new AxeBuilder({ page }).withTags(NORMAS).analyze();
+}
+
+/** Lo justo para poder arreglarlo: qué regla, dónde y cuántas veces. */
+function resumir(
+  violaciones: Awaited<ReturnType<typeof analizar>>['violations'],
+) {
+  return violaciones.map((v) => ({
+    regla: v.id,
+    impacto: v.impact,
+    elementos: v.nodes.length,
+    ejemplo: v.nodes[0]?.target.join(' '),
+  }));
+}
+
+test.describe('Accesibilidad', () => {
+  for (const [nombre, ruta] of RUTAS) {
+    test(`${nombre} cumple WCAG 2.1 AA`, async ({ page }) => {
+      await page.goto(ruta);
+      await page.waitForLoadState('networkidle');
+
+      const { violations } = await analizar(page);
+
+      expect(resumir(violations)).toEqual([]);
+    });
+  }
+
+  test('el panel de administración cumple WCAG 2.1 AA', async ({ page }) => {
+    await page.goto('/auth/login');
+    await page
+      .getByRole('button', { name: 'Administración', exact: true })
+      .click();
+    await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
+
+    await page.goto('/admin');
+    await expect(
+      page.getByRole('heading', { name: 'Panel de administración' }),
+    ).toBeVisible();
+    await page.waitForLoadState('networkidle');
+
+    const { violations } = await analizar(page);
+
+    expect(resumir(violations)).toEqual([]);
+  });
+
+  test('el tema oscuro también cumple', async ({ page }) => {
+    // El contraste del texto tenue era peor en oscuro que en claro —3,19
+    // sobre la superficie alterna frente a 4,36— y ninguna comprobación
+    // miraba ahí, porque todas se ejecutan en el tema por defecto.
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+
+    const { violations } = await analizar(page);
+
+    expect(resumir(violations)).toEqual([]);
+  });
+
+  test('el asistente abierto cumple WCAG 2.1 AA', async ({ page }) => {
+    // Un diálogo es donde más fácil se cuelan los fallos de foco y de nombre
+    // accesible, y este se monta entero al pulsar.
+    await page.goto('/');
+    await page
+      .getByRole('button', { name: 'Abrir el asistente de búsqueda' })
+      .click();
+    await expect(
+      page.getByRole('dialog', { name: 'Cuéntanos qué necesitas' }),
+    ).toBeVisible();
+
+    const { violations } = await analizar(page);
+
+    expect(resumir(violations)).toEqual([]);
+  });
+});

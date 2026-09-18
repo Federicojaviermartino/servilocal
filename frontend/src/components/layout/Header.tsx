@@ -29,7 +29,7 @@ export default function Header() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-xl font-bold text-primary-500"
+          className="flex items-center gap-2 text-xl font-bold text-primary-500 dark:text-primary-400"
         >
           <MapPin className="h-6 w-6" aria-hidden="true" />
           <span>ServiLocal</span>

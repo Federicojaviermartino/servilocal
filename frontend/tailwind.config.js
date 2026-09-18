@@ -3,9 +3,7 @@ module.exports = {
   // El tema se activa con una clase en <html>, no por preferencia del sistema:
   // así el usuario puede elegir y su elección se recuerda.
   darkMode: 'class',
-  content: [
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],
   theme: {
     extend: {
       colors: {
@@ -20,18 +18,48 @@ module.exports = {
         tenue: 'rgb(var(--color-tenue) / <alpha-value>)',
         borde: 'rgb(var(--color-borde) / <alpha-value>)',
         primary: {
-          50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd',
-          400: '#60a5fa', 500: '#1a56db', 600: '#1e40af', 700: '#1e3a5f',
-          800: '#1e3a8a', 900: '#1e2a4a',
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa',
+          500: '#1a56db',
+          600: '#1e40af',
+          700: '#1e3a5f',
+          800: '#1e3a8a',
+          900: '#1e2a4a',
         },
         accent: { 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7' },
-        success: { 50: '#f0fdf4', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' },
-        warning: { 50: '#fffbeb', 500: '#f59e0b', 600: '#d97706' },
-        danger: { 50: '#fef2f2', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c' },
+        success: {
+          50: '#f0fdf4',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+        },
+        warning: {
+          50: '#fffbeb',
+          500: '#f59e0b',
+          600: '#d97706',
+          // Para texto sobre warning-50: el 600 da 3,07 y necesita 4,5.
+          700: '#b45309',
+        },
+        danger: {
+          50: '#fef2f2',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+        },
         neutral: {
-          50: '#fafafa', 100: '#f5f5f5', 200: '#e5e5e5', 300: '#d4d4d4',
-          400: '#a3a3a3', 500: '#737373', 600: '#525252', 700: '#404040',
-          800: '#262626', 900: '#171717',
+          50: '#fafafa',
+          100: '#f5f5f5',
+          200: '#e5e5e5',
+          300: '#d4d4d4',
+          400: '#a3a3a3',
+          500: '#737373',
+          600: '#525252',
+          700: '#404040',
+          800: '#262626',
+          900: '#171717',
         },
       },
       fontFamily: {
