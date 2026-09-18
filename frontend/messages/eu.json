@@ -207,8 +207,10 @@
     "descripcionSitio": "Etxeko zerbitzuen merkatua, bezeroak eta inguruko profesionalak lotzen dituena.",
     "editar": "Editatu",
     "eliminar": "Ezabatu",
+    "guardar": "Gorde",
     "irAlContenido": "Joan eduki nagusira",
-    "reintentar": "Saiatu berriro"
+    "reintentar": "Saiatu berriro",
+    "volver": "Itzuli"
   },
   "detalle": {
     "cargando": "Zerbitzua kargatzen",
@@ -302,8 +304,16 @@
     "titulo": "Mezuak"
   },
   "meta": {
-    "titulo": "ServiLocal - Zure inguruko zerbitzuak",
-    "descripcion": "Aurkitu zure inguruko profesional fidagarriak. Iturgintza, elektrizitatea, klase partikularrak eta gehiago. Erreserbatu, ordaindu eta balioetsi seguru."
+    "buscadorDescripcion": "Aurkitu iturginak, elektrikariak, margolariak, garbiketa, erreformak eta eskola partikularrak zure inguruan. Iragazi hiriaren, distantziaren, balorazioaren eta prezioaren arabera.",
+    "buscadorTitulo": "Bilatu zerbitzuak",
+    "descripcion": "Aurkitu zure inguruko profesional fidagarriak. Iturgintza, elektrizitatea, klase partikularrak eta gehiago. Erreserbatu, ordaindu eta balioetsi seguru.",
+    "servicioAusenteDescripcion": "ServiLocal-en argitaratutako zerbitzu baten xehetasunak.",
+    "servicioAusenteTitulo": "Zerbitzua",
+    "servicioPrecioDesde": "{min} eurotik aurrera {unidad}",
+    "servicioPrecioRango": "{min} eurotik {max} eurora {unidad}",
+    "servicioResumen": "{descripcion} Prezioa: {precio}. Eskuragarri: {ciudad}.",
+    "servicioTitulo": "{titulo} - {ciudad}",
+    "titulo": "ServiLocal - Zure inguruko zerbitzuak"
   },
   "navegacion": {
     "principal": "Nabigazio nagusia",

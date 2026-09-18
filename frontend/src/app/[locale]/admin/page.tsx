@@ -748,7 +748,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
                           aria-label={t('guardarCambios')}
                         >
                           <Check size={14} aria-hidden="true" />
-                          Guardar
+                          {tComun('guardar')}
                         </Button>
                         <Button
                           variant="ghost"
@@ -757,7 +757,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
                           aria-label={t('cancelarEdicion')}
                         >
                           <X size={14} aria-hidden="true" />
-                          Cancelar
+                          {tComun('cancelar')}
                         </Button>
                       </div>
                     ) : (

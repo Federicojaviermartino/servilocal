@@ -207,8 +207,10 @@
     "descripcionSitio": "Marktplatz für Haushaltsdienstleistungen, der Kunden mit Fachleuten aus ihrer Umgebung verbindet.",
     "editar": "Bearbeiten",
     "eliminar": "Löschen",
+    "guardar": "Speichern",
     "irAlContenido": "Zum Hauptinhalt springen",
-    "reintentar": "Erneut versuchen"
+    "reintentar": "Erneut versuchen",
+    "volver": "Zurück"
   },
   "detalle": {
     "cargando": "Dienstleistung wird geladen",
@@ -302,8 +304,16 @@
     "titulo": "Nachrichten"
   },
   "meta": {
-    "titulo": "ServiLocal - Lokale Dienstleistungen in Ihrer Nähe",
-    "descripcion": "Finden Sie vertrauenswürdige Fachleute in Ihrer Nähe. Sanitär, Elektrik, Nachhilfe und mehr. Sicher buchen, bezahlen und bewerten."
+    "buscadorDescripcion": "Finden Sie Installateure, Elektriker, Maler, Reinigung, Renovierungen und Nachhilfe in Ihrer Nähe. Filtern Sie nach Stadt, Entfernung, Bewertung und Preis.",
+    "buscadorTitulo": "Dienstleistungen suchen",
+    "descripcion": "Finden Sie vertrauenswürdige Fachleute in Ihrer Nähe. Sanitär, Elektrik, Nachhilfe und mehr. Sicher buchen, bezahlen und bewerten.",
+    "servicioAusenteDescripcion": "Details einer auf ServiLocal veröffentlichten Dienstleistung.",
+    "servicioAusenteTitulo": "Dienstleistung",
+    "servicioPrecioDesde": "ab {min} Euro {unidad}",
+    "servicioPrecioRango": "{min} bis {max} Euro {unidad}",
+    "servicioResumen": "{descripcion} Preis: {precio}. Verfügbar in {ciudad}.",
+    "servicioTitulo": "{titulo} in {ciudad}",
+    "titulo": "ServiLocal - Lokale Dienstleistungen in Ihrer Nähe"
   },
   "navegacion": {
     "principal": "Hauptnavigation",

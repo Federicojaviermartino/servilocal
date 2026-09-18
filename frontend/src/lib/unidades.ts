@@ -1,16 +1,6 @@
 'use client';
 import { useTranslations } from 'next-intl';
-
-/**
- * Convierte la unidad guardada en clave de catálogo.
- *
- * El valor vive en la base de datos tal como lo eligió el profesional —«por
- * hora», «por dia» sin tilde— y ese texto es el contrato con la API, así que
- * no se toca. Lo que cambia es cómo se escribe en pantalla.
- */
-export function claveUnidad(unidad: string): string {
-  return unidad.trim().toLowerCase().replace(/\s+/g, '-');
-}
+import { claveUnidad } from './unidad-clave';
 
 /**
  * Unidad de precio en el idioma del visitante.

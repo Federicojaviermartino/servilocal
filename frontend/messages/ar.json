@@ -207,8 +207,10 @@
     "descripcionSitio": "سوق لخدمات المنزل يربط العملاء بالمحترفين في منطقتهم.",
     "editar": "تعديل",
     "eliminar": "حذف",
+    "guardar": "حفظ",
     "irAlContenido": "الانتقال إلى المحتوى الرئيسي",
-    "reintentar": "أعد المحاولة"
+    "reintentar": "أعد المحاولة",
+    "volver": "رجوع"
   },
   "detalle": {
     "cargando": "جارٍ تحميل الخدمة",
@@ -302,8 +304,16 @@
     "titulo": "الرسائل"
   },
   "meta": {
-    "titulo": "سيرفي لوكال - خدمات محلية بالقرب منك",
-    "descripcion": "اعثر على محترفين موثوقين في منطقتك: السباكة والكهرباء والدروس الخصوصية والمزيد. احجز وادفع وقيّم بأمان."
+    "buscadorDescripcion": "اعثر على سبّاكين وكهربائيين ودهّانين وخدمات تنظيف وتجديد ودروس خصوصية بالقرب منك. صفِّ النتائج حسب المدينة والمسافة والتقييم والسعر.",
+    "buscadorTitulo": "البحث عن الخدمات",
+    "descripcion": "اعثر على محترفين موثوقين في منطقتك: السباكة والكهرباء والدروس الخصوصية والمزيد. احجز وادفع وقيّم بأمان.",
+    "servicioAusenteDescripcion": "تفاصيل خدمة منشورة على ServiLocal.",
+    "servicioAusenteTitulo": "الخدمة",
+    "servicioPrecioDesde": "ابتداءً من {min} يورو {unidad}",
+    "servicioPrecioRango": "من {min} إلى {max} يورو {unidad}",
+    "servicioResumen": "{descripcion} السعر: {precio}. متاح في {ciudad}.",
+    "servicioTitulo": "{titulo} في {ciudad}",
+    "titulo": "سيرفي لوكال - خدمات محلية بالقرب منك"
   },
   "navegacion": {
     "principal": "التنقل الرئيسي",

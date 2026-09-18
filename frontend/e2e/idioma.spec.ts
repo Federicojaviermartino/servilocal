@@ -108,4 +108,45 @@ test.describe('Idioma', () => {
       page.locator('link[rel="alternate"][hreflang="ar"]'),
     ).toHaveAttribute('href', /\/ar$/);
   });
+
+  test('el buscador y las fichas también las declaran, con su canónica', async ({
+    page,
+  }) => {
+    // Solo se comprobaba la portada. El alternates de un layout anidado
+    // sustituye al del padre en vez de fundirse con él, así que estas dos
+    // páginas servían cero alternativas y una canónica sin idioma: la
+    // versión alemana decía ser la misma URL que la española, que es pedirle
+    // a un buscador que no la indexe.
+    await page.goto('/de/services/search');
+    await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(
+      11,
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /\/de\/services\/search$/,
+    );
+
+    await page.goto('/de/services/search');
+    const ficha = page
+      .locator('a[href*="/services/"]:not([href*="search"])')
+      .first();
+    await expect(ficha).toBeVisible();
+    await ficha.click();
+    await page.waitForURL(/\/de\/services\/[0-9a-f-]{36}/);
+
+    await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(
+      11,
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      /\/de\/services\//,
+    );
+
+    // Y la frase que envuelve al precio va en el idioma de la página. La
+    // descripción del profesional sigue en castellano: eso es contenido.
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      /Preis:|Verfügbar in/,
+    );
+  });
 });

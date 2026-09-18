@@ -207,8 +207,10 @@
     "descripcionSitio": "Marketplace di servizi per la casa che mette in contatto i clienti con i professionisti della loro zona.",
     "editar": "Modifica",
     "eliminar": "Elimina",
+    "guardar": "Salva",
     "irAlContenido": "Vai al contenuto principale",
-    "reintentar": "Riprova"
+    "reintentar": "Riprova",
+    "volver": "Indietro"
   },
   "detalle": {
     "cargando": "Caricamento del servizio",
@@ -302,8 +304,16 @@
     "titulo": "Messaggi"
   },
   "meta": {
-    "titulo": "ServiLocal - Servizi locali vicino a te",
-    "descripcion": "Trova professionisti affidabili nella tua zona. Idraulica, elettricità, lezioni private e altro. Prenota, paga e recensisci in sicurezza."
+    "buscadorDescripcion": "Trova idraulici, elettricisti, imbianchini, pulizie, ristrutturazioni e lezioni private vicino a te. Filtra per città, distanza, valutazione e prezzo.",
+    "buscadorTitulo": "Cerca servizi",
+    "descripcion": "Trova professionisti affidabili nella tua zona. Idraulica, elettricità, lezioni private e altro. Prenota, paga e recensisci in sicurezza.",
+    "servicioAusenteDescripcion": "Dettaglio di un servizio pubblicato su ServiLocal.",
+    "servicioAusenteTitulo": "Servizio",
+    "servicioPrecioDesde": "da {min} euro {unidad}",
+    "servicioPrecioRango": "da {min} a {max} euro {unidad}",
+    "servicioResumen": "{descripcion} Prezzo: {precio}. Disponibile a {ciudad}.",
+    "servicioTitulo": "{titulo} a {ciudad}",
+    "titulo": "ServiLocal - Servizi locali vicino a te"
   },
   "navegacion": {
     "principal": "Navigazione principale",

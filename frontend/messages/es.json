@@ -207,8 +207,10 @@
     "descripcionSitio": "Marketplace de servicios del hogar que conecta clientes con profesionales de su zona.",
     "editar": "Editar",
     "eliminar": "Eliminar",
+    "guardar": "Guardar",
     "irAlContenido": "Ir al contenido principal",
-    "reintentar": "Reintentar"
+    "reintentar": "Reintentar",
+    "volver": "Volver"
   },
   "detalle": {
     "cargando": "Cargando el servicio",
@@ -302,8 +304,16 @@
     "titulo": "Mensajes"
   },
   "meta": {
-    "titulo": "ServiLocal - Servicios locales cerca de ti",
-    "descripcion": "Encuentra profesionales de confianza en tu zona. Fontanería, electricidad, clases particulares y más. Reserva, paga y valora de forma segura."
+    "buscadorDescripcion": "Encuentra fontaneros, electricistas, pintores, limpieza, reformas y clases particulares cerca de ti. Filtra por ciudad, distancia, valoración y precio.",
+    "buscadorTitulo": "Buscar servicios",
+    "descripcion": "Encuentra profesionales de confianza en tu zona. Fontanería, electricidad, clases particulares y más. Reserva, paga y valora de forma segura.",
+    "servicioAusenteDescripcion": "Detalle de un servicio publicado en ServiLocal.",
+    "servicioAusenteTitulo": "Servicio",
+    "servicioPrecioDesde": "desde {min} euros {unidad}",
+    "servicioPrecioRango": "{min} a {max} euros {unidad}",
+    "servicioResumen": "{descripcion} Precio: {precio}. Disponible en {ciudad}.",
+    "servicioTitulo": "{titulo} en {ciudad}",
+    "titulo": "ServiLocal - Servicios locales cerca de ti"
   },
   "navegacion": {
     "principal": "Navegación principal",

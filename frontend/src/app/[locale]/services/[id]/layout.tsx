@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
+import { getTranslations } from 'next-intl/server';
 import { SITIO_URL } from '@/lib/sitio';
+import { alternativas } from '@/lib/seo';
+import { claveUnidad } from '@/lib/unidad-clave';
 
 /**
  * La ficha de servicio es un componente de cliente, así que no puede exportar
@@ -42,35 +45,57 @@ async function obtenerServicio(id: string): Promise<ServicioSeo | null> {
   }
 }
 
-function resumen(servicio: ServicioSeo): string {
+async function resumen(locale: string, servicio: ServicioSeo): Promise<string> {
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  const tUnidades = await getTranslations({ locale, namespace: 'unidades' });
+
+  const clave = claveUnidad(servicio.priceUnit);
+  const unidad = tUnidades.has(clave as never)
+    ? tUnidades(clave as never)
+    : servicio.priceUnit;
+
   const precio = servicio.priceMax
-    ? `${servicio.priceMin} a ${servicio.priceMax} euros ${servicio.priceUnit}`
-    : `desde ${servicio.priceMin} euros ${servicio.priceUnit}`;
-  return `${servicio.description.slice(0, 130)} Precio: ${precio}. Disponible en ${servicio.city}.`;
+    ? t('servicioPrecioRango', {
+        min: servicio.priceMin,
+        max: servicio.priceMax,
+        unidad,
+      })
+    : t('servicioPrecioDesde', { min: servicio.priceMin, unidad });
+
+  return t('servicioResumen', {
+    descripcion: servicio.description.slice(0, 130),
+    precio,
+    ciudad: servicio.city,
+  });
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: { id: string; locale: string };
 }): Promise<Metadata> {
-  const servicio = await obtenerServicio(params.id);
+  const { id, locale } = params;
+  const servicio = await obtenerServicio(id);
+  const t = await getTranslations({ locale, namespace: 'meta' });
 
   if (!servicio) {
     return {
-      title: 'Servicio',
-      description: 'Detalle de un servicio publicado en ServiLocal.',
+      title: t('servicioAusenteTitulo'),
+      description: t('servicioAusenteDescripcion'),
     };
   }
 
-  const titulo = `${servicio.title} en ${servicio.city}`;
-  const descripcion = resumen(servicio);
+  const titulo = t('servicioTitulo', {
+    titulo: servicio.title,
+    ciudad: servicio.city,
+  });
+  const descripcion = await resumen(locale, servicio);
   const imagen = servicio.images?.[0];
 
   return {
     title: titulo,
     description: descripcion,
-    alternates: { canonical: `${SITIO_URL}/services/${servicio.id}` },
+    alternates: alternativas(locale, `/services/${servicio.id}`),
     openGraph: {
       type: 'article',
       title: titulo,

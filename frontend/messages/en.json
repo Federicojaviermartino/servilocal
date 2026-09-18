@@ -207,8 +207,10 @@
     "descripcionSitio": "A home services marketplace connecting customers with professionals in their area.",
     "editar": "Edit",
     "eliminar": "Delete",
+    "guardar": "Save",
     "irAlContenido": "Skip to main content",
-    "reintentar": "Try again"
+    "reintentar": "Try again",
+    "volver": "Back"
   },
   "detalle": {
     "cargando": "Loading the service",
@@ -302,8 +304,16 @@
     "titulo": "Messages"
   },
   "meta": {
-    "titulo": "ServiLocal - Local services near you",
-    "descripcion": "Find trusted professionals in your area. Plumbing, electrical work, private tutoring and more. Book, pay and review securely."
+    "buscadorDescripcion": "Find plumbers, electricians, painters, cleaning, renovations and private tuition near you. Filter by city, distance, rating and price.",
+    "buscadorTitulo": "Search services",
+    "descripcion": "Find trusted professionals in your area. Plumbing, electrical work, private tutoring and more. Book, pay and review securely.",
+    "servicioAusenteDescripcion": "Details of a service listed on ServiLocal.",
+    "servicioAusenteTitulo": "Service",
+    "servicioPrecioDesde": "from {min} euros {unidad}",
+    "servicioPrecioRango": "{min} to {max} euros {unidad}",
+    "servicioResumen": "{descripcion} Price: {precio}. Available in {ciudad}.",
+    "servicioTitulo": "{titulo} in {ciudad}",
+    "titulo": "ServiLocal - Local services near you"
   },
   "navegacion": {
     "principal": "Main navigation",

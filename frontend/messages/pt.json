@@ -207,8 +207,10 @@
     "descripcionSitio": "Marketplace de serviços domésticos que liga clientes a profissionais da sua zona.",
     "editar": "Editar",
     "eliminar": "Eliminar",
+    "guardar": "Guardar",
     "irAlContenido": "Ir para o conteúdo principal",
-    "reintentar": "Tentar de novo"
+    "reintentar": "Tentar de novo",
+    "volver": "Voltar"
   },
   "detalle": {
     "cargando": "A carregar o serviço",
@@ -302,8 +304,16 @@
     "titulo": "Mensagens"
   },
   "meta": {
-    "titulo": "ServiLocal - Serviços locais perto de si",
-    "descripcion": "Encontre profissionais de confiança na sua zona. Canalização, eletricidade, explicações e muito mais. Reserve, pague e avalie em segurança."
+    "buscadorDescripcion": "Encontre canalizadores, eletricistas, pintores, limpeza, remodelações e explicações perto de si. Filtre por cidade, distância, avaliação e preço.",
+    "buscadorTitulo": "Procurar serviços",
+    "descripcion": "Encontre profissionais de confiança na sua zona. Canalização, eletricidade, explicações e muito mais. Reserve, pague e avalie em segurança.",
+    "servicioAusenteDescripcion": "Detalhe de um serviço publicado na ServiLocal.",
+    "servicioAusenteTitulo": "Serviço",
+    "servicioPrecioDesde": "desde {min} euros {unidad}",
+    "servicioPrecioRango": "{min} a {max} euros {unidad}",
+    "servicioResumen": "{descripcion} Preço: {precio}. Disponível em {ciudad}.",
+    "servicioTitulo": "{titulo} em {ciudad}",
+    "titulo": "ServiLocal - Serviços locais perto de si"
   },
   "navegacion": {
     "principal": "Navegação principal",

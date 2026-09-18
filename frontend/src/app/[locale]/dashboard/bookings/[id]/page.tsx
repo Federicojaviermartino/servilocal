@@ -17,6 +17,7 @@ import Spinner from '@/components/atoms/Spinner';
 
 export default function BookingDetailPage() {
   const t = useTranslations('reservasPanel');
+  const tComun = useTranslations('comun');
   const tEstados = useTranslations('estados');
   const idioma = useLocale();
   const params = useParams();
@@ -95,7 +96,7 @@ export default function BookingDetailPage() {
         className="inline-flex items-center gap-1 text-sm text-secundario hover:text-primary-600 mb-4"
       >
         <ArrowLeft size={16} />
-        Volver
+        {tComun('volver')}
       </Link>
 
       <div className="bg-superficie rounded-lg shadow-card p-6">

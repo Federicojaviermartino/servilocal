@@ -207,8 +207,10 @@
     "descripcionSitio": "Place de marché de services à domicile qui met en relation les clients et les professionnels de leur région.",
     "editar": "Modifier",
     "eliminar": "Supprimer",
+    "guardar": "Enregistrer",
     "irAlContenido": "Aller au contenu principal",
-    "reintentar": "Réessayer"
+    "reintentar": "Réessayer",
+    "volver": "Retour"
   },
   "detalle": {
     "cargando": "Chargement du service",
@@ -302,8 +304,16 @@
     "titulo": "Messages"
   },
   "meta": {
-    "titulo": "ServiLocal - Des services près de chez vous",
-    "descripcion": "Trouvez des professionnels de confiance près de chez vous. Plomberie, électricité, cours particuliers et plus encore. Réservez, payez et évaluez en toute sécurité."
+    "buscadorDescripcion": "Trouvez plombiers, électriciens, peintres, ménage, rénovations et cours particuliers près de chez vous. Filtrez par ville, distance, note et prix.",
+    "buscadorTitulo": "Rechercher des services",
+    "descripcion": "Trouvez des professionnels de confiance près de chez vous. Plomberie, électricité, cours particuliers et plus encore. Réservez, payez et évaluez en toute sécurité.",
+    "servicioAusenteDescripcion": "Détail d'un service publié sur ServiLocal.",
+    "servicioAusenteTitulo": "Service",
+    "servicioPrecioDesde": "à partir de {min} euros {unidad}",
+    "servicioPrecioRango": "{min} à {max} euros {unidad}",
+    "servicioResumen": "{descripcion} Prix : {precio}. Disponible à {ciudad}.",
+    "servicioTitulo": "{titulo} à {ciudad}",
+    "titulo": "ServiLocal - Des services près de chez vous"
   },
   "navegacion": {
     "principal": "Navigation principale",

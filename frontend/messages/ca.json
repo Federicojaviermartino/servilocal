@@ -207,8 +207,10 @@
     "descripcionSitio": "Marketplace de serveis per a la llar que connecta clients amb professionals de la seva zona.",
     "editar": "Edita",
     "eliminar": "Elimina",
+    "guardar": "Desa",
     "irAlContenido": "Vés al contingut principal",
-    "reintentar": "Torna-ho a provar"
+    "reintentar": "Torna-ho a provar",
+    "volver": "Torna"
   },
   "detalle": {
     "cargando": "Carregant el servei",
@@ -302,8 +304,16 @@
     "titulo": "Missatges"
   },
   "meta": {
-    "titulo": "ServiLocal - Serveis locals a prop teu",
-    "descripcion": "Troba professionals de confiança a la teva zona. Lampisteria, electricitat, classes particulars i més. Reserva, paga i valora amb seguretat."
+    "buscadorDescripcion": "Troba lampistes, electricistes, pintors, neteja, reformes i classes particulars a prop teu. Filtra per ciutat, distància, valoració i preu.",
+    "buscadorTitulo": "Cerca serveis",
+    "descripcion": "Troba professionals de confiança a la teva zona. Lampisteria, electricitat, classes particulars i més. Reserva, paga i valora amb seguretat.",
+    "servicioAusenteDescripcion": "Detall d'un servei publicat a ServiLocal.",
+    "servicioAusenteTitulo": "Servei",
+    "servicioPrecioDesde": "des de {min} euros {unidad}",
+    "servicioPrecioRango": "{min} a {max} euros {unidad}",
+    "servicioResumen": "{descripcion} Preu: {precio}. Disponible a {ciudad}.",
+    "servicioTitulo": "{titulo} a {ciudad}",
+    "titulo": "ServiLocal - Serveis locals a prop teu"
   },
   "navegacion": {
     "principal": "Navegació principal",

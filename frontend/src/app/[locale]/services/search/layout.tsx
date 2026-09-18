@@ -1,15 +1,27 @@
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
-import { SITIO_URL } from '@/lib/sitio';
+import { getTranslations } from 'next-intl/server';
+import { alternativas } from '@/lib/seo';
 
 // El buscador es un componente de cliente y no puede exportar metadatos, así
 // que los aporta este layout, que sí se ejecuta en el servidor.
-export const metadata: Metadata = {
-  title: 'Buscar servicios',
-  description:
-    'Encuentra fontaneros, electricistas, pintores, limpieza, reformas y clases particulares cerca de ti. Filtra por ciudad, distancia, valoración y precio.',
-  alternates: { canonical: `${SITIO_URL}/services/search` },
-};
+//
+// Y son metadatos generados, no una constante: una constante no puede saber
+// en qué idioma se está sirviendo, así que las diez versiones compartían
+// título y descripción en castellano.
+export async function generateMetadata({
+  params: { locale },
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale, namespace: 'meta' });
+
+  return {
+    title: t('buscadorTitulo'),
+    description: t('buscadorDescripcion'),
+    alternates: alternativas(locale, '/services/search'),
+  };
+}
 
 export default function BuscadorLayout({ children }: { children: ReactNode }) {
   return <>{children}</>;
