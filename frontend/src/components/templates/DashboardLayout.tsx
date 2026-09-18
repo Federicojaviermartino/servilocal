@@ -96,6 +96,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    // La sección activa se distinguía solo por color. Quien
+                    // navega escuchando la página oía cinco enlaces iguales
+                    // y ninguna pista de dónde estaba.
+                    aria-current={active ? 'page' : undefined}
                     className={clsx(
                       'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
                       active

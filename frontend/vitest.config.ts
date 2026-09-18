@@ -33,11 +33,15 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/lib/auth-store.ts',
       ],
+      // Un suelo, no una meta: se deja unos puntos por debajo de lo medido
+      // para que añadir un componente no rompa la integración antes de que
+      // le dé tiempo a nadie a escribirle su prueba. Bajarlo para que pase
+      // algo que no está probado vacía de sentido la comprobación entera.
       thresholds: {
-        statements: 20,
-        branches: 26,
-        functions: 16,
-        lines: 20,
+        statements: 58,
+        branches: 54,
+        functions: 55,
+        lines: 58,
       },
     },
   },
