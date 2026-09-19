@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { SITIO_URL } from '@/lib/sitio';
-import { urlDe } from '@/lib/seo';
+import { urlDe, jsonParaScript } from '@/lib/seo';
 import { routing } from '@/i18n/routing';
 import { claveUnidad } from '@/lib/unidad-clave';
 
@@ -165,7 +165,7 @@ export default async function ServicioLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(datosEstructurados(servicio)),
+            __html: jsonParaScript(datosEstructurados(servicio)),
           }}
         />
       )}

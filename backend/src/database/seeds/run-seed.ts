@@ -228,13 +228,38 @@ async function runSeed() {
   const passwordCifrada = await bcrypt.hash('Password123!', salt);
   const base = { password: passwordCifrada, isEmailVerified: true };
 
-  const admin = userRepo.create({
-    ...base,
-    firstName: 'Admin',
-    lastName: 'ServiLocal',
-    email: 'admin@servilocal.com',
-    role: UserRole.ADMIN,
-  });
+  /**
+   * El administrador con permisos reales, solo si hay una contraseña propia.
+   *
+   * Antes se creaba siempre con la misma contraseña que las cuentas de
+   * demostración, que se publica en la pantalla de acceso. El correo está en
+   * este archivo, que es público, así que cualquiera entraba con permisos
+   * completos: desactivar cuentas, borrar servicios —y en cascada sus
+   * reservas, pagos y reseñas— y lanzar capturas y reembolsos contra Stripe.
+   * La cuenta de solo lectura no protegía nada mientras esta existiera.
+   *
+   * Ahora hace falta ADMIN_PASSWORD. Sin ella la siembra deja únicamente el
+   * administrador de demostración, que es el que tiene que quedar en un
+   * despliegue público.
+   */
+  const passwordAdmin = process.env.ADMIN_PASSWORD?.trim();
+
+  if (passwordAdmin && passwordAdmin === 'Password123!') {
+    throw new Error(
+      'ADMIN_PASSWORD no puede ser la contraseña de demostración: es pública.',
+    );
+  }
+
+  const admin = passwordAdmin
+    ? userRepo.create({
+        password: await bcrypt.hash(passwordAdmin, salt),
+        isEmailVerified: true,
+        firstName: 'Admin',
+        lastName: 'ServiLocal',
+        email: process.env.ADMIN_EMAIL?.trim() || 'admin@servilocal.com',
+        role: UserRole.ADMIN,
+      })
+    : null;
 
   // El administrador que se publica en la pantalla de acceso. Va aparte del
   // anterior a propósito: el completo sigue existiendo para operar de verdad,
@@ -396,14 +421,20 @@ async function runSeed() {
     }),
   );
 
-  await userRepo.save([admin, adminDemo, ...clientes, ...proveedores]);
+  await userRepo.save([
+    ...(admin ? [admin] : []),
+    adminDemo,
+    ...clientes,
+    ...proveedores,
+  ]);
 
   const proveedorPorClave: Record<string, User> = {};
   definicionProveedores.forEach((p, i) => {
     proveedorPorClave[p.clave] = proveedores[i];
   });
   console.log(
-    'Usuarios creados: 1 admin, ' +
+    'Usuarios creados: ' +
+      (admin ? '1 admin y 1 de demostración, ' : '1 admin de demostración, ') +
       clientes.length +
       ' clientes, ' +
       proveedores.length +
@@ -1038,8 +1069,12 @@ async function runSeed() {
   console.log(otras + ' reservas más, repartidas por los otros cuatro estados');
 
   console.log('\n=== CREDENCIALES DE PRUEBA ===');
-  console.log('Admin:      admin@servilocal.com');
   console.log('Admin demo: demo@servilocal.com (solo lectura)');
+  console.log(
+    admin
+      ? 'Admin real: ' + admin.email + ' (usa ADMIN_PASSWORD)'
+      : 'Sin administrador con permisos reales: define ADMIN_PASSWORD si lo necesitas.',
+  );
   console.log('Cliente:    laura@ejemplo.com');
   console.log('Proveedor:  carlos@ejemplo.com');
   console.log('Proveedora: elena@ejemplo.com');

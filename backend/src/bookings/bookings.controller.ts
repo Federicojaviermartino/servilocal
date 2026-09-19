@@ -53,8 +53,12 @@ export class BookingsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener reserva por ID' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.bookingsService.findById(id);
+  @ApiResponse({ status: 403, description: 'La reserva no es tuya' })
+  async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+    return this.bookingsService.findById(id, {
+      id: req.user.id,
+      role: req.user.role,
+    });
   }
 
   @Patch(':id/status')

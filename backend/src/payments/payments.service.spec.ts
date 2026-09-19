@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -173,25 +174,105 @@ describe('PaymentsService', () => {
   });
 
   describe('confirmar la retención', () => {
-    it('marca la fecha de pago al pasar a retenido', async () => {
-      const { servicio } = await construir({
-        id: 'p1',
-        status: PaymentStatus.PENDING,
-        stripePaymentIntentId: INTENCION,
+    const PENDIENTE = {
+      id: 'p1',
+      clientId: 'c1',
+      status: PaymentStatus.PENDING,
+      stripePaymentIntentId: INTENCION,
+    };
+
+    /** Lo que Stripe contesta al preguntarle por la intención. */
+    const enStripe = (stripe: ReturnType<typeof stripeFalso>, estado: string) =>
+      stripe.paymentIntents.retrieve.mockResolvedValueOnce({
+        id: INTENCION,
+        client_secret: 'cs',
+        status: estado as Stripe.PaymentIntent.Status,
       });
 
-      const resultado = await servicio.confirmPaymentHold(INTENCION);
+    it('marca la fecha de pago al pasar a retenido', async () => {
+      const { servicio, stripe } = await construir(PENDIENTE);
+      enStripe(stripe, 'requires_capture');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
 
       expect(resultado.status).toBe(PaymentStatus.HELD);
       expect(resultado.paidAt).toBeInstanceOf(Date);
     });
 
+    it('pregunta a Stripe en vez de creerse al navegador', async () => {
+      // Esta ruta existe para adelantarse al webhook. Sin preguntar, era
+      // una forma de marcar como pagado algo que nadie había pagado.
+      const { servicio, stripe } = await construir(PENDIENTE);
+      enStripe(stripe, 'requires_payment_method');
+
+      await expect(
+        servicio.confirmPaymentHold(INTENCION, 'c1'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('un pago ya cobrado queda completado, no retenido', async () => {
+      const { servicio, stripe } = await construir(PENDIENTE);
+      enStripe(stripe, 'succeeded');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(resultado.status).toBe(PaymentStatus.COMPLETED);
+    });
+
+    it('no se confirma el pago de otra persona', async () => {
+      // Antes bastaba con conocer el identificador de la intención.
+      const { servicio, stripe } = await construir(PENDIENTE);
+
+      await expect(
+        servicio.confirmPaymentHold(INTENCION, 'otro'),
+      ).rejects.toThrow(ForbiddenException);
+      expect(stripe.paymentIntents.retrieve).not.toHaveBeenCalled();
+    });
+
     it('avisa si la intención no corresponde a ningún pago', async () => {
       const { servicio } = await construir(null);
 
-      await expect(servicio.confirmPaymentHold('pi_fantasma')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        servicio.confirmPaymentHold('pi_fantasma', 'c1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('ver el pago de una reserva', () => {
+    const PAGO = { id: 'p1', bookingId: 'b1', clientId: 'c1' };
+    const RESERVA = { id: 'b1', clientId: 'c1', providerId: 'p9' };
+
+    it('lo ve el cliente de la reserva', async () => {
+      const { servicio } = await construir(PAGO, RESERVA);
+
+      expect(
+        await servicio.findByBooking('b1', { id: 'c1', role: 'client' }),
+      ).toBeTruthy();
+    });
+
+    it('y el profesional', async () => {
+      const { servicio } = await construir(PAGO, RESERVA);
+
+      expect(
+        await servicio.findByBooking('b1', { id: 'p9', role: 'provider' }),
+      ).toBeTruthy();
+    });
+
+    it('no lo ve un tercero', async () => {
+      // Dentro van el importe y la fecha de un trabajo que no es suyo.
+      const { servicio } = await construir(PAGO, RESERVA);
+
+      await expect(
+        servicio.findByBooking('b1', { id: 'ajeno', role: 'client' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('la moderación sí', async () => {
+      const { servicio } = await construir(PAGO, RESERVA);
+
+      expect(
+        await servicio.findByBooking('b1', { id: 'admin', role: 'admin' }),
+      ).toBeTruthy();
     });
   });
   describe('abrir el cobro', () => {

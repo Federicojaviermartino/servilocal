@@ -41,3 +41,31 @@ export function alternativas(
     },
   };
 }
+
+/** Lo que no puede salir en crudo dentro de una etiqueta <script>. */
+const ESCAPES: Record<string, string> = {
+  '<': '\\u003c',
+  '>': '\\u003e',
+  '&': '\\u0026',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
+};
+
+/**
+ * Serializa datos estructurados para incrustarlos en un <script>.
+ *
+ * JSON.stringify no escapa el menor-que. Un profesional podía titular su
+ * servicio `</script><script>…` y ese texto salía tal cual dentro de la
+ * etiqueta JSON-LD: el navegador daba por cerrado el bloque y ejecutaba lo
+ * que viniera detrás, en la ficha pública que ve cualquier visitante. Con el
+ * token de sesión en localStorage, eso es robo de sesión, y quien abriera la
+ * ficha desde el panel de moderación entregaba una cuenta de administración.
+ *
+ * Se escapan también los separadores de línea de Unicode: son saltos de línea
+ * válidos en JavaScript, pero no dentro de una cadena JSON.
+ */
+export const jsonParaScript = (datos: unknown): string =>
+  JSON.stringify(datos).replace(
+    /[<>&\u2028\u2029]/g,
+    (caracter) => ESCAPES[caracter],
+  );

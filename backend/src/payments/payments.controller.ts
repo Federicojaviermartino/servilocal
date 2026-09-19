@@ -8,7 +8,12 @@ import {
   Request,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
@@ -34,8 +39,16 @@ export class PaymentsController {
 
   @Post('confirm/:paymentIntentId')
   @ApiOperation({ summary: 'Confirmar retención de pago' })
-  async confirmHold(@Param('paymentIntentId') paymentIntentId: string) {
-    return this.paymentsService.confirmPaymentHold(paymentIntentId);
+  @ApiResponse({ status: 403, description: 'Ese pago no es tuyo' })
+  @ApiResponse({ status: 400, description: 'Stripe no ha retenido nada' })
+  async confirmHold(
+    @Request() req: any,
+    @Param('paymentIntentId') paymentIntentId: string,
+  ) {
+    return this.paymentsService.confirmPaymentHold(
+      paymentIntentId,
+      req.user.id,
+    );
   }
 
   @Post('capture/:bookingId')
@@ -64,7 +77,14 @@ export class PaymentsController {
 
   @Get('booking/:bookingId')
   @ApiOperation({ summary: 'Pago de una reserva específica' })
-  async findByBooking(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
-    return this.paymentsService.findByBooking(bookingId);
+  @ApiResponse({ status: 403, description: 'Esa reserva no es tuya' })
+  async findByBooking(
+    @Request() req: any,
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+  ) {
+    return this.paymentsService.findByBooking(bookingId, {
+      id: req.user.id,
+      role: req.user.role,
+    });
   }
 }

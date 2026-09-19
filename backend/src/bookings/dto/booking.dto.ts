@@ -3,14 +3,19 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   IsNumber,
   IsDateString,
   Min,
 } from 'class-validator';
 
 export class CreateBookingDto {
+  // Con @IsString, un identificador mal formado llegaba a la base de datos
+  // y volvía como un 500. Ahora se rechaza aquí, con un 400 que explica qué
+  // pasa. El README ya afirmaba esto, y solo era cierto para los parámetros
+  // de ruta, que sí pasan por ParseUUIDPipe.
   @ApiProperty({ example: 'uuid-service' })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   serviceId: string;
 
@@ -25,6 +30,9 @@ export class CreateBookingDto {
   @IsString()
   description?: string;
 
+  // Se mantiene porque la ficha publica una horquilla y el cliente elige
+  // dentro de ella. Lo que ya no se mantiene es creérselo: el servicio
+  // comprueba que cae dentro del rango de ESE servicio antes de guardarlo.
   @ApiProperty({ example: 45.0 })
   @IsNumber()
   @Min(0)

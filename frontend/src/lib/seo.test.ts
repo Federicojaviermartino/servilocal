@@ -1,4 +1,4 @@
-import { alternativas, urlDe } from './seo';
+import { alternativas, urlDe, jsonParaScript } from './seo';
 import { routing } from '@/i18n/routing';
 import { SITIO_URL } from './sitio';
 
@@ -66,5 +66,43 @@ describe('alternativas', () => {
     const { languages } = alternativas('ar', '/services/abc');
 
     expect(languages['x-default']).toBe(`${SITIO_URL}/services/abc`);
+  });
+});
+
+describe('datos estructurados dentro de un <script>', () => {
+  const CIERRE = '</' + 'script><' + 'script>alert(1)</' + 'script>';
+
+  it('un título que cierra la etiqueta no la cierra', () => {
+    // Es el ataque entero: cualquiera se registra como profesional, publica
+    // un servicio con ese título y ejecuta código en la ficha pública. Con
+    // el token de sesión en localStorage, eso se lleva la sesión de quien
+    // abra la ficha, moderación incluida.
+    const salida = jsonParaScript({ name: CIERRE });
+
+    expect(salida).not.toContain('</');
+    expect(salida).not.toContain('<');
+  });
+
+  it('lo escapado sigue siendo el mismo texto al leerlo', () => {
+    // Escapar no puede romper el JSON-LD: Google tiene que seguir leyendo
+    // el título de verdad.
+    const datos = { name: 'Fontanería <Pepe> & Hijos' };
+
+    expect(JSON.parse(jsonParaScript(datos))).toEqual(datos);
+  });
+
+  it('escapa los separadores de línea de Unicode', () => {
+    // Son saltos de línea válidos en JavaScript y no en JSON: sin escapar,
+    // rompen el bloque sin que haya ni un signo de menor-que.
+    const salida = jsonParaScript({
+      name: 'antes' + String.fromCharCode(0x2028) + 'después',
+    });
+
+    expect(salida).not.toContain(String.fromCharCode(0x2028));
+    expect(JSON.parse(salida).name).toContain(String.fromCharCode(0x2028));
+  });
+
+  it('el ampersand tampoco sale en crudo', () => {
+    expect(jsonParaScript({ name: 'Luz & Agua' })).not.toContain('&');
   });
 });

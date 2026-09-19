@@ -376,4 +376,117 @@ describe('BookingsService', () => {
       );
     });
   });
+  describe('el importe lo valida el servicio, no el navegador', () => {
+    const conTarifa = (priceMin: number, priceMax: number | null) => {
+      mockServiceRepository.findOne.mockResolvedValue({
+        id: 's1',
+        providerId: 'p1',
+        priceMin,
+        priceMax,
+        isActive: true,
+      });
+      mockBookingRepository.create.mockImplementation((b: unknown) => b);
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+    };
+
+    const reservar = (totalPrice: number) =>
+      service.create('c1', {
+        serviceId: 's1',
+        scheduledDate: '2026-12-01T10:00:00Z',
+        totalPrice,
+      } as never);
+
+    it('un importe dentro de la horquilla se acepta tal cual', async () => {
+      conTarifa(40, 90);
+
+      expect((await reservar(60)).totalPrice).toBe(60);
+    });
+
+    it('por debajo del mínimo publicado se rechaza', async () => {
+      // Aquí estaba el agujero: un servicio de 500 euros se reservaba por
+      // cincuenta céntimos, y ese número era el que se cobraba en Stripe.
+      conTarifa(500, null);
+
+      await expect(reservar(0.5)).rejects.toThrow(BadRequestException);
+      expect(mockBookingRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('un cero tampoco pasa', async () => {
+      // Con cero, Stripe rechazaba el importe y la API devolvía un 500.
+      conTarifa(40, 90);
+
+      await expect(reservar(0)).rejects.toThrow(BadRequestException);
+    });
+
+    it('por encima del máximo publicado se rechaza', async () => {
+      conTarifa(40, 90);
+
+      await expect(reservar(900)).rejects.toThrow(BadRequestException);
+    });
+
+    it('sin máximo publicado, por arriba no hay tope', async () => {
+      // Pagar de más es decisión de quien paga.
+      conTarifa(40, null);
+
+      expect((await reservar(120)).totalPrice).toBe(120);
+    });
+
+    it('justo en los extremos entra', async () => {
+      conTarifa(40, 90);
+
+      expect((await reservar(40)).totalPrice).toBe(40);
+      expect((await reservar(90)).totalPrice).toBe(90);
+    });
+  });
+
+  describe('quién puede leer una reserva', () => {
+    const RESERVA = {
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p1',
+      status: BookingStatus.CONFIRMED,
+    };
+
+    it('la ve su cliente', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(RESERVA);
+
+      expect(
+        await service.findById('b1', { id: 'c1', role: 'client' }),
+      ).toBeTruthy();
+    });
+
+    it('y su profesional', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(RESERVA);
+
+      expect(
+        await service.findById('b1', { id: 'p1', role: 'provider' }),
+      ).toBeTruthy();
+    });
+
+    it('un tercero no, aunque sepa el identificador', async () => {
+      // Y no hacía falta adivinarlo: la API pública de valoraciones lo
+      // devolvía en cada reseña. Dentro van el domicilio, la fecha y el
+      // importe de un trabajo ajeno.
+      mockBookingRepository.findOne.mockResolvedValue(RESERVA);
+
+      await expect(
+        service.findById('b1', { id: 'ajeno', role: 'client' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('la moderación sí', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(RESERVA);
+
+      expect(
+        await service.findById('b1', { id: 'admin', role: 'admin' }),
+      ).toBeTruthy();
+    });
+
+    it('sin solicitante sigue valiendo para uso interno', async () => {
+      // updateStatus la usa por dentro y ya comprueba permisos por su cuenta.
+      mockBookingRepository.findOne.mockResolvedValue(RESERVA);
+
+      expect(await service.findById('b1')).toBeTruthy();
+    });
+  });
 });

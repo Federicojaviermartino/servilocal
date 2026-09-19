@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -142,7 +143,19 @@ export class PaymentsService {
     };
   }
 
-  async confirmPaymentHold(paymentIntentId: string): Promise<Payment> {
+  /**
+   * Adelanta lo que el webhook confirmará por su cuenta.
+   *
+   * Existe para no dejar la pantalla esperando a que Stripe llame: en un plan
+   * gratuito ese aviso puede tardar. Pero antes no comprobaba nada, así que
+   * cualquiera con sesión marcaba como retenido un pago que no era suyo y que
+   * nadie había pagado. Ahora se exige las dos cosas: que el pago sea de quien
+   * llama y que Stripe diga que el dinero está de verdad retenido.
+   */
+  async confirmPaymentHold(
+    paymentIntentId: string,
+    clientId: string,
+  ): Promise<Payment> {
     const payment = await this.paymentRepository.findOne({
       where: { stripePaymentIntentId: paymentIntentId },
     });
@@ -151,8 +164,26 @@ export class PaymentsService {
       throw new NotFoundException('Pago no encontrado');
     }
 
-    payment.status = PaymentStatus.HELD;
-    payment.paidAt = new Date();
+    if (payment.clientId !== clientId) {
+      throw new ForbiddenException('Este pago no es tuyo');
+    }
+
+    // La verdad la tiene Stripe, no el navegador que nos llama.
+    const intencion =
+      await this.stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (intencion.status === 'requires_capture') {
+      payment.status = PaymentStatus.HELD;
+      payment.paidAt = new Date();
+    } else if (intencion.status === 'succeeded') {
+      payment.status = PaymentStatus.COMPLETED;
+      payment.paidAt = payment.paidAt ?? new Date();
+    } else {
+      throw new BadRequestException(
+        'Stripe no ha retenido el importe de este pago',
+      );
+    }
+
     return this.paymentRepository.save(payment);
   }
 
@@ -212,7 +243,24 @@ export class PaymentsService {
     });
   }
 
-  async findByBooking(bookingId: string): Promise<Payment | null> {
+  /** El pago de una reserva lo ven sus dos partes, y la moderación. */
+  async findByBooking(
+    bookingId: string,
+    quien?: { id: string; role: string },
+  ): Promise<Payment | null> {
+    if (quien && quien.role !== 'admin') {
+      const reserva = await this.bookingRepository.findOne({
+        where: { id: bookingId },
+      });
+      if (
+        reserva &&
+        reserva.clientId !== quien.id &&
+        reserva.providerId !== quien.id
+      ) {
+        throw new ForbiddenException('Esta reserva no es tuya');
+      }
+    }
+
     return this.paymentRepository.findOne({
       where: { bookingId },
     });

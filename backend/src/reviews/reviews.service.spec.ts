@@ -380,6 +380,43 @@ describe('ReviewsService', () => {
       );
     });
 
+    it('de quien valoró no sale ni el correo ni la dirección', async () => {
+      // Esta ruta la lee cualquiera sin identificarse. Traía la fila entera
+      // del cliente: correo, teléfono, dirección, código postal y
+      // coordenadas. Es el mismo fallo que ya se corrigió para el proveedor
+      // en la búsqueda, y que aquí se quedó sin corregir.
+      mockReviewRepository.find.mockResolvedValue([]);
+
+      await service.findByService('s1');
+
+      const opciones = mockReviewRepository.find.mock.calls[0][0] as {
+        select: { client: Record<string, boolean> };
+      };
+      expect(Object.keys(opciones.select.client).sort()).toEqual([
+        'avatarUrl',
+        'city',
+        'firstName',
+        'id',
+        'lastName',
+      ]);
+    });
+
+    it('tampoco sale el identificador de la reserva ni la denuncia', async () => {
+      // El identificador permitía pedir la reserva ajena, que sí lleva el
+      // domicilio; y el motivo de la denuncia es una alegación privada entre
+      // el profesional y la moderación.
+      mockReviewRepository.find.mockResolvedValue([]);
+
+      await service.findByService('s1');
+
+      const opciones = mockReviewRepository.find.mock.calls[0][0] as {
+        select: Record<string, unknown>;
+      };
+      expect(opciones.select.bookingId).toBeUndefined();
+      expect(opciones.select.reportReason).toBeUndefined();
+      expect(opciones.select.comment).toBe(true);
+    });
+
     it('las de un cliente llegan con el servicio valorado', async () => {
       mockReviewRepository.find.mockResolvedValue([]);
 

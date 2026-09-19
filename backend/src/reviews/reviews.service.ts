@@ -134,10 +134,35 @@ export class ReviewsService {
     return this.reviewRepository.save(review);
   }
 
+  /**
+   * Las valoraciones de un servicio, que lee cualquiera sin identificarse.
+   *
+   * La relación traía la fila entera de quien valoró: su correo, su teléfono,
+   * su dirección, su código postal y sus coordenadas. Lo mismo que ya se
+   * corrigió para el proveedor en la búsqueda, y que aquí se quedó sin
+   * corregir. De la reseña tampoco salen el identificador de la reserva ni el
+   * motivo de la denuncia: lo primero permitía cruzar datos y lo segundo es
+   * una alegación privada entre el profesional y la moderación.
+   */
   async findByService(serviceId: string): Promise<Review[]> {
     return this.reviewRepository.find({
       where: { serviceId },
-      relations: ['client'],
+      relations: { client: true },
+      select: {
+        id: true,
+        serviceId: true,
+        rating: true,
+        comment: true,
+        providerResponse: true,
+        createdAt: true,
+        client: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+          city: true,
+        },
+      },
       order: { createdAt: 'DESC' },
     });
   }

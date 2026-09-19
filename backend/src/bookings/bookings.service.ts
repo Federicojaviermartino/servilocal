@@ -42,6 +42,45 @@ const AVISO_POR_ESTADO: Partial<
   },
 };
 
+/**
+ * Comprueba que el importe cae dentro de la tarifa que publica el servicio.
+ *
+ * El cliente elige dentro de la horquilla, que es lo que enseña la ficha, y
+ * eso está bien: lo que no puede es elegir fuera. Sin máximo publicado, el
+ * mínimo es el suelo y por arriba no hay tope, porque pagar de más es
+ * decisión de quien paga.
+ */
+function comprobarPrecio(servicio: Service, propuesto: number): number {
+  const minimo = Number(servicio.priceMin);
+  const maximo = servicio.priceMax === null ? null : Number(servicio.priceMax);
+
+  if (propuesto < minimo) {
+    throw new BadRequestException(
+      `El importe no puede ser inferior a ${minimo} euros`,
+    );
+  }
+
+  if (maximo !== null && maximo > minimo && propuesto > maximo) {
+    throw new BadRequestException(
+      `El importe no puede superar los ${maximo} euros`,
+    );
+  }
+
+  return propuesto;
+}
+
+/** Quién pregunta por una reserva. */
+export interface Solicitante {
+  id: string;
+  role: string;
+}
+
+/** Las dos partes de la reserva, y la moderación. Nadie más. */
+const puedeVerla = (reserva: Booking, quien: Solicitante): boolean =>
+  reserva.clientId === quien.id ||
+  reserva.providerId === quien.id ||
+  quien.role === 'admin';
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -68,20 +107,35 @@ export class BookingsService {
       throw new BadRequestException('No puedes reservar tu propio servicio');
     }
 
+    // El importe llegaba con un @Min(0) por toda comprobación, y ese número
+    // era el que acababa cobrándose en Stripe: un servicio de 500 euros se
+    // reservaba por cincuenta céntimos. Con cero, además, Stripe rechazaba el
+    // importe y la API devolvía un 500. La horquilla la publica el servicio,
+    // así que es el servicio quien dice si la cifra vale.
+    const totalPrice = comprobarPrecio(service, createDto.totalPrice);
+
     const booking = this.bookingRepository.create({
       clientId,
       serviceId: createDto.serviceId,
       providerId: service.providerId,
       scheduledDate: new Date(createDto.scheduledDate),
       description: createDto.description,
-      totalPrice: createDto.totalPrice,
+      totalPrice,
       status: BookingStatus.PENDING,
     });
 
     return this.bookingRepository.save(booking);
   }
 
-  async findById(id: string): Promise<Booking> {
+  /**
+   * Una reserva solo la ven sus dos partes, y la moderación.
+   *
+   * Antes bastaba con conocer el identificador: la ruta no recibía al
+   * usuario. Y esos identificadores no había ni que adivinarlos, porque la
+   * API pública de valoraciones los devolvía en cada reseña. Dentro va el
+   * domicilio de la persona, la fecha y el importe.
+   */
+  async findById(id: string, quien?: Solicitante): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
       relations: ['client', 'provider', 'service', 'service.category'],
@@ -89,6 +143,10 @@ export class BookingsService {
 
     if (!booking) {
       throw new NotFoundException('Reserva no encontrada');
+    }
+
+    if (quien && !puedeVerla(booking, quien)) {
+      throw new ForbiddenException('Esta reserva no es tuya');
     }
 
     return booking;
