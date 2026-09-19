@@ -131,6 +131,24 @@ const DENUNCIAS = [
   },
 ];
 
+/**
+ * Reservas que no acabaron en trabajo hecho.
+ *
+ * La semilla solo creaba completadas, así que la gráfica de estados del
+ * panel enseñaba una barra de cinco y la máquina de estados parecía tener
+ * un solo camino. Estas cuatro plantillas cubren los otros cuatro estados
+ * con motivos que se pueden leer, no con texto de relleno.
+ */
+const CANCELACIONES = [
+  'Me lo ha resuelto el seguro de la comunidad, así que ya no hace falta.',
+  'Me ha surgido un viaje esa semana. Volveré a pedir cita al regresar.',
+];
+
+const RECHAZOS = [
+  'Esa semana la tengo cerrada por otro trabajo. Lo siento.',
+  'La dirección queda fuera de mi zona de cobertura y el desplazamiento no sale a cuenta.',
+];
+
 /** Respuestas de profesionales, para que la tasa de respuesta no sea cero. */
 const RESPUESTAS = [
   'Gracias por el comentario. Tomo nota de lo del retraso, tiene razón.',
@@ -193,6 +211,10 @@ async function runSeed() {
     'categories',
     'users',
   ];
+  // audit_logs no está en la lista, y es a propósito: un historial que se
+  // vacía con un script de conveniencia no prueba nada. Las entradas
+  // sobreviven a la resiembra porque guardan copiado el correo de quien
+  // actuó, no una clave ajena a una fila que acaba de desaparecer.
   for (const tabla of tablasAVaciar) {
     try {
       await dataSource.query('DELETE FROM ' + tabla);
@@ -948,6 +970,72 @@ async function runSeed() {
       totalReservas +
       ' valoraciones creadas',
   );
+
+  // El resto de estados. Sin ellos, la gráfica del panel tiene una sola
+  // barra y las pantallas de «reservas recibidas» del profesional no
+  // enseñan nada que resolver: ni una solicitud pendiente de contestar.
+  //
+  // Las que están por ocurrir llevan fecha futura y las que no llegaron a
+  // ocurrir, pasada. Una solicitud pendiente con fecha del mes pasado se
+  // lee como una avería, no como una demostración.
+  const OTROS_ESTADOS = [
+    { estado: BookingStatus.PENDING, cuantas: 5, dias: 6 },
+    { estado: BookingStatus.CONFIRMED, cuantas: 4, dias: 12 },
+    { estado: BookingStatus.CANCELLED, cuantas: 3, dias: -9 },
+    { estado: BookingStatus.REJECTED, cuantas: 2, dias: -16 },
+  ];
+
+  let otras = 0;
+
+  for (const { estado, cuantas, dias } of OTROS_ESTADOS) {
+    for (let k = 0; k < cuantas; k++) {
+      // Se reparten entre servicios distintos para que ningún profesional
+      // acumule toda la actividad y las listas de los demás queden vacías.
+      const servicio =
+        serviciosGuardados[(otras * 3 + k) % serviciosGuardados.length];
+      const cliente = clientes[(otras + k) % clientes.length];
+
+      const fecha = new Date();
+      fecha.setDate(fecha.getDate() + dias + k);
+      fecha.setHours(9 + ((otras + k) % 8), 0, 0, 0);
+
+      const precio =
+        servicio.priceMax &&
+        Number(servicio.priceMax) > Number(servicio.priceMin)
+          ? Math.round(
+              (Number(servicio.priceMin) + Number(servicio.priceMax)) / 2,
+            )
+          : Number(servicio.priceMin);
+
+      const cancelada = estado === BookingStatus.CANCELLED;
+      const rechazada = estado === BookingStatus.REJECTED;
+
+      await bookingRepo.save(
+        bookingRepo.create({
+          clientId: cliente.id,
+          serviceId: servicio.id,
+          providerId: servicio.providerId,
+          status: estado,
+          scheduledDate: fecha,
+          description: 'Trabajo solicitado a través de ServiLocal.',
+          totalPrice: precio,
+          // Una cancelada pasó antes por confirmada; una rechazada no llegó
+          // a confirmarse nunca, así que no puede tener esa fecha.
+          confirmedAt:
+            estado === BookingStatus.CONFIRMED || cancelada ? fecha : undefined,
+          cancelledAt: cancelada || rechazada ? fecha : undefined,
+          cancellationReason: cancelada
+            ? CANCELACIONES[k % CANCELACIONES.length]
+            : rechazada
+              ? RECHAZOS[k % RECHAZOS.length]
+              : undefined,
+        }),
+      );
+      otras++;
+    }
+  }
+
+  console.log(otras + ' reservas más, repartidas por los otros cuatro estados');
 
   console.log('\n=== CREDENCIALES DE PRUEBA ===');
   console.log('Admin:      admin@servilocal.com');

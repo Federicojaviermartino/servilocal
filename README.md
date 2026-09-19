@@ -478,7 +478,6 @@ All of these run in CI on every push to `main`. The end-to-end job spins up the 
 
 | Status | Item |
 |--------|------|
-| Next | Seed cancelled and rejected bookings. Three of the five states are seeded today, so two bars of the admin chart are always empty |
 | Next | Redis in production, so rate-limit counters survive a deploy and sockets span instances. The application already runs without it, by design |
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
@@ -488,6 +487,7 @@ All of these run in CI on every push to `main`. The end-to-end job spins up the 
 | Done | Natural-language search, with a monthly spend ceiling checked before each call |
 | Done | Usage and budget accounting persisted in PostgreSQL rather than held in memory |
 | Done | Audit log of administration actions, append-only |
+| Done | Seed data across all five booking states, so the admin charts and the provider inbox have something to show |
 
 ---
 
