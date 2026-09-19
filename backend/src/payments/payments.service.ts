@@ -11,6 +11,37 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Payment, PaymentStatus, Booking, BookingStatus } from '../entities';
 
+/**
+ * Desde dónde puede llegar un pago a cada estado.
+ *
+ * Los avisos de Stripe llegan repetidos y desordenados: está documentado y
+ * hay que contar con ello. Antes cada aviso escribía el estado que traía sin
+ * mirar el que había, así que un «canceled» que llegaba tarde marcaba como
+ * fallido un pago recién reembolsado, y un «succeeded» reabría una reserva
+ * ya cerrada.
+ *
+ * Con la tabla, aplicar dos veces el mismo aviso deja el mismo resultado y
+ * uno que llega tarde no deshace lo que vino después. Por eso no hay una
+ * tabla de eventos ya procesados: una vez que las transiciones solo avanzan,
+ * deduplicar por identificador de evento no añade nada que esto no dé ya.
+ */
+const TRANSICIONES: Record<PaymentStatus, PaymentStatus[]> = {
+  [PaymentStatus.PENDING]: [
+    PaymentStatus.HELD,
+    PaymentStatus.COMPLETED,
+    PaymentStatus.FAILED,
+  ],
+  // Una retención puede caducar sin llegar a cobrarse: Stripe la suelta a los
+  // siete días y eso llega como cancelación.
+  [PaymentStatus.HELD]: [PaymentStatus.COMPLETED, PaymentStatus.FAILED],
+  [PaymentStatus.COMPLETED]: [],
+  [PaymentStatus.FAILED]: [],
+  [PaymentStatus.REFUNDED]: [],
+};
+
+const puedePasarA = (desde: PaymentStatus, hasta: PaymentStatus): boolean =>
+  TRANSICIONES[desde]?.includes(hasta) ?? false;
+
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
@@ -308,6 +339,8 @@ export class PaymentsService {
     });
     if (!payment) return;
 
+    if (!puedePasarA(payment.status, paymentStatus)) return;
+
     payment.status = paymentStatus;
     if (paymentStatus === PaymentStatus.HELD) {
       payment.paidAt = new Date();
@@ -319,13 +352,22 @@ export class PaymentsService {
     });
     if (!booking) return;
 
-    if (booking.status !== bookingStatus) {
-      booking.status = bookingStatus;
-      if (bookingStatus === BookingStatus.CONFIRMED) {
-        booking.confirmedAt = new Date();
-      }
-      await this.bookingRepository.save(booking);
+    // Una reserva cerrada no vuelve atrás por un aviso de la pasarela. El
+    // caso que dolía: una reserva ya completada volvía a «confirmada» al
+    // llegar el succeeded de su propio cobro, y a partir de ahí el cliente
+    // no podía valorarla. Cancelada o rechazada, resucitaba.
+    if (
+      booking.status === bookingStatus ||
+      booking.status !== BookingStatus.PENDING
+    ) {
+      return;
     }
+
+    booking.status = bookingStatus;
+    if (bookingStatus === BookingStatus.CONFIRMED) {
+      booking.confirmedAt = new Date();
+    }
+    await this.bookingRepository.save(booking);
   }
 
   private async markPaymentFailed(
@@ -336,6 +378,8 @@ export class PaymentsService {
       where: { stripePaymentIntentId: paymentIntentId },
     });
     if (!payment) return;
+
+    if (!puedePasarA(payment.status, PaymentStatus.FAILED)) return;
 
     payment.status = PaymentStatus.FAILED;
     if (reason) payment.failureReason = reason;

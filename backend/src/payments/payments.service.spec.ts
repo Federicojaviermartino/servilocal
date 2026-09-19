@@ -441,16 +441,22 @@ describe('PaymentsService', () => {
   });
 
   describe('lo que cuenta Stripe por el webhook', () => {
-    const PAGO = {
+    // Funciones y no constantes: el servicio escribe sobre el objeto que le
+    // da el repositorio, así que compartir uno entre pruebas las hacía
+    // depender del orden en que se ejecutaran.
+    const PAGO = (status = PaymentStatus.PENDING) => ({
       id: 'p1',
       bookingId: 'b1',
-      status: PaymentStatus.PENDING,
+      status,
       stripePaymentIntentId: INTENCION,
-    };
-    const RESERVA = { id: 'b1', status: BookingStatus.PENDING };
+    });
+    const RESERVA = (status = BookingStatus.PENDING) => ({
+      id: 'b1',
+      status,
+    });
 
     it('el dinero retenido confirma la reserva y deja la fecha', async () => {
-      const { servicio, pagos, reservas } = await construir(PAGO, RESERVA);
+      const { servicio, pagos, reservas } = await construir(PAGO(), RESERVA());
 
       await servicio.handleWebhookEvent(
         evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
@@ -471,7 +477,7 @@ describe('PaymentsService', () => {
     });
 
     it('el cobro efectivo completa el pago', async () => {
-      const { servicio, pagos } = await construir(PAGO, RESERVA);
+      const { servicio, pagos } = await construir(PAGO(), RESERVA());
 
       await servicio.handleWebhookEvent(
         evento('payment_intent.succeeded', { id: INTENCION }),
@@ -483,10 +489,10 @@ describe('PaymentsService', () => {
     });
 
     it('no reescribe una reserva que ya estaba en ese estado', async () => {
-      const { servicio, reservas } = await construir(PAGO, {
-        id: 'b1',
-        status: BookingStatus.CONFIRMED,
-      });
+      const { servicio, reservas } = await construir(
+        PAGO(),
+        RESERVA(BookingStatus.CONFIRMED),
+      );
 
       await servicio.handleWebhookEvent(
         evento('payment_intent.succeeded', { id: INTENCION }),
@@ -498,7 +504,7 @@ describe('PaymentsService', () => {
     it('un pago fallido guarda el motivo que da la pasarela', async () => {
       // Es lo único que se le puede enseñar a quien pregunta por qué no le
       // ha pasado la tarjeta.
-      const { servicio, pagos, reservas } = await construir(PAGO, RESERVA);
+      const { servicio, pagos, reservas } = await construir(PAGO(), RESERVA());
 
       await servicio.handleWebhookEvent(
         evento('payment_intent.payment_failed', {
@@ -518,7 +524,7 @@ describe('PaymentsService', () => {
     });
 
     it('una intención cancelada también marca el pago fallido', async () => {
-      const { servicio, pagos } = await construir(PAGO, RESERVA);
+      const { servicio, pagos } = await construir(PAGO(), RESERVA());
 
       await servicio.handleWebhookEvent(
         evento('payment_intent.canceled', { id: INTENCION }),
@@ -543,13 +549,146 @@ describe('PaymentsService', () => {
     });
 
     it('un evento que no se maneja se ignora en silencio', async () => {
-      const { servicio, pagos } = await construir(PAGO, RESERVA);
+      const { servicio, pagos } = await construir(PAGO(), RESERVA());
 
       await servicio.handleWebhookEvent(
         evento('charge.dispute.created', { id: INTENCION }),
       );
 
       expect(pagos.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('avisos repetidos y desordenados', () => {
+    // Stripe reenvía y no garantiza el orden. Está documentado, así que no
+    // es un caso raro: es el funcionamiento normal con el que hay que contar.
+    const PAGO = (status: PaymentStatus) => ({
+      id: 'p1',
+      bookingId: 'b1',
+      status,
+      stripePaymentIntentId: INTENCION,
+    });
+    const RESERVA = (status: BookingStatus) => ({ id: 'b1', status });
+
+    it('un cobro no reabre una reserva ya completada', async () => {
+      // Volvía a «confirmada», y a partir de ahí el cliente ya no podía
+      // valorarla: la valoración exige una reserva completada.
+      const { servicio, reservas } = await construir(
+        PAGO(PaymentStatus.HELD),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.succeeded', { id: INTENCION }),
+      );
+
+      expect(reservas.save).not.toHaveBeenCalled();
+    });
+
+    it('ni resucita una cancelada', async () => {
+      const { servicio, reservas } = await construir(
+        PAGO(PaymentStatus.PENDING),
+        RESERVA(BookingStatus.CANCELLED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+      );
+
+      expect(reservas.save).not.toHaveBeenCalled();
+    });
+
+    it('ni una rechazada', async () => {
+      const { servicio, reservas } = await construir(
+        PAGO(PaymentStatus.PENDING),
+        RESERVA(BookingStatus.REJECTED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.succeeded', { id: INTENCION }),
+      );
+
+      expect(reservas.save).not.toHaveBeenCalled();
+    });
+
+    it('una cancelación tardía no marca fallido un pago ya reembolsado', async () => {
+      // Reembolsar cancela la intención en Stripe, y esa cancelación vuelve
+      // por el webhook. Sin la tabla de transiciones, el pago devuelto
+      // acababa figurando como fallido.
+      const { servicio, pagos } = await construir(
+        PAGO(PaymentStatus.REFUNDED),
+        RESERVA(BookingStatus.CANCELLED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.canceled', { id: INTENCION }),
+      );
+
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
+    it('tampoco uno ya cobrado', async () => {
+      const { servicio, pagos } = await construir(
+        PAGO(PaymentStatus.COMPLETED),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.payment_failed', { id: INTENCION }),
+      );
+
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
+    it('una retención que llega tarde no rebaja un pago ya cobrado', async () => {
+      // El desorden real: succeeded primero y amount_capturable_updated
+      // después. Sin guardas, el pago pasaba de cobrado a retenido.
+      const { servicio, pagos } = await construir(
+        PAGO(PaymentStatus.COMPLETED),
+        RESERVA(BookingStatus.CONFIRMED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+      );
+
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
+    it('el mismo aviso dos veces deja el mismo resultado', async () => {
+      // Es lo que hace innecesaria una tabla de eventos procesados: el
+      // segundo no encuentra nada que cambiar.
+      const pago = PAGO(PaymentStatus.PENDING);
+      const { servicio, pagos } = await construir(
+        pago,
+        RESERVA(BookingStatus.PENDING),
+      );
+      const aviso = evento('payment_intent.amount_capturable_updated', {
+        id: INTENCION,
+      });
+
+      await servicio.handleWebhookEvent(aviso);
+      await servicio.handleWebhookEvent(aviso);
+
+      expect(pagos.save).toHaveBeenCalledTimes(1);
+      expect(pago.status).toBe(PaymentStatus.HELD);
+    });
+
+    it('una retención sí puede acabar en cobro', async () => {
+      // La guarda no puede bloquear el camino normal: retenido y luego
+      // capturado es exactamente lo que ocurre al completar un trabajo.
+      const { servicio, pagos } = await construir(
+        PAGO(PaymentStatus.HELD),
+        RESERVA(BookingStatus.CONFIRMED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.succeeded', { id: INTENCION }),
+      );
+
+      expect(pagos.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: PaymentStatus.COMPLETED }),
+      );
     });
   });
 
