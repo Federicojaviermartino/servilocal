@@ -179,10 +179,17 @@ function LoginPageContent() {
                   type="button"
                   onClick={() => iniciarSesion(cuenta.email, PASSWORD_DEMO)}
                   disabled={isLoading}
-                  title={t(`demo${cuenta.clave}Descripcion`)}
-                  className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-sm font-medium text-primary-600 transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-start transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {t(`demo${cuenta.clave}`)}
+                  <span className="block text-sm font-medium text-primary-600">
+                    {t(`demo${cuenta.clave}`)}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-secundario">
+                    {t(`demo${cuenta.clave}Descripcion`)}
+                  </span>
+                  <span className="mt-1 block break-all text-xs text-tenue">
+                    {cuenta.email}
+                  </span>
                 </button>
               ))}
             </div>

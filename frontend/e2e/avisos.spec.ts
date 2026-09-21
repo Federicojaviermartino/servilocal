@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext, Page } from '@playwright/test';
+import { entrarComo } from './ayudas';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const CLAVE = 'Password123!';
@@ -67,12 +68,6 @@ async function reservaAceptada(
   return reserva;
 }
 
-async function entrarComo(page: Page, boton: string) {
-  await page.goto('/auth/login');
-  await page.getByRole('button', { name: boton, exact: true }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
-}
-
 test.describe('Avisos', () => {
   test('aceptar una reserva avisa al cliente sin que recargue', async ({
     page,
@@ -97,7 +92,7 @@ test.describe('Avisos', () => {
     const reserva = await creada.json();
 
     // El cliente mira la pantalla antes de que ocurra nada.
-    await entrarComo(page, 'Cliente');
+    await entrarComo(page, 'cliente');
     await page.goto('/dashboard');
     const campana = page.getByRole('button', { name: /Abrir los avisos/ });
     await expect(campana).toBeVisible();
@@ -140,7 +135,7 @@ test.describe('Avisos', () => {
       '2026-11-06T10:00:00.000Z',
     );
 
-    await entrarComo(page, 'Cliente');
+    await entrarComo(page, 'cliente');
     await page.goto('/de/dashboard');
 
     await page

@@ -5,7 +5,7 @@ test.describe('Acceso a la aplicación', () => {
     await page.goto('/auth/login');
     await expect(page.getByText('Acceso de demostración')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Cliente', exact: true }).click();
+    await page.getByRole('button', { name: /laura@ejemplo\.com/ }).click();
 
     // Se comprueba en el panel y no en la cabecera: en móvil el nombre queda
     // dentro del menú plegado y no sería visible.
@@ -18,9 +18,7 @@ test.describe('Acceso a la aplicación', () => {
 
   test('el acceso de demostración entra como profesional', async ({ page }) => {
     await page.goto('/auth/login');
-    await page
-      .getByRole('button', { name: 'Profesional', exact: true })
-      .click();
+    await page.getByRole('button', { name: /carlos@ejemplo\.com/ }).click();
     await expect(page).not.toHaveURL(/\/auth\/login/);
 
     await page.goto('/dashboard/services');

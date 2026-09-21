@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext, Page } from '@playwright/test';
+import { entrarComo } from './ayudas';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const CLAVE = 'Password123!';
@@ -11,12 +12,6 @@ async function identificar(peticion: APIRequestContext, email: string) {
   expect(respuesta.ok()).toBeTruthy();
   const { user } = await respuesta.json();
   return user.id as string;
-}
-
-async function entrarComo(page: Page, boton: string) {
-  await page.goto('/auth/login');
-  await page.getByRole('button', { name: boton, exact: true }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
 }
 
 test.describe('Mensajería en tiempo real', () => {
@@ -36,8 +31,8 @@ test.describe('Mensajería en tiempo real', () => {
       const cliente = await contextoCliente.newPage();
       const profesional = await contextoProfesional.newPage();
 
-      await entrarComo(cliente, 'Cliente');
-      await entrarComo(profesional, 'Profesional');
+      await entrarComo(cliente, 'cliente');
+      await entrarComo(profesional, 'profesional');
 
       await cliente.goto(`/dashboard/messages/${idProfesional}`);
       await profesional.goto(`/dashboard/messages/${idCliente}`);

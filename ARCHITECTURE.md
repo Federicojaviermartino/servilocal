@@ -151,7 +151,9 @@ UsoIa                                (UNIQUE on fecha + funcionalidad)
 Constraints worth naming:
 
 - **`Review` is unique per booking**, and a booking must be `completed` before it can be
-  reviewed. Ratings cannot be manufactured.
+  reviewed. That rules out ratings from people who never hired anything; it does not rule
+  out collusion, since a provider with a second account can book their own service
+  through it. A raised cost, not a guarantee.
 - **`Service.location` and `User.location`** are PostGIS geometry columns with GiST
   spatial indexes. Search uses `ST_DWithin`, not a bounding box.
 - **City and text matching** go through an `IMMUTABLE` accent-stripping SQL expression
@@ -257,11 +259,18 @@ today, and was rejected: it assumes exactly two infrastructure hops, which Rende
 documents nowhere.
 
 **2 · Payments use manual capture.**
-Funds are authorised when the booking is made and captured only when the work is
-confirmed — the correct model for a marketplace, where the money should not move before
-the service does. The refund path branches accordingly: a held payment is cancelled, a
-captured one is refunded. Calling `cancel` on a captured intent fails, which is a real
-bug this project had until a test was written for that branch.
+Funds are authorised when the booking is made, not taken — the correct model for a
+marketplace, where the money should not move before the service does. The refund path
+branches accordingly: a held payment is cancelled, a captured one is refunded. Calling
+`cancel` on a captured intent fails, which is a real bug this project had until a test
+was written for that branch.
+
+What is **not** wired yet, and matters more than the part that is: nothing captures the
+hold when the work is completed, and cancelling a booking does not release it. The
+capture and refund endpoints exist and are admin-only, but no screen calls them, so in
+practice the authorisation expires after seven days and the platform never charges. It is listed
+under [Known limitations](#known-limitations); until it is closed, read this section as
+"the money is held correctly and then nothing happens to it".
 
 **3 · The audit log is append-only and denormalised.**
 No route creates, edits or deletes an entry; the service exposes only `anotar` and
@@ -310,6 +319,9 @@ Stated here rather than discovered later.
   history is unavailable was judged the worse outcome. A decision, not an oversight.
 - **Socket delivery is per-instance without Redis.** With one instance — the current
   deployment — this changes nothing; it becomes real the moment a second one starts.
+- **The money loop is not closed.** Funds are held at booking time and never captured:
+  no screen calls the capture endpoint, and cancelling a booking does not release the
+  hold. The authorisation lapses on its own after seven days.
 - **Cached reads expire by time, not by event**, except for the category tree, which is
   invalidated explicitly on write. Everything else can be at most one TTL stale.
 - **The free tier sleeps.** Cold starts are visible on the first request after an idle

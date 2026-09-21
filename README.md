@@ -149,7 +149,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Jest (19 unit tests), Playwright (28 end-to-end tests, desktop and mobile) |
+| Testing | Jest on the API (302 unit tests), Vitest on the browser (222, because `next-intl` ships ESM only), Playwright for 46 end-to-end tests across desktop and a 375 px phone, and `@axe-core/playwright` for WCAG checks |
 | CI | GitHub Actions: lint, type-check, tests, build and catalogue on every push |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -169,8 +169,8 @@ Three-tier client–server. The front end consumes the REST API; the API persist
          │ Stripe Payment Element              TypeORM │ migrations
          ▼                                             ▼
 ┌──────────────────┐     signed webhook       ┌──────────────────┐
-│      Stripe      │ ───────────────────────► │  PostgreSQL 18   │
-│  manual capture  │                          │   + PostGIS 3.6  │
+│      Stripe      │ ───────────────────────► │  PostgreSQL 16   │
+│  manual capture  │                          │   + PostGIS 3.4  │
 └──────────────────┘                          └──────────────────┘
 ```
 
@@ -186,7 +186,7 @@ UML diagrams live in [`diagrams/`](diagrams/) and responsive wireframes in [`wir
 - **Text and city matching** is accent-insensitive through an `IMMUTABLE` SQL expression, backed by a functional index so it stays indexable.
 - **Payments use manual capture**, so the client's money is authorised at booking time and only captured when the work is confirmed — the correct model for a marketplace.
 - **The webhook verifies Stripe's signature** against the raw request body, which is why the Nest app boots with `rawBody: true`.
-- **Reviews are tied to completed bookings** by a unique constraint, so ratings cannot be faked.
+- **Reviews require a completed booking**, one review per booking, enforced by a unique constraint. That rules out drive-by ratings from people who never hired anything. It does not make collusion impossible — a provider with a second account can still book their own service through it — so treat it as a cost raised, not a guarantee.
 - **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
 - **`/api/health` checks the database, not just the process.** An API that boots but cannot reach its database is down in practice — exactly the failure this project had, unnoticed, for four months. It returns `503` when the database does not answer, so a monitor can actually detect it.
 - **Dark mode uses semantic tokens, not a second set of classes.** Components name the role of a colour (`bg-superficie`, `text-principal`), never the colour itself. The theme is applied by a blocking inline script before first paint, so there is no flash of the wrong theme.
@@ -298,9 +298,14 @@ servilocal/
       payments/             Stripe integration, manual capture
         payments-webhook.controller.ts    Signature-verified webhook
       messages/             Direct messaging between users
+      notifications/        Persisted notices, pushed over the socket
+      auditoria/            Append-only record of administration actions
+      admin/                SQL aggregations for the dashboard
+      ia/                   Optional assistant, with a monthly spend ceiling
       health/               Liveness probe backed by a real query
       entities/             TypeORM entities
-      common/               Guards, decorators, filters and transformers
+      common/               Guards, filters, interceptors, Redis and the
+                            real-time gateway
       config/               Database config and CLI data source
       database/
         migrations/         Schema history — the only source of truth
@@ -429,7 +434,7 @@ Controls implemented in the API and the front end:
 | Rate limiting | `@nestjs/throttler` globally, a tighter limit on the login route, counters in Redis so a deploy does not reset them, and a tracker keyed on `CF-Connecting-IP` so the bucket belongs to the visitor and not to whichever balancer served the request |
 | Payments | Webhook signature verified against the raw request body; funds held with manual capture, never taken automatically |
 | Transport | Content Security Policy plus `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`; database connections validate the server certificate |
-| Error handling | Global exception filter with structured logging; Sentry capture strips `authorization` and `cookie` headers |
+| Error handling | Global exception filter. A 5xx logs method, path, status code and the user id when there is one, plus the stack trace — one formatted line, not JSON. Sentry capture strips `authorization` and `cookie` headers |
 
 Hardening still in progress is tracked in the [roadmap](#roadmap).
 
@@ -478,6 +483,7 @@ All of these run in CI on every push to `main`. The end-to-end job spins up the 
 
 | Status | Item |
 |--------|------|
+| Next | Close the money loop: let the provider accept a booking, capture the hold when the work is completed, and release it on cancellation. Funds are held correctly today and then nothing happens to them |
 | Next | Redis in production, so rate-limit counters survive a deploy and sockets span instances. The application already runs without it, by design |
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |

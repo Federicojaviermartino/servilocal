@@ -1,21 +1,16 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { entrarComo } from './ayudas';
 
 /**
  * El botón de demostración entra y redirige a la portada. Hay que esperar a
  * que llegue: /admin rebota a la pantalla de acceso mientras no haya sesión
  * guardada, así que ir antes de tiempo deja el test en la página equivocada.
  */
-async function entrarComo(page: Page, boton: string) {
-  await page.goto('/auth/login');
-  await page.getByRole('button', { name: boton, exact: true }).click();
-  await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
-}
-
 test.describe('Panel de administración', () => {
   test('la cuenta de demostración lo ve todo y no puede tocar nada', async ({
     page,
   }) => {
-    await entrarComo(page, 'Administración');
+    await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
     await expect(
@@ -48,7 +43,7 @@ test.describe('Panel de administración', () => {
   test('las gráficas se pintan con los datos del servidor', async ({
     page,
   }) => {
-    await entrarComo(page, 'Administración');
+    await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
     await expect(
@@ -72,7 +67,7 @@ test.describe('Panel de administración', () => {
   test('el consumo de IA se explica en lugar de mostrar ceros a secas', async ({
     page,
   }) => {
-    await entrarComo(page, 'Administración');
+    await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
     await page.getByRole('tab', { name: 'IA', exact: true }).click();
@@ -102,7 +97,7 @@ test.describe('Panel de administración', () => {
   test('la cola de moderación tiene casos y la demo no puede resolverlos', async ({
     page,
   }) => {
-    await entrarComo(page, 'Administración');
+    await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
     await page.getByRole('tab', { name: /Valoraciones/i }).click();
@@ -126,7 +121,7 @@ test.describe('Panel de administración', () => {
   test('el historial de auditoría se lee y no se puede tocar', async ({
     page,
   }) => {
-    await entrarComo(page, 'Administración');
+    await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
     await page.getByRole('tab', { name: 'Auditoría' }).click();
@@ -174,7 +169,7 @@ test.describe('Panel de administración', () => {
   test('un cliente acaba en su panel y no en el de administración', async ({
     page,
   }) => {
-    await entrarComo(page, 'Cliente');
+    await entrarComo(page, 'cliente');
     await page.goto('/admin');
 
     // Se comprueba el destino y no solo la ausencia del título: si el acceso

@@ -16,7 +16,7 @@ test.describe('Reserva y pago', () => {
     page,
   }) => {
     await page.goto('/auth/login');
-    await page.getByRole('button', { name: 'Cliente', exact: true }).click();
+    await page.getByRole('button', { name: /laura@ejemplo[.]com/ }).click();
     await expect(page).not.toHaveURL(/\/auth\/login/);
 
     await page.goto('/services/search');

@@ -53,9 +53,7 @@ test.describe('Accesibilidad', () => {
 
   test('el panel de administración cumple WCAG 2.1 AA', async ({ page }) => {
     await page.goto('/auth/login');
-    await page
-      .getByRole('button', { name: 'Administración', exact: true })
-      .click();
+    await page.getByRole('button', { name: /demo@servilocal\.com/ }).click();
     await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
 
     await page.goto('/admin');

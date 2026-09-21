@@ -92,9 +92,7 @@ test.describe('Pantalla estrecha, 375 px', () => {
     // El más expuesto: tablas, gráficas y filas de métricas. Es donde un
     // ancho de 375 se nota antes.
     await page.goto('/auth/login');
-    await page
-      .getByRole('button', { name: 'Administración', exact: true })
-      .click();
+    await page.getByRole('button', { name: /demo@servilocal[.]com/ }).click();
     await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
 
     await page.goto('/admin');
