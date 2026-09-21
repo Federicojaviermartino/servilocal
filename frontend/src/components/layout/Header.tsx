@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
 import { useAuthStore } from '@/lib/auth-store';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -13,6 +13,16 @@ export default function Header() {
   const { user, isAuthenticated, logout, loadFromStorage } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
   const t = useTranslations('navegacion');
+  const ruta = usePathname();
+
+  // La sección actual se distinguía solo por el color al pasar por encima.
+  // Quien navega escuchando la página oía una lista de enlaces idénticos sin
+  // saber en cuál estaba, y el panel lateral ya lo marcaba: quedaba fuera
+  // justo la navegación principal.
+  const actual = (destino: string) =>
+    ruta === destino || (destino !== '/' && ruta.startsWith(destino))
+      ? ('page' as const)
+      : undefined;
 
   useEffect(() => {
     loadFromStorage();
@@ -43,6 +53,7 @@ export default function Header() {
           <SelectorTema />
           <Link
             href="/services/search"
+            aria-current={actual('/services/search')}
             className="flex items-center gap-1 text-sm text-secundario transition-colors hover:text-primary-500"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
@@ -57,6 +68,11 @@ export default function Header() {
                     ? '/dashboard/bookings-received'
                     : '/dashboard/bookings'
                 }
+                aria-current={actual(
+                  user.role === 'provider'
+                    ? '/dashboard/bookings-received'
+                    : '/dashboard/bookings',
+                )}
                 className="text-sm text-secundario hover:text-primary-500"
               >
                 {user.role === 'provider'
@@ -65,6 +81,7 @@ export default function Header() {
               </Link>
               <Link
                 href="/dashboard/messages"
+                aria-current={actual('/dashboard/messages')}
                 className="text-sm text-secundario hover:text-primary-500"
               >
                 {t('mensajes')}
@@ -72,6 +89,7 @@ export default function Header() {
               {user.role === 'admin' && (
                 <Link
                   href="/admin"
+                  aria-current={actual('/admin')}
                   className="text-sm text-secundario hover:text-primary-500"
                 >
                   {t('administracion')}
@@ -136,6 +154,7 @@ export default function Header() {
           <div className="flex flex-col gap-3">
             <Link
               href="/services/search"
+              aria-current={actual('/services/search')}
               className="text-sm text-secundario"
               onClick={() => setMenuOpen(false)}
             >
@@ -149,6 +168,11 @@ export default function Header() {
                       ? '/dashboard/bookings-received'
                       : '/dashboard/bookings'
                   }
+                  aria-current={actual(
+                    user.role === 'provider'
+                      ? '/dashboard/bookings-received'
+                      : '/dashboard/bookings',
+                  )}
                   className="text-sm text-secundario"
                   onClick={() => setMenuOpen(false)}
                 >
@@ -158,6 +182,7 @@ export default function Header() {
                 </Link>
                 <Link
                   href="/dashboard/messages"
+                  aria-current={actual('/dashboard/messages')}
                   className="text-sm text-secundario"
                   onClick={() => setMenuOpen(false)}
                 >

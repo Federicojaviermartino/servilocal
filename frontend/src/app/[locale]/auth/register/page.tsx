@@ -77,7 +77,7 @@ export default function RegisterPage() {
               <legend className="label mb-2">{t('queQuieres')}</legend>
               <div className="grid grid-cols-2 gap-3">
                 <label
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 ${
                     selectedRole === 'client'
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
                       : 'border-borde hover:border-borde'
@@ -96,7 +96,7 @@ export default function RegisterPage() {
                   <span className="text-sm font-medium">{t('rolCliente')}</span>
                 </label>
                 <label
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors ${
+                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 ${
                     selectedRole === 'provider'
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
                       : 'border-borde hover:border-borde'

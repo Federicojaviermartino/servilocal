@@ -14,7 +14,13 @@ export default defineConfig({
   // Un fallo aislado suele ser lentitud de la instancia gratuita, no una
   // regresión: se reintenta en integración continua antes de darlo por malo.
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Un solo worker también en local, igual que en integración continua.
+  // Varias pruebas comparten las cuentas de demostración —crean reservas con
+  // ellas y esperan el aviso por su socket—, así que en paralelo la de
+  // escritorio y la de móvil se pisan y fallan de forma intermitente. Antes
+  // eso solo se veía aquí y no allí, que es la peor manera de tener un test
+  // rojo: el que te hace dudar de si el fallo es de verdad.
+  workers: 1,
   timeout: 90000,
   expect: { timeout: 20000 },
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',

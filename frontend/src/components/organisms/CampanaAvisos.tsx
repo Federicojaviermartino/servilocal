@@ -31,6 +31,8 @@ export default function CampanaAvisos() {
   const [abierta, setAbierta] = useState(false);
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const contenedor = useRef<HTMLDivElement>(null);
+  const boton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
 
   // Aquí no cabe una caja de error con su botón: es un desplegable. Basta
   // con no mentir, que es lo que hacía al decir «no tienes avisos» cuando lo
@@ -51,15 +53,34 @@ export default function CampanaAvisos() {
     cargar();
   }, [cargar]);
 
+  // Lo que anuncia la región en vivo. Se vacía después para que dos avisos
+  // seguidos con el mismo texto se anuncien los dos: un lector de pantalla
+  // ignora una región cuyo contenido no ha cambiado.
+  const [anuncio, setAnuncio] = useState('');
+
   // Llega por el mismo socket que los mensajes: se pone arriba sin recargar.
   useAvisosEnVivo(
-    useCallback((aviso: Aviso) => {
-      setAvisos((previos) =>
-        previos.some((a) => a.id === aviso.id)
-          ? previos
-          : [aviso, ...previos].slice(0, 20),
-      );
-    }, []),
+    useCallback(
+      (aviso: Aviso) => {
+        let esNuevo = false;
+        setAvisos((previos) => {
+          if (previos.some((a) => a.id === aviso.id)) return previos;
+          esNuevo = true;
+          return [aviso, ...previos].slice(0, 20);
+        });
+
+        // Sin esto, la llegada de un aviso solo se nota en un número rojo de
+        // diez píxeles sobre la campana. Quien no lo ve no se entera de que
+        // acaban de aceptarle una reserva.
+        if (esNuevo) {
+          setAnuncio(textoDe(aviso));
+          window.setTimeout(() => setAnuncio(''), 1000);
+        }
+      },
+      // textoDe depende del catálogo, que no cambia en vida del componente.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [],
+    ),
   );
 
   // Pulsar fuera cierra el panel, como cualquier desplegable.
@@ -72,6 +93,32 @@ export default function CampanaAvisos() {
     };
     document.addEventListener('mousedown', alPulsar);
     return () => document.removeEventListener('mousedown', alPulsar);
+  }, [abierta]);
+
+  // Escape cierra, que es lo que espera cualquiera que use el teclado. Sin
+  // esto solo se podía cerrar con el ratón, y el panel se anuncia como
+  // diálogo: quien navegue escuchando la página se queda dentro de algo de
+  // lo que no hay manera de salir.
+  useEffect(() => {
+    if (!abierta) return;
+    const alTeclear = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') setAbierta(false);
+    };
+    document.addEventListener('keydown', alTeclear);
+    return () => document.removeEventListener('keydown', alTeclear);
+  }, [abierta]);
+
+  // El foco entra al abrir y vuelve al botón al cerrar. Sin lo primero, el
+  // panel se anuncia pero el tabulador sigue detrás de él; sin lo segundo,
+  // al cerrarlo el foco se pierde al principio de la página.
+  const yaAbierta = useRef(false);
+  useEffect(() => {
+    if (abierta) {
+      panel.current?.focus();
+    } else if (yaAbierta.current) {
+      boton.current?.focus();
+    }
+    yaAbierta.current = abierta;
   }, [abierta]);
 
   const sinLeer = avisos.filter((a) => !a.isRead).length;
@@ -101,8 +148,12 @@ export default function CampanaAvisos() {
 
   return (
     <div className="relative" ref={contenedor}>
+      <span aria-live="polite" className="sr-only">
+        {anuncio}
+      </span>
       <button
         type="button"
+        ref={boton}
         onClick={() => setAbierta((v) => !v)}
         aria-label={
           sinLeer > 0 ? t('abrirConPendientes', { total: sinLeer }) : t('abrir')
@@ -121,8 +172,11 @@ export default function CampanaAvisos() {
       {abierta && (
         <div
           role="dialog"
+          aria-modal="false"
           aria-label={t('titulo')}
-          className="absolute end-0 z-50 mt-2 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-borde bg-superficie shadow-card-hover"
+          ref={panel}
+          tabIndex={-1}
+          className="absolute end-0 z-50 mt-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-borde bg-superficie shadow-card-hover"
         >
           <div className="flex items-center justify-between border-b border-borde px-4 py-3">
             <p className="text-sm font-semibold text-principal">

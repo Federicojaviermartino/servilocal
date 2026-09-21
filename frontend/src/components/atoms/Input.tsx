@@ -18,6 +18,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     // useId genera un identificador estable entre servidor y cliente.
     const idGenerado = useId();
     const inputId = id || rest.name || idGenerado;
+    const errorId = `${inputId}-error`;
+    const hintId = `${inputId}-ayuda`;
     return (
       <div className="w-full">
         {label && (
@@ -31,6 +33,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         <input
           ref={ref}
           id={inputId}
+          // El error se pintaba debajo en rojo y nada más. Quien no ve el
+          // color no se entera de que el campo está mal, y quien escucha la
+          // página no oye el motivo: hay que decirlo y hay que enlazarlo.
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : hint ? hintId : undefined}
           className={clsx(
             'w-full rounded-md border px-3 py-2 text-base text-principal placeholder-tenue',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
@@ -41,8 +48,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
           {...rest}
         />
-        {error && <p className="mt-1 text-sm text-danger-600">{error}</p>}
-        {hint && !error && <p className="mt-1 text-sm text-tenue">{hint}</p>}
+        {error && (
+          <p id={errorId} className="mt-1 text-sm text-danger-600">
+            {error}
+          </p>
+        )}
+        {hint && !error && (
+          <p id={hintId} className="mt-1 text-sm text-tenue">
+            {hint}
+          </p>
+        )}
       </div>
     );
   },

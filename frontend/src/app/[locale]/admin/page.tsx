@@ -111,6 +111,31 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('users');
   const [stats, setStats] = useState<Stats | null>(null);
 
+  /**
+   * Flechas, Inicio y Fin entre pestañas, como manda el patrón de ARIA.
+   *
+   * Se mueve también el foco, no solo la selección: dejarlo atrás haría que
+   * la siguiente flecha partiera del sitio equivocado.
+   */
+  const moverEntrePestanas = (
+    evento: React.KeyboardEvent<HTMLButtonElement>,
+    indice: number,
+  ) => {
+    const saltos: Record<string, number> = {
+      ArrowRight: indice + 1,
+      ArrowLeft: indice - 1,
+      Home: 0,
+      End: TABS.length - 1,
+    };
+    const destino = saltos[evento.key];
+    if (destino === undefined) return;
+
+    evento.preventDefault();
+    const siguiente = TABS[(destino + TABS.length) % TABS.length];
+    setTab(siguiente.key);
+    document.getElementById(`tab-${siguiente.key}`)?.focus();
+  };
+
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
@@ -226,13 +251,19 @@ export default function AdminPage() {
             aria-label={t('secciones')}
             className="flex border-b border-borde overflow-x-auto"
           >
-            {TABS.map(({ key, clave, icon: Icon }) => (
+            {TABS.map(({ key, clave, icon: Icon }, indice) => (
               <button
                 key={key}
                 role="tab"
                 aria-selected={tab === key}
                 aria-controls={`panel-${key}`}
                 id={`tab-${key}`}
+                // Un grupo de pestañas es una sola parada del tabulador: se
+                // entra en la activa y dentro se recorre con las flechas. Con
+                // todas tabulables había que pasar por las cinco para llegar
+                // al contenido, y las flechas no hacían nada.
+                tabIndex={tab === key ? 0 : -1}
+                onKeyDown={(evento) => moverEntrePestanas(evento, indice)}
                 onClick={() => setTab(key)}
                 className={clsx(
                   'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',

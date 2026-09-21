@@ -10,6 +10,26 @@
  * Se guardan como canales sueltos para que Tailwind pueda aplicarles opacidad.
  */
 @layer base {
+  /**
+   * Quien pide menos movimiento, menos movimiento.
+   *
+   * La aplicación gira indicadores, pulsa esqueletos y hace transiciones en
+   * casi todos los botones. Para alguien con trastorno vestibular eso va de
+   * molesto a mareo, y el sistema operativo ya lo tiene dicho: solo hay que
+   * hacerle caso. No se quita del todo —un cambio instantáneo despista— sino
+   * que se reduce a un parpadeo.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   :root {
     --color-fondo: 250 250 250;
     --color-superficie: 255 255 255;

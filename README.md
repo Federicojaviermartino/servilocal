@@ -14,6 +14,7 @@
 [Live Demo](https://servilocal-web.onrender.com) ·
 [API Reference](https://servilocal-api.onrender.com/api/docs) ·
 [Architecture](ARCHITECTURE.md) ·
+[Accessibility](ACCESSIBILITY.md) ·
 [Diagrams](diagrams/) ·
 [Wireframes](wireframes/)
 
@@ -40,6 +41,7 @@
 - [API Reference](#api-reference)
 - [Configuration](#configuration)
 - [Deployment](#deployment)
+- [Accessibility](#accessibility)
 - [Security](#security)
 - [Testing](#testing)
 - [Roadmap](#roadmap)
@@ -419,6 +421,18 @@ Register `https://servilocal-api.onrender.com/api/payments/webhook` in the Strip
 - `payment_intent.succeeded` — completes the payment
 - `payment_intent.payment_failed` — leaves the booking awaiting retry
 - `payment_intent.canceled`
+
+---
+
+## Accessibility
+
+WCAG 2.1 level AA, verified on every push with `@axe-core/playwright` in both
+themes, plus Playwright tests for what automated tooling cannot check: keyboard
+operation, focus return, the ARIA tab pattern, and reflow at 375 px.
+
+[`ACCESSIBILITY.md`](ACCESSIBILITY.md) states what is implemented, how it is
+verified and — deliberately — the known gaps, including that no audit with a real
+screen reader has been done.
 
 ---
 

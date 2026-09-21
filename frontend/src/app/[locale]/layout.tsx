@@ -11,6 +11,7 @@ import {
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { SITIO_URL } from '@/lib/sitio';
+import { jsonParaScript } from '@/lib/seo';
 import { routing, direccionDe, type Idioma } from '@/i18n/routing';
 import '../globals.css';
 
@@ -92,7 +93,10 @@ export default async function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            // Aquí no entra nada que escriba un usuario, pero se escapa
+            // igual: dos bloques JSON-LD con reglas distintas invitan a que
+            // el próximo se escriba con la insegura.
+            __html: jsonParaScript({
               '@context': 'https://schema.org',
               '@type': 'WebSite',
               name: 'ServiLocal',
