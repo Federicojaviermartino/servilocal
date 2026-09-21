@@ -1078,7 +1078,11 @@ async function runSeed() {
   console.log('Cliente:    laura@ejemplo.com');
   console.log('Proveedor:  carlos@ejemplo.com');
   console.log('Proveedora: elena@ejemplo.com');
-  console.log('Todas las cuentas usan la contraseña Password123!');
+  console.log(
+    admin
+      ? 'Las cuentas de demostración usan la contraseña Password123!'
+      : 'Todas las cuentas usan la contraseña Password123!',
+  );
 
   await dataSource.destroy();
   console.log('\nSeed completado.');

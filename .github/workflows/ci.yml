@@ -134,9 +134,18 @@ jobs:
       DB_DATABASE: servilocal_e2e
       JWT_SECRET: secreto_solo_para_los_tests
       JWT_EXPIRATION: 1h
-      # Clave de marcador: el test de pago se omite solo si Stripe no está
-      # configurado, así que la integración continua no depende de Stripe.
-      STRIPE_SECRET_KEY: sk_test_marcador
+      # Con los secretos definidos, la comprobación de pago se ejecuta de
+      # verdad contra Stripe en modo de prueba. Sin ellos queda el marcador y
+      # el test se salta solo, que es lo que permite que una bifurcación sin
+      # acceso a los secretos siga teniendo la integración en verde.
+      #
+      # Es el único camino del código que no se cubre sin esto, y justo el
+      # que mueve dinero: retener al reservar, cobrar al completar y soltar
+      # al cancelar.
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY || 'sk_test_marcador' }}
+      # Next incrusta las NEXT_PUBLIC_* al compilar, así que tiene que estar
+      # presente en el paso de build y no solo al ejecutar.
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
       CORS_ORIGINS: http://localhost:3000
       PORT: 3001
       # La suite inicia sesión muchas veces desde la misma IP. El límite
