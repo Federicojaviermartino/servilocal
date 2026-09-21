@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Booking, BookingStatus, Service } from '../entities';
 import { CreateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentsService } from '../payments/payments.service';
 import { NotificationType } from '../entities';
 
 /**
@@ -89,6 +90,7 @@ export class BookingsService {
     @InjectRepository(Service)
     private serviceRepository: Repository<Service>,
     private readonly avisos: NotificationsService,
+    private readonly pagos: PaymentsService,
   ) {}
 
   async create(
@@ -162,6 +164,20 @@ export class BookingsService {
     const newStatus = updateDto.status as BookingStatus;
 
     this.validateStatusTransition(booking, newStatus, userId, userRole);
+
+    // El dinero se mueve ANTES de dar por bueno el estado. Si el cobro
+    // falla, la reserva no se marca completada: un trabajo cerrado sin
+    // cobrar no lo vuelve a mirar nadie. Liberar, en cambio, nunca bloquea
+    // —quien cancela tiene derecho a cancelar— y eso lo decide el servicio
+    // de pagos, no esta línea.
+    if (newStatus === BookingStatus.COMPLETED) {
+      await this.pagos.cobrarAlCompletar(booking.id);
+    } else if (
+      newStatus === BookingStatus.CANCELLED ||
+      newStatus === BookingStatus.REJECTED
+    ) {
+      await this.pagos.liberarRetencion(booking.id);
+    }
 
     booking.status = newStatus;
 

@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -44,6 +45,7 @@ const puedePasarA = (desde: PaymentStatus, hasta: PaymentStatus): boolean =>
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
   private stripe: Stripe;
 
   constructor(
@@ -266,6 +268,62 @@ export class PaymentsService {
     return this.paymentRepository.save(payment);
   }
 
+  /**
+   * Cobra la retención al darse el trabajo por hecho.
+   *
+   * Hasta ahora nadie capturaba: el dinero se autorizaba al reservar y se
+   * quedaba ahí hasta que Stripe soltaba la autorización a los siete días.
+   * La plataforma no llegaba a cobrar nunca.
+   *
+   * Si el cobro falla, se propaga. Dar por completado un trabajo sin haber
+   * podido cobrarlo deja la reserva cerrada y el dinero sin mover, y nadie
+   * volvería a mirarlo: es mejor que el profesional vea el error y repita.
+   *
+   * Una reserva sin pago —las hay, porque pagar no es obligatorio para
+   * reservar— se completa sin más.
+   */
+  async cobrarAlCompletar(bookingId: string): Promise<Payment | null> {
+    const payment = await this.paymentRepository.findOne({
+      where: { bookingId, status: PaymentStatus.HELD },
+    });
+    if (!payment) return null;
+
+    await this.stripe.paymentIntents.capture(payment.stripePaymentIntentId);
+
+    payment.status = PaymentStatus.COMPLETED;
+    return this.paymentRepository.save(payment);
+  }
+
+  /**
+   * Suelta la retención cuando la reserva no va a ocurrir.
+   *
+   * Al contrario que el cobro, esto no puede impedir la cancelación. Quien
+   * cancela tiene derecho a cancelar, y si Stripe no responde la retención
+   * caduca sola en siete días: el remedio de bloquear la operación sería
+   * peor que el fallo. Se deja constancia en el registro.
+   */
+  async liberarRetencion(bookingId: string): Promise<Payment | null> {
+    const payment = await this.paymentRepository.findOne({
+      where: { bookingId, status: PaymentStatus.HELD },
+    });
+    if (!payment) return null;
+
+    try {
+      await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
+    } catch (error) {
+      this.logger.warn(
+        `Retención sin liberar en la reserva ${bookingId}: ${
+          error instanceof Error ? error.message : 'causa desconocida'
+        }. Caducará sola en siete días.`,
+      );
+      return null;
+    }
+
+    payment.status = PaymentStatus.REFUNDED;
+    payment.refundedAt = new Date();
+    return this.paymentRepository.save(payment);
+  }
+
   async findByClient(clientId: string): Promise<Payment[]> {
     return this.paymentRepository.find({
       where: { clientId },
@@ -302,20 +360,18 @@ export class PaymentsService {
     const pi = event.data.object as Stripe.PaymentIntent;
 
     switch (type) {
+      // Que el dinero esté retenido no confirma la reserva: eso lo decide
+      // el profesional, que es quien sabe si puede ese día. Antes el
+      // webhook la confirmaba solo, así que la pantalla de «reservas
+      // recibidas» no tenía nada que aceptar y el botón sobraba.
       case 'payment_intent.amount_capturable_updated': {
-        await this.markPaymentAndBooking(
-          pi.id,
-          PaymentStatus.HELD,
-          BookingStatus.CONFIRMED,
-        );
+        await this.marcarPago(pi.id, PaymentStatus.HELD);
         break;
       }
+      // El cobro efectivo lo lanza la plataforma al completarse el trabajo,
+      // así que cuando llega este aviso la reserva ya está donde debe.
       case 'payment_intent.succeeded': {
-        await this.markPaymentAndBooking(
-          pi.id,
-          PaymentStatus.COMPLETED,
-          BookingStatus.CONFIRMED,
-        );
+        await this.marcarPago(pi.id, PaymentStatus.COMPLETED);
         break;
       }
       case 'payment_intent.payment_failed':
@@ -329,45 +385,30 @@ export class PaymentsService {
     }
   }
 
-  private async markPaymentAndBooking(
+  /**
+   * Mueve solo el pago, nunca la reserva.
+   *
+   * El webhook dejó de tocar el estado de la reserva: lo decide el
+   * profesional al aceptar y la plataforma al completar. Aquí únicamente se
+   * anota lo que Stripe dice del dinero, y solo si la transición está
+   * permitida, porque los avisos llegan repetidos y desordenados.
+   */
+  private async marcarPago(
     paymentIntentId: string,
-    paymentStatus: PaymentStatus,
-    bookingStatus: BookingStatus,
+    estado: PaymentStatus,
   ): Promise<void> {
     const payment = await this.paymentRepository.findOne({
       where: { stripePaymentIntentId: paymentIntentId },
     });
     if (!payment) return;
 
-    if (!puedePasarA(payment.status, paymentStatus)) return;
+    if (!puedePasarA(payment.status, estado)) return;
 
-    payment.status = paymentStatus;
-    if (paymentStatus === PaymentStatus.HELD) {
+    payment.status = estado;
+    if (estado === PaymentStatus.HELD) {
       payment.paidAt = new Date();
     }
     await this.paymentRepository.save(payment);
-
-    const booking = await this.bookingRepository.findOne({
-      where: { id: payment.bookingId },
-    });
-    if (!booking) return;
-
-    // Una reserva cerrada no vuelve atrás por un aviso de la pasarela. El
-    // caso que dolía: una reserva ya completada volvía a «confirmada» al
-    // llegar el succeeded de su propio cobro, y a partir de ahí el cliente
-    // no podía valorarla. Cancelada o rechazada, resucitaba.
-    if (
-      booking.status === bookingStatus ||
-      booking.status !== BookingStatus.PENDING
-    ) {
-      return;
-    }
-
-    booking.status = bookingStatus;
-    if (bookingStatus === BookingStatus.CONFIRMED) {
-      booking.confirmedAt = new Date();
-    }
-    await this.bookingRepository.save(booking);
   }
 
   private async markPaymentFailed(

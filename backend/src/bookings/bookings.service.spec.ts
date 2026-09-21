@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentsService } from '../payments/payments.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   BadRequestException,
@@ -22,6 +23,11 @@ const mockServiceRepository = {
 
 const avisos = { crear: jest.fn(async () => null) };
 
+const pagos = {
+  cobrarAlCompletar: jest.fn(async () => null),
+  liberarRetencion: jest.fn(async () => null),
+};
+
 describe('BookingsService', () => {
   let service: BookingsService;
 
@@ -38,6 +44,7 @@ describe('BookingsService', () => {
           useValue: mockServiceRepository,
         },
         { provide: NotificationsService, useValue: avisos },
+        { provide: PaymentsService, useValue: pagos },
       ],
     }).compile();
 
@@ -487,6 +494,92 @@ describe('BookingsService', () => {
       mockBookingRepository.findOne.mockResolvedValue(RESERVA);
 
       expect(await service.findById('b1')).toBeTruthy();
+    });
+  });
+  describe('el dinero sigue a la reserva', () => {
+    const reserva = (status: BookingStatus) => ({
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p1',
+      status,
+      service: {},
+      client: {},
+      provider: {},
+    });
+
+    const cambiar = (
+      desde: BookingStatus,
+      hasta: string,
+      quien = 'p1',
+      rol = 'provider',
+    ) => {
+      mockBookingRepository.findOne.mockResolvedValue(reserva(desde));
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+      return service.updateStatus('b1', quien, rol, { status: hasta } as never);
+    };
+
+    it('completar el trabajo cobra la retención', async () => {
+      // Esto es lo que no ocurría: el dinero se autorizaba al reservar y se
+      // quedaba ahí hasta que Stripe soltaba la autorización a los siete
+      // días. La plataforma no llegaba a cobrar nunca.
+      await cambiar(BookingStatus.CONFIRMED, 'completed');
+
+      expect(pagos.cobrarAlCompletar).toHaveBeenCalledWith('b1');
+    });
+
+    it('si el cobro falla, la reserva no se da por completada', async () => {
+      // Un trabajo cerrado y sin cobrar no lo vuelve a mirar nadie. Que el
+      // profesional vea el error y repita.
+      pagos.cobrarAlCompletar.mockRejectedValueOnce(
+        new Error('tarjeta caducada'),
+      );
+
+      await expect(
+        cambiar(BookingStatus.CONFIRMED, 'completed'),
+      ).rejects.toThrow('tarjeta caducada');
+      expect(mockBookingRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('cancelar suelta la retención', async () => {
+      await cambiar(BookingStatus.CONFIRMED, 'cancelled', 'c1', 'client');
+
+      expect(pagos.liberarRetencion).toHaveBeenCalledWith('b1');
+      expect(pagos.cobrarAlCompletar).not.toHaveBeenCalled();
+    });
+
+    it('rechazar también', async () => {
+      await cambiar(BookingStatus.PENDING, 'rejected');
+
+      expect(pagos.liberarRetencion).toHaveBeenCalledWith('b1');
+    });
+
+    it('aceptar no mueve dinero', async () => {
+      // Aceptar es un compromiso, no un cobro: el dinero sigue retenido
+      // hasta que el trabajo esté hecho.
+      await cambiar(BookingStatus.PENDING, 'confirmed');
+
+      expect(pagos.cobrarAlCompletar).not.toHaveBeenCalled();
+      expect(pagos.liberarRetencion).not.toHaveBeenCalled();
+    });
+
+    it('un cambio rechazado no toca el dinero', async () => {
+      await expect(
+        cambiar(BookingStatus.COMPLETED, 'cancelled'),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(pagos.liberarRetencion).not.toHaveBeenCalled();
+      expect(pagos.cobrarAlCompletar).not.toHaveBeenCalled();
+    });
+
+    it('un intento sin permiso tampoco', async () => {
+      // Se comprueba antes de mover nada: si el orden se invirtiera, un
+      // tercero soltaría la retención de una reserva ajena y la excepción
+      // llegaría tarde.
+      await expect(
+        cambiar(BookingStatus.PENDING, 'cancelled', 'ajeno', 'client'),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(pagos.liberarRetencion).not.toHaveBeenCalled();
     });
   });
 });

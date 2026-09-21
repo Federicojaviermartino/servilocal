@@ -1,6 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import type { StripeElementLocale } from '@stripe/stripe-js';
+import { ShieldCheck } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { Link } from '@/i18n/navigation';
@@ -13,6 +15,14 @@ import Spinner from '@/components/atoms/Spinner';
 
 export default function PaymentPage() {
   const t = useTranslations('pago');
+  const idioma = useLocale();
+
+  // El tema vive como clase en <html>, lo pone el script del layout antes del
+  // primer pintado. Se lee tras montar para no discrepar del servidor.
+  const [oscuro, setOscuro] = useState(false);
+  useEffect(() => {
+    setOscuro(document.documentElement.classList.contains('dark'));
+  }, []);
   const params = useParams();
   const router = useRouter();
   const bookingId = params.id as string;
@@ -89,13 +99,35 @@ export default function PaymentPage() {
             servicio: (texto) => <strong>{texto}</strong>,
           })}
         </p>
+        {/* La retención es la mejor señal de confianza que tiene la
+            plataforma, y no se estaba usando justo donde alguien decide si
+            mete la tarjeta: la pantalla no decía que el dinero no se cobra
+            todavía, ni qué pasa si la reserva se cancela. */}
+        <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 p-4 dark:border-primary-800 dark:bg-primary-900/20">
+          <p className="flex items-center gap-2 text-sm font-medium text-principal">
+            <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {t('retencionTitulo')}
+          </p>
+          <p className="mt-1 text-sm text-secundario">
+            {t('retencionTexto', { importe: booking.totalPrice })}
+          </p>
+          <p className="mt-1 text-sm text-secundario">
+            {t('retencionCancelar')}
+          </p>
+        </div>
+
         <div className="bg-superficie rounded-lg shadow-card p-6">
           <Elements
             key={intent.clientSecret}
             stripe={getStripe()}
             options={{
               clientSecret: intent.clientSecret,
-              appearance: { theme: 'stripe' },
+              // El formulario se quedaba siempre en claro, así que en tema
+              // oscuro salía un bloque blanco en mitad de la tarjeta. Y en
+              // castellano aunque la página estuviera en otro idioma: es un
+              // iframe ajeno, hay que decirle las dos cosas.
+              locale: idioma as StripeElementLocale,
+              appearance: { theme: oscuro ? 'night' : 'stripe' },
             }}
           >
             <CheckoutForm

@@ -59,6 +59,9 @@ test.describe('Reserva y pago', () => {
       'Falta NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY en la compilación: Stripe no monta el formulario',
     );
 
+    // Antes de pedir la tarjeta hay que haber dicho que no se cobra todavía.
+    await expect(page.getByText('No se te cobra ahora')).toBeVisible();
+
     const formularioStripe = page
       .frameLocator('iframe[name^="__privateStripeFrame"]')
       .first();
@@ -69,9 +72,12 @@ test.describe('Reserva y pago', () => {
     await formularioStripe.getByPlaceholder('MM / AA').fill('12 / 34');
     await formularioStripe.getByPlaceholder('CVC').fill('123');
 
-    await page.getByRole('button', { name: /Pagar/ }).click();
+    await page.getByRole('button', { name: /Retener/ }).click();
 
-    // El webhook confirma la reserva y la aplicación lleva al listado
+    // El dinero queda retenido y la aplicación lleva al listado. La reserva
+    // NO se confirma aquí: eso lo decide el profesional, y hasta entonces
+    // sigue pendiente. Confirmarla al pagar era lo que dejaba su pantalla de
+    // «reservas recibidas» sin nada que aceptar.
     await expect(page).toHaveURL(/\/dashboard\/bookings/, { timeout: 60000 });
     await expect(
       page.getByRole('heading', { name: 'Mis reservas' }),
