@@ -27,15 +27,24 @@ function datosDe(aviso: Aviso): Record<string, string> {
 
 export default function CampanaAvisos() {
   const t = useTranslations('avisos');
+  const tCarga = useTranslations('carga');
   const [abierta, setAbierta] = useState(false);
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const contenedor = useRef<HTMLDivElement>(null);
 
+  // Aquí no cabe una caja de error con su botón: es un desplegable. Basta
+  // con no mentir, que es lo que hacía al decir «no tienes avisos» cuando lo
+  // que pasaba era que no había podido preguntarlo.
+  const [fallo, setFallo] = useState(false);
+
   const cargar = useCallback(() => {
     avisosApi
       .listar()
-      .then(({ data }) => setAvisos(Array.isArray(data) ? data : []))
-      .catch(() => setAvisos([]));
+      .then(({ data }) => {
+        setAvisos(Array.isArray(data) ? data : []);
+        setFallo(false);
+      })
+      .catch(() => setFallo(true));
   }, []);
 
   useEffect(() => {
@@ -131,7 +140,18 @@ export default function CampanaAvisos() {
           </div>
 
           <ul className="max-h-80 overflow-y-auto">
-            {avisos.length === 0 ? (
+            {fallo ? (
+              <li className="px-4 py-8 text-center text-sm text-tenue">
+                <span className="block">{tCarga('error')}</span>
+                <button
+                  type="button"
+                  onClick={cargar}
+                  className="mt-2 text-primary-600 underline"
+                >
+                  {tCarga('reintentar')}
+                </button>
+              </li>
+            ) : avisos.length === 0 ? (
               <li className="px-4 py-8 text-center text-sm text-tenue">
                 {t('sinAvisos')}
               </li>

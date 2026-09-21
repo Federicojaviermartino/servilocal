@@ -6,7 +6,8 @@ import { useRouter } from '@/i18n/navigation';
 import { Booking, BookingStatus, UserRole } from '@/types';
 import { bookingsApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
-import Spinner from '@/components/atoms/Spinner';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
+import { useCarga } from '@/lib/carga';
 
 export default function DashboardHomePage() {
   const t = useTranslations('panel');
@@ -14,26 +15,22 @@ export default function DashboardHomePage() {
   const tReservas = useTranslations('reservasPanel');
   const { user } = useAuthStore();
   const router = useRouter();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     if (user?.role === UserRole.ADMIN) {
       router.replace('/admin');
     }
   }, [user, router]);
 
-  useEffect(() => {
-    if (!user || user.role === UserRole.ADMIN) return;
-    const fetcher =
-      user.role === UserRole.PROVIDER
-        ? bookingsApi.getReceived
-        : bookingsApi.getMyBookings;
-    fetcher()
-      .then((res) => setBookings(res.data || []))
-      .catch(() => setBookings([]))
-      .finally(() => setIsLoading(false));
-  }, [user]);
+  // Los contadores del resumen salen de aquí. Con la lista vacía por un
+  // fallo de red enseñaban tres ceros, que es una afirmación, no un hueco.
+  const { datos, estado, reintentar } = useCarga<Booking[]>(
+    () =>
+      user?.role === UserRole.PROVIDER
+        ? bookingsApi.getReceived()
+        : bookingsApi.getMyBookings(),
+    [user?.id, user?.role],
+  );
+  const bookings = datos ?? [];
 
   if (!user || user.role === UserRole.ADMIN) return null;
 
@@ -60,11 +57,7 @@ export default function DashboardHomePage() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Spinner size="lg" />
-        </div>
-      ) : (
+      <EstadoCarga estado={estado} onReintentar={reintentar}>
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-superficie rounded-lg shadow-card p-5">
@@ -152,7 +145,7 @@ export default function DashboardHomePage() {
             </div>
           </div>
         </>
-      )}
+      </EstadoCarga>
     </div>
   );
 }

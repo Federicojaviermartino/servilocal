@@ -13,7 +13,8 @@ import { useAuthStore } from '@/lib/auth-store';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
-import Spinner from '@/components/atoms/Spinner';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
+import { useCarga } from '@/lib/carga';
 
 export default function BookingDetailPage() {
   const t = useTranslations('reservasPanel');
@@ -25,22 +26,15 @@ export default function BookingDetailPage() {
   const bookingId = params.id as string;
   const { user } = useAuthStore();
 
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const load = useCallback(() => {
-    setIsLoading(true);
-    bookingsApi
-      .getById(bookingId)
-      .then((res) => setBooking(res.data))
-      .catch(() => setBooking(null))
-      .finally(() => setIsLoading(false));
-  }, [bookingId]);
-
-  useEffect(() => {
-    if (bookingId) load();
-  }, [bookingId, load]);
+  // Un fallo aquí se veía como «reserva no encontrada», que es una respuesta
+  // distinta y lleva a cerrar la pantalla en vez de volver a intentarlo.
+  const {
+    datos: booking,
+    estado,
+    reintentar: load,
+  } = useCarga<Booking>(() => bookingsApi.getById(bookingId), [bookingId]);
 
   const changeStatus = async (status: BookingStatus) => {
     setIsUpdating(true);
@@ -55,19 +49,13 @@ export default function BookingDetailPage() {
     }
   };
 
-  if (isLoading) {
+  if (estado !== 'listo' || !booking || !user) {
     return (
-      <div className="flex justify-center py-20">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (!booking || !user) {
-    return (
-      <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
-        {t('noEncontrada')}
-      </div>
+      <EstadoCarga estado={estado} onReintentar={load}>
+        <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
+          {t('noEncontrada')}
+        </div>
+      </EstadoCarga>
     );
   }
 

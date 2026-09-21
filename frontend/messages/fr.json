@@ -233,6 +233,14 @@
     "queNecesitas": "De quel service avez-vous besoin ?",
     "buscarServicios": "Rechercher des services"
   },
+  "carga": {
+    "entrarDeNuevo": "Se reconnecter",
+    "error": "Impossible de charger les données",
+    "errorTexto": "Il peut s'agir d'un problème de connexion, ou le serveur est peut-être en train de démarrer. Réessayez.",
+    "reintentar": "Réessayer",
+    "sesionCaducada": "Votre session a expiré",
+    "sesionTexto": "Par sécurité, une session dure un jour. Reconnectez-vous pour reprendre où vous en étiez."
+  },
   "categorias": {
     "cerrajeria": "Serrurerie",
     "clases-particulares": "Cours particuliers",

@@ -233,6 +233,14 @@
     "queNecesitas": "Zer zerbitzu behar duzu?",
     "buscarServicios": "Bilatu zerbitzuak"
   },
+  "carga": {
+    "entrarDeNuevo": "Sartu berriro",
+    "error": "Ezin izan dira datuak kargatu",
+    "errorTexto": "Konexio arazo bat izan daiteke, edo zerbitzaria abiarazten egotea. Saiatu berriro.",
+    "reintentar": "Saiatu berriro",
+    "sesionCaducada": "Zure saioa iraungi da",
+    "sesionTexto": "Segurtasunagatik, saioak egun bat irauten du. Sartu berriro utzi zenuen tokitik jarraitzeko."
+  },
   "categorias": {
     "cerrajeria": "Sarrailagintza",
     "clases-particulares": "Eskola partikularrak",

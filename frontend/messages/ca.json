@@ -233,6 +233,14 @@
     "queNecesitas": "Quin servei necessites?",
     "buscarServicios": "Cerca serveis"
   },
+  "carga": {
+    "entrarDeNuevo": "Torna a entrar",
+    "error": "No s'han pogut carregar les dades",
+    "errorTexto": "Pot ser un problema de connexió o que el servidor s'estigui engegant. Torna-ho a provar.",
+    "reintentar": "Torna-ho a provar",
+    "sesionCaducada": "La teva sessió ha caducat",
+    "sesionTexto": "Per seguretat, la sessió dura un dia. Torna a entrar per continuar on ho vas deixar."
+  },
   "categorias": {
     "cerrajeria": "Serralleria",
     "clases-particulares": "Classes particulars",

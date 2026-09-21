@@ -233,6 +233,14 @@
     "queNecesitas": "What service do you need?",
     "buscarServicios": "Search services"
   },
+  "carga": {
+    "entrarDeNuevo": "Sign in again",
+    "error": "The data could not be loaded",
+    "errorTexto": "It may be a connection problem, or the server may still be starting up. Please try again.",
+    "reintentar": "Try again",
+    "sesionCaducada": "Your session has expired",
+    "sesionTexto": "For security, a session lasts one day. Sign in again to pick up where you left off."
+  },
   "categorias": {
     "cerrajeria": "Locksmithing",
     "clases-particulares": "Private tuition",

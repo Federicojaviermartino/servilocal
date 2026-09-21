@@ -1,25 +1,25 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Booking, BookingStatus } from '@/types';
 import { bookingsApi } from '@/lib/api';
 import BookingCard from '@/components/molecules/BookingCard';
-import Spinner from '@/components/atoms/Spinner';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
+import { useCarga } from '@/lib/carga';
 
 export default function MyBookingsPage() {
   const t = useTranslations('reservasPanel');
   const tEstados = useTranslations('estados');
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | BookingStatus>('all');
 
-  useEffect(() => {
-    bookingsApi
-      .getMyBookings()
-      .then((res) => setBookings(res.data || []))
-      .catch(() => setBookings([]))
-      .finally(() => setIsLoading(false));
-  }, []);
+  // Antes un fallo de red dejaba la lista vacía, indistinguible de no tener
+  // ninguna reserva: quien reservó ayer entraba hoy y leía «no tienes
+  // reservas».
+  const { datos, estado, reintentar } = useCarga<Booking[]>(
+    () => bookingsApi.getMyBookings(),
+    [],
+  );
+  const bookings = datos ?? [];
 
   const filtered =
     filter === 'all' ? bookings : bookings.filter((b) => b.status === filter);
@@ -53,21 +53,19 @@ export default function MyBookingsPage() {
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-10">
-          <Spinner size="lg" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
-          {t('sinReservas')}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((b) => (
-            <BookingCard key={b.id} booking={b} viewAs="client" />
-          ))}
-        </div>
-      )}
+      <EstadoCarga estado={estado} onReintentar={reintentar}>
+        {filtered.length === 0 ? (
+          <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
+            {t('sinReservas')}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((b) => (
+              <BookingCard key={b.id} booking={b} viewAs="client" />
+            ))}
+          </div>
+        )}
+      </EstadoCarga>
     </div>
   );
 }

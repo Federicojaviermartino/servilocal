@@ -233,6 +233,14 @@
     "queNecesitas": "Que servizo necesitas?",
     "buscarServicios": "Buscar servizos"
   },
+  "carga": {
+    "entrarDeNuevo": "Volver entrar",
+    "error": "Non se puideron cargar os datos",
+    "errorTexto": "Pode ser un problema de conexión ou que o servidor estea arrancando. Inténtao de novo.",
+    "reintentar": "Tentar de novo",
+    "sesionCaducada": "A túa sesión caducou",
+    "sesionTexto": "Por seguridade, a sesión dura un día. Volve entrar para seguir onde o deixaches."
+  },
   "categorias": {
     "cerrajeria": "Cerrallaría",
     "clases-particulares": "Clases particulares",

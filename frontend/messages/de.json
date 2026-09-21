@@ -233,6 +233,14 @@
     "queNecesitas": "Welche Dienstleistung brauchen Sie?",
     "buscarServicios": "Dienstleistungen suchen"
   },
+  "carga": {
+    "entrarDeNuevo": "Erneut anmelden",
+    "error": "Die Daten konnten nicht geladen werden",
+    "errorTexto": "Möglicherweise ein Verbindungsproblem, oder der Server startet gerade. Bitte erneut versuchen.",
+    "reintentar": "Erneut versuchen",
+    "sesionCaducada": "Ihre Sitzung ist abgelaufen",
+    "sesionTexto": "Aus Sicherheitsgründen dauert eine Sitzung einen Tag. Melden Sie sich erneut an, um dort weiterzumachen, wo Sie aufgehört haben."
+  },
   "categorias": {
     "cerrajeria": "Schlüsseldienst",
     "clases-particulares": "Nachhilfe",

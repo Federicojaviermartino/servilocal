@@ -233,6 +233,14 @@
     "queNecesitas": "De que serviço precisa?",
     "buscarServicios": "Procurar serviços"
   },
+  "carga": {
+    "entrarDeNuevo": "Entrar novamente",
+    "error": "Não foi possível carregar os dados",
+    "errorTexto": "Pode ser um problema de ligação ou o servidor pode estar a arrancar. Tenta novamente.",
+    "reintentar": "Tentar novamente",
+    "sesionCaducada": "A tua sessão expirou",
+    "sesionTexto": "Por segurança, a sessão dura um dia. Entra novamente para continuar onde ficaste."
+  },
   "categorias": {
     "cerrajeria": "Serralharia",
     "clases-particulares": "Explicações",
