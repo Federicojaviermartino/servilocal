@@ -106,6 +106,46 @@ jobs:
       - name: Compilar el catálogo de componentes
         run: npm run build-storybook -- --quiet
 
+  # Lo que se despliega son estas imágenes, y hasta ahora ninguna prueba las
+  # construía: la integración compilaba con npm por su cuenta. Un Dockerfile
+  # roto solo se descubría en el despliegue, con la aplicación caída.
+  #
+  # No se publican, solo se construyen: lo que se comprueba es que el bloqueo
+  # de dependencias cuadra —npm ci falla si no— y que las dos etapas llegan
+  # hasta el final.
+  imagenes:
+    name: Construcción de las imágenes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir la imagen de la API
+        run: docker build -t servilocal-api:ci ./backend
+
+      - name: Construir la imagen del frontend
+        run: |
+          docker build             --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001/api             -t servilocal-web:ci ./frontend
+
+      - name: Comprobar que la API no corre como root
+        run: |
+          usuario=$(docker run --rm --entrypoint sh servilocal-api:ci -c whoami)
+          echo "La imagen corre como: $usuario"
+          test "$usuario" = "node"
+
+      - name: Comprobar que no se cuela el código fuente ni las herramientas de desarrollo
+        run: |
+          docker run --rm --entrypoint sh servilocal-api:ci -c "ls -a /app"
+          # El fuente no hace falta para servir: las migraciones se resuelven
+          # contra dist. Si aparece, la imagen volvió a ser de una sola etapa.
+          docker run --rm --entrypoint sh servilocal-api:ci -c "test ! -d /app/src"             || (echo "El código fuente no debería estar en la imagen"; exit 1)
+          # Se comprueban paquetes que solo existen como dependencia de
+          # desarrollo directa. typescript no vale: typeorm lo arrastra a
+          # través de ts-node y está en el árbol de producción con razón.
+          for paquete in jest @nestjs/cli eslint prettier; do
+            docker run --rm --entrypoint sh servilocal-api:ci               -c "test ! -d /app/node_modules/$paquete"               || (echo "$paquete no debería estar en la imagen"; exit 1)
+          done
+
   e2e:
     name: Tests de extremo a extremo
     runs-on: ubuntu-latest
