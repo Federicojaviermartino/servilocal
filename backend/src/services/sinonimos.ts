@@ -191,6 +191,20 @@ const ENTRADAS: Entrada[] = [
 ];
 
 /** Misma normalización que usa la consulta: minúsculas y sin acentos. */
+/**
+ * Escapa lo que va a acabar dentro de una expresión regular.
+ *
+ * Las ciudades del catálogo salen de un SELECT DISTINCT sobre los servicios,
+ * o sea de lo que teclea cada profesional al publicar. Una con un paréntesis
+ * sin cerrar —«Madrid (centro»— hacía que el constructor de la expresión
+ * lanzara, y esa excepción tumbaba el asistente entero para todo el mundo,
+ * también en el modo básico que funciona sin IA. Cualquiera con una cuenta de
+ * profesional podía provocarlo publicando un servicio.
+ */
+export function escaparRegExp(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function normalizar(texto: string): string {
   return texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }

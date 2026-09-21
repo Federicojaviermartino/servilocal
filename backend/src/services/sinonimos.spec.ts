@@ -1,4 +1,4 @@
-import { ampliarBusqueda, normalizar } from './sinonimos';
+import { ampliarBusqueda, escaparRegExp, normalizar } from './sinonimos';
 
 describe('sinonimos', () => {
   describe('normalizar', () => {
@@ -65,5 +65,51 @@ describe('sinonimos', () => {
       expect(() => ampliarBusqueda('grifo (roto) [urgente] +')).not.toThrow();
       expect(ampliarBusqueda('grifo (roto)')).toContain('fontaneria');
     });
+  });
+});
+
+describe('escaparRegExp', () => {
+  /** Lo mismo que construye el asistente para buscar la ciudad en la frase. */
+  const patronDe = (ciudad: string) =>
+    new RegExp(`(^|[^a-z0-9])${escaparRegExp(ciudad)}([^a-z0-9]|$)`);
+
+  it('una ciudad con un paréntesis sin cerrar ya no revienta', () => {
+    // Las ciudades salen de un SELECT DISTINCT sobre los servicios, o sea de
+    // lo que teclea cada profesional. Sin escapar, esto lanzaba un
+    // SyntaxError y dejaba el asistente inservible para todo el mundo,
+    // también en el modo básico que no usa IA.
+    expect(() => patronDe('madrid (centro')).not.toThrow();
+  });
+
+  it.each([
+    'sant cugat [valles]',
+    'a coruna*',
+    'l.hospitalet',
+    'vitoria+gasteiz',
+    'donostia|san sebastian',
+    'que? ciudad',
+  ])('tampoco con «%s»', (ciudad) => {
+    expect(() => patronDe(ciudad)).not.toThrow();
+  });
+
+  it('y sigue encontrando la ciudad en la frase', () => {
+    // Escapar no puede romper lo que ya funcionaba.
+    expect(patronDe('malaga').test('busco fontanero en malaga urgente')).toBe(
+      true,
+    );
+  });
+
+  it('una ciudad con caracteres especiales se encuentra literalmente', () => {
+    expect(patronDe('l.hospitalet').test('algo en l.hospitalet hoy')).toBe(
+      true,
+    );
+    // Y el punto deja de valer como comodín: «lxhospitalet» no es la ciudad.
+    expect(patronDe('l.hospitalet').test('algo en lxhospitalet hoy')).toBe(
+      false,
+    );
+  });
+
+  it('no encuentra una ciudad que solo aparece a medias', () => {
+    expect(patronDe('leon').test('busco algo en leones')).toBe(false);
   });
 });

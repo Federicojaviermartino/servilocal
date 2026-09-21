@@ -27,6 +27,14 @@ export interface ResumenConsumo {
   porFuncionalidad: ConsumoPorFuncionalidad[];
 }
 
+/**
+ * Milésimas de céntimo por céntimo.
+ *
+ * La contabilidad interna va en milésimas para no inflar el gasto redondeando
+ * cada llamada; la configuración y la API pública siguen en céntimos.
+ */
+const MILICENTIMOS_POR_CENTIMO = 1000;
+
 /** Día natural en ISO, que es como se guarda la columna. */
 function hoy(): string {
   return new Date().toISOString().slice(0, 10);
@@ -72,25 +80,33 @@ export class PresupuestoService {
     return TARIFAS[modelo] ?? TARIFA_POR_DEFECTO;
   }
 
-  /** Coste en céntimos de un número concreto de tokens. */
+  /**
+   * Coste en milésimas de céntimo de un número concreto de tokens.
+   *
+   * Se sigue redondeando hacia arriba, porque nunca conviene contabilizar de
+   * menos lo que se está gastando, pero ahora el redondeo es de una milésima
+   * y no de un céntimo entero. Con la unidad anterior, una llamada de cinco
+   * centésimas de céntimo se apuntaba como un céntimo: veinte veces más de lo
+   * que costaba, y el tope de un euro daba para cien llamadas en lugar de mil
+   * quinientas.
+   */
   calcularCoste(
     modelo: string,
     tokensEntrada: number,
     tokensSalida: number,
   ): number {
     const t = this.tarifa(modelo);
-    const centimos =
-      (tokensEntrada * t.entrada + tokensSalida * t.salida) / 1_000_000;
-    // Se redondea hacia arriba: nunca conviene contabilizar de menos lo que se
-    // está gastando.
-    return Math.ceil(centimos);
+    const milicentimos =
+      ((tokensEntrada * t.entrada + tokensSalida * t.salida) / 1_000_000) *
+      MILICENTIMOS_POR_CENTIMO;
+    return Math.ceil(milicentimos);
   }
 
   /** Gastado en el mes en curso, en céntimos. */
   async gastadoEsteMes(): Promise<number> {
     const fila = await this.uso
       .createQueryBuilder('u')
-      .select('COALESCE(SUM(u.costeCentimos), 0)', 'suma')
+      .select('COALESCE(SUM(u.costeMilicentimos), 0)', 'suma')
       .where('u.fecha >= :desde', { desde: inicioDeMes() })
       .getRawOne<{ suma: string }>();
     return Number(fila?.suma ?? 0);
@@ -102,11 +118,13 @@ export class PresupuestoService {
    * Se le pasa el peor caso: los tokens de entrada ya recortados más el techo
    * de salida configurado.
    */
-  async hayMargen(costeMaximoCentimos: number): Promise<boolean> {
+  async hayMargen(costeMaximo: number): Promise<boolean> {
     const tope = this.ajustes.topeMensualCentimos;
     if (tope <= 0) return false;
+    // El tope se configura en céntimos, que es como lo piensa quien lo pone;
+    // la cuenta se lleva en milésimas.
     const gastado = await this.gastadoEsteMes();
-    return gastado + costeMaximoCentimos <= tope;
+    return gastado + costeMaximo <= tope * MILICENTIMOS_POR_CENTIMO;
   }
 
   /** Coste máximo de una llamada, para preguntar antes de lanzarla. */
@@ -130,7 +148,7 @@ export class PresupuestoService {
       fallos: 0,
       tokensEntrada: respuesta.tokensEntrada,
       tokensSalida: respuesta.tokensSalida,
-      costeCentimos: coste,
+      costeMilicentimos: coste,
       milisegundos,
     });
   }
@@ -144,7 +162,7 @@ export class PresupuestoService {
       fallos: 1,
       tokensEntrada: 0,
       tokensSalida: 0,
-      costeCentimos: 0,
+      costeMilicentimos: 0,
       milisegundos,
     });
   }
@@ -162,7 +180,7 @@ export class PresupuestoService {
       fallos: number;
       tokensEntrada: number;
       tokensSalida: number;
-      costeCentimos: number;
+      costeMilicentimos: number;
       milisegundos: number;
     },
   ): Promise<void> {
@@ -172,14 +190,15 @@ export class PresupuestoService {
     const sql = `
       INSERT INTO uso_ia
         (fecha, funcionalidad, llamadas, fallos,
-         "tokensEntrada", "tokensSalida", "costeCentimos", milisegundos)
+         "tokensEntrada", "tokensSalida", "costeMilicentimos", milisegundos)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (fecha, funcionalidad) DO UPDATE SET
         llamadas        = uso_ia.llamadas + EXCLUDED.llamadas,
         fallos          = uso_ia.fallos + EXCLUDED.fallos,
         "tokensEntrada" = uso_ia."tokensEntrada" + EXCLUDED."tokensEntrada",
         "tokensSalida"  = uso_ia."tokensSalida" + EXCLUDED."tokensSalida",
-        "costeCentimos" = uso_ia."costeCentimos" + EXCLUDED."costeCentimos",
+        "costeMilicentimos" = uso_ia."costeMilicentimos"
+                              + EXCLUDED."costeMilicentimos",
         milisegundos    = uso_ia.milisegundos + EXCLUDED.milisegundos,
         "updatedAt"     = now()
     `;
@@ -192,7 +211,7 @@ export class PresupuestoService {
         delta.fallos,
         delta.tokensEntrada,
         delta.tokensSalida,
-        delta.costeCentimos,
+        delta.costeMilicentimos,
         delta.milisegundos,
       ]);
     } catch {
@@ -212,7 +231,7 @@ export class PresupuestoService {
       .addSelect('COALESCE(SUM(u.fallos), 0)', 'fallos')
       .addSelect('COALESCE(SUM(u.tokensEntrada), 0)', 'tokensEntrada')
       .addSelect('COALESCE(SUM(u.tokensSalida), 0)', 'tokensSalida')
-      .addSelect('COALESCE(SUM(u.costeCentimos), 0)', 'costeCentimos')
+      .addSelect('COALESCE(SUM(u.costeMilicentimos), 0)', 'coste')
       .where('u.fecha >= :desde', { desde: inicioDeMes() })
       .getRawOne<Record<string, string>>();
 
@@ -221,14 +240,18 @@ export class PresupuestoService {
       .select('u.funcionalidad', 'funcionalidad')
       .addSelect('COALESCE(SUM(u.llamadas), 0)', 'llamadas')
       .addSelect('COALESCE(SUM(u.fallos), 0)', 'fallos')
-      .addSelect('COALESCE(SUM(u.costeCentimos), 0)', 'costeCentimos')
+      .addSelect('COALESCE(SUM(u.costeMilicentimos), 0)', 'coste')
       .where('u.fecha >= :desde', { desde: inicioDeMes() })
       .groupBy('u.funcionalidad')
-      .orderBy('SUM(u."costeCentimos")', 'DESC')
+      .orderBy('SUM(u."costeMilicentimos")', 'DESC')
       .getRawMany<Record<string, string>>();
 
     const tope = this.ajustes.topeMensualCentimos;
-    const coste = Number(fila?.costeCentimos ?? 0);
+    // Por dentro se cuenta en milésimas; hacia fuera se habla en céntimos,
+    // que es la unidad del tope y la que entiende quien mira el panel. El
+    // porcentaje se calcula con la precisión buena, antes de redondear.
+    const milicentimos = Number(fila?.coste ?? 0);
+    const coste = Math.round(milicentimos / MILICENTIMOS_POR_CENTIMO);
 
     return {
       mes: hoy().slice(0, 7),
@@ -238,12 +261,15 @@ export class PresupuestoService {
       tokensSalida: Number(fila?.tokensSalida ?? 0),
       costeCentimos: coste,
       topeCentimos: tope,
-      porcentaje: tope > 0 ? Math.round((coste / tope) * 100) : 100,
+      porcentaje:
+        tope > 0
+          ? Math.round((milicentimos / (tope * MILICENTIMOS_POR_CENTIMO)) * 100)
+          : 100,
       porFuncionalidad: reparto.map((f) => ({
         funcionalidad: f.funcionalidad,
         llamadas: Number(f.llamadas),
         fallos: Number(f.fallos),
-        costeCentimos: Number(f.costeCentimos),
+        costeCentimos: Math.round(Number(f.coste) / MILICENTIMOS_POR_CENTIMO),
       })),
     };
   }

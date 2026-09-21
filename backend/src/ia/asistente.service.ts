@@ -3,7 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category, Service } from '../entities';
 import { ServicesService } from '../services/services.service';
-import { ampliarBusqueda, normalizar } from '../services/sinonimos';
+import {
+  ampliarBusqueda,
+  escaparRegExp,
+  normalizar,
+} from '../services/sinonimos';
 import { ErrorIa } from './errores';
 import { PresupuestoService } from './presupuesto.service';
 import {
@@ -111,7 +115,7 @@ export class AsistenteService {
 
     const ciudad =
       catalogo.ciudades.find((c) => {
-        const n = normalizar(c);
+        const n = escaparRegExp(normalizar(c));
         return new RegExp(`(^|[^a-z0-9])${n}([^a-z0-9]|$)`).test(texto);
       }) ?? null;
 

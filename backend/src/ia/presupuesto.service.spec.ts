@@ -21,14 +21,14 @@ function repositorioFalso(gastado: number) {
       fallos: '1',
       tokensEntrada: '1000',
       tokensSalida: '500',
-      costeCentimos: String(gastado),
+      coste: String(gastado),
     })),
     getRawMany: jest.fn(async () => [
       {
         funcionalidad: 'asistente',
         llamadas: '3',
         fallos: '1',
-        costeCentimos: String(gastado),
+        coste: String(gastado),
       },
     ]),
   };
@@ -61,20 +61,39 @@ describe('PresupuestoService', () => {
     it('usa la tarifa del modelo y redondea hacia arriba', async () => {
       const { servicio } = await construir(0);
 
-      // 1M de entrada a 92 céntimos + 1M de salida a 460 = 552 céntimos.
+      // 1M de entrada a 92 céntimos + 1M de salida a 460 = 552 céntimos,
+      // que en la unidad interna son 552.000 milésimas.
       expect(
         servicio.calcularCoste(
           'claude-haiku-4-5-20251001',
           1_000_000,
           1_000_000,
         ),
-      ).toBe(552);
+      ).toBe(552_000);
 
       // Una llamada minúscula nunca se contabiliza como cero: redondear hacia
       // abajo dejaría miles de llamadas sumando nada contra el tope.
-      expect(servicio.calcularCoste('claude-haiku-4-5-20251001', 10, 10)).toBe(
-        1,
+      expect(
+        servicio.calcularCoste('claude-haiku-4-5-20251001', 10, 10),
+      ).toBeGreaterThan(0);
+    });
+
+    it('una llamada pequeña ya no se apunta como un céntimo entero', async () => {
+      // Este era el fallo: en céntimos, una llamada de unas cinco centésimas
+      // se contabilizaba como 1, veinte veces su coste. Con el tope de un
+      // euro eso daba unas cien llamadas al mes en lugar de más de mil
+      // quinientas, y el tope no medía lo que decía medir.
+      const { servicio } = await construir(0);
+
+      const coste = servicio.calcularCoste(
+        'claude-haiku-4-5-20251001',
+        1_000,
+        200,
       );
+
+      // Muy por debajo de un céntimo, que son mil milésimas.
+      expect(coste).toBeLessThan(1000);
+      expect(coste).toBeGreaterThan(0);
     });
 
     it('aplica la tarifa más cara cuando el modelo no está en la tabla', async () => {
@@ -82,24 +101,25 @@ describe('PresupuestoService', () => {
 
       // Equivocarse por arriba frena antes; por abajo, gasta de más sin avisar.
       expect(servicio.calcularCoste('modelo-inventado', 1_000_000, 0)).toBe(
-        460,
+        460_000,
       );
     });
   });
 
   describe('hayMargen', () => {
+    // Lo gastado y el coste van en milésimas; el tope, en céntimos.
     it('deja pasar mientras el peor caso cabe en el tope', async () => {
-      const { servicio } = await construir(40);
+      const { servicio } = await construir(40_000);
 
-      await expect(servicio.hayMargen(50)).resolves.toBe(true);
+      await expect(servicio.hayMargen(50_000)).resolves.toBe(true);
     });
 
     it('corta cuando el peor caso se pasaría del tope', async () => {
-      const { servicio } = await construir(80);
+      const { servicio } = await construir(80_000);
 
       // Lo que se compara es el coste máximo de la llamada que va a lanzarse,
       // no lo ya gastado: comprobar después no impide nada.
-      await expect(servicio.hayMargen(50)).resolves.toBe(false);
+      await expect(servicio.hayMargen(50_000)).resolves.toBe(false);
     });
 
     it('no deja pasar nada con el tope a cero', async () => {
@@ -133,7 +153,7 @@ describe('PresupuestoService', () => {
       expect(parametros[1]).toBe('panel');
       expect(parametros[2]).toBe(1); // llamadas
       expect(parametros[3]).toBe(0); // fallos
-      expect(parametros[6]).toBe(460); // céntimos con la tarifa de opus
+      expect(parametros[6]).toBe(460_000); // milésimas, tarifa de opus
     });
 
     it('registra también los fallos, con coste cero pero llamada contada', async () => {
@@ -161,7 +181,8 @@ describe('PresupuestoService', () => {
 
   describe('resumen', () => {
     it('expresa el gasto como porcentaje del tope', async () => {
-      const { servicio } = await construir(25);
+      // Se guardan 25.000 milésimas, o sea 25 céntimos, sobre un tope de 100.
+      const { servicio } = await construir(25_000);
 
       const r = await servicio.resumen();
 
@@ -171,10 +192,26 @@ describe('PresupuestoService', () => {
       expect(r.fallos).toBe(1);
     });
 
+    it('el porcentaje se calcula con la precisión buena, no con el redondeo', async () => {
+      // Con un tope de cien céntimos, el porcentaje y los céntimos son casi
+      // el mismo número y cualquiera de las dos cuentas daría igual. Con un
+      // tope de siete se separan: 3,5 céntimos son exactamente la mitad del
+      // tope, pero redondeados a 4 darían un 57 %.
+      const { servicio } = await construir(3_500, {
+        ...AJUSTES,
+        topeMensualCentimos: 7,
+      });
+
+      const r = await servicio.resumen();
+
+      expect(r.porcentaje).toBe(50);
+      expect(r.costeCentimos).toBe(4);
+    });
+
     it('reparte el gasto por funcionalidad, con los números ya convertidos', async () => {
       // La consulta devuelve cadenas; si no se convierten, el panel suma
       // textos y enseña «31» seguido de «14» en lugar de un total.
-      const { servicio } = await construir(25);
+      const { servicio } = await construir(25_000);
 
       const r = await servicio.resumen();
 

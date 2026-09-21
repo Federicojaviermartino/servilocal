@@ -45,11 +45,23 @@ export class UsoIa {
   tokensSalida: number;
 
   /**
-   * Coste en céntimos enteros. En euros con decimales, sumar miles de importes
-   * pequeños en coma flotante acaba desviando el total del tope.
+   * Coste en milésimas de céntimo, enteras.
+   *
+   * El acumulador es entero a propósito: en euros con decimales, sumar miles
+   * de importes pequeños en coma flotante acaba desviando el total del tope.
+   *
+   * Lo que no funcionaba era la unidad. En céntimos enteros, una llamada que
+   * cuesta cinco centésimas de céntimo se apuntaba como un céntimo entero:
+   * con un tope de un euro salían unas cien llamadas al mes en vez de más de
+   * mil quinientas, y el tope no medía lo que decía medir. Con esta unidad el
+   * redondeo por llamada es de una milésima, que es despreciable, y la suma
+   * sigue siendo entera.
+   *
+   * La configuración y la API pública siguen hablando en céntimos: esto es
+   * detalle interno de la contabilidad.
    */
   @Column({ type: 'int', default: 0 })
-  costeCentimos: number;
+  costeMilicentimos: number;
 
   @Column({ type: 'bigint', default: 0 })
   milisegundos: number;

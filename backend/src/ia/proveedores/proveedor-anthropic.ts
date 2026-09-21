@@ -32,6 +32,12 @@ export class ProveedorAnthropic implements ProveedorModelo {
       respuesta = await this.cliente.messages.create({
         model: this.config.modelo,
         max_tokens: this.config.maxTokensSalida,
+        // La tarea es extraer filtros de una frase y devolverlos en JSON: no
+        // hay nada que inventar, y con la temperatura por defecto la misma
+        // pregunta podía dar dos interpretaciones distintas. A cero, quien
+        // busca «fontanero en Málaga» obtiene siempre lo mismo, y el caso
+        // raro que falle se puede reproducir para arreglarlo.
+        temperature: 0,
         system: peticion.sistema,
         messages: [{ role: 'user', content: peticion.mensaje }],
       });
