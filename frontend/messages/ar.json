@@ -349,6 +349,7 @@
   },
   "mapa": {
     "desde": "ابتداءً من {precio} {unidad}",
+    "sinUbicaciones": "لا يحتوي أي من هذه النتائج على موقع على الخريطة.",
     "verDetalle": "عرض التفاصيل"
   },
   "mensajesPanel": {

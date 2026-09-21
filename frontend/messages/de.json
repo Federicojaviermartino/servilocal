@@ -349,6 +349,7 @@
   },
   "mapa": {
     "desde": "Ab {precio} {unidad}",
+    "sinUbicaciones": "Keines dieser Ergebnisse hat einen Standort auf der Karte.",
     "verDetalle": "Details ansehen"
   },
   "mensajesPanel": {

@@ -349,6 +349,7 @@
   },
   "mapa": {
     "desde": "Des de {precio} {unidad}",
+    "sinUbicaciones": "Cap d'aquests resultats té ubicació al mapa.",
     "verDetalle": "Veure detall"
   },
   "mensajesPanel": {

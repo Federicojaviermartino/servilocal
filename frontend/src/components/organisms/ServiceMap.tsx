@@ -6,7 +6,7 @@
  */
 'use client';
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTranslations } from 'next-intl';
@@ -30,17 +30,44 @@ interface ServiceMapProps {
   height?: string;
 }
 
+/**
+ * Encuadra el mapa sobre lo que hay que ver.
+ *
+ * El centro estaba fijo en Madrid y no se movía nunca, así que buscar en
+ * Barcelona abría un mapa de Madrid, sin un solo marcador a la vista y sin
+ * nada que explicara por qué: nueve de las diez ciudades con cobertura caían
+ * en ese caso.
+ *
+ * Con un único resultado no se puede encuadrar —el rectángulo tendría área
+ * cero y Leaflet se iría al zoom máximo, sobre un tejado—, así que ahí se
+ * centra con un acercamiento de barrio.
+ */
+function Encuadrar({ posiciones }: { posiciones: [number, number][] }) {
+  const mapa = useMap();
+  const clave = JSON.stringify(posiciones);
+
+  useEffect(() => {
+    if (posiciones.length === 0) return;
+    if (posiciones.length === 1) {
+      mapa.setView(posiciones[0], 14);
+      return;
+    }
+    mapa.fitBounds(posiciones, { padding: [40, 40] });
+    // La clave resume las posiciones: sin ella, el array nuevo de cada
+    // render volvería a encuadrar y el mapa no se dejaría mover.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapa, clave]);
+
+  return null;
+}
+
 export default function ServiceMap({
   services,
-  center = [40.4168, -3.7038], // Madrid por defecto
+  center = [40.4168, -3.7038], // Solo es el punto de partida: Encuadrar lo mueve
   zoom = 12,
   height = '500px',
 }: ServiceMapProps) {
   const t = useTranslations('mapa');
-
-  useEffect(() => {
-    // Forzar refresco de tiles tras montar
-  }, []);
 
   // La API entrega la posición como GeoJSON (coordinates es [lng, lat]); los
   // campos planos latitude y longitude se aceptan como alternativa por si el
@@ -58,6 +85,19 @@ export default function ServiceMap({
       (m): m is { service: Service; posicion: [number, number] } => m !== null,
     );
 
+  // Un mapa en blanco sobre una ciudad cualquiera no dice nada. Si no hay
+  // nada que situar, se dice.
+  if (marcadores.length === 0) {
+    return (
+      <div
+        style={{ height }}
+        className="flex items-center justify-center rounded-lg bg-superficie p-6 text-center text-secundario shadow-card"
+      >
+        {t('sinUbicaciones')}
+      </div>
+    );
+  }
+
   return (
     <div style={{ height }} className="rounded-lg overflow-hidden shadow-card">
       <MapContainer
@@ -70,6 +110,7 @@ export default function ServiceMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <Encuadrar posiciones={marcadores.map((m) => m.posicion)} />
         {marcadores.map(({ service, posicion }) => (
           <Marker key={service.id} position={posicion}>
             <Popup>
