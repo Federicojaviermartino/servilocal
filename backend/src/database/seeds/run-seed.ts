@@ -176,7 +176,19 @@ async function runSeed() {
       ? {
           type: 'postgres',
           url: databaseUrl,
-          ssl: { rejectUnauthorized: false },
+          // Igual que la aplicación: el certificado se valida por defecto y
+          // DB_SSL_PERMISIVO=true lo desactiva para un proveedor con
+          // certificado autofirmado.
+          //
+          // Aquí estaba fijado en «no validar», que es lo contrario de lo
+          // que hace el resto del código y de lo que dice la documentación.
+          // Y esta es la única vía de sembrar producción sin shell en el
+          // contenedor: se ejecuta desde una máquina cualquiera, por
+          // internet, con la contraseña de administración en el entorno.
+          // Es justo la conexión que no conviene dejar sin comprobar.
+          ssl: {
+            rejectUnauthorized: process.env.DB_SSL_PERMISIVO !== 'true',
+          },
           ...opcionesComunes,
         }
       : {
