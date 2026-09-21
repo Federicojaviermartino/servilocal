@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { SITIO_URL } from '@/lib/sitio';
@@ -28,21 +29,39 @@ interface ServicioSeo {
   provider?: { firstName: string; lastName: string };
 }
 
-async function obtenerServicio(id: string): Promise<ServicioSeo | null> {
+/**
+ * Lo que puede pasar al pedir una ficha, que no es lo mismo.
+ *
+ * Antes las tres cosas devolvían null y la página respondía 200 con el
+ * esqueleto: un identificador inventado daba un «no encontrado» que solo
+ * aparecía después de hidratar, así que para un buscador era una página
+ * válida y vacía. Un 404 blando, y se indexa.
+ *
+ * Distinguir «no existe» de «no he podido preguntar» es justo lo que importa
+ * aquí: responder 404 porque la API está dormida convertiría un apagón de
+ * diez minutos en fichas desindexadas.
+ */
+type Resultado =
+  | { estado: 'ok'; servicio: ServicioSeo }
+  | { estado: 'no-existe' }
+  | { estado: 'sin-respuesta' };
+
+async function obtenerServicio(id: string): Promise<Resultado> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) return null;
+  if (!apiUrl) return { estado: 'sin-respuesta' };
 
   try {
     const respuesta = await fetch(`${apiUrl}/services/${id}`, {
       signal: AbortSignal.timeout(15000),
       next: { revalidate: 3600 },
     });
-    if (!respuesta.ok) return null;
-    return await respuesta.json();
+    if (respuesta.status === 404) return { estado: 'no-existe' };
+    if (!respuesta.ok) return { estado: 'sin-respuesta' };
+    return { estado: 'ok', servicio: await respuesta.json() };
   } catch {
-    // Si la API no responde se devuelven los metadatos por defecto: un fallo
-    // de red no debe tumbar el renderizado de la página.
-    return null;
+    // Un fallo de red no debe tumbar el renderizado: se sirve la página con
+    // los metadatos por defecto.
+    return { estado: 'sin-respuesta' };
   }
 }
 
@@ -76,15 +95,21 @@ export async function generateMetadata({
   params: { id: string; locale: string };
 }): Promise<Metadata> {
   const { id, locale } = params;
-  const servicio = await obtenerServicio(id);
+  const resultado = await obtenerServicio(id);
   const t = await getTranslations({ locale, namespace: 'meta' });
 
-  if (!servicio) {
+  if (resultado.estado !== 'ok') {
     return {
       title: t('servicioAusenteTitulo'),
       description: t('servicioAusenteDescripcion'),
+      // Con la API caída se sirve igual, pero no hay contenido que indexar:
+      // sin esto, un buscador que pase durante el apagón se queda con una
+      // ficha vacía como versión buena de esa dirección.
+      robots: { index: false, follow: true },
     };
   }
+
+  const servicio = resultado.servicio;
 
   const titulo = t('servicioTitulo', {
     titulo: servicio.title,
@@ -157,15 +182,19 @@ export default async function ServicioLayout({
   children: ReactNode;
   params: { id: string };
 }) {
-  const servicio = await obtenerServicio(params.id);
+  const resultado = await obtenerServicio(params.id);
+
+  // Solo cuando la API ha dicho que no existe. Con la API caída se sigue
+  // sirviendo la página, que se apañará desde el navegador.
+  if (resultado.estado === 'no-existe') notFound();
 
   return (
     <>
-      {servicio && (
+      {resultado.estado === 'ok' && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: jsonParaScript(datosEstructurados(servicio)),
+            __html: jsonParaScript(datosEstructurados(resultado.servicio)),
           }}
         />
       )}
