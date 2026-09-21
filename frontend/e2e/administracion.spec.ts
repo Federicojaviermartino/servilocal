@@ -62,6 +62,15 @@ test.describe('Panel de administración', () => {
 
     await expect(page.locator('.recharts-area-area').first()).toBeVisible();
     await expect(page.locator('.recharts-bar-rectangle').first()).toBeVisible();
+
+    // El reparto por estado es un anillo, y sus trozos se distinguían solo
+    // por el color: para saber cuál era cada uno había que pasar el ratón
+    // por encima. En un móvil no hay ratón, con el teclado no se llega y
+    // quien no distinga esos colores no tiene nada. Las otras tres gráficas
+    // llevan ejes rotulados; esta necesitaba su leyenda.
+    const leyenda = page.locator('.recharts-legend-wrapper');
+    await expect(leyenda).toBeVisible();
+    await expect(leyenda).toContainText('Completada');
   });
 
   test('el consumo de IA se explica en lugar de mostrar ceros a secas', async ({

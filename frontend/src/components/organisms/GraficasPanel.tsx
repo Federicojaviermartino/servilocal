@@ -9,12 +9,15 @@
  */
 'use client';
 import { useTranslations } from 'next-intl';
+import { CLAVE_ESTADO } from '@/lib/estados';
+import { BookingStatus } from '@/types';
 import {
   Area,
   AreaChart,
   Bar,
   BarChart,
   Cell,
+  Legend,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -90,6 +93,13 @@ const emergente = {
 
 export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {
   const t = useTranslations('administracion');
+  const tEstados = useTranslations('estados');
+
+  /** El estado en palabras, con la misma tabla que usa el resto de vistas. */
+  const nombreEstado = (clave: string) => {
+    const enCatalogo = CLAVE_ESTADO[clave as BookingStatus];
+    return enCatalogo ? tEstados(enCatalogo) : clave;
+  };
 
   // Día y mes bastan: el año entero en doce etiquetas las amontona.
   const semanas = datos.porSemana.map((p) => ({
@@ -161,6 +171,20 @@ export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {
       <Caja titulo={t('graficaPorEstado')}>
         <PieChart>
           <Tooltip {...emergente} />
+          {/* Sin leyenda, los segmentos solo se distinguían por el color y
+              solo se podían leer pasando el ratón por encima: en un móvil no
+              hay ratón, con teclado no se llega, y quien no distingue esos
+              colores no tiene nada. Las otras tres gráficas llevan ejes
+              rotulados; esta se había quedado sin equivalente. */}
+          <Legend
+            verticalAlign="bottom"
+            height={36}
+            formatter={(clave: string) => (
+              <span className="text-xs text-secundario">
+                {nombreEstado(clave)}
+              </span>
+            )}
+          />
           <Pie
             data={datos.porEstado}
             dataKey="total"

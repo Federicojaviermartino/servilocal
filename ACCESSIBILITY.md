@@ -27,7 +27,12 @@ axe run would be the kind of statement this project tries not to make.
   mode and was raised.
 - No information is carried by colour alone. Booking states pair a colour with a
   word; an invalid field gets `aria-invalid` and a message tied to it with
-  `aria-describedby`, not just a red border.
+  `aria-describedby`, not just a red border. This claim was false for one chart
+  until recently: the booking-status doughnut identified its segments by colour
+  and revealed the names only on hover, which is no use on a touch screen, by
+  keyboard, or to anyone who cannot tell those colours apart. It now carries a
+  legend. Automated tooling did not catch it, and neither did we until someone
+  looked at the screen.
 - Images carry alternative text; decorative icons are `aria-hidden`.
 - Text reflows at 375 px without horizontal scrolling. Tables and charts, which
   cannot reflow, sit in their own focusable scroll containers.
@@ -89,8 +94,9 @@ Listed rather than discovered.
   reached with the keyboard, so the map is an alternative view of the list, never
   the only way to reach a service. The list view carries the same results.
 - **The Stripe Payment Element is a third-party iframe.** Its accessibility is
-  Stripe's, not ours, and it currently renders in its light theme regardless of
-  the page theme.
+  Stripe's, not ours. It is now told the page theme and locale, so it no longer
+  renders a white block inside a dark page, but what happens inside the frame is
+  outside our control and untested by us.
 - **Cognitive load has not been formally assessed.** WCAG 2.2 criteria such as
   accessible authentication and consistent help are not addressed.
 - **No AAA criteria are claimed**, including enhanced contrast (1.4.6) and text
