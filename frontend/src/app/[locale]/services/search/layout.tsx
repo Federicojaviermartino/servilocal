@@ -10,10 +10,11 @@ import { alternativas } from '@/lib/seo';
 // en qué idioma se está sirviendo, así que las diez versiones compartían
 // título y descripción en castellano.
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
 
   return {

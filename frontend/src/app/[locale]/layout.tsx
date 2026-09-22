@@ -22,10 +22,11 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: Idioma };
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
 
   // Una alternativa por idioma para que los buscadores sepan que son la misma
@@ -59,12 +60,14 @@ export async function generateMetadata({
 
 export default async function RootLayout({
   children,
-  params: { locale },
+  params,
 }: {
   children: React.ReactNode;
-  params: { locale: Idioma };
+  params: Promise<{ locale: string }>;
 }) {
-  if (!routing.locales.includes(locale)) notFound();
+  const { locale: pedido } = await params;
+  if (!routing.locales.includes(pedido as Idioma)) notFound();
+  const locale = pedido as Idioma;
 
   // Permite que las páginas se generen estáticamente por idioma.
   setRequestLocale(locale);

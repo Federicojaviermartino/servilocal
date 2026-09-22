@@ -92,9 +92,9 @@ async function resumen(locale: string, servicio: ServicioSeo): Promise<string> {
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string; locale: string };
+  params: Promise<{ id: string; locale: string }>;
 }): Promise<Metadata> {
-  const { id, locale } = params;
+  const { id, locale } = await params;
   const resultado = await obtenerServicio(id);
   const t = await getTranslations({ locale, namespace: 'meta' });
 
@@ -180,9 +180,10 @@ export default async function ServicioLayout({
   params,
 }: {
   children: ReactNode;
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const resultado = await obtenerServicio(params.id);
+  const { id } = await params;
+  const resultado = await obtenerServicio(id);
 
   // Solo cuando la API ha dicho que no existe. Con la API caída se sigue
   // sirviendo la página, que se apañará desde el navegador.

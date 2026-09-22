@@ -3,13 +3,13 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { MapPin, Shield, Star, Search } from 'lucide-react';
-import type { Idioma } from '@/i18n/routing';
 
 export async function generateMetadata({
-  params: { locale },
+  params,
 }: {
-  params: { locale: Idioma };
+  params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
+  const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'acercaDe' });
   return { title: t('metaTitulo'), description: t('metaDescripcion') };
 }

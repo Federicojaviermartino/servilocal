@@ -5,7 +5,7 @@
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
 ![Version](https://img.shields.io/badge/VERSION-1.0.0-2563eb?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/NEXT.JS-14-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/NEXT.JS-15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-10-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
 ![PostGIS](https://img.shields.io/badge/POSTGIS-3.6-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 
@@ -136,7 +136,7 @@ later is blocked without anyone having to remember it.
 
 | Layer | Technology |
 |-------|-----------|
-| Front end | React 18, Next.js 14 (App Router), TypeScript |
+| Front end | React 19, Next.js 15 (App Router), TypeScript |
 | Styling | Tailwind CSS with semantic colour tokens, Atomic Design component structure |
 | Internationalisation | next-intl, 10 locales with per-locale static generation, ICU plurals, `hreflang` alternates and RTL support |
 | Back end | NestJS, TypeScript |
@@ -163,7 +163,7 @@ Three-tier client–server. The front end consumes the REST API; the API persist
 
 ```
 ┌──────────────────┐        HTTPS / JSON      ┌──────────────────┐
-│    Next.js 14    │ ───────────────────────► │     NestJS 10    │
+│    Next.js 15    │ ───────────────────────► │     NestJS 10    │
 │    App Router    │ ◄─────────────────────── │     REST API     │
 │    10 locales    │                          │    JWT + Roles   │
 └──────────────────┘                          └────────┬─────────┘
@@ -317,7 +317,7 @@ servilocal/
       database/
         migrations/         Schema history — the only source of truth
         seeds/              Reproducible demo data
-  frontend/                 Next.js 14 App Router + Tailwind
+  frontend/                 Next.js 15 App Router + Tailwind
     .storybook/             Component catalogue config and sample data
     e2e/                    Playwright specs, desktop and mobile projects
     messages/               Translation catalogues, one JSON per locale
