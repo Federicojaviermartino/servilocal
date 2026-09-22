@@ -1,3 +1,12 @@
+// Antes que nada, y por eso está aquí arriba en vez de junto al resto.
+//
+// ConfigModule carga el .env cuando Nest arranca sus módulos, y para entonces
+// los ficheros de los controladores ya se importaron. Cualquier cosa que lea
+// process.env al definirse —el límite de intentos de acceso, sin ir más
+// lejos— se queda con el valor por defecto aunque el .env diga otra cosa. No
+// fallaba: se ignoraba en silencio, que es peor.
+import 'dotenv/config';
+
 import { NestFactory } from '@nestjs/core';
 import { VERSION_NEUTRAL, ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
