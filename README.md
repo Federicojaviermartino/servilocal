@@ -260,12 +260,17 @@ The API runs at `http://localhost:3001/api`, with interactive Swagger docs at `/
 
 ### 4. Configure and start the front end
 
-Create `frontend/.env.local`:
+Create `frontend/.env.local` from `frontend/.env.example`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
+
+Both example files list every variable the code actually reads, with a note on
+each saying what happens without it. `NEXT_PUBLIC_*` values are inlined at
+build time and end up in the browser, so the Stripe key on this side is the
+publishable one — never the secret.
 
 ```bash
 cd frontend

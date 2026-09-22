@@ -16,6 +16,12 @@ name: Mantener la demo despierta
 # así también evita que el cómputo de Neon se suspenda, y devuelve 503 si la
 # base no responde, de modo que el aviso del flujo significa algo.
 
+# Aviso que conviene tener presente: GitHub desactiva solo los flujos
+# programados de un repositorio tras 60 días sin actividad, y avisa por correo
+# antes de hacerlo. No hay forma de evitarlo desde aquí; se reactiva con un
+# clic en la pestaña de acciones. Si la demo vuelve a dormirse sin motivo
+# aparente, este es el primer sitio donde mirar.
+
 on:
   schedule:
     # Cada 10 minutos, de 08:00 a 15:59 UTC.
@@ -29,19 +35,34 @@ jobs:
     steps:
       - name: Despertar el frontend y la API
         run: |
+          # Falla si CUALQUIERA de los dos no responde. Antes exigía que
+          # cayeran los dos a la vez, así que la API podía estar devolviendo
+          # 503 —que es lo que hace /api/health cuando la base no contesta— y
+          # el flujo se quedaba en verde. Justo el caso que este aviso existe
+          # para detectar, y el que este proyecto ya tuvo sin enterarse
+          # durante cuatro meses.
+          #
+          # Se reintenta una vez antes de darlo por malo: el arranque en frío
+          # del plan gratuito tarda cerca de un minuto y a veces se lleva por
+          # delante el primer intento. Un fallo de verdad no se arregla en
+          # veinte segundos.
           fallos=0
           for url in \
             "https://servilocal-web.onrender.com" \
             "https://servilocal-api.onrender.com/api/health"
           do
             codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$url")
+            if [ "$codigo" != "200" ]; then
+              echo "$url -> $codigo, reintentando"
+              sleep 20
+              codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$url")
+            fi
             echo "$url -> $codigo"
             if [ "$codigo" != "200" ]; then
-              echo "::warning::$url respondió $codigo en lugar de 200"
+              echo "::error::$url respondió $codigo en lugar de 200"
               fallos=$((fallos + 1))
             fi
           done
-          if [ "$fallos" -eq 2 ]; then
-            echo "::error::Ni el frontend ni la API respondieron"
+          if [ "$fallos" -gt 0 ]; then
             exit 1
           fi
