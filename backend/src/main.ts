@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { VERSION_NEUTRAL, ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
@@ -36,6 +36,19 @@ async function bootstrap() {
   if (adaptador) app.useWebSocketAdapter(adaptador);
 
   app.setGlobalPrefix('api');
+
+  // Todo respondía bajo /api, sin número de versión, así que cualquier
+  // cambio de forma en una respuesta rompía a quien ya estuviera llamando y
+  // no había manera de publicar el cambio sin romperlo.
+  //
+  // Se registran las dos rutas a la vez: /api/v1/... es la buena, y /api/...
+  // sigue funcionando porque hay una aplicación desplegada llamando así y
+  // apagarla de golpe la dejaría sin servicio. Lo que se gana es que la v2,
+  // cuando haga falta, pueda convivir con la v1 en vez de sustituirla.
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: ['1', VERSION_NEUTRAL],
+  });
 
   app.useGlobalFilters(new FiltroDeExcepciones());
 
