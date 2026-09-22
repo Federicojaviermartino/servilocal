@@ -332,6 +332,7 @@ Stated here rather than discovered later.
 | Layer | Tool | What it protects |
 |-------|------|------------------|
 | Back end | Jest | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
+| Back end, against real infrastructure | Jest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that Stripe rejects a non-integer amount |
 | Front end | Vitest | Library helpers, components, and catalogue parity across the ten locales |
 | End to end | Playwright | Desktop and a narrow mobile viewport, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |

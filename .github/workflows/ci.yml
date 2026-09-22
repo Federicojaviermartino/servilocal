@@ -106,6 +106,74 @@ jobs:
       - name: Compilar el catálogo de componentes
         run: npm run build-storybook -- --quiet
 
+  # Las 352 comprobaciones de la batería normal usan dobles, y un doble hace
+  # lo que se le dice: no sabe si el índice espacial se usa, si el ON CONFLICT
+  # acumula, si el bloqueo de fila serializa dos transacciones, ni que Stripe
+  # rechaza un importe que no sea entero. Todo eso solo lo puede contradecir
+  # el software de verdad.
+  #
+  # stripe-mock es el emulador oficial de Stripe: responde con su esquema y
+  # sus códigos de error, y no hace falta ninguna clave.
+  integracion:
+    name: Integración contra base de datos y Stripe
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: servilocal_integracion
+          POSTGRES_USER: servilocal_user
+          POSTGRES_PASSWORD: integracion_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U servilocal_user -d servilocal_integracion"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      stripe:
+        image: stripe/stripe-mock:latest
+        ports:
+          - 12111:12111
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    env:
+      NODE_ENV: test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: servilocal_user
+      DB_PASSWORD: integracion_password
+      DB_DATABASE: servilocal_integracion
+      JWT_SECRET: secreto_solo_para_los_tests
+      JWT_EXPIRATION: 1h
+      STRIPE_SECRET_KEY: sk_test_integracion
+      STRIPE_MOCK_URL: http://localhost:12111
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Migrar y sembrar
+        run: |
+          npm run migration:run
+          npm run seed
+
+      - name: Ejecutar las pruebas de integración
+        run: npm run test:integracion
+
   # Lo que se despliega son estas imágenes, y hasta ahora ninguna prueba las
   # construía: la integración compilaba con npm por su cuenta. Un Dockerfile
   # roto solo se descubría en el despliegue, con la aplicación caída.

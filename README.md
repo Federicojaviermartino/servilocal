@@ -151,7 +151,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Jest on the API (302 unit tests), Vitest on the browser (222, because `next-intl` ships ESM only), Playwright for 46 end-to-end tests across desktop and a 375 px phone, and `@axe-core/playwright` for WCAG checks |
+| Testing | Jest on the API (352 unit tests with doubles, plus 18 integration tests against a real PostGIS database and Stripe's official `stripe-mock`), Vitest on the browser (238, because `next-intl` ships ESM only), Playwright for 78 end-to-end tests across desktop and a 375 px phone, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions: lint, type-check, tests, build and catalogue on every push |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -465,8 +465,9 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 274 unit tests across 23 suites
+npm run test          # 352 unit tests across 26 suites, all with doubles
 npm run test:cov      # fails below 90% statements / 80% branches
+npm run test:integracion   # 18 tests against a real database and stripe-mock
 npm run build
 
 # Front end

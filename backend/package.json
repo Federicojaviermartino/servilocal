@@ -13,8 +13,8 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -23,7 +23,8 @@
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/config/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
-    "lock": "node ../scripts/regenerar-lockfile.mjs"
+    "lock": "node ../scripts/regenerar-lockfile.mjs",
+    "test:integracion": "jest --config ./test/jest-integracion.json"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
