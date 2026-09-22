@@ -94,6 +94,9 @@
     "collectCoverageFrom": [
       "**/*.service.ts",
       "**/guards/**/*.ts",
+      "**/interceptores/**/*.ts",
+      "**/filters/**/*.ts",
+      "**/payments-webhook.controller.ts",
       "**/transformers/**/*.ts",
       "!**/*.spec.ts"
     ],
