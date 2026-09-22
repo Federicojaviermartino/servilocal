@@ -8,7 +8,11 @@
 import 'dotenv/config';
 
 import { NestFactory } from '@nestjs/core';
-import { VERSION_NEUTRAL, ValidationPipe, VersioningType } from '@nestjs/common';
+import {
+  VERSION_NEUTRAL,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';

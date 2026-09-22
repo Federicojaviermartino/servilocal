@@ -20,8 +20,9 @@ describe('Arranque', () => {
   const main = readFileSync(join(__dirname, 'main.ts'), 'utf8');
 
   it('carga el .env antes que ningún módulo propio', () => {
-    const imports = [...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm)]
-      .map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
+    const imports = [
+      ...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm),
+    ].map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
 
     expect(imports[0]).toBe('dotenv/config');
   });
@@ -29,8 +30,9 @@ describe('Arranque', () => {
   it('y el resto de imports viene después, no antes', () => {
     // Sin esto, la comprobación de arriba pasaría con el import puesto
     // primero pero duplicado más abajo, o con la lista vacía.
-    const imports = [...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm)]
-      .map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
+    const imports = [
+      ...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm),
+    ].map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
 
     expect(imports.length).toBeGreaterThan(5);
     expect(imports.indexOf('./app.module')).toBeGreaterThan(0);

@@ -18,13 +18,13 @@
     "lock": "node ../scripts/regenerar-lockfile.mjs"
   },
   "dependencies": {
-    "@stripe/react-stripe-js": "^2.5.0",
+    "@stripe/react-stripe-js": "^3.11.0",
     "@stripe/stripe-js": "^3.0.0",
     "axios": "^1.6.5",
     "clsx": "^2.1.0",
     "date-fns": "^3.3.1",
     "leaflet": "^1.9.4",
-    "lucide-react": "^0.312.0",
+    "lucide-react": "^1.47.0",
     "next": "^15.5.25",
     "next-intl": "^4.14.5",
     "react": "^19.3.0",

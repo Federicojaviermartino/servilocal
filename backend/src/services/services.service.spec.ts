@@ -105,7 +105,13 @@ async function construir(
     ],
   }).compile();
 
-  return { servicio: module.get(ServicesService), repo, qb, categorias, conteo };
+  return {
+    servicio: module.get(ServicesService),
+    repo,
+    qb,
+    categorias,
+    conteo,
+  };
 }
 
 /** Todas las columnas que la consulta llegó a pedir. */
@@ -355,9 +361,7 @@ describe('ServicesService', () => {
       const llamada = qb.andWhere.mock.calls.find((c) =>
         String(c[0]).includes('service.title'),
       );
-      expect((llamada?.[1] as Record<string, string>).q0).toBe(
-        '%fontaneria%',
-      );
+      expect((llamada?.[1] as Record<string, string>).q0).toBe('%fontaneria%');
     });
 
     it('el texto busca también por el nombre de la categoría', async () => {
@@ -374,8 +378,9 @@ describe('ServicesService', () => {
 
       await servicio.search({ query: 'fontanero' } as never);
 
-      const preguntado = JSON.stringify(categorias.where.mock.calls)
-        + JSON.stringify(categorias.orWhere.mock.calls);
+      const preguntado =
+        JSON.stringify(categorias.where.mock.calls) +
+        JSON.stringify(categorias.orWhere.mock.calls);
       expect(preguntado).toContain('categoria.name');
       expect(preguntado).toContain('%fontanero%');
     });
