@@ -128,7 +128,8 @@ describe('Header', () => {
     entrarComo('admin');
     pintar(<Header />);
     expect(
-      screen.getAllByRole('link', { name: es.navegacion.administracion }).length,
+      screen.getAllByRole('link', { name: es.navegacion.administracion })
+        .length,
     ).toBeGreaterThan(0);
   });
 

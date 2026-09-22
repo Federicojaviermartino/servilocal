@@ -89,6 +89,13 @@ const emergente = {
     color: 'rgb(var(--color-principal))',
     fontSize: '0.8rem',
   },
+  // Recharts pinta el nombre del dato con el color de su serie, que aquí son
+  // hexadecimales fijos elegidos para destacar sobre el fondo del gráfico.
+  // Sobre el fondo del emergente en tema oscuro, alguno se queda por debajo
+  // del contraste exigido. El color ya lo lleva el cuadrito de la izquierda;
+  // el texto no tiene por qué repetirlo.
+  itemStyle: { color: 'rgb(var(--color-principal))' },
+  labelStyle: { color: 'rgb(var(--color-secundario))' },
 };
 
 export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {

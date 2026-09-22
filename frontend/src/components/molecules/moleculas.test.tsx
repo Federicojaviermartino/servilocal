@@ -22,7 +22,9 @@ describe('SearchBar', () => {
     // «cuadro de búsqueda» sin más para quien escucha la página.
     pintar(<SearchBar onSearch={vi.fn()} />);
 
-    expect(screen.getByLabelText(es.buscador.buscarServicios)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(es.buscador.buscarServicios),
+    ).toBeInTheDocument();
   });
 
   it('buscar entrega el texto sin espacios de sobra', async () => {
@@ -35,7 +37,9 @@ describe('SearchBar', () => {
       screen.getByLabelText(es.buscador.buscarServicios),
       '  fontanero  ',
     );
-    await userEvent.click(screen.getByRole('button', { name: es.comun.buscar }));
+    await userEvent.click(
+      screen.getByRole('button', { name: es.comun.buscar }),
+    );
 
     expect(alBuscar).toHaveBeenCalledWith('fontanero');
   });
@@ -55,7 +59,9 @@ describe('SearchBar', () => {
     const alBuscar = vi.fn();
     pintar(<SearchBar onSearch={alBuscar} />);
 
-    await userEvent.click(screen.getByRole('button', { name: es.comun.buscar }));
+    await userEvent.click(
+      screen.getByRole('button', { name: es.comun.buscar }),
+    );
 
     expect(alBuscar).toHaveBeenCalledWith('');
   });

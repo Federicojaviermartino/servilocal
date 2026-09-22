@@ -24,7 +24,11 @@ axe run would be the kind of statement this project tries not to make.
 - Every colour is a semantic token (`bg-superficie`, `text-principal`), so light
   and dark are two palettes over one set of roles rather than two sets of classes.
   Contrast was measured, not estimated: the muted text token sat at 3.19:1 in dark
-  mode and was raised.
+  mode and was raised. Brand-coloured text was the last holdout — it named the
+  shade rather than the role, and `primary-600` scores 8.72:1 on white but 2.06:1
+  on the dark surface. It is now a token too. That one hid because the dark-mode
+  check only ever looked at the home page, which has no forms, tables or status
+  badges; it now covers every page that the light check does.
 - No information is carried by colour alone. Booking states pair a colour with a
   word; an invalid field gets `aria-invalid` and a message tied to it with
   `aria-describedby`, not just a red border. This claim was false for one chart
@@ -73,7 +77,7 @@ axe run would be the kind of statement this project tries not to make.
 | Check | Tool | Runs |
 |-------|------|------|
 | WCAG 2.1 A and AA rules on key pages | `@axe-core/playwright` | Every push |
-| The same rules in dark mode | `@axe-core/playwright` | Every push |
+| The same rules in dark mode, on every page and the admin panel | `@axe-core/playwright` | Every push |
 | The admin panel, tab by tab | `@axe-core/playwright` | Every push |
 | Keyboard operation, focus return, ARIA tab pattern | Playwright | Every push |
 | Reflow at 375 px with no horizontal scroll | Playwright | Every push |

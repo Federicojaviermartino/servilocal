@@ -74,12 +74,12 @@ export default function AboutPage() {
       <p className="mt-10 text-sm text-secundario">
         {t.rich('dudas', {
           terminos: (texto) => (
-            <Link href="/terms" className="text-primary-600 hover:underline">
+            <Link href="/terms" className="text-acento hover:underline">
               {texto}
             </Link>
           ),
           privacidad: (texto) => (
-            <Link href="/privacy" className="text-primary-600 hover:underline">
+            <Link href="/privacy" className="text-acento hover:underline">
               {texto}
             </Link>
           ),

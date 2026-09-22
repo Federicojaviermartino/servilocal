@@ -81,7 +81,7 @@ export default function BookingDetailPage() {
     <div>
       <Link
         href={backHref}
-        className="inline-flex items-center gap-1 text-sm text-secundario hover:text-primary-600 mb-4"
+        className="inline-flex items-center gap-1 text-sm text-secundario hover:text-acento mb-4"
       >
         <ArrowLeft size={16} />
         {tComun('volver')}

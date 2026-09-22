@@ -16,6 +16,7 @@ module.exports = {
         principal: 'rgb(var(--color-principal) / <alpha-value>)',
         secundario: 'rgb(var(--color-secundario) / <alpha-value>)',
         tenue: 'rgb(var(--color-tenue) / <alpha-value>)',
+        acento: 'rgb(var(--color-acento) / <alpha-value>)',
         borde: 'rgb(var(--color-borde) / <alpha-value>)',
         primary: {
           50: '#eff6ff',
@@ -42,6 +43,11 @@ module.exports = {
           600: '#d97706',
           // Para texto sobre warning-50: el 600 da 3,07 y necesita 4,5.
           700: '#b45309',
+          // Para el fondo del aviso en tema oscuro. Sin este tono, la caja se
+          // quedaba con el fondo claro fijo y el texto del tema encima: gris
+          // claro sobre amarillo claro, que es de los peores contrastes que
+          // se pueden conseguir sin querer.
+          900: '#78350f',
         },
         danger: {
           50: '#fef2f2',

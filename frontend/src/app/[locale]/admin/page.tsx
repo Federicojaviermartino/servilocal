@@ -183,7 +183,7 @@ export default function AdminPage() {
         {user.soloLectura && (
           <div
             role="status"
-            className="mb-6 flex items-start gap-3 rounded-lg border border-warning-500/30 bg-warning-50 p-4"
+            className="mb-6 flex items-start gap-3 rounded-lg border border-warning-500/30 bg-warning-50 p-4 dark:bg-warning-900/20"
           >
             <Eye
               className="mt-0.5 h-5 w-5 shrink-0 text-warning-600"
@@ -268,7 +268,7 @@ export default function AdminPage() {
                 className={clsx(
                   'flex items-center gap-2 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors',
                   tab === key
-                    ? 'border-primary-600 text-primary-700'
+                    ? 'border-acento text-acento'
                     : 'border-transparent text-secundario hover:text-principal',
                 )}
               >

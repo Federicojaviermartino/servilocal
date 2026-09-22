@@ -258,7 +258,7 @@ export default function RegisterPage() {
             {t('yaTienesCuenta')}{' '}
             <Link
               href="/auth/login"
-              className="font-medium text-primary-500 hover:text-primary-600"
+              className="font-medium text-acento hover:underline"
             >
               {t('iniciaSesion')}
             </Link>

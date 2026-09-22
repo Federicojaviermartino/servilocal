@@ -260,7 +260,7 @@ export default function ServiceDetailPage() {
           <aside className="space-y-6">
             <div className="bg-superficie rounded-lg shadow-card p-6 sticky top-4">
               <div className="flex items-center gap-1 mb-4">
-                <Euro size={20} className="text-primary-600" />
+                <Euro size={20} className="text-acento" />
                 <span className="text-2xl font-bold text-principal">
                   {priceLabel}
                 </span>

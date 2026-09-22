@@ -45,10 +45,7 @@ export default function EstadoCarga({
         role="status"
         className="rounded-lg border border-borde bg-superficie p-8 text-center"
       >
-        <LogIn
-          className="mx-auto h-8 w-8 text-secundario"
-          aria-hidden="true"
-        />
+        <LogIn className="mx-auto h-8 w-8 text-secundario" aria-hidden="true" />
         <p className="mt-3 font-medium text-principal">{t('sesionCaducada')}</p>
         <p className="mt-1 text-sm text-secundario">{t('sesionTexto')}</p>
         <Link

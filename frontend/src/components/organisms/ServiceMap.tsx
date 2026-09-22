@@ -125,7 +125,7 @@ export default function ServiceMap({
                 </p>
                 <Link
                   href={`/services/${service.id}`}
-                  className="text-primary-600 hover:underline mt-1 inline-block"
+                  className="text-acento hover:underline mt-1 inline-block"
                 >
                   {t('verDetalle')}
                 </Link>

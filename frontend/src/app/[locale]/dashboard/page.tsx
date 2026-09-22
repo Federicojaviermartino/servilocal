@@ -72,9 +72,7 @@ export default function DashboardHomePage() {
               <p className="text-sm text-secundario">
                 {tEstados('confirmadas')}
               </p>
-              <p className="text-3xl font-bold text-primary-600 mt-1">
-                {confirmed}
-              </p>
+              <p className="text-3xl font-bold text-acento mt-1">{confirmed}</p>
             </div>
             <div className="bg-superficie rounded-lg shadow-card p-5">
               <p className="text-sm text-secundario">

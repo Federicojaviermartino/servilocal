@@ -38,7 +38,13 @@ describe('Input', () => {
   it('el error tapa a la ayuda, no se apilan los dos', () => {
     // Enseñar «así se escribe» y «está mal escrito» a la vez confunde: la
     // corrección es lo urgente.
-    render(<Input label="Correo" hint="nombre@dominio.com" error="Falta la arroba" />);
+    render(
+      <Input
+        label="Correo"
+        hint="nombre@dominio.com"
+        error="Falta la arroba"
+      />,
+    );
 
     expect(screen.getByText('Falta la arroba')).toBeInTheDocument();
     expect(screen.queryByText('nombre@dominio.com')).not.toBeInTheDocument();

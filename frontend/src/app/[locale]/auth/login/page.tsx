@@ -181,7 +181,7 @@ function LoginPageContent() {
                   disabled={isLoading}
                   className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-start transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <span className="block text-sm font-medium text-primary-600">
+                  <span className="block text-sm font-medium text-acento">
                     {t(`demo${cuenta.clave}`)}
                   </span>
                   <span className="mt-0.5 block text-xs text-secundario">
@@ -203,7 +203,7 @@ function LoginPageContent() {
             {t('sinCuenta')}{' '}
             <Link
               href="/auth/register"
-              className="font-medium text-primary-500 hover:text-primary-600"
+              className="font-medium text-acento hover:underline"
             >
               {t('registrateAqui')}
             </Link>

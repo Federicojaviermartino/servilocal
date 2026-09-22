@@ -170,7 +170,7 @@ export default function PanelAsistente({
                 </div>
                 <Link
                   href="/services/search"
-                  className="block pt-1 text-center text-sm font-medium text-primary-600 hover:underline"
+                  className="block pt-1 text-center text-sm font-medium text-acento hover:underline"
                 >
                   {t('verTodos')}
                 </Link>

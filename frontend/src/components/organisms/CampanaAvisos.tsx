@@ -186,7 +186,7 @@ export default function CampanaAvisos() {
               <button
                 type="button"
                 onClick={marcarTodos}
-                className="text-xs font-medium text-primary-600 hover:underline"
+                className="text-xs font-medium text-acento hover:underline"
               >
                 {t('marcarTodos')}
               </button>
@@ -200,7 +200,7 @@ export default function CampanaAvisos() {
                 <button
                   type="button"
                   onClick={cargar}
-                  className="mt-2 text-primary-600 underline"
+                  className="mt-2 text-acento underline"
                 >
                   {tCarga('reintentar')}
                 </button>

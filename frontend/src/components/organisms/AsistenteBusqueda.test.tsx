@@ -83,7 +83,10 @@ describe('AsistenteBusqueda', () => {
   it('manda el texto sin espacios de sobra y enseña la respuesta', async () => {
     await abrir();
 
-    await userEvent.type(screen.getByRole('textbox'), '  se me ha roto el grifo  ');
+    await userEvent.type(
+      screen.getByRole('textbox'),
+      '  se me ha roto el grifo  ',
+    );
     await userEvent.click(
       screen.getByRole('button', { name: es.asistente.enviar }),
     );

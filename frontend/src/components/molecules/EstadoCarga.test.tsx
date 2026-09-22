@@ -8,13 +8,8 @@ import EstadoCarga from './EstadoCarga';
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
-    Link: ({
-      href,
-      children,
-    }: {
-      href: string;
-      children: React.ReactNode;
-    }) => React.createElement('a', { href }, children),
+    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
+      React.createElement('a', { href }, children),
   };
 });
 

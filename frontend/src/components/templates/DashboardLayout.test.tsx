@@ -122,8 +122,8 @@ describe('DashboardLayout', () => {
 
     pintar();
 
-    expect(screen.getByRole('link', { name: es.panel.resumen })).not.toHaveAttribute(
-      'aria-current',
-    );
+    expect(
+      screen.getByRole('link', { name: es.panel.resumen }),
+    ).not.toHaveAttribute('aria-current');
   });
 });

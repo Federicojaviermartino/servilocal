@@ -121,7 +121,7 @@ export default function TermsPage() {
 
       <p className="mt-10 text-sm text-secundario">
         Consulta también la{' '}
-        <Link href="/privacy" className="text-primary-600 hover:underline">
+        <Link href="/privacy" className="text-acento hover:underline">
           política de privacidad
         </Link>
         .

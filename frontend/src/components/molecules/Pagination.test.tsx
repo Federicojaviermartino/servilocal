@@ -72,7 +72,9 @@ describe('Pagination', () => {
   it('en la primera página no se puede retroceder', () => {
     pintar(1, 10);
 
-    expect(screen.getByRole('button', { name: es.paginacion.anterior })).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: es.paginacion.anterior }),
+    ).toBeDisabled();
     expect(
       screen.getByRole('button', { name: es.paginacion.siguiente }),
     ).toBeEnabled();

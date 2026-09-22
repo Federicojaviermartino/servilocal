@@ -79,7 +79,7 @@ export default function PaymentPage() {
         {error && <p className="text-secundario">{error}</p>}
         <Link
           href={`/dashboard/bookings/${bookingId}`}
-          className="inline-block text-primary-600 hover:text-primary-700 underline text-sm"
+          className="inline-block text-acento underline text-sm"
         >
           {t('volverDetalle')}
         </Link>

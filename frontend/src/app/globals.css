@@ -38,6 +38,12 @@
     --color-secundario: 82 82 82;
     --color-tenue: 89 89 89;
     --color-borde: 229 229 229;
+    /* Azul de marca sobre una superficie, para texto y enlaces. Es un token
+       y no primary-600 a secas porque ese azul da 8,72 de contraste sobre
+       blanco y 2,06 sobre la superficie oscura, muy por debajo del 4,5 que
+       pide el nivel AA. El resto de la interfaz ya nombraba el papel del
+       color en vez del color; este se había quedado fuera. */
+    --color-acento: 30 64 175;
   }
 
   .dark {
@@ -48,6 +54,9 @@
     --color-secundario: 163 163 163;
     --color-tenue: 163 163 163;
     --color-borde: 64 64 64;
+    /* En oscuro, el mismo papel lo cumple un azul mucho más claro: 7,05 de
+       contraste sobre la superficie, frente a los 2,06 del anterior. */
+    --color-acento: 96 165 250;
   }
 
   html {

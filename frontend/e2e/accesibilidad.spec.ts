@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { test, expect, Page } from '@playwright/test';
+import { entrarComo } from './ayudas';
 
 /**
  * Accesibilidad comprobada, no declarada.
@@ -78,17 +79,48 @@ test.describe('Accesibilidad', () => {
     expect(resumir((await analizar(page)).violations)).toEqual([]);
   });
 
-  test('el tema oscuro también cumple', async ({ page }) => {
-    // El contraste del texto tenue era peor en oscuro que en claro —3,19
-    // sobre la superficie alterna frente a 4,36— y ninguna comprobación
-    // miraba ahí, porque todas se ejecutan en el tema por defecto.
+  // El contraste del texto tenue era peor en oscuro que en claro —3,19 sobre
+  // la superficie alterna frente a 4,36— y ninguna comprobación miraba ahí,
+  // porque todas se ejecutan en el tema por defecto.
+  //
+  // Y durante un tiempo esto solo miró la portada, que es la página con menos
+  // variedad de componentes de todo el sitio: sin formularios, sin tablas,
+  // sin distintivos de estado. Ahora recorre las mismas rutas que en claro,
+  // porque un color que falla en oscuro falla donde esté.
+  for (const [nombre, ruta] of RUTAS) {
+    test(`${nombre} cumple también en tema oscuro`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await page.goto(ruta);
+      await page.waitForLoadState('networkidle');
+
+      expect(resumir((await analizar(page)).violations)).toEqual([]);
+    });
+  }
+
+  test('el panel de administración cumple en oscuro, con sus tablas', async ({
+    page,
+  }) => {
+    // Es donde vive casi todo el color con significado: distintivos de
+    // estado, gráficas y cinco tablas. Si algo va a fallar en oscuro, falla
+    // aquí antes que en la portada.
     await page.emulateMedia({ colorScheme: 'dark' });
-    await page.goto('/');
+    await entrarComo(page, 'administracion');
+    await page.goto('/admin');
+    await expect(
+      page.getByRole('heading', { name: 'Panel de administración' }),
+    ).toBeVisible();
     await page.waitForLoadState('networkidle');
 
-    const { violations } = await analizar(page);
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
 
-    expect(resumir(violations)).toEqual([]);
+    await page.getByRole('tab', { name: 'Auditoría' }).click();
+    await expect(
+      page.getByRole('table', {
+        name: 'Historial de acciones de administración',
+      }),
+    ).toBeVisible();
+
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
   });
 
   test('el asistente abierto cumple WCAG 2.1 AA', async ({ page }) => {
