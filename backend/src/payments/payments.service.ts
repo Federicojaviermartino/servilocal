@@ -153,16 +153,39 @@ export class PaymentsService {
 
       const amountInCents = Math.round(booking.totalPrice * 100);
 
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: amountInCents,
-        currency: 'eur',
-        capture_method: 'manual',
-        metadata: {
-          bookingId: booking.id,
-          clientId,
-          providerId: booking.providerId,
+      // El bloqueo de fila serializa dos pestañas, pero no cubre un corte de
+      // red: si la respuesta de Stripe se pierde, la transacción deshace la
+      // fila y Stripe se queda con una intención que aquí no consta. Al
+      // reintentar se crearía otra.
+      //
+      // La clave tiene que cumplir dos cosas a la vez. Repetirse en ese
+      // reintento —y se repite, porque la fila deshecha deja el estado tal
+      // como estaba— y cambiar cuando lo que se quiere es de verdad una
+      // intención nueva, que es lo que pasa al regenerar una sesión de pago
+      // caducada. Por eso lleva dentro cuál era la anterior: sin eso,
+      // regenerar devolvería la caducada durante las 24 horas que Stripe
+      // recuerda la clave.
+      const claveIdempotencia = [
+        'reserva',
+        booking.id,
+        amountInCents,
+        'tras',
+        existingPayment?.stripePaymentIntentId ?? 'ninguna',
+      ].join(':');
+
+      const paymentIntent = await this.stripe.paymentIntents.create(
+        {
+          amount: amountInCents,
+          currency: 'eur',
+          capture_method: 'manual',
+          metadata: {
+            bookingId: booking.id,
+            clientId,
+            providerId: booking.providerId,
+          },
         },
-      });
+        { idempotencyKey: claveIdempotencia },
+      );
 
       if (!paymentIntent.client_secret) {
         throw new Error(

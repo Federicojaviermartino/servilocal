@@ -20,10 +20,17 @@ function stripeFalso() {
     paymentIntents: {
       capture: jest.fn(async () => ({ id: INTENCION })),
       cancel: jest.fn(async () => ({ id: INTENCION })),
-      create: jest.fn(async () => ({
-        id: NUEVA,
-        client_secret: 'cs_nueva',
-      })),
+      // Los parámetros están declarados porque alguna comprobación mira el
+      // segundo, el de la clave de idempotencia.
+      create: jest.fn(
+        async (
+          _parametros: Stripe.PaymentIntentCreateParams,
+          _opciones?: Stripe.RequestOptions,
+        ) => ({
+          id: NUEVA,
+          client_secret: 'cs_nueva',
+        }),
+      ),
       retrieve: jest.fn(async () => ({
         id: INTENCION,
         client_secret: 'cs_existente',
@@ -325,6 +332,7 @@ describe('PaymentsService', () => {
 
       expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
         expect.objectContaining({ capture_method: 'manual', currency: 'eur' }),
+        expect.anything(),
       );
     });
 
@@ -338,6 +346,7 @@ describe('PaymentsService', () => {
 
       expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
         expect.objectContaining({ amount: 1999 }),
+        expect.anything(),
       );
     });
 
@@ -352,6 +361,60 @@ describe('PaymentsService', () => {
         expect.objectContaining({
           metadata: { bookingId: 'b1', clientId: 'c1', providerId: 'p9' },
         }),
+        expect.anything(),
+      );
+    });
+
+    it('la llamada lleva clave de idempotencia', async () => {
+      // El bloqueo de fila ordena dos pestañas, pero no cubre que se pierda
+      // la respuesta de Stripe: la transacción deshace la fila y Stripe se
+      // queda con una intención que aquí no consta. Al reintentar habría
+      // dos. Con la clave, el reintento devuelve la primera.
+      const { servicio, stripe } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        expect.anything(),
+        { idempotencyKey: 'reserva:b1:1999:tras:ninguna' },
+      );
+    });
+
+    it('y el reintento de esa misma llamada usa la misma clave', async () => {
+      // Es lo único que hace que sirva de algo: si cambiara entre intentos,
+      // Stripe crearía una intención nueva cada vez.
+      const { servicio, stripe } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      const [primera, segunda] = stripe.paymentIntents.create.mock.calls;
+      expect(segunda[1]).toEqual(primera[1]);
+    });
+
+    it('pero regenerar una sesión caducada usa una distinta', async () => {
+      // Al caducar, el cliente pide otra intención. Con la misma clave,
+      // Stripe devolvería la caducada durante 24 horas y el pago quedaría
+      // imposible de completar hasta el día siguiente.
+      const { servicio, stripe } = await construir(
+        {
+          id: 'pg1',
+          bookingId: 'b1',
+          stripePaymentIntentId: 'pi_caducada',
+          status: PaymentStatus.PENDING,
+        },
+        RESERVA,
+      );
+      stripe.paymentIntents.retrieve = jest.fn(async () => ({
+        id: 'pi_caducada',
+        status: 'canceled' as Stripe.PaymentIntent.Status,
+      })) as never;
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        expect.anything(),
+        { idempotencyKey: 'reserva:b1:1999:tras:pi_caducada' },
       );
     });
 
