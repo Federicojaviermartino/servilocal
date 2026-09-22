@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Payment, PaymentStatus, Booking, BookingStatus } from '../entities';
@@ -53,6 +53,7 @@ export class PaymentsService {
     private paymentRepository: Repository<Payment>,
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
+    private readonly dataSource: DataSource,
     private configService: ConfigService,
   ) {
     this.stripe = new Stripe(
@@ -70,110 +71,129 @@ export class PaymentsService {
     amount: number;
     currency: string;
   }> {
-    const booking = await this.bookingRepository.findOne({
-      where: { id: bookingId },
-    });
+    return this.dataSource.transaction(async (gestor) => {
+      // La fila de la reserva se bloquea mientras dura todo esto.
+      //
+      // Sin el bloqueo, dos pestañas abiertas en la pantalla de pago hacían
+      // la misma secuencia a la vez: las dos miraban si ya había un pago, las
+      // dos veían que no, y las dos creaban una intención en Stripe. Resultado,
+      // dos retenciones sobre la misma tarjeta por la misma reserva, y la
+      // segunda sin nada que la suelte, porque el resto del código solo
+      // conoce una.
+      //
+      // Mantener la transacción abierta durante la llamada a Stripe no es
+      // gratis y conviene decirlo: son unos cientos de milisegundos con una
+      // fila bloqueada. Es asumible porque el bloqueo es de una reserva
+      // concreta —nadie más compite por ella— y porque la alternativa es
+      // cobrar dos veces.
+      const booking = await gestor.findOne(Booking, {
+        where: { id: bookingId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (!booking) {
-      throw new NotFoundException('Reserva no encontrada');
-    }
-
-    if (booking.clientId !== clientId) {
-      throw new BadRequestException('Esta reserva no te pertenece');
-    }
-
-    if (
-      booking.status !== BookingStatus.PENDING &&
-      booking.status !== BookingStatus.CONFIRMED
-    ) {
-      throw new BadRequestException(
-        'La reserva no puede pagarse en su estado actual',
-      );
-    }
-
-    const existingPayment = await this.paymentRepository.findOne({
-      where: { bookingId },
-      order: { createdAt: 'DESC' },
-    });
-
-    // Reutilizar PI existente si su estado en Stripe sigue siendo pagable
-    if (existingPayment?.stripePaymentIntentId) {
-      const stripePi = await this.stripe.paymentIntents.retrieve(
-        existingPayment.stripePaymentIntentId,
-      );
-      const reusable: Stripe.PaymentIntent.Status[] = [
-        'requires_payment_method',
-        'requires_confirmation',
-        'requires_action',
-        'processing',
-      ];
-      const alreadyPaid: Stripe.PaymentIntent.Status[] = [
-        'requires_capture',
-        'succeeded',
-      ];
-
-      if (reusable.includes(stripePi.status)) {
-        if (!stripePi.client_secret) {
-          throw new Error(
-            'Stripe no devolvió client_secret para el PaymentIntent existente',
-          );
-        }
-        return {
-          clientSecret: stripePi.client_secret,
-          paymentIntentId: stripePi.id,
-          amount: booking.totalPrice,
-          currency: 'EUR',
-        };
+      if (!booking) {
+        throw new NotFoundException('Reserva no encontrada');
       }
 
-      if (alreadyPaid.includes(stripePi.status)) {
-        throw new ConflictException(
-          'Esta reserva ya tiene un pago en curso o completado',
+      if (booking.clientId !== clientId) {
+        throw new BadRequestException('Esta reserva no te pertenece');
+      }
+
+      if (
+        booking.status !== BookingStatus.PENDING &&
+        booking.status !== BookingStatus.CONFIRMED
+      ) {
+        throw new BadRequestException(
+          'La reserva no puede pagarse en su estado actual',
         );
       }
-      // Si el PI esta canceled o en otro estado no reutilizable, se crea uno nuevo abajo.
-    }
 
-    const amountInCents = Math.round(booking.totalPrice * 100);
+      const existingPayment = await gestor.findOne(Payment, {
+        where: { bookingId },
+        order: { createdAt: 'DESC' },
+      });
 
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: 'eur',
-      capture_method: 'manual',
-      metadata: {
-        bookingId: booking.id,
-        clientId,
-        providerId: booking.providerId,
-      },
-    });
+      // Reutilizar PI existente si su estado en Stripe sigue siendo pagable
+      if (existingPayment?.stripePaymentIntentId) {
+        const stripePi = await this.stripe.paymentIntents.retrieve(
+          existingPayment.stripePaymentIntentId,
+        );
+        const reusable: Stripe.PaymentIntent.Status[] = [
+          'requires_payment_method',
+          'requires_confirmation',
+          'requires_action',
+          'processing',
+        ];
+        const alreadyPaid: Stripe.PaymentIntent.Status[] = [
+          'requires_capture',
+          'succeeded',
+        ];
 
-    if (!paymentIntent.client_secret) {
-      throw new Error('Stripe no devolvió client_secret para el PaymentIntent');
-    }
+        if (reusable.includes(stripePi.status)) {
+          if (!stripePi.client_secret) {
+            throw new Error(
+              'Stripe no devolvió client_secret para el PaymentIntent existente',
+            );
+          }
+          return {
+            clientSecret: stripePi.client_secret,
+            paymentIntentId: stripePi.id,
+            amount: booking.totalPrice,
+            currency: 'EUR',
+          };
+        }
 
-    if (existingPayment) {
-      existingPayment.stripePaymentIntentId = paymentIntent.id;
-      existingPayment.status = PaymentStatus.PENDING;
-      existingPayment.failureReason = null as unknown as string;
-      await this.paymentRepository.save(existingPayment);
-    } else {
-      const payment = this.paymentRepository.create({
-        bookingId,
-        clientId,
+        if (alreadyPaid.includes(stripePi.status)) {
+          throw new ConflictException(
+            'Esta reserva ya tiene un pago en curso o completado',
+          );
+        }
+        // Si el PI esta canceled o en otro estado no reutilizable, se crea uno nuevo abajo.
+      }
+
+      const amountInCents = Math.round(booking.totalPrice * 100);
+
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount: amountInCents,
+        currency: 'eur',
+        capture_method: 'manual',
+        metadata: {
+          bookingId: booking.id,
+          clientId,
+          providerId: booking.providerId,
+        },
+      });
+
+      if (!paymentIntent.client_secret) {
+        throw new Error(
+          'Stripe no devolvió client_secret para el PaymentIntent',
+        );
+      }
+
+      if (existingPayment) {
+        existingPayment.stripePaymentIntentId = paymentIntent.id;
+        existingPayment.status = PaymentStatus.PENDING;
+        existingPayment.failureReason = null as unknown as string;
+        await gestor.save(existingPayment);
+      } else {
+        const payment = gestor.create(Payment, {
+          bookingId,
+          clientId,
+          amount: booking.totalPrice,
+          currency: 'EUR',
+          status: PaymentStatus.PENDING,
+          stripePaymentIntentId: paymentIntent.id,
+        });
+        await gestor.save(payment);
+      }
+
+      return {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
         amount: booking.totalPrice,
         currency: 'EUR',
-        status: PaymentStatus.PENDING,
-        stripePaymentIntentId: paymentIntent.id,
-      });
-      await this.paymentRepository.save(payment);
-    }
-
-    return {
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
-      amount: booking.totalPrice,
-      currency: 'EUR',
-    };
+      };
+    });
   }
 
   /**

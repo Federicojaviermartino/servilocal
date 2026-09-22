@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import Stripe from 'stripe';
 import { Booking, BookingStatus, Payment, PaymentStatus } from '../entities';
 import { PaymentsService } from './payments.service';
@@ -59,11 +60,33 @@ async function construir(
     save: jest.fn(async (b: Booking) => b),
   };
 
+  // El gestor que recibe la transacción reparte según la entidad, de modo
+  // que las comprobaciones siguen mirando los mismos dobles de siempre.
+  const gestor = {
+    findOne: jest.fn(async (entidad: unknown, opciones?: unknown) =>
+      entidad === Booking
+        ? await reservas.findOne()
+        : await pagos.findOne(opciones as never),
+    ),
+    save: jest.fn(async (entidad: unknown) => pagos.save(entidad as never)),
+    create: jest.fn((_entidad: unknown, datos: unknown) =>
+      pagos.create(datos as never),
+    ),
+  };
+
+  const dataSource = {
+    transaction: jest.fn(
+      async (ejecutar: (g: typeof gestor) => Promise<unknown>) =>
+        ejecutar(gestor),
+    ),
+  };
+
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       PaymentsService,
       { provide: getRepositoryToken(Payment), useValue: pagos },
       { provide: getRepositoryToken(Booking), useValue: reservas },
+      { provide: DataSource, useValue: dataSource },
       { provide: ConfigService, useValue: { getOrThrow: () => 'sk_test_x' } },
     ],
   }).compile();
@@ -74,7 +97,7 @@ async function construir(
   // no llamar a la pasarela de verdad desde una batería de tests.
   (servicio as unknown as { stripe: unknown }).stripe = stripe;
 
-  return { servicio, pagos, reservas, stripe };
+  return { servicio, pagos, reservas, stripe, gestor, dataSource };
 }
 
 /** Evento de Stripe con lo justo que el servicio mira. */
@@ -571,6 +594,66 @@ describe('PaymentsService', () => {
       );
 
       expect(pagos.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('dos pestañas a la vez', () => {
+    const RESERVA = {
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p9',
+      status: BookingStatus.PENDING,
+      totalPrice: 19.99,
+    };
+
+    it('todo ocurre dentro de una transacción', async () => {
+      // Mirar si ya hay un pago y crear la intención tienen que ser una sola
+      // operación. Entre las dos cosas cabía otra petición idéntica.
+      const { servicio, dataSource } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('la reserva se lee con la fila bloqueada', async () => {
+      // Es lo que serializa las dos pestañas: la segunda espera a que la
+      // primera termine y entonces ya encuentra la intención creada.
+      const { servicio, gestor } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(gestor.findOne).toHaveBeenCalledWith(
+        Booking,
+        expect.objectContaining({
+          where: { id: 'b1' },
+          lock: { mode: 'pessimistic_write' },
+        }),
+      );
+    });
+
+    it('el pago se guarda con el mismo gestor, no por fuera', async () => {
+      // Guardar con el repositorio de siempre dejaría la escritura fuera de
+      // la transacción, y el bloqueo no protegería lo que importa.
+      const { servicio, gestor, pagos } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(gestor.save).toHaveBeenCalled();
+      expect(pagos.save).toHaveBeenCalled();
+    });
+
+    it('si Stripe falla, no queda un pago a medias', async () => {
+      // La excepción sale de la transacción y deshace lo escrito. Sin ella,
+      // podía quedar una fila apuntando a una intención que no existe.
+      const { servicio, stripe } = await construir(null, RESERVA);
+      stripe.paymentIntents.create.mockRejectedValueOnce(
+        new Error('Stripe no responde'),
+      );
+
+      await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
+        'Stripe no responde',
+      );
     });
   });
 
