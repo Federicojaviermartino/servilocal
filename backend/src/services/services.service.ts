@@ -11,7 +11,7 @@ import {
   UpdateServiceDto,
   SearchServicesDto,
 } from './dto/service.dto';
-import { ampliarBusqueda } from './sinonimos';
+import { ampliarBusqueda, escaparLike } from './sinonimos';
 
 /**
  * Columnas del proveedor que pueden salir por una ruta pública.
@@ -162,7 +162,10 @@ export class ServicesService {
       const parametros: Record<string, string> = {};
       terminos.forEach((termino, i) => {
         const clave = `q${i}`;
-        parametros[clave] = `%${termino}%`;
+        // Lo que escribe una persona es texto, no un patrón: sin escapar,
+        // «repa_acion» encontraba «reparación» y «50%» devolvía el catálogo
+        // entero, porque el patrón acababa siendo «%50%%».
+        parametros[clave] = `%${escaparLike(termino)}%`;
         campos.forEach((campo) => {
           ramas.push(`${sinAcentos(campo)} LIKE ${sinAcentos(':' + clave)}`);
         });

@@ -1,4 +1,9 @@
-import { ampliarBusqueda, escaparRegExp, normalizar } from './sinonimos';
+import {
+  ampliarBusqueda,
+  escaparLike,
+  escaparRegExp,
+  normalizar,
+} from './sinonimos';
 
 describe('sinonimos', () => {
   describe('normalizar', () => {
@@ -111,5 +116,39 @@ describe('escaparRegExp', () => {
 
   it('no encuentra una ciudad que solo aparece a medias', () => {
     expect(patronDe('leon').test('busco algo en leones')).toBe(false);
+  });
+});
+
+describe('escaparLike', () => {
+  const BARRA = String.fromCharCode(92);
+
+  it('el guion bajo deja de ser comodín', () => {
+    // Comprobado contra la base: buscar «repa_acion» encontraba
+    // «reparación», porque en LIKE el guion bajo casa con cualquier carácter.
+    expect(escaparLike('repa_acion')).toBe('repa' + BARRA + '_acion');
+  });
+
+  it('el porcentaje también', () => {
+    // «50%» acababa como patrón «%50%%», que devuelve el catálogo entero.
+    expect(escaparLike('50%')).toBe('50' + BARRA + '%');
+  });
+
+  it('y la propia barra, que si no escaparía al carácter siguiente', () => {
+    expect(escaparLike(BARRA + '_')).toBe(BARRA + BARRA + BARRA + '_');
+  });
+
+  it('un texto normal no cambia', () => {
+    // Escapar no puede estropear lo que ya funcionaba.
+    expect(escaparLike('fontanero en málaga')).toBe('fontanero en málaga');
+  });
+
+  it('no toca los comodines que pone el propio buscador alrededor', () => {
+    // El servicio envuelve el término en %...% después de escaparlo: esos
+    // dos sí tienen que seguir siendo comodines.
+    const patron = `%${escaparLike('50%')}%`;
+
+    expect(patron.startsWith('%')).toBe(true);
+    expect(patron.endsWith('%')).toBe(true);
+    expect(patron).toBe('%50' + BARRA + '%%');
   });
 });

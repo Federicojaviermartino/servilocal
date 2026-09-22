@@ -205,6 +205,20 @@ export function escaparRegExp(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Escapa los comodines de LIKE en lo que escribe una persona.
+ *
+ * En LIKE, el guion bajo casa con cualquier carácter y el porcentaje con
+ * cualquier cosa. Sin escaparlos, buscar «repa_acion» encontraba
+ * «reparación» —comprobado— y buscar «50%» devolvía el catálogo entero,
+ * porque el patrón acababa siendo «%50%%».
+ *
+ * Quien escribe eso en el buscador está escribiendo texto, no un patrón.
+ */
+export function escaparLike(texto: string): string {
+  return texto.replace(/[\\%_]/g, (caracter) => `\\${caracter}`);
+}
+
 export function normalizar(texto: string): string {
   return texto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
