@@ -39,6 +39,7 @@ function SearchPageContent() {
   const router = useRouter();
   const [services, setServices] = useState<Service[]>([]);
   const [total, setTotal] = useState(0);
+  const [totalEsParcial, setTotalEsParcial] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<Vista>('list');
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
@@ -81,6 +82,7 @@ function SearchPageContent() {
           const items = data.data || [];
           setServices(items);
           setTotal(data.meta?.total ?? data.total ?? items.length);
+          setTotalEsParcial(Boolean(data.meta?.totalEsParcial));
           setTotalPages(data.meta?.totalPages ?? 1);
         }
         setPage(paginaSolicitada);
@@ -256,7 +258,11 @@ function SearchPageContent() {
                 </button>
               </div>
             ) : view === 'list' ? (
-              <ResultsList services={services} total={total} />
+              <ResultsList
+                services={services}
+                total={total}
+                totalEsParcial={totalEsParcial}
+              />
             ) : (
               <ServiceMap services={services} />
             )}

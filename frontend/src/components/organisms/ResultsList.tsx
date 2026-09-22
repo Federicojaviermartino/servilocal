@@ -9,11 +9,16 @@ import ServiceCard from '../molecules/ServiceCard';
 interface ResultsListProps {
   services: Service[];
   total?: number;
+  totalEsParcial?: boolean;
 }
 
 // Solo se renderiza cuando la búsqueda ha respondido correctamente, así que
 // una lista vacía significa cero resultados y nunca un fallo de red.
-export default function ResultsList({ services, total }: ResultsListProps) {
+export default function ResultsList({
+  services,
+  total,
+  totalEsParcial,
+}: ResultsListProps) {
   const t = useTranslations('resultados');
 
   if (services.length === 0) {
@@ -28,7 +33,13 @@ export default function ResultsList({ services, total }: ResultsListProps) {
   return (
     <div>
       {total !== undefined && (
-        <p className="mb-4 text-sm text-secundario">{t('cuenta', { total })}</p>
+        <p className="mb-4 text-sm text-secundario">
+          {/* El servidor deja de contar al llegar al tope, porque contar
+              todas las coincidencias de una palabra común costaba más que
+              traer la página. Decir «1.000 resultados» sería dar por exacto
+              un número que no lo es. */}
+          {totalEsParcial ? t('cuentaParcial', { total }) : t('cuenta', { total })}
+        </p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {services.map((service) => (

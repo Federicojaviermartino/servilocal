@@ -514,6 +514,7 @@
   "resultados": {
     "cargando": "Emaitzak kargatzen",
     "cuenta": "{total, plural, =0 {Emaitzarik ez} one {# emaitza aurkitu da} other {# emaitza aurkitu dira}}",
+    "cuentaParcial": "{total} emaitza baino gehiago aurkitu dira",
     "despertando": "Zerbitzaria esnatzen ari da geldialdi baten ondoren. Minutu bat arte behar dezake.",
     "errorRed": "Ezin izan da zerbitzariarekin harremanetan jarri. Saiatu berriro segundo batzuk barru.",
     "errorServicio": "Zerbitzua ez dago erabilgarri. Saiatu berriro geroago.",

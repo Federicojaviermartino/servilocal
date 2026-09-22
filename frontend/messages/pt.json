@@ -514,6 +514,7 @@
   "resultados": {
     "cargando": "A carregar resultados",
     "cuenta": "{total, plural, =0 {Sem resultados} one {# resultado encontrado} other {# resultados encontrados}}",
+    "cuentaParcial": "Mais de {total} resultados encontrados",
     "despertando": "O servidor está a acordar após um período de inatividade. Pode demorar até um minuto.",
     "errorRed": "Não foi possível contactar o servidor. Tente de novo dentro de alguns segundos.",
     "errorServicio": "Serviço indisponível. Tente de novo mais tarde.",

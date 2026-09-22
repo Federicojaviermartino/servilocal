@@ -16,26 +16,81 @@ const DATOS_PERSONALES = [
 
 function constructorFalso() {
   const qb: Record<string, jest.Mock> = {
-    getManyAndCount: jest.fn(async () => [[], 0]),
+    getMany: jest.fn(async () => []),
+    // El conteo acotado clona la consulta y le quita el orden y la ventana
+    // para envolverla en un COUNT con LIMIT. El clon es el mismo doble: lo
+    // que interesa comprobar son las condiciones, y son las mismas.
+    clone: jest.fn(() => qb),
+    getQuery: jest.fn(() => 'SELECT 1'),
+    getParameters: jest.fn(() => ({})),
   };
   for (const metodo of [
     'leftJoin',
     'leftJoinAndSelect',
     'addSelect',
+    'select',
     'where',
     'andWhere',
     'orderBy',
     'skip',
     'take',
+    'limit',
   ]) {
     qb[metodo] = jest.fn(() => qb);
   }
   return qb;
 }
 
-async function construir(qb: Record<string, jest.Mock>) {
+/** El COUNT acotado que se lanza aparte para paginar. */
+function constructorConteoFalso(cuantos = 0) {
+  const qb: Record<string, jest.Mock> = {
+    getRawOne: jest.fn(async () => ({ n: String(cuantos) })),
+    setParameters: jest.fn(() => qb),
+  };
+  for (const metodo of ['select', 'from']) {
+    qb[metodo] = jest.fn(() => qb);
+  }
+  return qb;
+}
+
+/**
+ * La consulta que resuelve qué categorías casan con lo escrito.
+ *
+ * Va aparte de la principal a propósito: dentro del OR, esa comparación
+ * cruzaba dos tablas y la búsqueda dejaba de poder usar sus índices.
+ */
+function constructorCategoriasFalso(devuelve: { id: string }[] = []) {
+  const qb: Record<string, jest.Mock> = {
+    getRawMany: jest.fn(async () => devuelve),
+  };
+  for (const metodo of ['select', 'from', 'where', 'orWhere']) {
+    qb[metodo] = jest.fn(() => qb);
+  }
+  return qb;
+}
+
+async function construir(
+  qb: Record<string, jest.Mock>,
+  categorias = constructorCategoriasFalso(),
+  conteo = constructorConteoFalso(),
+) {
   const repo = {
     createQueryBuilder: jest.fn(() => qb),
+    // El servicio usa el manager para dos consultas distintas: la de
+    // categorías (que hace un FROM de la entidad) y la del conteo acotado
+    // (que hace un FROM de una subconsulta). Se reparten por ahí.
+    manager: {
+      createQueryBuilder: jest.fn(() => {
+        const repartidor = {
+          select: jest.fn((...args: unknown[]) =>
+            String(args[0]).includes('COUNT')
+              ? conteo.select(...args)
+              : categorias.select(...args),
+          ),
+        };
+        return repartidor as never;
+      }),
+    },
     findOne: jest.fn(async () => null),
     remove: jest.fn(async () => undefined),
     save: jest.fn(async (s: unknown) => s),
@@ -50,7 +105,7 @@ async function construir(qb: Record<string, jest.Mock>) {
     ],
   }).compile();
 
-  return { servicio: module.get(ServicesService), repo, qb };
+  return { servicio: module.get(ServicesService), repo, qb, categorias, conteo };
 }
 
 /** Todas las columnas que la consulta llegó a pedir. */
@@ -271,32 +326,88 @@ describe('ServicesService', () => {
     it('la ciudad se compara sin acentos y sin mayúsculas, en los dos lados', async () => {
       // Quien teclea «malaga» y quien teclea «Málaga» buscan lo mismo, y
       // normalizar solo un lado de la comparación no casa ninguno de los dos.
+      //
+      // La columna se normaliza en el SQL, con la misma expresión que tiene
+      // indexada; lo tecleado se normaliza antes de salir de aquí. Aplicarlo
+      // también al parámetro dentro del SQL dejaba la comparación correcta
+      // pero inutilizaba el índice, porque el patrón ya no era constante.
       const qb = constructorFalso();
       const { servicio } = await construir(qb);
 
-      await servicio.search({ city: 'malaga' } as never);
+      await servicio.search({ city: 'MÁLAGA' } as never);
 
       const llamada = qb.andWhere.mock.calls.find((c) =>
         String(c[0]).includes('service.city'),
       );
       expect(llamada).toBeDefined();
-      const condicion = String(llamada?.[0]);
-      expect(condicion.match(/translate\(lower\(/g)?.length).toBe(2);
+      expect(String(llamada?.[0]).match(/translate\(lower\(/g)?.length).toBe(1);
       expect(llamada?.[1]).toEqual({ city: 'malaga' });
+    });
+
+    it('y el texto tecleado llega normalizado, no con su tilde', async () => {
+      // Si el patrón llegara sin normalizar, buscar «Fontanería» no casaría
+      // con lo que guarda el índice, que está sin tildes.
+      const qb = constructorFalso();
+      const { servicio } = await construir(qb);
+
+      await servicio.search({ query: 'Fontanería' } as never);
+
+      const llamada = qb.andWhere.mock.calls.find((c) =>
+        String(c[0]).includes('service.title'),
+      );
+      expect((llamada?.[1] as Record<string, string>).q0).toBe(
+        '%fontaneria%',
+      );
     });
 
     it('el texto busca también por el nombre de la categoría', async () => {
       // La gente busca por oficio, y esa palabra rara vez está en el título
       // del servicio.
+      //
+      // Se pregunta en una consulta aparte, sobre una tabla de diez filas.
+      // Metido en el OR de la principal, ese trozo cruzaba dos tablas y
+      // PostgreSQL dejaba de poder combinar los índices de «services»: la
+      // búsqueda recorría la tabla entera.
       const qb = constructorFalso();
-      const { servicio } = await construir(qb);
+      const categorias = constructorCategoriasFalso([{ id: 'cat-fontaneria' }]);
+      const { servicio } = await construir(qb, categorias);
 
       await servicio.search({ query: 'fontanero' } as never);
 
-      const consulta = sql(qb);
-      expect(consulta).toContain('category.name');
-      expect(consulta).toContain('service.title');
-      expect(consulta).toContain('service.description');
+      const preguntado = JSON.stringify(categorias.where.mock.calls)
+        + JSON.stringify(categorias.orWhere.mock.calls);
+      expect(preguntado).toContain('categoria.name');
+      expect(preguntado).toContain('%fontanero%');
+    });
+
+    it('y lo que casa entra en la búsqueda por su identificador', async () => {
+      const qb = constructorFalso();
+      const { servicio } = await construir(
+        qb,
+        constructorCategoriasFalso([{ id: 'cat-fontaneria' }]),
+      );
+
+      await servicio.search({ query: 'fontanero' } as never);
+
+      const llamada = qb.andWhere.mock.calls.find((c) =>
+        String(c[0]).includes('service.categoryId IN'),
+      );
+      expect(llamada).toBeDefined();
+      expect(
+        (llamada?.[1] as { categoriasQueCasan: string[] }).categoriasQueCasan,
+      ).toEqual(['cat-fontaneria']);
+    });
+
+    it('y si no casa ninguna, esa condición no se añade', async () => {
+      // Sin esto, la comprobación de arriba pasaría aunque se metiera
+      // siempre una lista vacía, que en SQL no encuentra nada pero obliga
+      // al planificador a mirarla.
+      const qb = constructorFalso();
+      const { servicio } = await construir(qb, constructorCategoriasFalso([]));
+
+      await servicio.search({ query: 'algo-que-no-es-oficio' } as never);
+
+      expect(sql(qb)).not.toContain('service.categoryId IN');
     });
 
     it('el diccionario añade términos sin quitar el que se escribió', async () => {
@@ -306,7 +417,7 @@ describe('ServicesService', () => {
       await servicio.search({ query: 'fontanero' } as never);
 
       const llamada = qb.andWhere.mock.calls.find((c) =>
-        String(c[0]).includes('category.name'),
+        String(c[0]).includes('service.title'),
       );
       const parametros = llamada?.[1] as Record<string, string>;
       expect(parametros.q0).toBe('%fontanero%');
@@ -387,17 +498,52 @@ describe('ServicesService', () => {
       // Con 25 resultados de doce en doce hay tres páginas, no dos: la
       // división entera dejaría un resultado inalcanzable.
       const qb = constructorFalso();
-      qb.getManyAndCount = jest.fn(async () => [[], 25]);
-      const { servicio } = await construir(qb);
+      const { servicio } = await construir(
+        qb,
+        constructorCategoriasFalso(),
+        constructorConteoFalso(25),
+      );
 
       const r = await servicio.search({ page: 1, limit: 12 } as never);
 
       expect(r.meta).toEqual({
         total: 25,
+        totalEsParcial: false,
         page: 1,
         limit: 12,
         totalPages: 3,
       });
+    });
+
+    it('el conteo se corta en mil y lo dice', async () => {
+      // Contar todas las coincidencias de una palabra común costaba más que
+      // traer la página. Nadie navega hasta la página cuatro mil, así que se
+      // cuenta hasta el tope y se avisa de que hay más.
+      const qb = constructorFalso();
+      const { servicio } = await construir(
+        qb,
+        constructorCategoriasFalso(),
+        constructorConteoFalso(1000),
+      );
+
+      const r = await servicio.search({ page: 1, limit: 12 } as never);
+
+      expect(r.meta.total).toBe(1000);
+      expect(r.meta.totalEsParcial).toBe(true);
+    });
+
+    it('y el conteo no arrastra el orden ni la ventana de la página', async () => {
+      // Ordenar para contar es trabajo tirado, y dejarle el OFFSET contaría
+      // desde la página pedida en vez de desde el principio.
+      const qb = constructorFalso();
+      const { servicio } = await construir(qb);
+
+      await servicio.search({ page: 3, limit: 12 } as never);
+
+      expect(qb.orderBy).toHaveBeenCalledWith();
+      expect(qb.skip).toHaveBeenCalledWith(undefined);
+      expect(qb.take).toHaveBeenCalledWith(undefined);
+      expect(qb.limit).toHaveBeenCalledWith(1000);
     });
   });
 

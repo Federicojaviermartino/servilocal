@@ -514,6 +514,7 @@
   "resultados": {
     "cargando": "Chargement des résultats",
     "cuenta": "{total, plural, =0 {Aucun résultat} one {# résultat trouvé} other {# résultats trouvés}}",
+    "cuentaParcial": "Plus de {total} résultats trouvés",
     "despertando": "Le serveur se réveille après une période d'inactivité. Cela peut prendre jusqu'à une minute.",
     "errorRed": "Impossible de contacter le serveur. Réessayez dans quelques secondes.",
     "errorServicio": "Service indisponible. Réessayez plus tard.",

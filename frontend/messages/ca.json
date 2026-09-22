@@ -514,6 +514,7 @@
   "resultados": {
     "cargando": "Carregant resultats",
     "cuenta": "{total, plural, =0 {Cap resultat} one {# resultat trobat} other {# resultats trobats}}",
+    "cuentaParcial": "Més de {total} resultats trobats",
     "despertando": "El servidor s'està despertant després d'un període d'inactivitat. Pot trigar fins a un minut.",
     "errorRed": "No s'ha pogut contactar amb el servidor. Torna-ho a provar d'aquí a uns segons.",
     "errorServicio": "Servei no disponible. Torna-ho a provar més tard.",

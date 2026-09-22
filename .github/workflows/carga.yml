@@ -1,0 +1,98 @@
+# Prueba de carga de la búsqueda.
+#
+# No va en la integración de cada empujón: levanta una base, la llena con
+# cincuenta mil servicios y machaca la API durante más de un minuto. Puesto
+# ahí solo conseguiría que la gente dejara de mirarla.
+#
+# Se lanza a mano desde la pestaña de Actions, y toca hacerlo antes de tocar
+# la búsqueda o los índices, que es cuando sirve de algo.
+name: Carga
+
+on:
+  workflow_dispatch:
+    inputs:
+      volumen:
+        description: Cuántos servicios sembrar
+        required: false
+        default: '50000'
+
+jobs:
+  busqueda:
+    name: Búsqueda con catálogo grande
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: servilocal_carga
+          POSTGRES_USER: servilocal_user
+          POSTGRES_PASSWORD: carga_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U servilocal_user -d servilocal_carga"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USERNAME: servilocal_user
+      DB_PASSWORD: carga_password
+      DB_DATABASE: servilocal_carga
+      JWT_SECRET: secreto_solo_para_los_tests
+      JWT_EXPIRATION: 1h
+      STRIPE_SECRET_KEY: sk_test_marcador
+      CORS_ORIGINS: http://localhost:3000
+      PORT: 3001
+      # Sin esto se mide el limitador de peticiones, que corta a las 120 por
+      # minuto y por IP. Ese límite es correcto y está ahí a propósito; lo que
+      # aquí se quiere medir es lo que hay detrás.
+      THROTTLE_LIMIT: '1000000'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Preparar la API
+        working-directory: ./backend
+        run: |
+          npm ci
+          npm run migration:run
+          npm run seed
+          npm run build
+        env:
+          ADMIN_PASSWORD: solo-para-esta-medicion-${{ github.run_id }}
+
+      - name: Llenar el catálogo
+        run: node scripts/carga/sembrar-volumen.mjs
+        env:
+          VOLUMEN: ${{ inputs.volumen }}
+
+      - name: Arrancar la API
+        working-directory: ./backend
+        run: |
+          nohup node dist/main.js > api.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -sf http://localhost:3001/api/health > /dev/null; then
+              echo "API disponible tras $((i * 2))s"; exit 0
+            fi
+            sleep 2
+          done
+          echo "La API no llegó a responder:"; tail -40 api.log; exit 1
+
+      - name: Medir
+        uses: grafana/setup-k6-action@v1
+
+      - name: Ejecutar la prueba de carga
+        run: k6 run scripts/carga/busqueda.js
+        env:
+          API: http://localhost:3001/api

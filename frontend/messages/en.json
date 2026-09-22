@@ -514,6 +514,7 @@
   "resultados": {
     "cargando": "Loading results",
     "cuenta": "{total, plural, =0 {No results} one {# result found} other {# results found}}",
+    "cuentaParcial": "More than {total} results found",
     "despertando": "The server is waking up after a period of inactivity. This can take up to a minute.",
     "errorRed": "The server could not be reached. Try again in a few seconds.",
     "errorServicio": "Service unavailable. Please try again later.",

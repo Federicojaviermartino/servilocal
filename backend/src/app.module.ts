@@ -34,9 +34,17 @@ import configIa from './ia/ia.config';
       load: [configIa],
     }),
     // Límite general por IP. Las rutas sensibles lo endurecen con @Throttle.
+    //
+    // Se puede elevar con THROTTLE_LIMIT, igual que el de acceso: medir la
+    // capacidad de la búsqueda desde una sola máquina es imposible con el
+    // límite puesto, porque lo que se acaba midiendo es el limitador. Lo que
+    // aguanta un cliente solo contra producción son estas 120 por minuto, y
+    // eso es a propósito.
     RedisModule,
     TiempoRealModule,
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 120 }]),
+    ThrottlerModule.forRoot([
+      { ttl: 60000, limit: Number(process.env.THROTTLE_LIMIT) || 120 },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

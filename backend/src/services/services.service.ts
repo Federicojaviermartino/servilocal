@@ -4,8 +4,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Service } from '../entities';
+import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Category, Service } from '../entities';
 import {
   CreateServiceDto,
   UpdateServiceDto,
@@ -33,6 +33,14 @@ const COLUMNAS_PUBLICAS_PROVEEDOR = [
 ];
 
 /**
+ * Hasta dónde se cuenta al paginar. Más allá se dice «más de».
+ */
+const TOPE_CONTEO = 1000;
+
+const CON_ACENTO = 'áàäâéèëêíìïîóòöôúùüûñç';
+const SIN_ACENTO = 'aaaaeeeeiiiioooouuuunc';
+
+/**
  * Devuelve una expresión SQL que compara texto ignorando mayúsculas y acentos.
  *
  * Tanto la ciudad como el texto libre los teclean personas: quien busque
@@ -44,7 +52,28 @@ const COLUMNAS_PUBLICAS_PROVEEDOR = [
  * por tanto se puede indexar.
  */
 const sinAcentos = (expresion: string): string =>
-  `translate(lower(${expresion}), 'áàäâéèëêíìïîóòöôúùüûñç', 'aaaaeeeeiiiioooouuuunc')`;
+  `translate(lower(${expresion}), '${CON_ACENTO}', '${SIN_ACENTO}')`;
+
+/**
+ * Lo mismo que hace `sinAcentos`, pero aquí en vez de en la base.
+ *
+ * Es la diferencia entre usar el índice de trigramas y no usarlo. Aplicada al
+ * parámetro dentro del SQL —«LIKE translate(lower($1), ...)»— el patrón deja
+ * de ser constante para el planificador, que entonces no puede sacarle
+ * trigramas y recorre la tabla entera. Normalizado antes, el parámetro llega
+ * hecho y el índice entra.
+ *
+ * Tiene que coincidir con la expresión de arriba carácter por carácter: si se
+ * separan, la consulta busca una cosa y el índice guarda otra.
+ */
+function normalizar(texto: string): string {
+  let salida = '';
+  for (const caracter of texto.toLowerCase()) {
+    const posicion = CON_ACENTO.indexOf(caracter);
+    salida += posicion === -1 ? caracter : SIN_ACENTO[posicion];
+  }
+  return salida;
+}
 
 @Injectable()
 export class ServicesService {
@@ -121,6 +150,59 @@ export class ServicesService {
     await this.serviceRepository.remove(service);
   }
 
+  /**
+   * Cuenta cuántos resultados hay, pero sin pasar del tope.
+   *
+   * Envolver la consulta en un subconsulta con LIMIT deja que PostgreSQL pare
+   * en cuanto llega: lo que tarda es proporcional al tope, no al catálogo.
+   */
+  private async contarHasta(
+    qb: SelectQueryBuilder<Service>,
+    tope: number,
+  ): Promise<number> {
+    const interna = qb
+      .clone()
+      .orderBy()
+      .skip(undefined)
+      .take(undefined)
+      .limit(tope)
+      .select('service.id', 'id');
+
+    const fila = await this.serviceRepository.manager
+      .createQueryBuilder()
+      .select('COUNT(*)', 'n')
+      .from(`(${interna.getQuery()})`, 'acotado')
+      .setParameters(interna.getParameters())
+      .getRawOne<{ n: string }>();
+
+    return Number(fila?.n ?? 0);
+  }
+
+  /**
+   * Qué categorías casan con lo que se ha escrito.
+   *
+   * Son diez filas, así que la consulta es despreciable; lo que no es
+   * despreciable es lo que ahorra: si esta comparación va dentro del OR de
+   * la búsqueda principal, esa condición cruza dos tablas y deja de poder
+   * usar los índices de «services».
+   */
+  private async categoriasQueCasan(patrones: string[]): Promise<string[]> {
+    const qb = this.serviceRepository.manager
+      .createQueryBuilder()
+      .select('categoria.id', 'id')
+      .from(Category, 'categoria');
+
+    patrones.forEach((patron, i) => {
+      const clave = `c${i}`;
+      const condicion = `${sinAcentos('categoria.name')} LIKE :${clave}`;
+      if (i === 0) qb.where(condicion, { [clave]: patron });
+      else qb.orWhere(condicion, { [clave]: patron });
+    });
+
+    const filas = await qb.getRawMany<{ id: string }>();
+    return filas.map((fila) => fila.id);
+  }
+
   async search(searchDto: SearchServicesDto) {
     const {
       query,
@@ -156,20 +238,37 @@ export class ServicesService {
       // «Fontanería» porque normalizar acentos no acerca dos palabras
       // distintas. El diccionario añade términos, nunca sustituye los suyos.
       const terminos = [query, ...ampliarBusqueda(query)];
-      const campos = ['service.title', 'service.description', 'category.name'];
+      // Lo que escribe una persona es texto, no un patrón: sin escapar,
+      // «repa_acion» encontraba «reparación» y «50%» devolvía el catálogo
+      // entero, porque el patrón acababa siendo «%50%%».
+      const patrones = terminos.map(
+        (termino) => `%${escaparLike(normalizar(termino))}%`,
+      );
+
+      // El nombre de la categoría se resuelve aparte, con su propia consulta
+      // sobre una tabla de diez filas, en vez de ir dentro del OR.
+      //
+      // Metido ahí, el OR cruzaba dos tablas y PostgreSQL no podía combinar
+      // los índices: recorría los cincuenta mil servicios evaluando la
+      // expresión en cada fila. Sacándolo, la condición queda entera sobre
+      // «services» y sí puede usarlos. Medido con cincuenta mil servicios,
+      // el conteo de la paginación pasó de 669 ms a 18,7 ms.
+      const categorias = await this.categoriasQueCasan(patrones);
 
       const ramas: string[] = [];
-      const parametros: Record<string, string> = {};
-      terminos.forEach((termino, i) => {
+      const parametros: Record<string, unknown> = {};
+      patrones.forEach((patron, i) => {
         const clave = `q${i}`;
-        // Lo que escribe una persona es texto, no un patrón: sin escapar,
-        // «repa_acion» encontraba «reparación» y «50%» devolvía el catálogo
-        // entero, porque el patrón acababa siendo «%50%%».
-        parametros[clave] = `%${escaparLike(termino)}%`;
-        campos.forEach((campo) => {
-          ramas.push(`${sinAcentos(campo)} LIKE ${sinAcentos(':' + clave)}`);
+        parametros[clave] = patron;
+        ['service.title', 'service.description'].forEach((campo) => {
+          ramas.push(`${sinAcentos(campo)} LIKE :${clave}`);
         });
       });
+
+      if (categorias.length > 0) {
+        ramas.push('service.categoryId IN (:...categoriasQueCasan)');
+        parametros.categoriasQueCasan = categorias;
+      }
 
       qb.andWhere(`(${ramas.join(' OR ')})`, parametros);
     }
@@ -181,8 +280,8 @@ export class ServicesService {
 
     // Filtro por ciudad, indiferente a mayúsculas y acentos
     if (city) {
-      qb.andWhere(`${sinAcentos('service.city')} = ${sinAcentos(':city')}`, {
-        city,
+      qb.andWhere(`${sinAcentos('service.city')} = :city`, {
+        city: normalizar(city),
       });
     }
 
@@ -247,12 +346,26 @@ export class ServicesService {
     const offset = (page - 1) * limit;
     qb.skip(offset).take(limit);
 
-    const [services, total] = await qb.getManyAndCount();
+    // El conteo se corta en TOPE_CONTEO.
+    //
+    // getManyAndCount lanza un COUNT sin LIMIT sobre todo lo que casa, y eso
+    // no se puede acelerar: contar cincuenta mil coincidencias cuesta contar
+    // cincuenta mil filas, con índice o sin él. Medido con cincuenta mil
+    // servicios y treinta peticiones a la vez, ese conteo era el 90 % del
+    // tiempo y llevaba la búsqueda por texto a más de diez segundos.
+    //
+    // Nadie navega hasta la página cuatro mil. Se cuenta hasta el tope y, si
+    // se alcanza, se dice que hay más en vez de cuántos exactamente.
+    const services = await qb.getMany();
+    const total = await this.contarHasta(qb, TOPE_CONTEO);
 
     return {
       data: services,
       meta: {
         total,
+        // Para que quien pinte esto pueda decir «más de mil» en vez de dar
+        // un número que no es el que hay.
+        totalEsParcial: total >= TOPE_CONTEO,
         page,
         limit,
         totalPages: Math.ceil(total / limit),
