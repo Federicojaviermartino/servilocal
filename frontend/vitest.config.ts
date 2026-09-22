@@ -38,10 +38,10 @@ export default defineConfig({
       // le dé tiempo a nadie a escribirle su prueba. Bajarlo para que pase
       // algo que no está probado vacía de sentido la comprobación entera.
       thresholds: {
-        statements: 58,
-        branches: 54,
-        functions: 55,
-        lines: 58,
+        statements: 78,
+        branches: 78,
+        functions: 70,
+        lines: 79,
       },
     },
   },

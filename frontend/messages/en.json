@@ -318,6 +318,7 @@
     "precioMaximo": "Maximum price (optional)",
     "precioMinimo": "Minimum price (euros)",
     "radio": "Coverage radius (km)",
+    "rangoInvertido": "The maximum price cannot be lower than the minimum",
     "seleccionaCategoria": "Choose a category",
     "seleccionaCiudad": "Choose a city",
     "titulo": "Service title",

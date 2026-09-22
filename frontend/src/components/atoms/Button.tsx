@@ -4,6 +4,7 @@
  * Uso: <Button variant="primary" size="md" onClick={fn}>Texto</Button>
  */
 import { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import clsx from 'clsx';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -42,9 +43,12 @@ export default function Button({
   className,
   ...rest
 }: ButtonProps) {
+  const t = useTranslations('comun');
+
   return (
     <button
       disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
       className={clsx(
         'rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed',
         variantStyles[variant],
@@ -54,7 +58,7 @@ export default function Button({
       )}
       {...rest}
     >
-      {isLoading ? 'Cargando...' : children}
+      {isLoading ? t('cargando') : children}
     </button>
   );
 }

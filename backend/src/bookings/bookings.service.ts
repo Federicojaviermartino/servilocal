@@ -50,6 +50,12 @@ const AVISO_POR_ESTADO: Partial<
  * eso está bien: lo que no puede es elegir fuera. Sin máximo publicado, el
  * mínimo es el suelo y por arriba no hay tope, porque pagar de más es
  * decisión de quien paga.
+ *
+ * Un máximo por debajo del mínimo se ignora en vez de rechazarse. Es una
+ * horquilla imposible —ningún importe la cumple— y aplicarla dejaría el
+ * servicio sin forma de contratarse. Se publicaron así porque el formulario
+ * no lo impedía; ya lo impide, pero los que quedaran tienen que seguir
+ * funcionando.
  */
 function comprobarPrecio(servicio: Service, propuesto: number): number {
   const minimo = Number(servicio.priceMin);

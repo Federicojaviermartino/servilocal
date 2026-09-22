@@ -42,6 +42,7 @@ export default function ServiceForm({
     city: initial?.city || '',
     coverageRadiusKm: initial?.coverageRadiusKm || 10,
   });
+  const [errorPrecio, setErrorPrecio] = useState('');
 
   useEffect(() => {
     categoriesApi
@@ -59,6 +60,18 @@ export default function ServiceForm({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+
+    // Un máximo por debajo del mínimo deja el servicio sin ningún importe
+    // válido, y quien lo publica no tiene forma de enterarse: la ficha se ve
+    // normal y es el cliente quien se encuentra con que no puede reservar.
+    // El servidor lo tolera ignorando ese máximo; aquí se pide que se
+    // arregle, que es lo que de verdad quería decir quien lo escribió.
+    if (form.priceMax && form.priceMax < form.priceMin) {
+      setErrorPrecio(t('rangoInvertido'));
+      return;
+    }
+
+    setErrorPrecio('');
     onSubmit({
       ...form,
       priceMax: form.priceMax || undefined,
@@ -133,6 +146,7 @@ export default function ServiceForm({
           onChange={(e) =>
             setForm({ ...form, priceMax: Number(e.target.value) })
           }
+          error={errorPrecio}
         />
         <div>
           <label

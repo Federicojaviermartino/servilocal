@@ -318,6 +318,7 @@
     "precioMaximo": "أقصى سعر (اختياري)",
     "precioMinimo": "أدنى سعر (يورو)",
     "radio": "نطاق التغطية (كم)",
+    "rangoInvertido": "لا يمكن أن يكون السعر الأقصى أقل من السعر الأدنى",
     "seleccionaCategoria": "اختر فئة",
     "seleccionaCiudad": "اختر مدينة",
     "titulo": "عنوان الخدمة",

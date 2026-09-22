@@ -42,7 +42,15 @@ export default function BookingForm({
     if (price < service.priceMin) {
       errs.price = t('precioMinimo', { min: service.priceMin });
     }
-    if (service.priceMax && price > service.priceMax) {
+    // El máximo solo manda si está por encima del mínimo. Si no, el servicio
+    // se publicó con la horquilla al revés y aplicarlo dejaría la reserva sin
+    // ningún importe posible: por debajo falla el mínimo y por encima el
+    // máximo. El servidor hace lo mismo, y es deliberado.
+    if (
+      service.priceMax &&
+      service.priceMax > service.priceMin &&
+      price > service.priceMax
+    ) {
       errs.price = t('precioMaximo', { max: service.priceMax });
     }
     if (!description || description.length < 10) {

@@ -318,6 +318,7 @@
     "precioMaximo": "Preu màxim (opcional)",
     "precioMinimo": "Preu mínim (euros)",
     "radio": "Radi de cobertura (km)",
+    "rangoInvertido": "El preu màxim no pot ser menor que el mínim",
     "seleccionaCategoria": "Tria una categoria",
     "seleccionaCiudad": "Tria una ciutat",
     "titulo": "Títol del servei",

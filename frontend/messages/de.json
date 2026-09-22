@@ -318,6 +318,7 @@
     "precioMaximo": "Höchstpreis (optional)",
     "precioMinimo": "Mindestpreis (Euro)",
     "radio": "Einsatzradius (km)",
+    "rangoInvertido": "Der Höchstpreis darf nicht unter dem Mindestpreis liegen",
     "seleccionaCategoria": "Kategorie wählen",
     "seleccionaCiudad": "Stadt wählen",
     "titulo": "Titel der Dienstleistung",

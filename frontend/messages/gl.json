@@ -318,6 +318,7 @@
     "precioMaximo": "Prezo máximo (opcional)",
     "precioMinimo": "Prezo mínimo (euros)",
     "radio": "Radio de cobertura (km)",
+    "rangoInvertido": "O prezo máximo non pode ser menor que o mínimo",
     "seleccionaCategoria": "Escolle unha categoría",
     "seleccionaCiudad": "Escolle unha cidade",
     "titulo": "Título do servizo",

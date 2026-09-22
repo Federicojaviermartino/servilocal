@@ -318,6 +318,7 @@
     "precioMaximo": "Gehieneko prezioa (aukerakoa)",
     "precioMinimo": "Gutxieneko prezioa (euroak)",
     "radio": "Estaldura-erradioa (km)",
+    "rangoInvertido": "Gehieneko prezioa ezin da gutxienekoa baino txikiagoa izan",
     "seleccionaCategoria": "Aukeratu kategoria bat",
     "seleccionaCiudad": "Aukeratu hiri bat",
     "titulo": "Zerbitzuaren izenburua",
