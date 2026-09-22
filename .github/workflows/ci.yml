@@ -185,6 +185,23 @@ jobs:
     name: Construcción de las imágenes
     runs-on: ubuntu-latest
 
+    # Para arrancar la imagen de verdad. La API corre las migraciones al
+    # levantarse, así que le basta una base vacía.
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: servilocal_imagen
+          POSTGRES_USER: servilocal_user
+          POSTGRES_PASSWORD: imagen_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U servilocal_user -d servilocal_imagen"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -213,6 +230,27 @@ jobs:
           for paquete in jest @nestjs/cli eslint prettier; do
             docker run --rm --entrypoint sh servilocal-api:ci               -c "test ! -d /app/node_modules/$paquete"               || (echo "$paquete no debería estar en la imagen"; exit 1)
           done
+
+      # Se construía la imagen, se le miraba por dentro y se daba por buena.
+      # Una imagen que no arranca pasaba esas comprobaciones enteras: pasó,
+      # y lo que la delató fue el trabajo de extremo a extremo, que arranca
+      # la API compilada aparte. Mirar dentro no es lo mismo que encenderla.
+      - name: Comprobar que la imagen arranca y responde
+        run: |
+          docker run -d --name api-ci --network host             -e DB_HOST=localhost             -e DB_PORT=5432             -e DB_USERNAME=servilocal_user             -e DB_PASSWORD=imagen_password             -e DB_DATABASE=servilocal_imagen             -e JWT_SECRET=secreto_solo_para_los_tests             -e JWT_EXPIRATION=1h             -e STRIPE_SECRET_KEY=sk_test_marcador             -e CORS_ORIGINS=http://localhost:3000             -e PORT=3001             servilocal-api:ci
+          for i in $(seq 1 45); do
+            if curl -sf http://localhost:3001/api/health > /dev/null; then
+              echo "La imagen responde tras $((i * 2))s"
+              curl -s http://localhost:3001/api/health
+              docker rm -f api-ci > /dev/null
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "La imagen no llegó a responder. Registro del contenedor:"
+          docker logs api-ci
+          docker rm -f api-ci > /dev/null
+          exit 1
 
   e2e:
     name: Tests de extremo a extremo

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Sin esto, TypeScript deduce la raíz de la salida del conjunto de
+    // ficheros que compila. Al aparecer el primer .ts fuera de src/ —las
+    // pruebas de integración— la raíz común pasó de «src» a la del proyecto
+    // y todo se emitió un nivel más abajo: dist/src/main.js en vez de
+    // dist/main.js. La compilación siguió terminando con éxito, así que no
+    // protestó nadie; protestó el arranque, que busca dist/main.js, y así
+    // arrancan tanto el contenedor como el despliegue.
+    //
+    // Fijada, un fichero fuera de src/ es un error de compilación en vez de
+    // un cambio silencioso de rutas.
+    "rootDir": "./src"
+  },
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
