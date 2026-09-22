@@ -1,0 +1,47 @@
+# Actualizaciones automáticas de dependencias.
+#
+# Sin esto, la única forma de enterarse de una vulnerabilidad nueva era que a
+# alguien se le ocurriera ejecutar `npm audit`. Pasó: el proyecto llegó a
+# tener dos ejecuciones remotas de código sin autenticar en Next y una
+# escritura arbitraria de ficheros en la cadena de bcrypt, todas publicadas
+# desde hacía tiempo y ninguna vista.
+#
+# Las de parche y menores van agrupadas en una sola propuesta por proyecto:
+# una a una son tantas que se acaban ignorando todas, que es lo mismo que no
+# tenerlas. Las mayores van sueltas, porque cada una necesita que alguien la
+# mire.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      menores-y-parches:
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'Actualiza'
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      menores-y-parches:
+        update-types: ['minor', 'patch']
+    commit-message:
+      prefix: 'Actualiza'
+
+  # Las acciones de los flujos de trabajo se quedan ancladas en versiones
+  # viejas sin que nadie lo note, y son código de terceros con acceso al
+  # repositorio.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'Actualiza'

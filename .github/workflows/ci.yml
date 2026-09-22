@@ -1,8 +1,12 @@
 name: CI
 
+# Corre en cualquier rama, no solo en main.
+#
+# Antes solo se disparaba en main, develop y las pull requests contra main.
+# Trabajando en ramas eso deja el trabajo sin comprobar hasta que ya está
+# mezclado, que es cuando enterarse sirve de menos.
 on:
   push:
-    branches: [main, develop]
   pull_request:
     branches: [main]
 
@@ -181,6 +185,29 @@ jobs:
   # No se publican, solo se construyen: lo que se comprueba es que el bloqueo
   # de dependencias cuadra —npm ci falla si no— y que las dos etapas llegan
   # hasta el final.
+  dependencias:
+    name: Vulnerabilidades en producción
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Sin el árbol instalado, npm audit no sabe qué versiones hay de verdad.
+      # --ignore-scripts porque aquí no se compila nada nativo y evita
+      # ejecutar código de terceros para una simple comprobación.
+      - name: Instalar dependencias
+        run: |
+          npm ci --ignore-scripts --prefix backend
+          npm ci --ignore-scripts --prefix frontend
+
+      - name: Comprobar que no hay avisos nuevos
+        run: node scripts/auditoria-dependencias.mjs
+
   imagenes:
     name: Construcción de las imágenes
     runs-on: ubuntu-latest
