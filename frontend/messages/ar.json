@@ -284,6 +284,13 @@
     "sobreProfesional": "عن المحترف",
     "valoraciones": "التقييمات ({total})"
   },
+  "error": {
+    "referencia": "المرجع: {codigo}",
+    "reintentar": "إعادة المحاولة",
+    "texto": "تعذّر عرض هذه الصفحة. يمكنك المحاولة مرة أخرى.",
+    "titulo": "حدث خطأ ما",
+    "volver": "العودة إلى الصفحة الرئيسية"
+  },
   "estados": {
     "activo": "نشطة",
     "cancelada": "ملغى",

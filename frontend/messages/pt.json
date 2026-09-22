@@ -284,6 +284,13 @@
     "sobreProfesional": "Sobre o profissional",
     "valoraciones": "Avaliações ({total})"
   },
+  "error": {
+    "referencia": "Referência: {codigo}",
+    "reintentar": "Tentar de novo",
+    "texto": "Não foi possível mostrar esta página. Podes tentar de novo.",
+    "titulo": "Algo correu mal",
+    "volver": "Voltar ao início"
+  },
   "estados": {
     "activo": "Ativo",
     "cancelada": "Cancelada",

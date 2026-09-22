@@ -284,6 +284,13 @@
     "sobreProfesional": "Sobre el professional",
     "valoraciones": "Valoracions ({total})"
   },
+  "error": {
+    "referencia": "Referència: {codigo}",
+    "reintentar": "Torna-ho a provar",
+    "texto": "No hem pogut mostrar aquesta pàgina. Pots tornar-ho a provar.",
+    "titulo": "Alguna cosa ha fallat",
+    "volver": "Torna a l'inici"
+  },
   "estados": {
     "activo": "Actiu",
     "cancelada": "Cancel·lada",

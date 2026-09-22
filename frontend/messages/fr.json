@@ -284,6 +284,13 @@
     "sobreProfesional": "À propos du professionnel",
     "valoraciones": "Avis ({total})"
   },
+  "error": {
+    "referencia": "Référence : {codigo}",
+    "reintentar": "Réessayer",
+    "texto": "Nous n'avons pas pu afficher cette page. Vous pouvez réessayer.",
+    "titulo": "Une erreur s'est produite",
+    "volver": "Retour à l'accueil"
+  },
   "estados": {
     "activo": "Actif",
     "cancelada": "Annulée",

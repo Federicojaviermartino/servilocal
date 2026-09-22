@@ -284,6 +284,13 @@
     "sobreProfesional": "Über die Fachkraft",
     "valoraciones": "Bewertungen ({total})"
   },
+  "error": {
+    "referencia": "Referenz: {codigo}",
+    "reintentar": "Erneut versuchen",
+    "texto": "Diese Seite konnte nicht angezeigt werden. Sie können es erneut versuchen.",
+    "titulo": "Etwas ist schiefgelaufen",
+    "volver": "Zur Startseite"
+  },
   "estados": {
     "activo": "Aktiv",
     "cancelada": "Storniert",

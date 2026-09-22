@@ -284,6 +284,13 @@
     "sobreProfesional": "Il professionista",
     "valoraciones": "Recensioni ({total})"
   },
+  "error": {
+    "referencia": "Riferimento: {codigo}",
+    "reintentar": "Riprova",
+    "texto": "Non è stato possibile mostrare questa pagina. Puoi riprovare.",
+    "titulo": "Qualcosa è andato storto",
+    "volver": "Torna alla home"
+  },
   "estados": {
     "activo": "Attivo",
     "cancelada": "Annullata",

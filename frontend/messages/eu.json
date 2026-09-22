@@ -284,6 +284,13 @@
     "sobreProfesional": "Profesionalari buruz",
     "valoraciones": "Balorazioak ({total})"
   },
+  "error": {
+    "referencia": "Erreferentzia: {codigo}",
+    "reintentar": "Saiatu berriro",
+    "texto": "Ezin izan dugu orri hau erakutsi. Berriro saia zaitezke.",
+    "titulo": "Zerbaitek huts egin du",
+    "volver": "Itzuli hasierara"
+  },
   "estados": {
     "activo": "Aktibo",
     "cancelada": "Bertan behera",

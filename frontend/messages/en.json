@@ -284,6 +284,13 @@
     "sobreProfesional": "About the professional",
     "valoraciones": "Reviews ({total})"
   },
+  "error": {
+    "referencia": "Reference: {codigo}",
+    "reintentar": "Try again",
+    "texto": "We could not display this page. You can try again.",
+    "titulo": "Something went wrong",
+    "volver": "Back to home"
+  },
   "estados": {
     "activo": "Active",
     "cancelada": "Cancelled",
