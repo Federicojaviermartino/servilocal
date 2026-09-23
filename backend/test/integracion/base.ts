@@ -3,6 +3,7 @@ import { readdirSync } from 'fs';
 import { resolve } from 'path';
 import * as dotenv from 'dotenv';
 import * as entidades from '../../src/entities';
+import { conexionPorUrl } from '../../src/config/conexion-segura';
 import { EsquemaInicial1789222453037 } from '../../src/database/migrations/1789222453037-EsquemaInicial';
 import { IndiceCiudadNormalizada1789322907859 } from '../../src/database/migrations/1789322907859-IndiceCiudadNormalizada';
 import { TablaUsoIa1789500000000 } from '../../src/database/migrations/1789500000000-TablaUsoIa';
@@ -100,8 +101,7 @@ export function crearFuente(): DataSource {
     url
       ? {
           ...comun,
-          url,
-          ssl: { rejectUnauthorized: process.env.DB_SSL_PERMISIVO !== 'true' },
+          ...conexionPorUrl(url, process.env.DB_SSL_PERMISIVO === 'true'),
         }
       : {
           ...comun,

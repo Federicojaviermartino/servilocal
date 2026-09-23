@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
+import { conexionPorUrl } from './conexion-segura';
 
 /**
  * El certificado del servidor se valida por defecto: aceptarlo sin comprobar
@@ -28,10 +29,12 @@ export const getDatabaseConfig = (
   };
 
   if (databaseUrl) {
+    // La URL sin sus parámetros de TLS: quien decide si se verifica el
+    // certificado es esto, no lo que traiga la cadena de conexión. El porqué
+    // está en conexion-segura.ts.
     return {
       ...commonOptions,
-      url: databaseUrl,
-      ssl: { rejectUnauthorized: validarCertificado(configService) },
+      ...conexionPorUrl(databaseUrl, !validarCertificado(configService)),
     };
   }
 

@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
+import { conexionPorUrl } from './conexion-segura';
 
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
@@ -11,10 +12,9 @@ export const AppDataSource = new DataSource(
   databaseUrl
     ? {
         type: 'postgres',
-        url: databaseUrl,
         // Coherente con database.config.ts: se valida salvo que se pida lo
-        // contrario de forma explícita.
-        ssl: { rejectUnauthorized: process.env.DB_SSL_PERMISIVO !== 'true' },
+        // contrario de forma explícita, y lo decide el código, no la URL.
+        ...conexionPorUrl(databaseUrl, process.env.DB_SSL_PERMISIVO === 'true'),
         entities: [resolve(__dirname, '../entities/*.entity{.ts,.js}')],
         migrations: [resolve(__dirname, '../database/migrations/*{.ts,.js}')],
         synchronize: false,

@@ -1,6 +1,7 @@
 import { resolve } from 'path';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
+import { conexionPorUrl } from '../../config/conexion-segura';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../../entities/user.entity';
 import { Category } from '../../entities/category.entity';
@@ -175,7 +176,6 @@ async function runSeed() {
     databaseUrl
       ? {
           type: 'postgres',
-          url: databaseUrl,
           // Igual que la aplicación: el certificado se valida por defecto y
           // DB_SSL_PERMISIVO=true lo desactiva para un proveedor con
           // certificado autofirmado.
@@ -186,9 +186,13 @@ async function runSeed() {
           // contenedor: se ejecuta desde una máquina cualquiera, por
           // internet, con la contraseña de administración en el entorno.
           // Es justo la conexión que no conviene dejar sin comprobar.
-          ssl: {
-            rejectUnauthorized: process.env.DB_SSL_PERMISIVO !== 'true',
-          },
+          //
+          // Y lo decide el código, no la URL: el sslmode de la cadena de
+          // conexión se quita. El porqué está en conexion-segura.ts.
+          ...conexionPorUrl(
+            databaseUrl,
+            process.env.DB_SSL_PERMISIVO === 'true',
+          ),
           ...opcionesComunes,
         }
       : {
