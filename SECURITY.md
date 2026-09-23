@@ -29,8 +29,9 @@ build.
 
 That file records the advisories currently accepted, each with the reason and
 an expiry date — after which the build fails again, so a temporary exception
-cannot quietly become permanent. Every entry there today is waiting on a major
-framework upgrade, and each says which one.
+cannot quietly become permanent. Today it is empty: after the NestJS 12 and
+Next.js 16 upgrades there are no known advisories in the production
+dependencies of either the API or the front end.
 
 ## What the application does
 

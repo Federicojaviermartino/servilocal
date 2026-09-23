@@ -29,7 +29,7 @@ through them, and which trade-offs were taken deliberately.
                       └───────────────┬──────────────────────────┘
                                       │ HTTPS
                       ┌───────────────▼──────────────────────────┐
-                      │   Next.js 15 · App Router · SSG + CSR     │
+                      │   Next.js 16 · App Router · SSG + CSR     │
                       │   Prerendered once per locale             │
                       └───────┬───────────────────────┬───────────┘
                      REST/JSON│                       │ WebSocket

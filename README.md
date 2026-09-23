@@ -5,7 +5,7 @@
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
 ![Version](https://img.shields.io/badge/VERSION-1.0.0-2563eb?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
-![Next.js](https://img.shields.io/badge/NEXT.JS-15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![Next.js](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-12-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
 ![PostGIS](https://img.shields.io/badge/POSTGIS-3.6-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 
@@ -136,7 +136,7 @@ later is blocked without anyone having to remember it.
 
 | Layer | Technology |
 |-------|-----------|
-| Front end | React 19, Next.js 15 (App Router), TypeScript |
+| Front end | React 19, Next.js 16 (App Router, Turbopack), TypeScript |
 | Styling | Tailwind CSS with semantic colour tokens, Atomic Design component structure |
 | Internationalisation | next-intl, 10 locales with per-locale static generation, ICU plurals, `hreflang` alternates and RTL support |
 | Back end | NestJS, TypeScript |
@@ -151,7 +151,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 362 unit tests on the API with doubles, plus 18 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 285 in the browser. Playwright for 83 end-to-end tests, each run on desktop and on a 375 px phone, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 362 unit tests on the API with doubles, plus 18 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 289 in the browser. Playwright for 83 end-to-end tests, each run on desktop and on a 375 px phone, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -163,7 +163,7 @@ Three-tier client–server. The front end consumes the REST API; the API persist
 
 ```
 ┌──────────────────┐        HTTPS / JSON      ┌──────────────────┐
-│    Next.js 15    │ ───────────────────────► │     NestJS 12    │
+│    Next.js 16    │ ───────────────────────► │     NestJS 12    │
 │    App Router    │ ◄─────────────────────── │     REST API     │
 │    10 locales    │                          │    JWT + Roles   │
 └──────────────────┘                          └────────┬─────────┘
@@ -317,7 +317,7 @@ servilocal/
       database/
         migrations/         Schema history — the only source of truth
         seeds/              Reproducible demo data
-  frontend/                 Next.js 15 App Router + Tailwind
+  frontend/                 Next.js 16 App Router + Tailwind
     .storybook/             Component catalogue config and sample data
     e2e/                    Playwright specs, desktop and mobile projects
     messages/               Translation catalogues, one JSON per locale
@@ -474,7 +474,7 @@ npm run build
 cd frontend
 npm run lint
 npm run type-check
-npm run test          # 285 unit tests (Vitest)
+npm run test          # 289 unit tests (Vitest)
 npm run test:cov      # fails below 78% statements / 78% branches
 npm run build
 
