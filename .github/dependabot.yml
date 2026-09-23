@@ -10,6 +10,18 @@
 # una a una son tantas que se acaban ignorando todas, que es lo mismo que no
 # tenerlas. Las mayores van sueltas, porque cada una necesita que alguien la
 # mire.
+#
+# Hay paquetes que solo funcionan si suben a la vez, y esos van en su propio
+# grupo aunque sea una versión mayor. Sueltos, Dependabot sube uno sin el
+# otro y la propuesta nace rota: pasó con el analizador de typescript-eslint,
+# que subió a la 8 dejando el plugin en la 6.
+#
+# Y hay versiones mayores que se ignoran a propósito. No porque no importen,
+# sino porque cada una es una migración que hay que hacer con intención, y
+# mientras no se haga su propuesta solo puede salir en rojo. Que no se
+# olviden no depende de Dependabot: la verja de vulnerabilidades de la
+# integración tiene aceptados sus avisos con fecha de caducidad, y cuando
+# caduque volverá a fallar hasta que la migración esté hecha.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -19,8 +31,25 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
+      # El orden importa: un paquete va al primer grupo que lo recoge.
+      typescript-eslint:
+        patterns: ['@typescript-eslint/*']
+      nestjs:
+        patterns: ['@nestjs/*']
+        update-types: ['minor', 'patch']
       menores-y-parches:
         update-types: ['minor', 'patch']
+    ignore:
+      # NestJS 12 se publica solo como ESM y Jest, en CommonJS, no puede ni
+      # cargarlo: la propuesta de @nestjs/typeorm 12 falló por eso en todas
+      # las pruebas. Es la migración que cierra los avisos aceptados del
+      # servidor, y va en su propia rama.
+      - dependency-name: '@nestjs/*'
+        update-types: ['version-update:semver-major']
+      # Los tipos de Node tienen que ser los de la versión que corre, que es
+      # la 22. Los de la 26 compilarían código que en producción no existe.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'Actualiza'
 
@@ -31,8 +60,28 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
+      # stripe-js y react-stripe-js se piden la una a la otra en versiones
+      # concretas: la 6 de la segunda no instala con la 3 de la primera.
+      stripe:
+        patterns: ['@stripe/*']
       menores-y-parches:
         update-types: ['minor', 'patch']
+    ignore:
+      # Next 16 es la migración que cierra los avisos aceptados del frontend,
+      # y trae consigo el cambio de ESLint.
+      - dependency-name: 'next'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'eslint-config-next'
+        update-types: ['version-update:semver-major']
+      # La configuración de Next 15 no admite ESLint 10.
+      - dependency-name: 'eslint'
+        update-types: ['version-update:semver-major']
+      # Tailwind 4 cambia el modelo de configuración entero, de fichero de
+      # JavaScript a CSS. No es una subida, es rehacer los estilos.
+      - dependency-name: 'tailwindcss'
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: 'Actualiza'
 

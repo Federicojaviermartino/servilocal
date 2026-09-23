@@ -7,6 +7,10 @@ name: CI
 # mezclado, que es cuando enterarse sirve de menos.
 on:
   push:
+    # Salvo las ramas de Dependabot, que ya se prueban como propuesta:
+    # probarlas también al empujar hacía cada comprobación dos veces sin
+    # ganar nada.
+    branches-ignore: ['dependabot/**']
   pull_request:
     branches: [main]
 
