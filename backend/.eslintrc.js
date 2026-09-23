@@ -13,8 +13,25 @@ module.exports = {
   ],
   env: {
     node: true,
-    jest: true,
   },
+  // Los globales de Vitest en las pruebas. Con TypeScript, no-undef está
+  // desactivado y esto no cambia qué se señala; se declara para que quien lea
+  // la configuración sepa con qué corren las pruebas.
+  overrides: [
+    {
+      files: ['**/*.spec.ts', 'test/**/*.ts'],
+      globals: {
+        vi: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        beforeEach: 'readonly',
+        afterAll: 'readonly',
+        afterEach: 'readonly',
+      },
+    },
+  ],
   ignorePatterns: ['.eslintrc.js', 'dist/', 'node_modules/', 'coverage/'],
   rules: {
     '@typescript-eslint/explicit-function-return-type': 'off',

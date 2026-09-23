@@ -18,8 +18,8 @@ import { FiltroDeExcepciones } from './excepciones.filter';
  * filtran los detalles internos sin querer.
  */
 function construir(peticion: Record<string, unknown> = {}) {
-  const json = jest.fn();
-  const status = jest.fn(() => ({ json }));
+  const json = vi.fn();
+  const status = vi.fn(() => ({ json }));
 
   const host = {
     switchToHttp: () => ({
@@ -42,11 +42,11 @@ describe('FiltroDeExcepciones', () => {
     // cuenta y no por consola: sin silenciarlo ahí, la salida de la batería
     // se llena de trazas de excepciones provocadas a propósito y las que
     // importan de verdad se pierden entre ellas.
-    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('una excepción HTTP conserva su código y su mensaje', async () => {
@@ -114,7 +114,7 @@ describe('FiltroDeExcepciones', () => {
     // acababa espiando la consola. Pasaba aunque el filtro registrara los
     // 4xx, comprobado haciéndolo.
     const { filtro, host } = construir();
-    const registro = jest
+    const registro = vi
       .spyOn(registrador(filtro), 'error')
       .mockImplementation(() => undefined);
 
@@ -127,7 +127,7 @@ describe('FiltroDeExcepciones', () => {
     // La contrapartida de la prueba anterior: si no se registrara ninguno,
     // aquella pasaría por el motivo equivocado.
     const { filtro, host } = construir({ user: { id: 'u1' } });
-    const registro = jest
+    const registro = vi
       .spyOn(registrador(filtro), 'error')
       .mockImplementation(() => undefined);
 

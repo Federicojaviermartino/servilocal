@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -15,10 +15,18 @@ import { User } from '../entities';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
+      // getOrThrow y no get: sin clave, la API no arranca. Con get se firmaba
+      // con undefined y el fallo aparecía después, en el primer acceso, lejos
+      // de su causa.
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION', '24h'),
+          // El tipo exige una duración con unidad ('24h', '7d'). El valor
+          // viene de una variable de entorno, así que se afirma aquí.
+          expiresIn: configService.get<string>(
+            'JWT_EXPIRATION',
+            '24h',
+          ) as JwtSignOptions['expiresIn'],
         },
       }),
     }),

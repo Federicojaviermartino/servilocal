@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Category, Service } from '../entities';
@@ -22,7 +23,7 @@ function montar(opciones: {
   hayMargen?: boolean;
   resultados?: (filtros: Record<string, unknown>) => number;
 }) {
-  const buscar = jest.fn(async (filtros: Record<string, unknown>) => {
+  const buscar = vi.fn(async (filtros: Record<string, unknown>) => {
     const total = opciones.resultados ? opciones.resultados(filtros) : 1;
     return {
       data: Array.from({ length: total }, (_, i) => ({ id: `s${i}` })),
@@ -30,7 +31,7 @@ function montar(opciones: {
     };
   });
 
-  const completar = jest.fn(async () => {
+  const completar = vi.fn(async () => {
     if (opciones.lanza) throw opciones.lanza;
     return {
       texto: opciones.respuesta ?? '{}',
@@ -41,17 +42,17 @@ function montar(opciones: {
   });
 
   const presupuesto = {
-    hayMargen: jest.fn(async () => opciones.hayMargen ?? true),
-    costeMaximo: jest.fn(() => 1),
-    registrarExito: jest.fn(async () => undefined),
-    registrarFallo: jest.fn(async () => undefined),
+    hayMargen: vi.fn(async () => opciones.hayMargen ?? true),
+    costeMaximo: vi.fn(() => 1),
+    registrarExito: vi.fn(async () => undefined),
+    registrarFallo: vi.fn(async () => undefined),
   };
 
-  const qb: Record<string, jest.Mock> = {
-    getRawMany: jest.fn(async () => CIUDADES.map((city) => ({ city }))),
+  const qb: Record<string, Mock> = {
+    getRawMany: vi.fn(async () => CIUDADES.map((city) => ({ city }))),
   };
   for (const metodo of ['select', 'where']) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
 
   return { buscar, completar, presupuesto, qb };
@@ -75,11 +76,11 @@ async function construir(opciones: Parameters<typeof montar>[0] = {}) {
       { provide: ServicesService, useValue: { search: buscar } },
       {
         provide: getRepositoryToken(Category),
-        useValue: { find: jest.fn(async () => CATEGORIAS) },
+        useValue: { find: vi.fn(async () => CATEGORIAS) },
       },
       {
         provide: getRepositoryToken(Service),
-        useValue: { createQueryBuilder: jest.fn(() => qb) },
+        useValue: { createQueryBuilder: vi.fn(() => qb) },
       },
     ],
   }).compile();

@@ -5,7 +5,7 @@ import { AuditoriaService } from './auditoria.service';
 
 describe('AuditoriaController', () => {
   let controlador: AuditoriaController;
-  const auditoria = { listar: jest.fn(async () => ({ datos: [] })) };
+  const auditoria = { listar: vi.fn(async () => ({ datos: [] })) };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

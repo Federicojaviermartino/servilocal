@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -15,14 +16,14 @@ const DATOS_PERSONALES = [
 ];
 
 function constructorFalso() {
-  const qb: Record<string, jest.Mock> = {
-    getMany: jest.fn(async () => []),
+  const qb: Record<string, Mock> = {
+    getMany: vi.fn(async () => []),
     // El conteo acotado clona la consulta y le quita el orden y la ventana
     // para envolverla en un COUNT con LIMIT. El clon es el mismo doble: lo
     // que interesa comprobar son las condiciones, y son las mismas.
-    clone: jest.fn(() => qb),
-    getQuery: jest.fn(() => 'SELECT 1'),
-    getParameters: jest.fn(() => ({})),
+    clone: vi.fn(() => qb),
+    getQuery: vi.fn(() => 'SELECT 1'),
+    getParameters: vi.fn(() => ({})),
   };
   for (const metodo of [
     'leftJoin',
@@ -36,19 +37,19 @@ function constructorFalso() {
     'take',
     'limit',
   ]) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
   return qb;
 }
 
 /** El COUNT acotado que se lanza aparte para paginar. */
 function constructorConteoFalso(cuantos = 0) {
-  const qb: Record<string, jest.Mock> = {
-    getRawOne: jest.fn(async () => ({ n: String(cuantos) })),
-    setParameters: jest.fn(() => qb),
+  const qb: Record<string, Mock> = {
+    getRawOne: vi.fn(async () => ({ n: String(cuantos) })),
+    setParameters: vi.fn(() => qb),
   };
   for (const metodo of ['select', 'from']) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
   return qb;
 }
@@ -60,29 +61,29 @@ function constructorConteoFalso(cuantos = 0) {
  * cruzaba dos tablas y la búsqueda dejaba de poder usar sus índices.
  */
 function constructorCategoriasFalso(devuelve: { id: string }[] = []) {
-  const qb: Record<string, jest.Mock> = {
-    getRawMany: jest.fn(async () => devuelve),
+  const qb: Record<string, Mock> = {
+    getRawMany: vi.fn(async () => devuelve),
   };
   for (const metodo of ['select', 'from', 'where', 'orWhere']) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
   return qb;
 }
 
 async function construir(
-  qb: Record<string, jest.Mock>,
+  qb: Record<string, Mock>,
   categorias = constructorCategoriasFalso(),
   conteo = constructorConteoFalso(),
 ) {
   const repo = {
-    createQueryBuilder: jest.fn(() => qb),
+    createQueryBuilder: vi.fn(() => qb),
     // El servicio usa el manager para dos consultas distintas: la de
     // categorías (que hace un FROM de la entidad) y la del conteo acotado
     // (que hace un FROM de una subconsulta). Se reparten por ahí.
     manager: {
-      createQueryBuilder: jest.fn(() => {
+      createQueryBuilder: vi.fn(() => {
         const repartidor = {
-          select: jest.fn((...args: unknown[]) =>
+          select: vi.fn((...args: unknown[]) =>
             String(args[0]).includes('COUNT')
               ? conteo.select(...args)
               : categorias.select(...args),
@@ -91,11 +92,11 @@ async function construir(
         return repartidor as never;
       }),
     },
-    findOne: jest.fn(async () => null),
-    remove: jest.fn(async () => undefined),
-    save: jest.fn(async (s: unknown) => s),
-    create: jest.fn((s: unknown) => s),
-    find: jest.fn(async () => [] as unknown[]),
+    findOne: vi.fn(async () => null),
+    remove: vi.fn(async () => undefined),
+    save: vi.fn(async (s: unknown) => s),
+    create: vi.fn((s: unknown) => s),
+    find: vi.fn(async () => [] as unknown[]),
   };
 
   const module: TestingModule = await Test.createTestingModule({
@@ -115,7 +116,7 @@ async function construir(
 }
 
 /** Todas las columnas que la consulta llegó a pedir. */
-function columnasPedidas(qb: Record<string, jest.Mock>): string[] {
+function columnasPedidas(qb: Record<string, Mock>): string[] {
   const pedidas: string[] = [];
   for (const llamada of [
     ...qb.addSelect.mock.calls,
@@ -171,7 +172,7 @@ describe('ServicesService', () => {
     it('findById tampoco', async () => {
       // La ficha de un servicio es igual de pública que el listado.
       const qb = constructorFalso();
-      qb.getOne = jest.fn(async () => ({ id: 's1' }));
+      qb.getOne = vi.fn(async () => ({ id: 's1' }));
       const { servicio } = await construir(qb);
 
       await servicio.findById('s1');
@@ -187,7 +188,7 @@ describe('ServicesService', () => {
 
     it('findById avisa si no existe en vez de devolver vacío', async () => {
       const qb = constructorFalso();
-      qb.getOne = jest.fn(async () => null);
+      qb.getOne = vi.fn(async () => null);
       const { servicio } = await construir(qb);
 
       await expect(servicio.findById('fantasma')).rejects.toThrow(
@@ -202,7 +203,7 @@ describe('ServicesService', () => {
 
     async function conServicio() {
       const qb = constructorFalso();
-      qb.getOne = jest.fn(async () => ({
+      qb.getOne = vi.fn(async () => ({
         id: 's1',
         providerId: DUENO,
         title: 'Original',
@@ -238,7 +239,7 @@ describe('ServicesService', () => {
   });
   describe('búsqueda por cercanía', () => {
     /** Todo el SQL que la consulta llegó a acumular, en una sola cadena. */
-    const sql = (qb: Record<string, jest.Mock>) =>
+    const sql = (qb: Record<string, Mock>) =>
       [
         ...qb.andWhere.mock.calls,
         ...qb.where.mock.calls,
@@ -326,7 +327,7 @@ describe('ServicesService', () => {
   });
 
   describe('filtros de la búsqueda', () => {
-    const sql = (qb: Record<string, jest.Mock>) =>
+    const sql = (qb: Record<string, Mock>) =>
       qb.andWhere.mock.calls.map((c) => String(c[0])).join(' ');
 
     it('la ciudad se compara sin acentos y sin mayúsculas, en los dos lados', async () => {
@@ -577,7 +578,7 @@ describe('ServicesService', () => {
       // Cambiar el título no debe tocar la ubicación, y una ubicación a
       // medias (solo latitud) sería peor que ninguna.
       const qb = constructorFalso();
-      qb.getOne = jest.fn(async () => ({
+      qb.getOne = vi.fn(async () => ({
         id: 's1',
         providerId: 'p1',
         location: 'punto-original',
@@ -597,7 +598,7 @@ describe('ServicesService', () => {
 
     it('no deja editar el servicio de otro', async () => {
       const qb = constructorFalso();
-      qb.getOne = jest.fn(async () => ({ id: 's1', providerId: 'p1' }));
+      qb.getOne = vi.fn(async () => ({ id: 's1', providerId: 'p1' }));
       const { servicio, repo } = await construir(qb);
 
       await expect(

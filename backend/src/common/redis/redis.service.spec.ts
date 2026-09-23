@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from './redis.service';
 
@@ -5,10 +6,10 @@ const instancias: Array<{
   url: string;
   opciones: Record<string, unknown>;
   manejadores: Record<string, (e: Error) => void>;
-  quit: jest.Mock;
+  quit: Mock;
 }> = [];
 
-jest.mock('ioredis', () => {
+vi.mock('ioredis', () => {
   return {
     __esModule: true,
     default: class RedisFalso {
@@ -17,7 +18,7 @@ jest.mock('ioredis', () => {
           url,
           opciones,
           manejadores: {} as Record<string, (e: Error) => void>,
-          quit: jest.fn(async () => 'OK'),
+          quit: vi.fn(async () => 'OK'),
         };
         instancias.push(registro);
         Object.assign(this, {
@@ -38,7 +39,7 @@ const con = (url?: string) =>
 describe('RedisService', () => {
   beforeEach(() => {
     instancias.length = 0;
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   describe('sin REDIS_URL', () => {

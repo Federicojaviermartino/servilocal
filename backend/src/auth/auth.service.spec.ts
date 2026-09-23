@@ -7,13 +7,13 @@ import { AuthService } from './auth.service';
 import { User, UserRole } from '../entities';
 
 const mockUserRepository = {
-  findOne: jest.fn(),
-  create: jest.fn(),
-  save: jest.fn(),
+  findOne: vi.fn(),
+  create: vi.fn(),
+  save: vi.fn(),
 };
 
 const mockJwtService = {
-  sign: jest.fn(() => 'mocked-jwt-token'),
+  sign: vi.fn(() => 'mocked-jwt-token'),
 };
 
 describe('AuthService', () => {
@@ -29,7 +29,7 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('debería estar definido', () => {

@@ -7,12 +7,12 @@ const ACTOR = { id: 'admin-1', email: 'admin@servilocal.com' };
 
 async function construir(opciones: { falla?: boolean; total?: number } = {}) {
   const registros = {
-    create: jest.fn((e: unknown) => e),
-    save: jest.fn(async (e: unknown) => {
+    create: vi.fn((e: unknown) => e),
+    save: vi.fn(async (e: unknown) => {
       if (opciones.falla) throw new Error('base caída');
       return { id: 'r1', ...(e as object) };
     }),
-    findAndCount: jest.fn(async (_o: { skip?: number; take?: number }) => [
+    findAndCount: vi.fn(async (_o: { skip?: number; take?: number }) => [
       [],
       opciones.total ?? 0,
     ]),
@@ -30,7 +30,7 @@ async function construir(opciones: { falla?: boolean; total?: number } = {}) {
 
 describe('AuditoriaService', () => {
   beforeEach(() => {
-    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   describe('anotar', () => {

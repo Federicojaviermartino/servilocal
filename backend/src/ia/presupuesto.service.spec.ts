@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -14,8 +15,8 @@ const AJUSTES = {
 };
 
 function repositorioFalso(gastado: number) {
-  const qb: Record<string, jest.Mock> = {
-    getRawOne: jest.fn(async () => ({
+  const qb: Record<string, Mock> = {
+    getRawOne: vi.fn(async () => ({
       suma: String(gastado),
       llamadas: '3',
       fallos: '1',
@@ -23,7 +24,7 @@ function repositorioFalso(gastado: number) {
       tokensSalida: '500',
       coste: String(gastado),
     })),
-    getRawMany: jest.fn(async () => [
+    getRawMany: vi.fn(async () => [
       {
         funcionalidad: 'asistente',
         llamadas: '3',
@@ -33,14 +34,14 @@ function repositorioFalso(gastado: number) {
     ]),
   };
   for (const metodo of ['select', 'addSelect', 'where', 'groupBy', 'orderBy']) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
 
   return {
-    createQueryBuilder: jest.fn(() => qb),
+    createQueryBuilder: vi.fn(() => qb),
     // Tipado con argumentos para poder inspeccionar los parámetros del
     // upsert: sin ellos la tupla de llamadas se infiere vacía.
-    query: jest.fn(async (_sql: string, _parametros: unknown[]) => undefined),
+    query: vi.fn(async (_sql: string, _parametros: unknown[]) => undefined),
   };
 }
 

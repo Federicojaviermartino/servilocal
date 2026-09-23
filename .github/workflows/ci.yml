@@ -292,7 +292,7 @@ jobs:
           # Se comprueban paquetes que solo existen como dependencia de
           # desarrollo directa. typescript no vale: typeorm lo arrastra a
           # través de ts-node y está en el árbol de producción con razón.
-          for paquete in jest @nestjs/cli eslint prettier; do
+          for paquete in vitest vite @nestjs/cli eslint prettier; do
             docker run --rm --entrypoint sh servilocal-api:ci               -c "test ! -d /app/node_modules/$paquete"               || (echo "$paquete no debería estar en la imagen"; exit 1)
           done
 

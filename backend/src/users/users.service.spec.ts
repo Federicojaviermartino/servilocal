@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -7,8 +8,8 @@ import { AuditoriaService } from '../auditoria/auditoria.service';
 
 describe('UsersService', () => {
   let servicio: UsersService;
-  let repo: { findOne: jest.Mock; save: jest.Mock; find: jest.Mock };
-  const auditoria = { anotar: jest.fn(async () => undefined) };
+  let repo: { findOne: Mock; save: Mock; find: Mock };
+  const auditoria = { anotar: vi.fn(async () => undefined) };
 
   const OTRO = 'b2c3d4e5-0000-4000-8000-000000000002';
   const YO = 'a1b2c3d4-0000-4000-8000-000000000001';
@@ -16,9 +17,9 @@ describe('UsersService', () => {
 
   beforeEach(async () => {
     repo = {
-      findOne: jest.fn(async () => ({ id: OTRO, isActive: true }) as User),
-      save: jest.fn(async (u: User) => u),
-      find: jest.fn(async (_o?: unknown) => [] as User[]),
+      findOne: vi.fn(async () => ({ id: OTRO, isActive: true }) as User),
+      save: vi.fn(async (u: User) => u),
+      find: vi.fn(async (_o?: unknown) => [] as User[]),
     };
     auditoria.anotar.mockClear();
 

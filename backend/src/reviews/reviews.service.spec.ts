@@ -11,24 +11,24 @@ import { ReviewsService } from './reviews.service';
 import { Review, Booking, BookingStatus, Service } from '../entities';
 
 const mockReviewRepository = {
-  create: jest.fn(),
-  save: jest.fn(),
-  findOne: jest.fn(),
-  find: jest.fn(),
-  remove: jest.fn(),
-  createQueryBuilder: jest.fn(),
+  create: vi.fn(),
+  save: vi.fn(),
+  findOne: vi.fn(),
+  find: vi.fn(),
+  remove: vi.fn(),
+  createQueryBuilder: vi.fn(),
 };
 
 const mockBookingRepository = {
-  findOne: jest.fn(),
+  findOne: vi.fn(),
 };
 
 const mockServiceRepository = {
-  update: jest.fn(),
+  update: vi.fn(),
 };
 
-const avisos = { crear: jest.fn(async () => null) };
-const auditoria = { anotar: jest.fn(async () => undefined) };
+const avisos = { crear: vi.fn(async () => null) };
+const auditoria = { anotar: vi.fn(async () => undefined) };
 
 describe('ReviewsService', () => {
   let service: ReviewsService;
@@ -52,16 +52,16 @@ describe('ReviewsService', () => {
     }).compile();
 
     service = module.get<ReviewsService>(ReviewsService);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   /** Constructor de consultas para el recálculo de la media. */
   function medias(avg: string | null, count: string) {
     const qb = {
-      select: jest.fn().mockReturnThis(),
-      addSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      getRawOne: jest.fn().mockResolvedValue({ avg, count }),
+      select: vi.fn().mockReturnThis(),
+      addSelect: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      getRawOne: vi.fn().mockResolvedValue({ avg, count }),
     };
     mockReviewRepository.createQueryBuilder.mockReturnValue(qb);
     return qb;
@@ -144,10 +144,10 @@ describe('ReviewsService', () => {
       });
 
       const qbMock = {
-        select: jest.fn().mockReturnThis(),
-        addSelect: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ avg: '5.00', count: '1' }),
+        select: vi.fn().mockReturnThis(),
+        addSelect: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        getRawOne: vi.fn().mockResolvedValue({ avg: '5.00', count: '1' }),
       };
       mockReviewRepository.createQueryBuilder.mockReturnValue(qbMock);
 

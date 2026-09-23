@@ -15,8 +15,8 @@ describe('RolesGuard', () => {
   const contextoCon = (user: unknown): ExecutionContext =>
     ({
       switchToHttp: () => ({ getRequest: () => ({ user }) }),
-      getHandler: () => jest.fn(),
-      getClass: () => jest.fn(),
+      getHandler: () => vi.fn(),
+      getClass: () => vi.fn(),
     }) as unknown as ExecutionContext;
 
   beforeEach(() => {
@@ -25,7 +25,7 @@ describe('RolesGuard', () => {
   });
 
   const exigirRoles = (roles: UserRole[] | undefined) =>
-    jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(roles);
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(roles);
 
   it('deja pasar cuando la ruta no exige ningún rol', () => {
     exigirRoles(undefined);

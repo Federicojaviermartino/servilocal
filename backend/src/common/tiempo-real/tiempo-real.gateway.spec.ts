@@ -12,9 +12,9 @@ function socketFalso(token?: unknown) {
   return {
     handshake: { auth: token === undefined ? {} : { token } },
     data: {} as Record<string, unknown>,
-    join: jest.fn(async () => undefined),
-    emit: jest.fn(),
-    disconnect: jest.fn(),
+    join: vi.fn(async () => undefined),
+    emit: vi.fn(),
+    disconnect: vi.fn(),
   };
 }
 
@@ -22,12 +22,12 @@ async function construir(opciones: {
   verifica?: boolean;
   usuarioActivo?: boolean;
 }) {
-  const verifyAsync = jest.fn(async () => {
+  const verifyAsync = vi.fn(async () => {
     if (opciones.verifica === false) throw new Error('firma inválida');
     return { sub: YO, email: 'yo@ejemplo.com', role: 'client' };
   });
 
-  const findOne = jest.fn(async () =>
+  const findOne = vi.fn(async () =>
     opciones.usuarioActivo === false ? null : ({ id: YO } as User),
   );
 
@@ -93,10 +93,10 @@ describe('TiempoRealGateway', () => {
 
   describe('notificarMensaje', () => {
     function conServidor(gateway: TiempoRealGateway) {
-      const emit = jest.fn(
+      const emit = vi.fn(
         (_evento: string, _carga: { interlocutorId: string }) => undefined,
       );
-      const to = jest.fn((_sala: string) => ({ emit }));
+      const to = vi.fn((_sala: string) => ({ emit }));
       (gateway as unknown as { server: unknown }).server = { to };
       return { to, emit };
     }

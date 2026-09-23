@@ -24,7 +24,7 @@ const CUERPO = Buffer.from('{"type":"payment_intent.succeeded"}');
 async function construir(
   opciones: { secreto?: string; firmaValida?: boolean } = {},
 ) {
-  const pagos = { handleWebhookEvent: jest.fn(async () => undefined) };
+  const pagos = { handleWebhookEvent: vi.fn(async () => undefined) };
 
   const module: TestingModule = await Test.createTestingModule({
     controllers: [PaymentsWebhookController],
@@ -43,7 +43,7 @@ async function construir(
 
   const controlador = module.get(PaymentsWebhookController);
 
-  const constructEvent = jest.fn((cuerpo: Buffer) => {
+  const constructEvent = vi.fn((cuerpo: Buffer) => {
     if (opciones.firmaValida === false) {
       throw new Error('No signatures found matching the expected signature');
     }

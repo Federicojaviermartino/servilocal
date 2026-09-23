@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AdminService } from './admin.service';
@@ -16,7 +17,7 @@ function consultaFalsa(resultado: {
   raw?: unknown;
   count?: number;
 }) {
-  const qb: Record<string, jest.Mock> = {};
+  const qb: Record<string, Mock> = {};
   for (const metodo of [
     'select',
     'addSelect',
@@ -26,11 +27,11 @@ function consultaFalsa(resultado: {
     'orderBy',
     'leftJoin',
   ]) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
-  qb.getRawMany = jest.fn(async () => resultado.raws ?? []);
-  qb.getRawOne = jest.fn(async () => resultado.raw ?? {});
-  qb.getCount = jest.fn(async () => resultado.count ?? 0);
+  qb.getRawMany = vi.fn(async () => resultado.raws ?? []);
+  qb.getRawOne = vi.fn(async () => resultado.raw ?? {});
+  qb.getCount = vi.fn(async () => resultado.count ?? 0);
   return qb;
 }
 
@@ -38,8 +39,8 @@ function consultaFalsa(resultado: {
 function repositorioFalso(consultas: ReturnType<typeof consultaFalsa>[]) {
   let i = 0;
   return {
-    count: jest.fn(async () => 0),
-    createQueryBuilder: jest.fn(() => consultas[i++] ?? consultaFalsa({})),
+    count: vi.fn(async () => 0),
+    createQueryBuilder: vi.fn(() => consultas[i++] ?? consultaFalsa({})),
   };
 }
 

@@ -9,16 +9,19 @@
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
+    // TypeScript 6 activa esto por defecto y daba 179 errores, todos en DTO y
+    // entidades: clases que no se rellenan con su constructor sino con
+    // class-transformer o TypeORM, algo que el compilador no puede saber.
+    // Con TypeScript 5 estaba desactivado. El resto de comprobaciones
+    // estrictas que la 6 trae por defecto el código ya las cumplía y quedan
+    // activas.
+    "strictPropertyInitialization": false,
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@/*": ["src/*"]
-    }
+    "noFallthroughCasesInSwitch": true
   }
 }

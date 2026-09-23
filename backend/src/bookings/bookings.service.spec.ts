@@ -11,21 +11,21 @@ import { BookingsService } from './bookings.service';
 import { Booking, BookingStatus, Service } from '../entities';
 
 const mockBookingRepository = {
-  create: jest.fn(),
-  save: jest.fn(),
-  findOne: jest.fn(),
-  find: jest.fn(),
+  create: vi.fn(),
+  save: vi.fn(),
+  findOne: vi.fn(),
+  find: vi.fn(),
 };
 
 const mockServiceRepository = {
-  findOne: jest.fn(),
+  findOne: vi.fn(),
 };
 
-const avisos = { crear: jest.fn(async () => null) };
+const avisos = { crear: vi.fn(async () => null) };
 
 const pagos = {
-  cobrarAlCompletar: jest.fn(async () => null),
-  liberarRetencion: jest.fn(async () => null),
+  cobrarAlCompletar: vi.fn(async () => null),
+  liberarRetencion: vi.fn(async () => null),
 };
 
 describe('BookingsService', () => {
@@ -49,7 +49,7 @@ describe('BookingsService', () => {
     }).compile();
 
     service = module.get<BookingsService>(BookingsService);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('debería estar definido', () => {

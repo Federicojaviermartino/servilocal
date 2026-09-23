@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -22,7 +23,7 @@ function conversacion() {
 
 /** Constructor de consultas encadenable, con las salidas que se le pidan. */
 function qbFalso(salidas: Record<string, unknown> = {}) {
-  const qb: Record<string, jest.Mock> = {};
+  const qb: Record<string, Mock> = {};
   for (const metodo of [
     'select',
     'addSelect',
@@ -36,13 +37,13 @@ function qbFalso(salidas: Record<string, unknown> = {}) {
     'update',
     'set',
   ]) {
-    qb[metodo] = jest.fn(() => qb);
+    qb[metodo] = vi.fn(() => qb);
   }
-  qb.execute = jest.fn(async () => ({ affected: 0 }));
-  qb.getMany = jest.fn(async () => salidas.getMany ?? []);
-  qb.getRawMany = jest.fn(async () => salidas.getRawMany ?? []);
-  qb.getOne = jest.fn(async () => salidas.getOne ?? null);
-  qb.getCount = jest.fn(async () => salidas.getCount ?? 0);
+  qb.execute = vi.fn(async () => ({ affected: 0 }));
+  qb.getMany = vi.fn(async () => salidas.getMany ?? []);
+  qb.getRawMany = vi.fn(async () => salidas.getRawMany ?? []);
+  qb.getOne = vi.fn(async () => salidas.getOne ?? null);
+  qb.getCount = vi.fn(async () => salidas.getCount ?? 0);
   return qb;
 }
 
@@ -71,18 +72,18 @@ async function construir(
   });
 
   const conversaciones = {
-    findOne: jest.fn(async () => hilo),
-    save: jest.fn(async (c: unknown) => c),
-    create: jest.fn((c: unknown) => c),
-    createQueryBuilder: jest.fn(() => qbConversaciones),
+    findOne: vi.fn(async () => hilo),
+    save: vi.fn(async (c: unknown) => c),
+    create: vi.fn((c: unknown) => c),
+    createQueryBuilder: vi.fn(() => qbConversaciones),
   };
   const mensajes = {
-    create: jest.fn((m: unknown) => ({ id: 'm1', ...(m as object) })),
-    save: jest.fn(async (m: unknown) => m),
-    find: jest.fn(async (_opciones?: unknown) => [] as unknown[]),
-    createQueryBuilder: jest.fn(() => qbMensajes),
+    create: vi.fn((m: unknown) => ({ id: 'm1', ...(m as object) })),
+    save: vi.fn(async (m: unknown) => m),
+    find: vi.fn(async (_opciones?: unknown) => [] as unknown[]),
+    createQueryBuilder: vi.fn(() => qbMensajes),
   };
-  const gateway = { notificarMensaje: jest.fn() };
+  const gateway = { notificarMensaje: vi.fn() };
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
@@ -222,7 +223,7 @@ describe('MessagesService', () => {
       } as never);
 
       // objectContaining y no igualdad estricta: el servicio le añade después
-      // la vista previa al mismo objeto, y jest guarda la referencia.
+      // la vista previa al mismo objeto, y vi.fn guarda la referencia.
       expect(conversaciones.create).toHaveBeenCalledWith(
         expect.objectContaining({
           participantOneId: YO,

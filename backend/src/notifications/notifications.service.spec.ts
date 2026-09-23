@@ -10,21 +10,21 @@ const OTRO = 'u-otro';
 
 async function construir(opciones: { falla?: boolean; existe?: boolean } = {}) {
   const avisos = {
-    create: jest.fn((a: unknown) => a),
-    save: jest.fn(async (a: unknown) => {
+    create: vi.fn((a: unknown) => a),
+    save: vi.fn(async (a: unknown) => {
       if (opciones.falla) throw new Error('base caída');
       return { id: 'a1', ...(a as object) };
     }),
-    find: jest.fn(async (_opciones: { take?: number }) => []),
-    count: jest.fn(async () => 3),
-    findOne: jest.fn(async () =>
+    find: vi.fn(async (_opciones: { take?: number }) => []),
+    count: vi.fn(async () => 3),
+    findOne: vi.fn(async () =>
       opciones.existe === false
         ? null
         : { id: 'a1', userId: YO, isRead: false },
     ),
-    update: jest.fn(async () => ({ affected: 4 })),
+    update: vi.fn(async () => ({ affected: 4 })),
   };
-  const tiempoReal = { notificarAviso: jest.fn() };
+  const tiempoReal = { notificarAviso: vi.fn() };
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
@@ -39,7 +39,7 @@ async function construir(opciones: { falla?: boolean; existe?: boolean } = {}) {
 
 describe('NotificationsService', () => {
   beforeEach(() => {
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   describe('crear', () => {

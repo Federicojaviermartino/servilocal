@@ -2,10 +2,12 @@ import Redis from 'ioredis';
 import { AlmacenThrottlerTolerante } from './almacen-throttler';
 import { RedisService } from './redis.service';
 
-jest.mock('@nest-lab/throttler-storage-redis', () => ({
-  ThrottlerStorageRedisService: jest.fn().mockImplementation(() => ({
-    increment: (...args: unknown[]) => incrementoRedis(...args),
-  })),
+// Función normal y no flecha: el almacén crea el servicio con new, y una
+// flecha no se puede usar como constructor. Jest lo toleraba; Vitest no.
+vi.mock('@nest-lab/throttler-storage-redis', () => ({
+  ThrottlerStorageRedisService: vi.fn().mockImplementation(function () {
+    return { increment: (...args: unknown[]) => incrementoRedis(...args) };
+  }),
 }));
 
 let incrementoRedis: (...args: unknown[]) => Promise<unknown>;
@@ -20,7 +22,7 @@ const ARGS = ['clave', 60000, 5, 0, 'default'] as const;
 
 describe('AlmacenThrottlerTolerante', () => {
   beforeEach(() => {
-    jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
   });
 
   describe('sin REDIS_URL', () => {
@@ -39,7 +41,7 @@ describe('AlmacenThrottlerTolerante', () => {
 
   describe('con Redis', () => {
     it('devuelve lo que diga Redis', async () => {
-      incrementoRedis = jest.fn(async () => ({
+      incrementoRedis = vi.fn(async () => ({
         totalHits: 7,
         timeToExpire: 42,
         isBlocked: false,
@@ -54,7 +56,7 @@ describe('AlmacenThrottlerTolerante', () => {
     });
 
     it('respeta el bloqueo que venga de Redis', async () => {
-      incrementoRedis = jest.fn(async () => ({
+      incrementoRedis = vi.fn(async () => ({
         totalHits: 99,
         timeToExpire: 10,
         isBlocked: true,
@@ -69,7 +71,7 @@ describe('AlmacenThrottlerTolerante', () => {
       // La alternativa es devolver un error a todo el mundo porque se ha
       // caído el contador: tumbar el sitio entero para proteger un límite
       // de tráfico.
-      incrementoRedis = jest.fn(async () => {
+      incrementoRedis = vi.fn(async () => {
         throw new Error('conexión rechazada');
       });
       const almacen = new AlmacenThrottlerTolerante(servicioRedis(true));
@@ -84,7 +86,7 @@ describe('AlmacenThrottlerTolerante', () => {
       // Con varias instancias, cada una llevaría su propia cuenta y el
       // límite real se multiplicaría sin que nadie lo supiera. Mejor no
       // limitar y decirlo, que limitar mal y callarlo.
-      incrementoRedis = jest.fn(async () => {
+      incrementoRedis = vi.fn(async () => {
         throw new Error('caído');
       });
       const almacen = new AlmacenThrottlerTolerante(servicioRedis(true));
@@ -98,7 +100,7 @@ describe('AlmacenThrottlerTolerante', () => {
 
     it('vuelve a usar Redis en cuanto responde otra vez', async () => {
       let caido = true;
-      incrementoRedis = jest.fn(async () => {
+      incrementoRedis = vi.fn(async () => {
         if (caido) throw new Error('caído');
         return {
           totalHits: 3,

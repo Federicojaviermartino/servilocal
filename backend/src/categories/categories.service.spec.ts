@@ -12,17 +12,17 @@ const ARBOL = [{ id: 'c1', name: 'Fontanería', slug: 'fontaneria' }];
 
 async function construir(existente: unknown = ARBOL[0]) {
   const repo = {
-    find: jest.fn(async () => ARBOL),
-    findOne: jest.fn(async () => existente),
-    create: jest.fn((c: unknown) => c),
-    save: jest.fn(async (c: unknown) => ({ id: 'nueva', ...(c as object) })),
-    remove: jest.fn(async () => undefined),
+    find: vi.fn(async () => ARBOL),
+    findOne: vi.fn(async () => existente),
+    create: vi.fn((c: unknown) => c),
+    save: vi.fn(async (c: unknown) => ({ id: 'nueva', ...(c as object) })),
+    remove: vi.fn(async () => undefined),
   };
 
   // Caché de mentira que sí guarda, para poder comprobar que se invalida.
   const guardado = new Map<string, unknown>();
   const cache = {
-    recordar: jest.fn(
+    recordar: vi.fn(
       async (clave: string, _s: number, calcular: () => Promise<unknown>) => {
         if (guardado.has(clave)) return guardado.get(clave);
         const valor = await calcular();
@@ -30,7 +30,7 @@ async function construir(existente: unknown = ARBOL[0]) {
         return valor;
       },
     ),
-    olvidar: jest.fn(async (clave: string) => {
+    olvidar: vi.fn(async (clave: string) => {
       guardado.delete(clave);
     }),
   };
@@ -42,7 +42,7 @@ async function construir(existente: unknown = ARBOL[0]) {
       { provide: CacheService, useValue: cache },
       {
         provide: AuditoriaService,
-        useValue: { anotar: jest.fn(async () => undefined) },
+        useValue: { anotar: vi.fn(async () => undefined) },
       },
     ],
   }).compile();

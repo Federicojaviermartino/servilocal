@@ -18,11 +18,11 @@ const NUEVA = 'pi_nueva_456';
 function stripeFalso() {
   return {
     paymentIntents: {
-      capture: jest.fn(async () => ({ id: INTENCION })),
-      cancel: jest.fn(async () => ({ id: INTENCION })),
+      capture: vi.fn(async () => ({ id: INTENCION })),
+      cancel: vi.fn(async () => ({ id: INTENCION })),
       // Los parámetros están declarados porque alguna comprobación mira el
       // segundo, el de la clave de idempotencia.
-      create: jest.fn(
+      create: vi.fn(
         async (
           _parametros: Stripe.PaymentIntentCreateParams,
           _opciones?: Stripe.RequestOptions,
@@ -31,14 +31,14 @@ function stripeFalso() {
           client_secret: 'cs_nueva',
         }),
       ),
-      retrieve: jest.fn(async () => ({
+      retrieve: vi.fn(async () => ({
         id: INTENCION,
         client_secret: 'cs_existente',
         status: 'requires_payment_method' as Stripe.PaymentIntent.Status,
       })),
     },
     refunds: {
-      create: jest.fn(async () => ({ id: 're_prueba' })),
+      create: vi.fn(async () => ({ id: 're_prueba' })),
     },
   };
 }
@@ -52,37 +52,37 @@ async function construir(
     // él: `where: { bookingId, status: HELD }` no debe devolver un pago ya
     // cobrado. Un doble que ignora el where convierte esas comprobaciones
     // en una prueba del propio doble.
-    findOne: jest.fn(async (opciones?: { where?: { status?: string } }) => {
+    findOne: vi.fn(async (opciones?: { where?: { status?: string } }) => {
       const buscado = opciones?.where?.status;
       if (buscado && pago && (pago as Payment).status !== buscado) return null;
       return pago as Payment | null;
     }),
-    find: jest.fn(async () => [] as Payment[]),
-    create: jest.fn((p: Partial<Payment>) => p as Payment),
-    save: jest.fn(async (p: Payment) => p),
+    find: vi.fn(async () => [] as Payment[]),
+    create: vi.fn((p: Partial<Payment>) => p as Payment),
+    save: vi.fn(async (p: Payment) => p),
   };
 
   const reservas = {
-    findOne: jest.fn(async () => reserva as Booking | null),
-    save: jest.fn(async (b: Booking) => b),
+    findOne: vi.fn(async () => reserva as Booking | null),
+    save: vi.fn(async (b: Booking) => b),
   };
 
   // El gestor que recibe la transacción reparte según la entidad, de modo
   // que las comprobaciones siguen mirando los mismos dobles de siempre.
   const gestor = {
-    findOne: jest.fn(async (entidad: unknown, opciones?: unknown) =>
+    findOne: vi.fn(async (entidad: unknown, opciones?: unknown) =>
       entidad === Booking
         ? await reservas.findOne()
         : await pagos.findOne(opciones as never),
     ),
-    save: jest.fn(async (entidad: unknown) => pagos.save(entidad as never)),
-    create: jest.fn((_entidad: unknown, datos: unknown) =>
+    save: vi.fn(async (entidad: unknown) => pagos.save(entidad as never)),
+    create: vi.fn((_entidad: unknown, datos: unknown) =>
       pagos.create(datos as never),
     ),
   };
 
   const dataSource = {
-    transaction: jest.fn(
+    transaction: vi.fn(
       async (ejecutar: (g: typeof gestor) => Promise<unknown>) =>
         ejecutar(gestor),
     ),
@@ -405,7 +405,7 @@ describe('PaymentsService', () => {
         },
         RESERVA,
       );
-      stripe.paymentIntents.retrieve = jest.fn(async () => ({
+      stripe.paymentIntents.retrieve = vi.fn(async () => ({
         id: 'pi_caducada',
         status: 'canceled' as Stripe.PaymentIntent.Status,
       })) as never;
