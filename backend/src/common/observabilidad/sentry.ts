@@ -1,4 +1,59 @@
 import * as Sentry from '@sentry/node';
+import type { Event, NodeOptions } from '@sentry/node';
+
+/** Cabeceras que llevan credenciales: el token y las cookies. */
+const CABECERAS_SECRETAS = ['authorization', 'cookie'];
+
+/**
+ * Las mismas cabeceras, tal como Sentry las copia en los datos de la traza.
+ * Las cookies van una a una: `http.request.header.cookie.<nombre>`.
+ */
+const ATRIBUTO_SECRETO = /^http\.request\.header\.(authorization|cookie)(\.|$)/;
+
+function limpiarDatos(datos: Record<string, unknown> | undefined): void {
+  if (!datos) return;
+  for (const clave of Object.keys(datos)) {
+    if (ATRIBUTO_SECRETO.test(clave)) delete datos[clave];
+  }
+}
+
+/**
+ * Quita de lo que se envía a Sentry todo lo que abre una sesión.
+ *
+ * Se aplica a los errores y también a las transacciones de rendimiento, que
+ * era lo que faltaba: beforeSend solo ve los errores, y cada transacción
+ * muestreada llevaba las cabeceras de la petición tal cual, token incluido.
+ *
+ * Sentry tapa algunas por su cuenta, pero decide por el nombre, en inglés:
+ * «authorization» la reconoce en las trazas, pero una cookie cuyo nombre no
+ * diga «session» o «token» no. Y las cookies de los errores las adjunta
+ * aparte, en request.cookies, sin filtrar nada.
+ * Medido con el SDK de verdad: ver sentry.spec.ts.
+ */
+export function limpiarEvento<T extends Event>(evento: T): T {
+  const peticion = evento.request;
+  if (peticion) {
+    delete peticion.cookies;
+    for (const nombre of CABECERAS_SECRETAS) delete peticion.headers?.[nombre];
+  }
+
+  limpiarDatos(evento.contexts?.trace?.data);
+  for (const tramo of evento.spans ?? []) limpiarDatos(tramo.data);
+
+  return evento;
+}
+
+export function opcionesDeSentry(dsn: string): NodeOptions {
+  return {
+    dsn,
+    environment: process.env.NODE_ENV || 'development',
+    // Muestreo de trazas de rendimiento. Se deja bajo a propósito: el plan
+    // gratuito tiene cupo y lo que interesa aquí son los errores.
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0.1,
+    beforeSend: limpiarEvento,
+    beforeSendTransaction: limpiarEvento,
+  };
+}
 
 /**
  * Captura de errores en producción.
@@ -14,22 +69,7 @@ export function iniciarSentry(): boolean {
   const dsn = process.env.SENTRY_DSN;
   if (!dsn) return false;
 
-  Sentry.init({
-    dsn,
-    environment: process.env.NODE_ENV || 'development',
-    // Muestreo de trazas de rendimiento. Se deja bajo a propósito: el plan
-    // gratuito tiene cupo y lo que interesa aquí son los errores.
-    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0.1,
-    beforeSend(evento) {
-      // Nunca se envía la cabecera de autorización ni las cookies: llevan el
-      // token de sesión del usuario.
-      if (evento.request?.headers) {
-        delete evento.request.headers.authorization;
-        delete evento.request.headers.cookie;
-      }
-      return evento;
-    },
-  });
+  Sentry.init(opcionesDeSentry(dsn));
 
   return true;
 }

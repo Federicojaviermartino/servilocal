@@ -48,6 +48,8 @@ export default defineConfig({
         'src/**/filters/**/*.ts',
         'src/**/payments-webhook.controller.ts',
         'src/**/transformers/**/*.ts',
+        // Qué credenciales se quitan antes de enviar nada a Sentry.
+        'src/common/observabilidad/sentry.ts',
       ],
       exclude: ['src/**/*.spec.ts'],
       reportsDirectory: 'coverage',
