@@ -29,6 +29,9 @@ on:
     - cron: '*/10 8-15 * * *'
   workflow_dispatch:
 
+# Solo hace peticiones a la demo: no necesita ni leer el repositorio.
+permissions: {}
+
 jobs:
   ping:
     runs-on: ubuntu-latest

@@ -1,0 +1,21 @@
+# Configuración de la búsqueda de secretos filtrados.
+#
+# Se parte de las reglas de gitleaks tal cual y solo se añade una excepción,
+# con criterio en vez de con una lista de valores: una clave de Stripe hecha
+# únicamente de palabras en minúscula es un marcador. Las de verdad llevan
+# mayúsculas y cifras al azar (sk_test_51Hq...), así que la excepción no
+# puede tapar una real.
+#
+# Los marcadores existen a propósito: sk_test_integracion para el emulador
+# de Stripe, sk_test_marcador para que la integración arranque sin secretos
+# y sk_test_placeholder en la configuración de ejemplo. Sin la excepción,
+# la búsqueda los señalaría en cada ejecución y acabaría por no mirarla
+# nadie.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Claves de Stripe que son palabras, no claves"
+regexTarget = "match"
+regexes = ['''(?:sk|rk|pk)_test_[a-z_]+\b''']

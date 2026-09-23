@@ -146,9 +146,11 @@ test.describe('Idioma', () => {
     await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(
       0,
     );
+    // Anclada al principio: sin el ^, también valdría una canónica que
+    // apuntara a otro dominio y llevara «onrender.com/services/» en la ruta.
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
-      /onrender\.com\/services\//,
+      /^https:\/\/servilocal-web\.onrender\.com\/services\//,
     );
 
     // Lo que sí mejora para quien la lee en alemán: el marco del precio.

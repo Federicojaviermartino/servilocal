@@ -1,0 +1,59 @@
+# Análisis estático del código propio.
+#
+# npm audit mira las dependencias; esto mira lo que escribimos nosotros:
+# inyecciones, rutas sin validar, datos que salen a donde no deben,
+# expresiones regulares que se pueden burlar. Y en el mismo pase, los
+# propios flujos de trabajo, que también son código y corren con acceso al
+# repositorio.
+#
+# Se usa el juego ampliado de consultas de seguridad. La primera pasada, con
+# 169 commits de historia, no encontró nada en el código de la aplicación:
+# salieron una expresión regular sin anclar en una prueba y nueve avisos en
+# los flujos de trabajo —permisos sin declarar y una acción fijada por
+# etiqueta—, todos arreglados en el mismo cambio que añade esto.
+#
+# Los resultados van a la pestaña Security del repositorio.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Una vez por semana aunque no se toque nada: las consultas se actualizan
+  # y pueden encontrar hoy algo que ayer no sabían buscar.
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analizar:
+    name: Análisis (${{ matrix.lenguaje }})
+    runs-on: ubuntu-latest
+
+    # Lo único que necesita además de leer: publicar lo que encuentra.
+    permissions:
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        lenguaje: [javascript-typescript, actions]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Sin compilar: TypeScript y los flujos de trabajo se analizan desde el
+      # fuente.
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.lenguaje }}
+          build-mode: none
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:${{ matrix.lenguaje }}

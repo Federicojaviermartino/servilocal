@@ -14,6 +14,14 @@ on:
   pull_request:
     branches: [main]
 
+# El token que GitHub da a cada trabajo tiene los permisos por defecto del
+# repositorio si no se dice otra cosa, y eso puede incluir escribir en él.
+# Aquí nada escribe: se descarga el código, se compila y se prueba. Si algún
+# paso se viera comprometido —una acción de terceros, una dependencia—, con
+# esto no podría empujar nada.
+permissions:
+  contents: read
+
 jobs:
   backend-test:
     runs-on: ubuntu-latest
@@ -211,6 +219,32 @@ jobs:
 
       - name: Comprobar que no hay avisos nuevos
         run: node scripts/auditoria-dependencias.mjs
+
+  secretos:
+    name: Secretos filtrados
+    runs-on: ubuntu-latest
+
+    steps:
+      # Con la historia entera: un secreto borrado en un commit posterior
+      # sigue estando en el anterior, y el repositorio es público.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # El binario y no la imagen de Docker: dentro del contenedor, git se
+      # niega a leer un repositorio montado que es de otro usuario. Se
+      # comprueba la suma antes de ejecutarlo, porque es código de terceros
+      # que va a leer todo el historial.
+      - name: Buscar secretos en todo el historial
+        run: |
+          version=8.30.1
+          archivo=gitleaks_${version}_linux_x64.tar.gz
+          url=https://github.com/gitleaks/gitleaks/releases/download/v${version}/${archivo}
+          suma=551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+          curl -sSfL -o "$archivo" "$url"
+          echo "$suma  $archivo" | sha256sum --check --strict
+          tar -xzf "$archivo" gitleaks
+          ./gitleaks git . --config .gitleaks.toml --redact --no-banner
 
   imagenes:
     name: Construcción de las imágenes

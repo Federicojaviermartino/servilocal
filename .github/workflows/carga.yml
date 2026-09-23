@@ -16,6 +16,10 @@ on:
         required: false
         default: '50000'
 
+# Solo lee el código; ver ci.yml.
+permissions:
+  contents: read
+
 jobs:
   busqueda:
     name: Búsqueda con catálogo grande
@@ -89,8 +93,11 @@ jobs:
           done
           echo "La API no llegó a responder:"; tail -40 api.log; exit 1
 
+      # Fijada por commit y no por etiqueta: una etiqueta la puede mover
+      # quien controle ese repositorio, y esta acción corre con acceso al
+      # nuestro. Dependabot sabe actualizar las fijadas así.
       - name: Medir
-        uses: grafana/setup-k6-action@v1
+        uses: grafana/setup-k6-action@43b9fc21641a76002687994433dd586f56e791b1 # v1.2.2
 
       - name: Ejecutar la prueba de carga
         run: k6 run scripts/carga/busqueda.js
