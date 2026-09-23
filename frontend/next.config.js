@@ -52,6 +52,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Que el servidor de desarrollo no escriba ficheros suyos en la raíz del
+  // proyecto: desde Next 16.2 lo hace por defecto en ciertos entornos.
+  agentRules: false,
   images: {
     // `domains` está obsoleto desde Next 14; remotePatterns permite acotar
     // también el protocolo y la ruta.

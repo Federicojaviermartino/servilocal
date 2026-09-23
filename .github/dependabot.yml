@@ -19,9 +19,9 @@
 # Y hay versiones mayores que se ignoran a propósito. No porque no importen,
 # sino porque cada una es una migración que hay que hacer con intención, y
 # mientras no se haga su propuesta solo puede salir en rojo. Que no se
-# olviden no depende de Dependabot: la verja de vulnerabilidades de la
-# integración tiene aceptados sus avisos con fecha de caducidad, y cuando
-# caduque volverá a fallar hasta que la migración esté hecha.
+# olviden no depende de Dependabot: si una de esas versiones viejas acumula
+# un aviso de seguridad, la verja de vulnerabilidades de la integración lo
+# para, y solo se puede aceptar con motivo y fecha de caducidad.
 version: 2
 updates:
   - package-ecosystem: npm
@@ -40,10 +40,9 @@ updates:
       menores-y-parches:
         update-types: ['minor', 'patch']
     ignore:
-      # NestJS 12 se publica solo como ESM y Jest, en CommonJS, no puede ni
-      # cargarlo: la propuesta de @nestjs/typeorm 12 falló por eso en todas
-      # las pruebas. Es la migración que cierra los avisos aceptados del
-      # servidor, y va en su propia rama.
+      # Cada versión mayor de NestJS es una migración con su guía: la 12
+      # pasó a publicarse solo como ESM y obligó a cambiar de Jest a Vitest.
+      # Se hace a propósito, en su propia rama.
       - dependency-name: '@nestjs/*'
         update-types: ['version-update:semver-major']
       # Los tipos de Node tienen que ser los de la versión que corre, que es
@@ -67,13 +66,16 @@ updates:
       menores-y-parches:
         update-types: ['minor', 'patch']
     ignore:
-      # Next 16 es la migración que cierra los avisos aceptados del frontend,
-      # y trae consigo el cambio de ESLint.
+      # Cada versión mayor de Next trae su guía de migración y cambios que
+      # rompen: la 16 renombró middleware a proxy, quitó next lint y cambió
+      # los valores por defecto de las imágenes. Se hace a propósito, no
+      # porque llegue un aviso.
       - dependency-name: 'next'
         update-types: ['version-update:semver-major']
       - dependency-name: 'eslint-config-next'
         update-types: ['version-update:semver-major']
-      # La configuración de Next 15 no admite ESLint 10.
+      # ESLint 10 todavía no: eslint-plugin-import, jsx-a11y y react, que
+      # vienen con la configuración de Next, solo declaran hasta la 9.
       - dependency-name: 'eslint'
         update-types: ['version-update:semver-major']
       # Tailwind 4 cambia el modelo de configuración entero, de fichero de

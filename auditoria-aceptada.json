@@ -1,37 +1,4 @@
 {
   "backend": {},
-  "frontend": {
-    "1117015": {
-      "paquete": "postcss",
-      "severidad": "moderate",
-      "titulo": "PostCSS has XSS via Unescaped </style> in its CSS Stringify Output",
-      "motivo": "Viene empaquetado dentro de Next 15 y no se puede actualizar por separado. Solo afecta al procesado de CSS en tiempo de compilación, que corre sobre hojas de estilo propias, no de terceros. Se cierra con la subida a Next 16.",
-      "seCierraCon": "next-16",
-      "caduca": "2026-12-31"
-    },
-    "1124252": {
-      "paquete": "postcss",
-      "severidad": "high",
-      "titulo": "PostCSS: Arbitrary file read and information disclosure via attacker-controlled sourceMappingURL in CSS comments",
-      "motivo": "Viene empaquetado dentro de Next 15 y no se puede actualizar por separado. Solo afecta al procesado de CSS en tiempo de compilación, que corre sobre hojas de estilo propias, no de terceros. Se cierra con la subida a Next 16.",
-      "seCierraCon": "next-16",
-      "caduca": "2026-12-31"
-    },
-    "1130709": {
-      "paquete": "postcss",
-      "severidad": "moderate",
-      "titulo": "PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled sourceMappingURL reads arbitrary .map files when `from` is unset",
-      "motivo": "Viene empaquetado dentro de Next 15 y no se puede actualizar por separado. Solo afecta al procesado de CSS en tiempo de compilación, que corre sobre hojas de estilo propias, no de terceros. Se cierra con la subida a Next 16.",
-      "seCierraCon": "next-16",
-      "caduca": "2026-12-31"
-    },
-    "1139510": {
-      "paquete": "postcss",
-      "severidad": "high",
-      "titulo": "PostCSS: Path Traversal in Previous Source Map Auto-Loading (sourceMappingURL) leads to Arbitrary .map File Disclosure",
-      "motivo": "Viene empaquetado dentro de Next 15 y no se puede actualizar por separado. Solo afecta al procesado de CSS en tiempo de compilación, que corre sobre hojas de estilo propias, no de terceros. Se cierra con la subida a Next 16.",
-      "seCierraCon": "next-16",
-      "caduca": "2026-12-31"
-    }
-  }
+  "frontend": {}
 }

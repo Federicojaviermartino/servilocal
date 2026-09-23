@@ -76,7 +76,16 @@ export default async function RootLayout({
   const t = await getTranslations({ locale, namespace: 'comun' });
 
   return (
-    <html lang={locale} dir={direccionDe(locale)} suppressHydrationWarning>
+    // data-scroll-behavior: el desplazamiento suave de globals.css es para
+    // los enlaces dentro de una página. Hasta Next 15, Next lo desactivaba él
+    // solo al cambiar de página; desde la 16 hay que pedírselo, o cada
+    // navegación bajaría hasta arriba con animación en vez de al instante.
+    <html
+      lang={locale}
+      dir={direccionDe(locale)}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <head>
         {/* Corre antes de pintar: sin esto la página aparecería en claro y
             saltaría a oscuro al hidratar. */}

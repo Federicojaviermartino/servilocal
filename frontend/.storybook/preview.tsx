@@ -38,7 +38,9 @@ const CATALOGOS: Record<Idioma, typeof es> = {
  * como en la aplicación. Ambos se exponen en la barra para poder comprobar de
  * un vistazo el árabe de derecha a izquierda o el contraste en oscuro.
  */
-const conIdiomaYTema: Decorator = (Story, contexto) => {
+// Con mayúscula porque usa hooks, y para React —y para las reglas de hooks—
+// eso lo convierte en un componente.
+const ConIdiomaYTema: Decorator = (Story, contexto) => {
   const idioma = contexto.globals.idioma as Idioma;
   const oscuro = contexto.globals.tema === 'oscuro';
 
@@ -59,7 +61,7 @@ const conIdiomaYTema: Decorator = (Story, contexto) => {
 };
 
 const preview: Preview = {
-  decorators: [conIdiomaYTema],
+  decorators: [ConIdiomaYTema],
   globalTypes: {
     idioma: {
       description: 'Idioma de la interfaz',

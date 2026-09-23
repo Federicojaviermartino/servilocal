@@ -38,8 +38,11 @@ export function useCarga<T>(
   const [intento, setIntento] = useState(0);
 
   // La función llega nueva en cada render; guardarla como dependencia
-  // dispararía una petición por render.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // dispararía una petición por render. Las dependencias las da quien llama,
+  // igual que en useEffect, y por eso no son una lista escrita aquí que el
+  // compilador de React pueda analizar: lo que avisa es de que no puede
+  // optimizar esto, no de un fallo.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   const ejecutar = useCallback(pedir, dependencias);
 
   useEffect(() => {
