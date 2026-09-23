@@ -53,7 +53,7 @@ jobs:
       THROTTLE_LIMIT: '1000000'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
