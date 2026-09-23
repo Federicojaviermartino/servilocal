@@ -58,30 +58,43 @@ export default function CampanaAvisos() {
   // ignora una región cuyo contenido no ha cambiado.
   const [anuncio, setAnuncio] = useState('');
 
-  // Llega por el mismo socket que los mensajes: se pone arriba sin recargar.
-  useAvisosEnVivo(
-    useCallback(
-      (aviso: Aviso) => {
-        let esNuevo = false;
-        setAvisos((previos) => {
-          if (previos.some((a) => a.id === aviso.id)) return previos;
-          esNuevo = true;
-          return [aviso, ...previos].slice(0, 20);
-        });
+  const textoDe = (aviso: Aviso): string => {
+    // Un tipo que el catálogo no conozca se enseña con un texto genérico en
+    // el idioma del visitante, nunca con la clave en crudo.
+    const clave = aviso.type as never;
+    return t.has(clave) ? t(clave, datosDe(aviso) as never) : t('generico');
+  };
 
-        // Sin esto, la llegada de un aviso solo se nota en un número rojo de
-        // diez píxeles sobre la campana. Quien no lo ve no se entera de que
-        // acaban de aceptarle una reserva.
-        if (esNuevo) {
-          setAnuncio(textoDe(aviso));
-          window.setTimeout(() => setAnuncio(''), 1000);
-        }
-      },
-      // textoDe depende del catálogo, que no cambia en vida del componente.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [],
-    ),
-  );
+  // Los avisos que ya están en pantalla, para saber si uno que llega es
+  // nuevo.
+  //
+  // Antes se decidía poniendo una variable a true dentro de la función que
+  // actualiza el estado y leyéndola justo después. Eso solo funciona si React
+  // ejecuta esa función en el momento, y no lo promete: cuando no lo hace, la
+  // variable se lee sin cambiar y el anuncio no sale. En las pruebas no salía
+  // nunca, ni con un solo aviso.
+  const conocidos = useRef(new Set<string>());
+  useEffect(() => {
+    conocidos.current = new Set(avisos.map((a) => a.id));
+  }, [avisos]);
+
+  // Llega por el mismo socket que los mensajes: se pone arriba sin recargar.
+  useAvisosEnVivo((aviso: Aviso) => {
+    if (conocidos.current.has(aviso.id)) return;
+    conocidos.current.add(aviso.id);
+
+    setAvisos((previos) =>
+      previos.some((a) => a.id === aviso.id)
+        ? previos
+        : [aviso, ...previos].slice(0, 20),
+    );
+
+    // Sin esto, la llegada de un aviso solo se nota en un número rojo de
+    // diez píxeles sobre la campana. Quien no lo ve no se entera de que
+    // acaban de aceptarle una reserva.
+    setAnuncio(textoDe(aviso));
+    window.setTimeout(() => setAnuncio(''), 1000);
+  });
 
   // Pulsar fuera cierra el panel, como cualquier desplegable.
   useEffect(() => {
@@ -137,13 +150,6 @@ export default function CampanaAvisos() {
       previos.map((a) => (a.id === aviso.id ? { ...a, isRead: true } : a)),
     );
     await avisosApi.marcarLeido(aviso.id).catch(() => cargar());
-  };
-
-  const textoDe = (aviso: Aviso): string => {
-    // Un tipo que el catálogo no conozca se enseña con un texto genérico en
-    // el idioma del visitante, nunca con la clave en crudo.
-    const clave = aviso.type as never;
-    return t.has(clave) ? t(clave, datosDe(aviso) as never) : t('generico');
   };
 
   return (
