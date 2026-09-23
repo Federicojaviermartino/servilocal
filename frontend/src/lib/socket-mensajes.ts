@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { Message } from '@/types';
 
@@ -61,10 +61,14 @@ export interface AvisoMensaje {
 function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
   const [conectado, setConectado] = useState(false);
 
-  // El manejador cambia en cada render; guardarlo en una referencia evita
-  // desuscribir y volver a suscribir con cada pulsación de tecla.
-  const manejador = useRef(alRecibir);
-  manejador.current = alRecibir;
+  // El manejador cambia en cada render, y no conviene desuscribir y volver a
+  // suscribir con cada pulsación de tecla. Antes se guardaba en una
+  // referencia que se reescribía durante el render, algo que React
+  // desaconseja: con el renderizado concurrente, un render que se descarta
+  // podía dejar puesta la función de un estado que nunca llegó a pantalla.
+  // useEffectEvent es la pieza que trae React 19.2 para esto: se llama desde
+  // el efecto y siempre ve el último render que sí se confirmó.
+  const recibirUltimo = useEffectEvent((dato: T) => alRecibir(dato));
 
   useEffect(() => {
     const token =
@@ -76,22 +80,26 @@ function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
     const s = abrir(token);
     suscriptores += 1;
 
-    const alDato = (dato: T) => manejador.current(dato);
+    const alDato = (dato: T) => recibirUltimo(dato);
     const alConectar = () => setConectado(true);
     const alDesconectar = () => setConectado(false);
+    // El servidor cierra la conexión cuando el token no vale. Reintentar
+    // sería insistir con la misma credencial: se deja de intentar.
+    const alSesionInvalida = () => s.disconnect();
 
     s.on(evento, alDato);
     s.on('connect', alConectar);
     s.on('disconnect', alDesconectar);
-    // El servidor cierra la conexión cuando el token no vale. Reintentar
-    // sería insistir con la misma credencial: se deja de intentar.
-    s.on('sesion-invalida', () => s.disconnect());
+    s.on('sesion-invalida', alSesionInvalida);
     setConectado(s.connected);
 
     return () => {
       s.off(evento, alDato);
       s.off('connect', alConectar);
       s.off('disconnect', alDesconectar);
+      // Antes no se quitaba: con el socket compartido, cada suscripción
+      // dejaba uno más colgado.
+      s.off('sesion-invalida', alSesionInvalida);
       suscriptores -= 1;
       cerrar();
     };
