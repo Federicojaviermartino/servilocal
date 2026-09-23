@@ -22,7 +22,39 @@ export class IndicesDeBusquedaTexto1790000000000 implements MigrationInterface {
   name = 'IndicesDeBusquedaTexto1790000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
+    // La extensión se intenta, no se exige.
+    //
+    // Las migraciones corren al arrancar la API, así que una que falla deja
+    // el servicio sin levantar. Crear una extensión necesita permisos que el
+    // rol de la base gestionada puede no tener, y tumbar la API entera por
+    // no poder crear un índice de rendimiento sería perder mucho más de lo
+    // que se gana: la búsqueda funciona sin él, solo que recorriendo la
+    // tabla.
+    //
+    // Si no se puede, se dice en el registro y se sigue. Lo que no se hace
+    // es fingir que se aplicó: la migración queda marcada, pero el mensaje
+    // está ahí para quien vaya a mirar por qué la búsqueda va lenta.
+    // El punto de retorno no es opcional: en PostgreSQL, una sentencia que
+    // falla aborta la transacción entera, y las migraciones corren dentro de
+    // una. Sin él, atrapar el error en JavaScript no sirve de nada —lo
+    // siguiente que se intente falla con «current transaction is aborted»,
+    // incluida la línea que apunta la migración como aplicada— y el arranque
+    // se cae igual. Comprobado: con solo el try/catch, las migraciones
+    // seguían terminando con error.
+    await queryRunner.query(`SAVEPOINT antes_de_pg_trgm`);
+    try {
+      await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
+      await queryRunner.query(`RELEASE SAVEPOINT antes_de_pg_trgm`);
+    } catch (error) {
+      await queryRunner.query(`ROLLBACK TO SAVEPOINT antes_de_pg_trgm`);
+      console.warn(
+        'No se pudo habilitar pg_trgm, así que no se crean los índices de ' +
+          'trigramas. La búsqueda por texto seguirá recorriendo la tabla. ' +
+          'Motivo: ' +
+          (error as Error).message,
+      );
+      return;
+    }
 
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS "IDX_services_titulo_trigramas"
