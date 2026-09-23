@@ -48,7 +48,10 @@ export default defineConfig({
         'src/**/filters/**/*.ts',
         'src/**/payments-webhook.controller.ts',
         'src/**/transformers/**/*.ts',
-        // Qué credenciales se quitan antes de enviar nada a Sentry.
+        // La cookie de sesión, a quién cree el limitador detrás del proxy y
+        // qué credenciales se quitan antes de enviar nada a Sentry.
+        'src/auth/sesion.ts',
+        'src/common/proxy-frontend.ts',
         'src/common/observabilidad/sentry.ts',
       ],
       exclude: ['src/**/*.spec.ts'],

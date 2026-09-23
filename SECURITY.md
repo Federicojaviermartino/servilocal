@@ -40,8 +40,27 @@ dependencies of either the API or the front end.
   browser and the API only ever handles payment intent identifiers.
 - Payments are authorised and captured separately, so an amount is only taken
   once the work is marked complete.
-- JWT for authentication, rate limiting per IP, `helmet` for response headers,
-  and a Content Security Policy on the front end.
+- The browser session is a JWT in an `HttpOnly`, `Secure`, `SameSite=Lax`
+  cookie, so a script running on the page cannot read it or send it
+  elsewhere. The browser reaches the API through the front end's own origin,
+  which keeps that cookie first-party: `onrender.com` is a public suffix, so
+  a cookie set by the API's host would be third-party and Safari would drop
+  it. Scripts and API clients get a bearer token from `POST /auth/token`
+  instead.
+- Requests that change state are rejected when their `Origin` is not the
+  front end, which covers cross-site request forgery and login CSRF on top of
+  `SameSite`.
+- The WebSocket connects straight to the API and authenticates with a
+  one-minute ticket signed for a different audience; the API refuses it as a
+  session, and the socket refuses a session token.
+- Rate limiting per visitor, `helmet` for response headers, and a Content
+  Security Policy on the front end. Requests relayed by the front end carry
+  the visitor's address, which the API only trusts alongside a secret shared
+  by the two services.
+- Credentials — the session cookie, bearer tokens and the proxy secret — are
+  stripped from everything sent to Sentry, errors and performance traces
+  alike. A test sends them through the real SDK and fails if any of them
+  comes out.
 - Administrative actions are written to an append-only audit log with no
   foreign key to users, so the record survives the deletion of the account
   that produced it.
@@ -50,8 +69,10 @@ dependencies of either the API or the front end.
 
 These are open, listed here rather than left implicit:
 
-- The session token lives in `localStorage`, which is readable by any script
-  that manages to run on the page. The CSP is the mitigation, not a fix.
+- Signing out deletes the cookie but does not revoke the token: tokens are
+  stateless, so one copied before sign-out stays valid until it expires
+  (`JWT_EXPIRATION`, 24 hours when unset). With the token out of reach of
+  page scripts, copying it takes access to the device itself.
 - There is no staging environment; `main` deploys straight to the demo.
 - Accessibility conformance is partial and documented separately in
   [ACCESSIBILITY.md](ACCESSIBILITY.md).

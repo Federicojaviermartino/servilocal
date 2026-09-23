@@ -1,9 +1,13 @@
 'use client';
 import { useEffect, useEffectEvent, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { authApi } from '@/lib/api';
+import { useAuthStore } from '@/lib/auth-store';
 import { Message } from '@/types';
 
 // La API vive en .../api y el socket cuelga de la raíz del mismo servidor.
+// El socket sí va directo, sin pasar por el frontend: por eso no lleva la
+// cookie de sesión y se identifica con un pase.
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const SOCKET_URL = API_URL.replace(/\/api\/?$/, '');
 
@@ -16,12 +20,27 @@ const SOCKET_URL = API_URL.replace(/\/api\/?$/, '');
 let socket: Socket | null = null;
 let suscriptores = 0;
 
-function abrir(token: string): Socket {
+/**
+ * Pide un pase para cada intento de conexión, reconexiones incluidas.
+ *
+ * El pase dura un minuto: guardar el primero haría que el socket no pudiera
+ * volver tras una caída larga. Si no llega —la sesión caducó—, se conecta
+ * sin él y el servidor lo rechaza con «sesion-invalida», que es lo que corta
+ * los reintentos.
+ */
+function pedirPase(entregar: (datos: { token?: string }) => void): void {
+  authApi.socketTicket().then(
+    ({ data }) => entregar({ token: data.ticket }),
+    () => entregar({}),
+  );
+}
+
+function abrir(): Socket {
   if (!socket) {
     socket = io(`${SOCKET_URL}/mensajes`, {
-      // El token va en el apretón de manos y no en la URL: las cadenas de
+      // El pase va en el apretón de manos y no en la URL: las cadenas de
       // consulta acaban escritas en los registros del servidor.
-      auth: { token },
+      auth: pedirPase,
       transports: ['websocket', 'polling'],
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
@@ -70,14 +89,14 @@ function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
   // el efecto y siempre ve el último render que sí se confirmó.
   const recibirUltimo = useEffectEvent((dato: T) => alRecibir(dato));
 
-  useEffect(() => {
-    const token =
-      typeof window === 'undefined'
-        ? null
-        : localStorage.getItem('accessToken');
-    if (!token) return;
+  // Quien no ha entrado no tiene nada que escuchar. Y al salir, el efecto se
+  // deshace y el socket se cierra con el último que lo usaba.
+  const conSesion = useAuthStore((estado) => estado.isAuthenticated);
 
-    const s = abrir(token);
+  useEffect(() => {
+    if (!conSesion) return;
+
+    const s = abrir();
     suscriptores += 1;
 
     const alDato = (dato: T) => recibirUltimo(dato);
@@ -103,7 +122,7 @@ function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
       suscriptores -= 1;
       cerrar();
     };
-  }, [evento]);
+  }, [evento, conSesion]);
 
   return { conectado };
 }

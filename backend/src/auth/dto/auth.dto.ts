@@ -58,17 +58,31 @@ export class LoginDto {
   password: string;
 }
 
-export class AuthResponseDto {
+export interface SessionUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  soloLectura: boolean;
+}
+
+/**
+ * Lo que recibe el navegador al entrar: quién es, y nada más. El token viaja
+ * en la cookie, fuera del alcance de JavaScript.
+ */
+export class SessionResponseDto {
+  @ApiProperty()
+  user: SessionUser;
+}
+
+/** Para clientes de la API sin navegador: Swagger, scripts, pruebas. */
+export class AuthResponseDto extends SessionResponseDto {
   @ApiProperty()
   accessToken: string;
+}
 
-  @ApiProperty()
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: UserRole;
-    soloLectura: boolean;
-  };
+export class SocketTicketDto {
+  @ApiProperty({ description: 'Válido un minuto y solo para el socket' })
+  ticket: string;
 }

@@ -31,8 +31,18 @@ vi.mock('axios', () => {
     delete: registrar('delete'),
   };
 
-  return { default: { create: () => instancia }, AxiosError: class {} };
+  return {
+    default: {
+      create: (opciones: { baseURL: string }) => {
+        base = opciones.baseURL;
+        return instancia;
+      },
+    },
+    AxiosError: class {},
+  };
 });
+
+let base = '';
 
 type Api = typeof import('./api');
 let api: Api;
@@ -58,7 +68,16 @@ describe('rutas del cliente HTTP', () => {
       '/auth/register',
     ],
     ['acceso', () => api.authApi.login({} as never), 'post', '/auth/login'],
+    ['salida', () => api.authApi.logout(), 'post', '/auth/logout'],
     ['perfil', () => api.authApi.getProfile(), 'get', '/auth/profile'],
+    // GET a propósito: las cuentas de demostración no pueden hacer POST, y
+    // sin pase se quedarían sin avisos en vivo.
+    [
+      'pase del socket',
+      () => api.authApi.socketTicket(),
+      'get',
+      '/auth/socket-ticket',
+    ],
 
     ['usuarios', () => api.usersApi.getAll(), 'get', '/users'],
     ['un usuario', () => api.usersApi.getById('u1'), 'get', '/users/u1'],
@@ -275,11 +294,18 @@ describe('rutas del cliente HTTP', () => {
     expect(llamadas[0][1]).toBe('/admin/auditoria');
   });
 
+  it('pide al propio frontend, no a la API directamente', () => {
+    // Con la dirección de la API, la cookie de sesión sería de otro sitio y
+    // el navegador no la mandaría: ver pasarela-api.ts.
+    expect(base).toBe('/api');
+  });
+
   it('ninguna lectura de las que cambian algo usa GET', async () => {
     // Recuento de red: si alguien convierte un POST en GET para «arreglar»
     // un CORS, el interceptor empezaría a repetirlo solo.
     const escrituras = [
       () => api.authApi.login({} as never),
+      () => api.authApi.logout(),
       () => api.iaApi.asistente('hola'),
       () => api.categoriesApi.create({} as never),
       () => api.categoriesApi.remove('c1'),

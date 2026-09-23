@@ -4,8 +4,9 @@ import { entrarComo } from './ayudas';
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const CLAVE = 'Password123!';
 
+/** /auth/token: el acceso del navegador deja el token en una cookie. */
 async function entrar(peticion: APIRequestContext, email: string) {
-  const respuesta = await peticion.post(`${API}/auth/login`, {
+  const respuesta = await peticion.post(`${API}/auth/token`, {
     data: { email, password: CLAVE },
   });
   expect(respuesta.ok()).toBeTruthy();

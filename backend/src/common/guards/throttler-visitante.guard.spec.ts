@@ -85,6 +85,44 @@ describe('ThrottlerVisitanteGuard', () => {
     expect(r).toBe(REAL);
   });
 
+  describe('lo que llega a través del frontend', () => {
+    // Cloudflare ve como visitante al servidor del frontend, el mismo para
+    // todos; la dirección de verdad la manda el frontend aparte.
+    const SECRETO = 'c'.repeat(32);
+    const FRONTEND = '216.24.57.1';
+
+    beforeEach(() => vi.stubEnv('PROXY_SECRETO', SECRETO));
+    afterEach(() => vi.unstubAllEnvs());
+
+    it('cuenta al visitante y no al frontend', async () => {
+      const r = await clave({
+        headers: {
+          'cf-connecting-ip': FRONTEND,
+          'x-proxy-secreto': SECRETO,
+          'x-visitante-ip': REAL,
+        },
+        ip: BALANCEADOR,
+      });
+
+      expect(r).toBe(REAL);
+    });
+
+    it('sin el secreto bueno, la cabecera no cambia nada', async () => {
+      // Quien llama directamente a la API puede mandar x-visitante-ip con lo
+      // que quiera. Si bastara con eso, cada petición tendría su contador.
+      const r = await clave({
+        headers: {
+          'cf-connecting-ip': REAL,
+          'x-proxy-secreto': 'd'.repeat(32),
+          'x-visitante-ip': '1.2.3.4',
+        },
+        ip: BALANCEADOR,
+      });
+
+      expect(r).toBe(REAL);
+    });
+  });
+
   it('devuelve una clave constante cuando no hay nada fiable', async () => {
     // Compartir cubo es el lado seguro: una clave vacía o indefinida podría
     // acabar dando a cada petición la suya y desactivar el límite.

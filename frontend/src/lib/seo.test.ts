@@ -74,9 +74,8 @@ describe('datos estructurados dentro de un <script>', () => {
 
   it('un título que cierra la etiqueta no la cierra', () => {
     // Es el ataque entero: cualquiera se registra como profesional, publica
-    // un servicio con ese título y ejecuta código en la ficha pública. Con
-    // el token de sesión en localStorage, eso se lleva la sesión de quien
-    // abra la ficha, moderación incluida.
+    // un servicio con ese título y ejecuta código en la ficha pública, en
+    // nombre de quien la abra, moderación incluida.
     const salida = jsonParaScript({ name: CIERRE });
 
     expect(salida).not.toContain('</');

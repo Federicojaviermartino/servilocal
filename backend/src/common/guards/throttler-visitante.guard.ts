@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { visitanteReenviado } from '../proxy-frontend';
 
 /**
  * Cabecera que pone Cloudflare con la dirección de quien conecta de verdad.
@@ -34,11 +35,20 @@ const DESCONOCIDO = 'desconocido';
  * real queda siempre tercera desde la derecha. Depende de que sigan siendo
  * exactamente dos saltos de infraestructura, y eso no está documentado en
  * ninguna parte: sería correcto por casualidad medida, no por contrato.
+ *
+ * Lo que llega del navegador pasa antes por el frontend, y ahí Cloudflare ve
+ * como visitante al servidor del frontend, el mismo para todos. Para esas
+ * peticiones cuenta la dirección que reenvía el frontend, pero solo si viene
+ * con el secreto compartido: ver proxy-frontend.ts.
  */
 @Injectable()
 export class ThrottlerVisitanteGuard extends ThrottlerGuard {
   protected async getTracker(req: Record<string, unknown>): Promise<string> {
     const cabeceras = (req?.headers ?? {}) as Record<string, unknown>;
+
+    const reenviado = visitanteReenviado(cabeceras);
+    if (reenviado) return reenviado;
+
     const declarada = cabeceras[CABECERA_VISITANTE];
 
     // Node entrega repetidas como array. Se queda la primera; que llegue

@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../../entities';
+import { AUDIENCIA_API, tokenDeCookie } from '../sesion';
 
 export interface JwtPayload {
   sub: string;
@@ -20,9 +21,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private userRepository: Repository<User>,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Primero la cabecera, que es lo que usan Swagger, los scripts y las
+      // pruebas; después la cookie, que es lo que manda el navegador.
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        tokenDeCookie,
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+      // Sin esto, el pase de un minuto del socket valdría como sesión.
+      audience: AUDIENCIA_API,
     });
   }
 

@@ -10,6 +10,16 @@ import * as bcrypt from 'bcrypt';
 import { User } from '../entities';
 import { RegisterDto, LoginDto, AuthResponseDto } from './dto/auth.dto';
 import { JwtPayload } from './strategies/jwt.strategy';
+import {
+  AUDIENCIA_API,
+  AUDIENCIA_SOCKET,
+  DURACION_PASE_SOCKET,
+} from './sesion';
+
+/** El token y cuándo deja de valer, que es cuando tiene que caducar la cookie. */
+export interface SesionEmitida extends AuthResponseDto {
+  caduca: Date;
+}
 
 @Injectable()
 export class AuthService {
@@ -19,7 +29,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+  async register(registerDto: RegisterDto): Promise<SesionEmitida> {
     const existingUser = await this.userRepository.findOne({
       where: { email: registerDto.email },
     });
@@ -41,7 +51,7 @@ export class AuthService {
     return this.generateAuthResponse(savedUser);
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+  async login(loginDto: LoginDto): Promise<SesionEmitida> {
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email },
       // password está marcada como no seleccionable: aquí hace falta.
@@ -77,15 +87,37 @@ export class AuthService {
     return this.generateAuthResponse(user);
   }
 
-  private generateAuthResponse(user: User): AuthResponseDto {
+  /**
+   * Pase de un minuto para abrir el socket.
+   *
+   * El socket va directo a la API, que está en otro sitio, así que no lleva
+   * la cookie. Se le da esto en su lugar: caduca enseguida y no sirve como
+   * sesión, porque va firmado para otra audiencia.
+   */
+  ticketDeSocket(usuarioId: string): string {
+    return this.jwtService.sign(
+      { sub: usuarioId },
+      { audience: AUDIENCIA_SOCKET, expiresIn: DURACION_PASE_SOCKET },
+    );
+  }
+
+  private generateAuthResponse(user: User): SesionEmitida {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
     };
 
+    const accessToken = this.jwtService.sign(payload, {
+      audience: AUDIENCIA_API,
+    });
+    // Se lee del propio token en vez de volver a interpretar JWT_EXPIRATION:
+    // así la cookie y el token no pueden caducar en momentos distintos.
+    const { exp } = this.jwtService.decode<{ exp: number }>(accessToken);
+
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken,
+      caduca: new Date(exp * 1000),
       user: {
         id: user.id,
         email: user.email,

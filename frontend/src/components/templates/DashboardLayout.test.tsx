@@ -36,7 +36,6 @@ const pintar = () =>
 function entrarComo(role: 'client' | 'provider') {
   useAuthStore.setState({
     user: { id: 'u1', firstName: 'Laura', role } as never,
-    token: 'jwt',
     isAuthenticated: true,
   });
 }
@@ -46,7 +45,7 @@ describe('DashboardLayout', () => {
     rutaActual = '/dashboard';
     empujar.mockClear();
     localStorage.clear();
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
+    useAuthStore.setState({ user: null, isAuthenticated: false });
   });
 
   it('sin sesión guardada manda a entrar, con la vuelta apuntada', () => {

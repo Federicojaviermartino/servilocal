@@ -31,6 +31,7 @@ through them, and which trade-offs were taken deliberately.
                       ┌───────────────▼──────────────────────────┐
                       │   Next.js 16 · App Router · SSG + CSR     │
                       │   Prerendered once per locale             │
+                      │   Relays /api to the API                  │
                       └───────┬───────────────────────┬───────────┘
                      REST/JSON│                       │ WebSocket
                       ┌───────▼───────────────────────▼───────────┐
@@ -50,6 +51,10 @@ through them, and which trade-offs were taken deliberately.
                                       └──────────────► API
 ```
 
+The browser never calls the API's host for REST: it calls `/api` on the front end,
+which relays the request (see [Decisions](#decisions), 9). The WebSocket is the
+exception and connects straight to the API.
+
 Everything to the right of PostgreSQL is optional at runtime. Stripe is required for
 the payment flow but not for the application to boot; Redis, Sentry and the AI layer
 each degrade on their own without taking anything else down. See
@@ -59,14 +64,15 @@ each degrade on their own without taking anything else down. See
 
 | Piece | Where it runs | Notes |
 |-------|---------------|-------|
-| `servilocal-web` | Render web service, own Dockerfile | `next start`. `NEXT_PUBLIC_*` variables are build args: Next inlines them, so changing one needs a redeploy with **Clear build cache** |
+| `servilocal-web` | Render web service, own Dockerfile | `next start`. `NEXT_PUBLIC_*` variables are build args: Next inlines them, so changing one needs a redeploy with **Clear build cache**. `src/proxy.ts` relays `/api/*` to the API |
 | `servilocal-api` | Render web service, own Dockerfile | Nest with `rawBody: true`, global prefix `/api`, `trust proxy: 1` |
 | PostgreSQL + PostGIS | Neon | SSL with certificate validation. Free tier that does not expire |
 | Key Value (Valkey) | Render, optional | Must be in the **same region** as the API: Render's private network does not cross regions |
 | CI + keep-warm | GitHub Actions | Tests on every push, plus a scheduled job that keeps both services awake during working hours |
 
 The API sits behind Cloudflare, which sits in front of Render. That chain is the reason
-the rate limiter does not trust `req.ip` — see [Decisions](#decisions).
+the rate limiter does not trust `req.ip` — see [Decisions](#decisions). The front end sits
+behind Cloudflare too, which shapes how it relays requests to the API (decision 9).
 
 ## Request lifecycle
 
@@ -75,13 +81,18 @@ Order matters here, and one ordering detail drove a design choice.
 ```
   request
     │
-    ├─ helmet · CORS · rawBody capture                   (Express middleware)
+    ├─ helmet · CORS · cookie-parser · rawBody capture   (Express middleware)
     │
     ├─ ThrottlerVisitanteGuard                           (global guard)
-    │     keyed on CF-Connecting-IP, falls back to req.ip
+    │     keyed on the visitor the front end relays, if the
+    │     shared secret matches; else CF-Connecting-IP; else req.ip
+    │
+    ├─ OrigenGuard                                       (global guard)
+    │     rejects state-changing requests from a foreign Origin
     │
     ├─ AuthGuard('jwt') → RolesGuard                     (route guards)
-    │     populate and check request.user
+    │     token from Authorization: Bearer or the session
+    │     cookie, audience checked; populate request.user
     │
     ├─ ValidationPipe (whitelist, forbidNonWhitelisted)  (global pipe)
     │  ParseUUIDPipe on every :id                        (param pipe)
@@ -93,7 +104,7 @@ Order matters here, and one ordering detail drove a design choice.
     │
     └─ FiltroDeExcepciones                               (global filter)
           structured logging, Sentry capture without
-          authorization/cookie headers
+          any credential
 ```
 
 **Why the read-only rule is an interceptor and not a guard.** Nest runs global guards
@@ -194,8 +205,12 @@ without starting the API.
 first paint, so there is no flash of the wrong theme. Chart colours are read from the
 same CSS variables as the rest of the UI.
 
-**State and data.** Session state lives in a small Zustand store; everything else is
-fetched per screen through the axios client in `src/lib/api.ts`. That client retries
+**State and data.** The session itself is an `HttpOnly` cookie the interface cannot
+see. A small Zustand store remembers *who* is signed in, never the token, so the header
+renders without waiting for the network, and asks the API once per page load whether
+the session still stands; a `401` clears it, a timeout does not. Everything else is
+fetched per screen through the axios client in `src/lib/api.ts`, which calls `/api` on
+its own origin. That client retries
 idempotent reads only: a timed-out `GET` is retried once, a `POST` never, because
 repeating one could duplicate a booking or a charge.
 
@@ -207,8 +222,12 @@ messaging module, because notifications travel over the same connection.
 - **One private room per person**, `usuario:<id>`. Clients never ask to join a room; the
   server places them after verifying the token. Opening a second connection for
   notifications would have doubled the socket slots for nothing.
-- **`identificar()` verifies the JWT *and* checks the account is still active**, because a
-  token stays syntactically valid after an account is deactivated.
+- **The handshake carries a one-minute ticket, not the session.** The socket connects
+  straight to the API, so it has no cookie; the browser asks `/auth/socket-ticket` for a
+  ticket before each attempt, reconnections included. Tickets and sessions are signed
+  for different audiences, so neither opens the other's door.
+- **`identificar()` verifies the ticket *and* checks the account is still active**,
+  because a token stays syntactically valid after an account is deactivated.
 - **The server never stores notification text.** It stores the type and the data to
   interpolate; the interface composes the sentence from the reader's catalogue. Storing
   "Your booking is confirmed" would freeze that notice in Spanish even if the reader
@@ -229,7 +248,7 @@ optional takes anything else down.**
 | Piece | Present | Absent |
 |-------|---------|--------|
 | Redis / Valkey | Throttler counters survive deploys, sockets span instances, category reads are cached | Throttler counts in memory, sockets stay on one instance, reads go to the database |
-| Sentry | Errors reported, `authorization` and `cookie` headers stripped | Reporting off, a log line says so |
+| Sentry | Errors and sampled traces reported, with the session cookie, bearer tokens and the proxy secret stripped from both | Reporting off, a log line says so |
 | Anthropic key | Assistant active under a hard monthly ceiling checked *before* each call | A null provider fails immediately with a typed cause and the caller takes its deterministic path |
 
 Redis connections are split by purpose: queries fail fast (`enableOfflineQueue: false`),
@@ -256,7 +275,8 @@ counters while everyone behind the same balancer shared a third. Reading
 position 0 is whatever the client claims. `CF-Connecting-IP` cannot be forged — send it
 yourself and Cloudflare answers `403` at the edge. Raising `trust proxy` to 3 also works
 today, and was rejected: it assumes exactly two infrastructure hops, which Render
-documents nowhere.
+documents nowhere. Requests relayed by the front end are the one exception, covered in
+decision 9.
 
 **2 · Payments use manual capture.**
 Funds are authorised when the booking is made, not taken — the correct model for a
@@ -311,6 +331,37 @@ system and can only do the same from Node 24.9, which would have meant testing o
 different Node than production runs. Vitest loads them natively. The back end compiles
 tests with SWC rather than Vitest's default esbuild, because Nest's dependency injection
 reads constructor types from decorator metadata and esbuild does not emit it.
+
+**9 · The browser reaches the API through the front end.**
+The session token used to live in `localStorage`, where any script that ran on the page
+could read it and replay it from elsewhere until it expired. An `HttpOnly` cookie fixes
+that, but only if the browser sends it, and `onrender.com` is on the Public Suffix List:
+`servilocal-web` and `servilocal-api` are different *sites*, so a cookie set by the API
+would be third-party, and Safari blocks those. Moving both services under one custom
+domain would have fixed it too, at the cost of a domain the demo does not have.
+
+So the browser calls `/api` on the front end, and `src/proxy.ts` relays it. Three things
+that make this less simple than a one-line rewrite:
+
+- **Next's rewrite forwards every incoming header**, and the front end is behind
+  Cloudflare as well: relayed as is, `CF-Connecting-IP` would reach the API's edge,
+  which answers `403` to anyone who sends it. The proxy strips Cloudflare's headers and
+  the forwarding ones before relaying.
+- **Every relayed request comes from the front end's address**, so the rate limiter
+  would put all visitors in one bucket — five login attempts a minute for everyone. The
+  proxy sends the visitor's `CF-Connecting-IP` as `X-Visitante-IP`, and the API believes
+  it only alongside a secret the two services share (`PROXY_SECRETO`), compared in
+  constant time. Anyone can call the API directly and send that header; without the
+  secret it changes nothing.
+- **The socket cannot use the cookie**, because it connects straight to the API. Before
+  each connection attempt it asks for a one-minute ticket, signed for a different
+  audience than the session. A ticket lifted from the page opens the socket and nothing
+  else; the session does not open the socket.
+
+Browsers still send the cookie on their own, so every state-changing request is checked
+against `Origin` as well as relying on `SameSite=Lax`. Clients without a browser get a
+bearer token from `POST /auth/token`, which never sets a cookie — `/auth/login` never
+returns the token, so there is no way for page scripts to receive it.
 
 ## Known limitations
 

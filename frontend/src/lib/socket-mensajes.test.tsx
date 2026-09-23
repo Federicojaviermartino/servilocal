@@ -5,9 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  * El socket compartido de la pestaña.
  *
  * Lo que hay que comprobar no es el transporte sino las decisiones que hay
- * alrededor: una sola conexión para toda la pestaña, el token fuera de la
- * URL, y cerrar solo cuando no queda nadie escuchando. Abrir una conexión por
- * componente gasta una ranura del servidor por pantalla visitada.
+ * alrededor: una sola conexión para toda la pestaña, el pase fuera de la
+ * URL, uno nuevo en cada intento, y cerrar solo cuando no queda nadie
+ * escuchando. Abrir una conexión por componente gasta una ranura del
+ * servidor por pantalla visitada.
  */
 const sockets: Array<{
   manejadores: Record<string, Array<(dato: unknown) => void>>;
@@ -42,17 +43,38 @@ vi.mock('socket.io-client', () => ({
   io: (url: string, opciones?: unknown) => io(url, opciones),
 }));
 
-type Modulo = typeof import('./socket-mensajes');
+const socketTicket = vi.fn();
 
-async function cargar(): Promise<Modulo> {
+vi.mock('@/lib/api', () => ({
+  authApi: { socketTicket: () => socketTicket() },
+}));
+
+type Modulo = typeof import('./socket-mensajes');
+type Almacen = typeof import('./auth-store');
+let almacen: Almacen;
+
+/** Carga el módulo de cero, con sesión o sin ella. */
+async function cargar(conSesion = true): Promise<Modulo> {
   vi.resetModules();
+  almacen = await import('./auth-store');
+  almacen.useAuthStore.setState({ isAuthenticated: conSesion });
   return import('./socket-mensajes');
+}
+
+/** Lo que el socket manda en el apretón de manos de un intento. */
+function apretonDeManos(): Promise<{ token?: string }> {
+  const [, opciones] = io.mock.calls.at(-1) as unknown as [
+    string,
+    { auth: (entregar: (datos: { token?: string }) => void) => void },
+  ];
+  return new Promise((entregar) => opciones.auth(entregar));
 }
 
 beforeEach(() => {
   sockets.length = 0;
   io.mockClear();
-  localStorage.setItem('accessToken', 'jwt-de-prueba');
+  socketTicket.mockReset();
+  socketTicket.mockResolvedValue({ data: { ticket: 'pase-de-prueba' } });
 });
 
 afterEach(() => {
@@ -60,30 +82,58 @@ afterEach(() => {
 });
 
 describe('socket compartido', () => {
-  it('sin sesión guardada no abre ninguna conexión', async () => {
+  it('sin sesión no abre ninguna conexión', async () => {
     // Quien no ha entrado no tiene nada que escuchar, y el servidor
     // rechazaría el apretón de manos de todas formas.
-    localStorage.clear();
-    const { useAvisosEnVivo } = await cargar();
+    const { useAvisosEnVivo } = await cargar(false);
 
     renderHook(() => useAvisosEnVivo(() => undefined));
 
     expect(io).not.toHaveBeenCalled();
   });
 
-  it('el token viaja en el apretón de manos, no en la URL', async () => {
+  it('el pase viaja en el apretón de manos, no en la URL', async () => {
     // Las cadenas de consulta acaban escritas en los registros del servidor
     // y en los del proxy de delante.
     const { useAvisosEnVivo } = await cargar();
 
     renderHook(() => useAvisosEnVivo(() => undefined));
 
-    const [url, opciones] = io.mock.calls[0] as unknown as [
-      string,
-      { auth: { token: string } },
-    ];
-    expect(opciones.auth.token).toBe('jwt-de-prueba');
-    expect(url).not.toContain('jwt-de-prueba');
+    const [url] = io.mock.calls[0] as unknown as [string];
+    expect(await apretonDeManos()).toEqual({ token: 'pase-de-prueba' });
+    expect(url).not.toContain('pase-de-prueba');
+  });
+
+  it('pide un pase nuevo en cada intento, reconexiones incluidas', async () => {
+    // Duran un minuto. Con el primero guardado, tras una caída larga el
+    // socket no podría volver nunca.
+    const { useAvisosEnVivo } = await cargar();
+    renderHook(() => useAvisosEnVivo(() => undefined));
+    socketTicket.mockResolvedValueOnce({ data: { ticket: 'primero' } });
+    socketTicket.mockResolvedValueOnce({ data: { ticket: 'segundo' } });
+
+    expect(await apretonDeManos()).toEqual({ token: 'primero' });
+    expect(await apretonDeManos()).toEqual({ token: 'segundo' });
+  });
+
+  it('sin pase se presenta sin nada, y el servidor dirá que no', async () => {
+    // Si la sesión caducó, la API no da pase. Quedarse esperando dejaría el
+    // socket colgado; presentarse sin él hace que el servidor conteste con
+    // «sesion-invalida», que es lo que corta los reintentos.
+    socketTicket.mockRejectedValue(new Error('401'));
+    const { useAvisosEnVivo } = await cargar();
+    renderHook(() => useAvisosEnVivo(() => undefined));
+
+    expect(await apretonDeManos()).toEqual({});
+  });
+
+  it('al salir de la sesión se cierra', async () => {
+    const { useAvisosEnVivo } = await cargar();
+    renderHook(() => useAvisosEnVivo(() => undefined));
+
+    act(() => almacen.useAuthStore.setState({ isAuthenticated: false }));
+
+    expect(sockets[0].disconnect).toHaveBeenCalled();
   });
 
   it('el socket cuelga de la raíz del servidor, no de /api', async () => {

@@ -5,6 +5,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { User, UserRole } from '../entities';
+import { AUDIENCIA_API, AUDIENCIA_SOCKET } from './sesion';
 
 const mockUserRepository = {
   findOne: vi.fn(),
@@ -12,9 +13,13 @@ const mockUserRepository = {
   save: vi.fn(),
 };
 
-const mockJwtService = {
-  sign: vi.fn(() => 'mocked-jwt-token'),
-};
+// Un JwtService de verdad: con uno falso que devuelve una cadena fija no se
+// puede comprobar para quién va firmado cada token ni cuándo caduca.
+const SECRETO = 'secreto-de-prueba';
+const jwt = new JwtService({
+  secret: SECRETO,
+  signOptions: { expiresIn: '24h' },
+});
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -24,7 +29,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
-        { provide: JwtService, useValue: mockJwtService },
+        { provide: JwtService, useValue: jwt },
       ],
     }).compile();
 
@@ -60,7 +65,9 @@ describe('AuthService', () => {
 
       const result = await service.register(registerDto);
 
-      expect(result.accessToken).toBe('mocked-jwt-token');
+      expect(
+        jwt.verify(result.accessToken, { audience: AUDIENCIA_API }).sub,
+      ).toBe('uuid-123');
       expect(result.user.email).toBe(registerDto.email);
       expect(result.user.firstName).toBe(registerDto.firstName);
       expect(mockUserRepository.findOne).toHaveBeenCalledWith({
@@ -97,8 +104,28 @@ describe('AuthService', () => {
 
       const result = await service.login(loginDto);
 
-      expect(result.accessToken).toBe('mocked-jwt-token');
+      expect(
+        jwt.verify(result.accessToken, { audience: AUDIENCIA_API }).sub,
+      ).toBe('uuid-123');
       expect(result.user.email).toBe(loginDto.email);
+    });
+
+    it('la cookie caduca a la vez que el token que lleva', async () => {
+      // Si la cookie durara más, el navegador seguiría mandando un token
+      // caducado; si durara menos, la sesión se cortaría antes de tiempo.
+      mockUserRepository.findOne.mockResolvedValue({
+        id: 'uuid-123',
+        email: loginDto.email,
+        password: await bcrypt.hash('Password123!', 10),
+        role: UserRole.CLIENT,
+        isActive: true,
+      });
+
+      const { accessToken, caduca } = await service.login(loginDto);
+      const { exp } = jwt.decode<{ exp: number }>(accessToken);
+
+      expect(caduca.getTime()).toBe(exp * 1000);
+      expect(caduca.getTime() - Date.now()).toBeGreaterThan(23 * 3600 * 1000);
     });
 
     it('debería lanzar UnauthorizedException si el usuario no existe', async () => {
@@ -133,6 +160,47 @@ describe('AuthService', () => {
       await expect(service.login(loginDto)).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  describe('ticketDeSocket', () => {
+    it('sirve para el socket y dura un minuto', () => {
+      const pase = service.ticketDeSocket('uuid-123');
+      const carga = jwt.verify<{ sub: string; exp: number; iat: number }>(
+        pase,
+        { audience: AUDIENCIA_SOCKET },
+      );
+
+      expect(carga.sub).toBe('uuid-123');
+      expect(carga.exp - carga.iat).toBe(60);
+    });
+
+    it('no vale como sesión', () => {
+      // Es lo que el navegador ve, así que no puede abrir nada más que el
+      // socket: sacarlo de la página no daría acceso a la API.
+      const pase = service.ticketDeSocket('uuid-123');
+
+      expect(() => jwt.verify(pase, { audience: AUDIENCIA_API })).toThrow(
+        /audience/,
+      );
+    });
+
+    it('y la sesión no vale como pase', async () => {
+      mockUserRepository.findOne.mockResolvedValue({
+        id: 'uuid-123',
+        email: 'federico@ejemplo.com',
+        password: await bcrypt.hash('Password123!', 10),
+        role: UserRole.CLIENT,
+        isActive: true,
+      });
+      const { accessToken } = await service.login({
+        email: 'federico@ejemplo.com',
+        password: 'Password123!',
+      });
+
+      expect(() =>
+        jwt.verify(accessToken, { audience: AUDIENCIA_SOCKET }),
+      ).toThrow(/audience/);
     });
   });
 });

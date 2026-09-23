@@ -8,6 +8,7 @@ import { SoloLecturaInterceptor } from './common/interceptores/solo-lectura.inte
 import { RedisModule } from './common/redis/redis.module';
 import { TiempoRealModule } from './common/tiempo-real/tiempo-real.module';
 import { ThrottlerVisitanteGuard } from './common/guards/throttler-visitante.guard';
+import { OrigenGuard } from './common/guards/origen.guard';
 import { DiagnosticoController } from './common/diagnostico/diagnostico.controller';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -69,6 +70,10 @@ import configIa from './ia/ia.config';
     {
       provide: APP_GUARD,
       useClass: ThrottlerVisitanteGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: OrigenGuard,
     },
     {
       provide: APP_INTERCEPTOR,

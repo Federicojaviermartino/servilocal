@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { Request } from 'express';
+import { visitanteReenviado } from '../proxy-frontend';
 
 /**
  * Qué llega de verdad al contenedor detrás del proxy.
@@ -49,10 +50,13 @@ export class DiagnosticoController {
       xRealIp: req.headers['x-real-ip'] ?? null,
       cfRay: req.headers['cf-ray'] ?? null,
       socketRemoteAddress: req.socket.remoteAddress ?? null,
-      // Lo que el limitador está usando hoy como clave.
       reqIp: req.ip ?? null,
       reqIps: req.ips ?? [],
       trustProxy: req.app.get('trust proxy'),
+      // Si la petición pasó por el frontend y este se identificó con el
+      // secreto, la dirección que manda; si no, null. Llamado a través del
+      // frontend tiene que salir la IP de quien llama, no la del servidor.
+      visitanteDelProxy: visitanteReenviado(req.headers),
     };
   }
 }

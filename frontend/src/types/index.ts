@@ -24,8 +24,9 @@ export interface User {
   createdAt: string;
 }
 
+/** Lo que devuelven el acceso y el registro. El token no: va en una cookie
+ *  que JavaScript no puede leer. */
 export interface AuthResponse {
-  accessToken: string;
   user: Pick<
     User,
     'id' | 'email' | 'firstName' | 'lastName' | 'role' | 'soloLectura'

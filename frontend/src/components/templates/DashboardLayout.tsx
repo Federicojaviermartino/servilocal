@@ -16,7 +16,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { useAuthStore } from '@/lib/auth-store';
+import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import { UserRole } from '@/types';
 
 interface DashboardLayoutProps {
@@ -36,9 +36,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [loadFromStorage]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && !isAuthenticated) {
-      const stored = localStorage.getItem('accessToken');
-      if (!stored) router.push('/auth/login?redirect=/dashboard');
+    if (!isAuthenticated && !haySesionRecordada()) {
+      router.push('/auth/login?redirect=/dashboard');
     }
   }, [isAuthenticated, router]);
 

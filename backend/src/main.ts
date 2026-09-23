@@ -16,12 +16,14 @@ import {
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { origenesPermitidos } from './common/origenes';
 import { AdaptadorSocketRedis } from './common/redis/adaptador-socket';
 import { RedisService } from './common/redis/redis.service';
 import { AppModule } from './app.module';
 import { iniciarSentry } from './common/observabilidad/sentry';
 import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
+import { secretoDelProxy } from './common/proxy-frontend';
 
 async function bootstrap() {
   // Antes de crear la aplicación, para que la instrumentación alcance a todo
@@ -37,6 +39,9 @@ async function bootstrap() {
   app.set('trust proxy', 1);
 
   app.use(helmet());
+
+  // La sesión del navegador llega en una cookie. Ver auth/sesion.ts.
+  app.use(cookieParser());
 
   app.enableCors({
     origin: origenesPermitidos(),
@@ -106,6 +111,14 @@ async function bootstrap() {
     sentryActivo
       ? 'Sentry activo: los errores no controlados se reportarán'
       : 'Sentry inactivo: define SENTRY_DSN para activarlo',
+  );
+  // Sin el secreto, todo lo que llega por el frontend comparte un único
+  // límite de peticiones. Funciona, pero cinco intentos de acceso por minuto
+  // pasarían a ser para todos los visitantes juntos.
+  console.log(
+    secretoDelProxy()
+      ? 'Proxy del frontend reconocido: el límite de peticiones es por visitante'
+      : 'PROXY_SECRETO sin definir o con menos de 32 caracteres: lo que llegue por el frontend comparte un solo límite',
   );
 }
 

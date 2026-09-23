@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../../entities';
+import { AUDIENCIA_API, AUDIENCIA_SOCKET } from '../../auth/sesion';
 import { TiempoRealGateway } from './tiempo-real.gateway';
 
 const YO = 'a1111111-0000-4000-8000-000000000001';
@@ -83,6 +84,64 @@ describe('TiempoRealGateway', () => {
       // echó fuera.
       const { gateway } = await construir({ usuarioActivo: false });
       const cliente = socketFalso('token-bueno');
+
+      await gateway.handleConnection(cliente as never);
+
+      expect(cliente.join).not.toHaveBeenCalled();
+      expect(cliente.disconnect).toHaveBeenCalledWith(true);
+    });
+  });
+
+  describe('qué pase abre la puerta', () => {
+    // Con un JwtService de verdad: lo que se comprueba es la audiencia, y un
+    // doble de verifyAsync diría que sí a todo.
+    const jwt = new JwtService({ secret: 'secreto' });
+
+    async function conJwtReal() {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          TiempoRealGateway,
+          { provide: JwtService, useValue: jwt },
+          { provide: ConfigService, useValue: { get: () => 'secreto' } },
+          {
+            provide: getRepositoryToken(User),
+            useValue: { findOne: async () => ({ id: YO }) },
+          },
+        ],
+      }).compile();
+      return module.get(TiempoRealGateway);
+    }
+
+    it('el pase del socket', async () => {
+      const gateway = await conJwtReal();
+      const cliente = socketFalso(
+        jwt.sign({ sub: YO }, { audience: AUDIENCIA_SOCKET, expiresIn: '60s' }),
+      );
+
+      await gateway.handleConnection(cliente as never);
+
+      expect(cliente.join).toHaveBeenCalledWith(`usuario:${YO}`);
+    });
+
+    it('la sesión no: el navegador ya no puede leerla para mandarla', async () => {
+      const gateway = await conJwtReal();
+      const cliente = socketFalso(
+        jwt.sign({ sub: YO }, { audience: AUDIENCIA_API, expiresIn: '24h' }),
+      );
+
+      await gateway.handleConnection(cliente as never);
+
+      expect(cliente.join).not.toHaveBeenCalled();
+      expect(cliente.disconnect).toHaveBeenCalledWith(true);
+    });
+
+    it('un pase caducado tampoco', async () => {
+      const gateway = await conJwtReal();
+      const caducado = jwt.sign(
+        { sub: YO, exp: Math.floor(Date.now() / 1000) - 5 },
+        { audience: AUDIENCIA_SOCKET },
+      );
+      const cliente = socketFalso(caducado);
 
       await gateway.handleConnection(cliente as never);
 

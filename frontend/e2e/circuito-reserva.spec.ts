@@ -16,8 +16,13 @@ const API = 'http://localhost:3001/api';
  * de verdad, y la comprobación de pago se salta sin ella. Lo que sí se
  * comprueba es la máquina de estados, que es donde vive la decisión.
  */
+/**
+ * /auth/token y no /auth/login: el acceso del navegador ya no devuelve el
+ * token, lo deja en una cookie. Para hablar con la API desde aquí, como un
+ * script, está esta otra ruta.
+ */
 async function entrar(peticion: APIRequestContext, email: string) {
-  const respuesta = await peticion.post(`${API}/auth/login`, {
+  const respuesta = await peticion.post(`${API}/auth/token`, {
     data: { email, password: 'Password123!' },
   });
   const { accessToken, user } = await respuesta.json();

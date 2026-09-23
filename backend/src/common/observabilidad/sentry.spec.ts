@@ -23,6 +23,7 @@ const enviado: string[] = [];
 const testigo = randomUUID();
 const TOKEN = `eyJ${testigo}.sesion`;
 const BEARER = `eyJ${testigo}.bearer`;
+const SECRETO = `proxy-${testigo}`;
 
 beforeAll(() => {
   Sentry.init({
@@ -43,7 +44,7 @@ beforeAll(() => {
 
 afterAll(() => Sentry.close());
 
-/** Una petición con credenciales a un servidor que falla. */
+/** Una petición con las tres credenciales a un servidor que falla. */
 async function peticionQueFalla(): Promise<void> {
   // Con require y después de iniciar Sentry: su instrumentación engancha el
   // módulo http al cargarlo.
@@ -60,6 +61,7 @@ async function peticionQueFalla(): Promise<void> {
     headers: {
       cookie: `sesion=${TOKEN}; NEXT_LOCALE=es`,
       authorization: `Bearer ${BEARER}`,
+      'x-proxy-secreto': SECRETO,
     },
   });
 
@@ -68,7 +70,7 @@ async function peticionQueFalla(): Promise<void> {
 }
 
 describe('lo que llega a Sentry', () => {
-  it('no lleva ni la cookie de sesión ni el token', async () => {
+  it('no lleva la sesión, ni el token, ni el secreto del proxy', async () => {
     await peticionQueFalla();
     const todo = enviado.join('\n');
 
@@ -90,6 +92,7 @@ describe('limpiarEvento', () => {
         headers: {
           cookie: `sesion=${TOKEN}`,
           authorization: `Bearer ${BEARER}`,
+          'x-proxy-secreto': SECRETO,
           accept: '*/*',
         },
       },
@@ -117,7 +120,7 @@ describe('limpiarEvento', () => {
           span_id: 'h',
           trace_id: 't',
           start_timestamp: 0,
-          data: { 'http.request.header.cookie.next_locale': 'es' },
+          data: { 'http.request.header.x_proxy_secreto': SECRETO },
         },
       ],
     });

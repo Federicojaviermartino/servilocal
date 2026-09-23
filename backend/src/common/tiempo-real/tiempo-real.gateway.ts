@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Repository } from 'typeorm';
 import { User } from '../../entities';
-import { JwtPayload } from '../../auth/strategies/jwt.strategy';
+import { AUDIENCIA_SOCKET } from '../../auth/sesion';
 import { origenesPermitidos } from '../origenes';
 
 /** Sala privada de cada persona. Nadie la pide: se la asigna el servidor. */
@@ -32,7 +32,7 @@ function salaDe(usuarioId: string): string {
  * conversación habría que validar cada solicitud, y esa validación es
  * exactamente el sitio donde se cuelan los fallos.
  *
- * El apretón de manos exige un token válido y de alguien activo. Sin él la
+ * El apretón de manos exige un pase válido y de alguien activo. Sin él la
  * conexión se cierra, porque un socket anónimo dentro de una sala privada
  * sería peor que no tener tiempo real.
  */
@@ -67,8 +67,13 @@ export class TiempoRealGateway implements OnGatewayConnection {
   }
 
   /**
-   * Token del apretón de manos, nunca de la URL: las cadenas de consulta
+   * Pase del apretón de manos, nunca de la URL: las cadenas de consulta
    * acaban en los registros del servidor y en los del proxy de delante.
+   *
+   * Solo vale el pase del socket, que dura un minuto y el navegador pide a
+   * /auth/socket-ticket con su cookie. La sesión no se acepta aquí: para
+   * mandarla, el navegador tendría que poder leerla, y precisamente ya no
+   * puede.
    */
   private async identificar(cliente: Socket): Promise<string> {
     const token = cliente.handshake?.auth?.token;
@@ -76,8 +81,9 @@ export class TiempoRealGateway implements OnGatewayConnection {
       throw new Error('sin token');
     }
 
-    const carga = await this.jwt.verifyAsync<JwtPayload>(token, {
+    const carga = await this.jwt.verifyAsync<{ sub: string }>(token, {
       secret: this.config.get<string>('JWT_SECRET'),
+      audience: AUDIENCIA_SOCKET,
     });
 
     // Se comprueba contra la base de datos y no solo la firma: un token
@@ -93,6 +99,18 @@ export class TiempoRealGateway implements OnGatewayConnection {
   }
 
   /**
+   * Avisa a una sola persona.
+   *
+   * Comparte sala y conexión con los mensajes: abrir un segundo socket para
+   * las notificaciones gastaría el doble de ranuras del servidor sin ganar
+   * nada, y el reparto por salas ya estaba resuelto.
+   */
+  notificarAviso(usuarioId: string, aviso: unknown): void {
+    if (!this.server) return;
+    this.server.to(salaDe(usuarioId)).emit('aviso-nuevo', aviso);
+  }
+
+  /**
    * Avisa a los dos participantes de una conversación.
    *
    * Los identificadores los pone quien guarda el mensaje, leídos de la propia
@@ -105,18 +123,6 @@ export class TiempoRealGateway implements OnGatewayConnection {
    * pero no destinatario, así que quien escribe no reconocería el suyo.
    * No se revela nada: son los dos únicos de la conversación.
    */
-  /**
-   * Avisa a una sola persona.
-   *
-   * Comparte sala y conexión con los mensajes: abrir un segundo socket para
-   * las notificaciones gastaría el doble de ranuras del servidor sin ganar
-   * nada, y el reparto por salas ya estaba resuelto.
-   */
-  notificarAviso(usuarioId: string, aviso: unknown): void {
-    if (!this.server) return;
-    this.server.to(salaDe(usuarioId)).emit('aviso-nuevo', aviso);
-  }
-
   notificarMensaje(participantes: [string, string], mensaje: unknown): void {
     // Si nadie ha abierto todavía un socket no hay servidor que usar: la
     // mensajería tiene que seguir funcionando por HTTP igualmente.

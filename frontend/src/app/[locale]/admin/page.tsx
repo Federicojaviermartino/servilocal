@@ -24,7 +24,7 @@ import {
   Sparkles,
   ScrollText,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/auth-store';
+import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import GraficasPanel from '@/components/organisms/GraficasPanel';
 import {
   adminApi,
@@ -145,9 +145,8 @@ export default function AdminPage() {
     if (user && user.role !== UserRole.ADMIN) {
       router.replace('/dashboard');
     }
-    if (!user) {
-      const stored = localStorage.getItem('accessToken');
-      if (!stored) router.replace('/auth/login?redirect=/admin');
+    if (!user && !haySesionRecordada()) {
+      router.replace('/auth/login?redirect=/admin');
     }
   }, [user, router]);
 

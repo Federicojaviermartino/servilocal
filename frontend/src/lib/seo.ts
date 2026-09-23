@@ -58,8 +58,10 @@ const ESCAPES: Record<string, string> = {
  * servicio `</script><script>…` y ese texto salía tal cual dentro de la
  * etiqueta JSON-LD: el navegador daba por cerrado el bloque y ejecutaba lo
  * que viniera detrás, en la ficha pública que ve cualquier visitante. Con el
- * token de sesión en localStorage, eso es robo de sesión, y quien abriera la
- * ficha desde el panel de moderación entregaba una cuenta de administración.
+ * token de sesión en localStorage, como estaba entonces, eso era robo de
+ * sesión. Hoy la sesión va en una cookie que el script no puede leer, pero
+ * sigue pudiendo actuar en nombre de quien abre la ficha mientras la tenga
+ * abierta, y desde el panel de moderación eso es una cuenta de administración.
  *
  * Se escapan también los separadores de línea de Unicode: son saltos de línea
  * válidos en JavaScript, pero no dentro de una cadena JSON.

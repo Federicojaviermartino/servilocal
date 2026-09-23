@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { Service } from '@/types';
 import { servicesApi, bookingsApi } from '@/lib/api';
-import { useAuthStore } from '@/lib/auth-store';
+import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import BookingForm from '@/components/organisms/BookingForm';
 import Spinner from '@/components/atoms/Spinner';
 
@@ -27,12 +27,8 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      if (typeof window !== 'undefined') {
-        const stored = localStorage.getItem('accessToken');
-        if (!stored) {
-          router.push(`/auth/login?redirect=/services/${serviceId}/book`);
-          return;
-        }
+      if (!haySesionRecordada()) {
+        router.push(`/auth/login?redirect=/services/${serviceId}/book`);
       }
       return;
     }

@@ -1,14 +1,15 @@
 import * as Sentry from '@sentry/node';
 import type { Event, NodeOptions } from '@sentry/node';
 
-/** Cabeceras que llevan credenciales: el token y las cookies. */
-const CABECERAS_SECRETAS = ['authorization', 'cookie'];
+/** Cabeceras que llevan credenciales: la sesión, el token, el secreto del proxy. */
+const CABECERAS_SECRETAS = ['authorization', 'cookie', 'x-proxy-secreto'];
 
 /**
  * Las mismas cabeceras, tal como Sentry las copia en los datos de la traza.
- * Las cookies van una a una: `http.request.header.cookie.<nombre>`.
+ * Las cookies van una a una: `http.request.header.cookie.sesion`.
  */
-const ATRIBUTO_SECRETO = /^http\.request\.header\.(authorization|cookie)(\.|$)/;
+const ATRIBUTO_SECRETO =
+  /^http\.request\.header\.(authorization|cookie|x_proxy_secreto)(\.|$)/;
 
 function limpiarDatos(datos: Record<string, unknown> | undefined): void {
   if (!datos) return;
@@ -25,9 +26,8 @@ function limpiarDatos(datos: Record<string, unknown> | undefined): void {
  * muestreada llevaba las cabeceras de la petición tal cual, token incluido.
  *
  * Sentry tapa algunas por su cuenta, pero decide por el nombre, en inglés:
- * «authorization» la reconoce en las trazas, pero una cookie cuyo nombre no
- * diga «session» o «token» no. Y las cookies de los errores las adjunta
- * aparte, en request.cookies, sin filtrar nada.
+ * «authorization» la reconoce; una cookie llamada «sesion», no. Y las cookies
+ * de los errores las adjunta aparte, en request.cookies, sin filtrar nada.
  * Medido con el SDK de verdad: ver sentry.spec.ts.
  */
 export function limpiarEvento<T extends Event>(evento: T): T {

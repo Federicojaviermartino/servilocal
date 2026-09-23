@@ -5,8 +5,11 @@ import {
   CreateReviewDto,
 } from '@/types';
 
-// En produccion NEXT_PUBLIC_API_URL debe inyectarse como build arg en Docker.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// El navegador no llama a la API directamente sino a /api en el propio
+// frontend, que la reenvía (ver proxy.ts): así la cookie de sesión es de este
+// dominio. Por eso la dirección es relativa, y este cliente es solo para el
+// navegador: en el servidor no hay origen al que referirla.
+const API_URL = '/api';
 
 // Sin timeout, una API que acepta la conexión pero no responde deja la
 // interfaz cargando indefinidamente: la promesa nunca se resuelve, así que
@@ -27,16 +30,6 @@ const api = axios.create({
   baseURL: API_URL,
   timeout: REQUEST_TIMEOUT_MS,
   headers: { 'Content-Type': 'application/json' },
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
 });
 
 api.interceptors.response.use(
@@ -78,7 +71,12 @@ export const authApi = {
   }) => api.post('/auth/register', data),
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
+  // Con el plazo largo: si la API está dormida, la cookie tiene que borrarse
+  // igual cuando despierte, aunque para entonces la pantalla ya haya salido.
+  logout: () =>
+    api.post('/auth/logout', null, { timeout: REINTENTO_TIMEOUT_MS }),
   getProfile: () => api.get('/auth/profile'),
+  socketTicket: () => api.get<{ ticket: string }>('/auth/socket-ticket'),
 };
 
 export const usersApi = {

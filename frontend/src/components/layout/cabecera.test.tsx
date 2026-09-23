@@ -56,14 +56,13 @@ function entrarComo(role: 'client' | 'provider' | 'admin') {
       email: 'laura@ejemplo.com',
       role,
     } as never,
-    token: 'jwt',
     isAuthenticated: true,
   });
 }
 
 describe('Header', () => {
   beforeEach(() => {
-    useAuthStore.setState({ user: null, token: null, isAuthenticated: false });
+    useAuthStore.setState({ user: null, isAuthenticated: false });
     localStorage.clear();
   });
 
