@@ -285,12 +285,11 @@ branches accordingly: a held payment is cancelled, a captured one is refunded. C
 `cancel` on a captured intent fails, which is a real bug this project had until a test
 was written for that branch.
 
-What is **not** wired yet, and matters more than the part that is: nothing captures the
-hold when the work is completed, and cancelling a booking does not release it. The
-capture and refund endpoints exist and are admin-only, but no screen calls them, so in
-practice the authorisation expires after seven days and the platform never charges. It is listed
-under [Known limitations](#known-limitations); until it is closed, read this section as
-"the money is held correctly and then nothing happens to it".
+The booking state machine moves the money. Completing a booking captures the hold,
+cancelling or rejecting it releases the hold, and the money moves *before* the state does:
+if the capture fails, the booking is not marked complete, because a job closed without
+being charged is one nobody looks at again. What is still missing is renewing a hold
+before Stripe drops it, about seven days in — see [Known limitations](#known-limitations).
 
 **3 · The audit log is append-only and denormalised.**
 No route creates, edits or deletes an entry; the service exposes only `anotar` and

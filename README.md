@@ -509,10 +509,11 @@ All of these run in CI on every push, to any branch. The end-to-end job spins up
 
 | Status | Item |
 |--------|------|
-| Next | Close the money loop: let the provider accept a booking, capture the hold when the work is completed, and release it on cancellation. Funds are held correctly today and then nothing happens to them |
+| Next | Renew a payment hold before Stripe drops it, about seven days after booking. Today a booking left open longer than that can no longer be charged |
 | Next | Redis in production, so rate-limit counters survive a deploy and sockets span instances. The application already runs without it, by design |
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
+| Done | Money loop: the provider accepts or rejects, completing captures the hold, cancelling or rejecting releases it |
 | Done | Browser session in an `HttpOnly` cookie, kept first-party by relaying API calls through the front end |
 | Done | Public search returns a provider projection, not the full row |
 | Done | Admin metrics aggregated in SQL instead of counting arrays in the browser |
