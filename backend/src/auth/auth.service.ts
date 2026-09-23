@@ -77,18 +77,6 @@ export class AuthService {
     return this.generateAuthResponse(user);
   }
 
-  async validateUser(userId: string): Promise<User> {
-    const user = await this.userRepository.findOne({
-      where: { id: userId, isActive: true },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
-    }
-
-    return user;
-  }
-
   private generateAuthResponse(user: User): AuthResponseDto {
     const payload: JwtPayload = {
       sub: user.id,
