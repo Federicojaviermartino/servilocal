@@ -34,7 +34,7 @@ through them, and which trade-offs were taken deliberately.
                       └───────┬───────────────────────┬───────────┘
                      REST/JSON│                       │ WebSocket
                       ┌───────▼───────────────────────▼───────────┐
-                      │   NestJS 10 · REST API · Socket.IO        │
+                      │   NestJS 12 · REST API · Socket.IO        │
                       │   JWT + roles · global validation         │
                       └──┬───────────┬──────────┬─────────┬───────┘
                          │           │          │         │
@@ -303,10 +303,14 @@ every locale's service page points its canonical at the default locale. Pages wh
 content *is* fully translated — the search page, for instance — declare their own
 canonical per locale instead.
 
-**8 · Vitest on the front end, Jest on the back.**
-`next-intl` ships a CommonJS build that contains only the plugin, and `use-intl` is
-ESM-only; Jest could not load either. Rather than maintain a transform chain for it, the
-front end runs Vitest, which handles ESM natively.
+**8 · Vitest on both sides.**
+The front end came first: `use-intl` is ESM-only and Jest could not load it. The back
+end followed with NestJS 12, whose packages ship as ESM only. The application itself
+stays CommonJS — Node loads ESM from CommonJS since 22.12 — but Jest has its own module
+system and can only do the same from Node 24.9, which would have meant testing on a
+different Node than production runs. Vitest loads them natively. The back end compiles
+tests with SWC rather than Vitest's default esbuild, because Nest's dependency injection
+reads constructor types from decorator metadata and esbuild does not emit it.
 
 ## Known limitations
 
@@ -319,9 +323,12 @@ Stated here rather than discovered later.
   history is unavailable was judged the worse outcome. A decision, not an oversight.
 - **Socket delivery is per-instance without Redis.** With one instance — the current
   deployment — this changes nothing; it becomes real the moment a second one starts.
-- **The money loop is not closed.** Funds are held at booking time and never captured:
-  no screen calls the capture endpoint, and cancelling a booking does not release the
-  hold. The authorisation lapses on its own after seven days.
+- **A hold lasts seven days.** Funds are authorised at booking time, captured when the
+  provider marks the job complete, and released when the booking is cancelled or
+  rejected. But Stripe drops an uncaptured authorisation after about a week, so a
+  booking left open longer than that can no longer be charged: completing it fails at
+  capture and the booking stays open rather than being marked paid. Re-authorising
+  before the hold lapses is not implemented.
 - **Cached reads expire by time, not by event**, except for the category tree, which is
   invalidated explicitly on write. Everything else can be at most one TTL stale.
 - **The free tier sleeps.** Cold starts are visible on the first request after an idle
@@ -331,8 +338,8 @@ Stated here rather than discovered later.
 
 | Layer | Tool | What it protects |
 |-------|------|------------------|
-| Back end | Jest | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
-| Back end, against real infrastructure | Jest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that Stripe rejects a non-integer amount |
+| Back end | Vitest + SWC | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that Stripe rejects a non-integer amount |
 | Front end | Vitest | Library helpers, components, and catalogue parity across the ten locales |
 | End to end | Playwright | Desktop and a narrow mobile viewport, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
