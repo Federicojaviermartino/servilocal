@@ -12,6 +12,7 @@ import 'leaflet/dist/leaflet.css';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Service } from '@/types';
+import { useNombreUnidad } from '@/lib/unidades';
 
 // Workaround para los iconos de Leaflet en bundlers
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
@@ -67,6 +68,7 @@ export default function ServiceMap({
   height = '500px',
 }: ServiceMapProps) {
   const t = useTranslations('mapa');
+  const nombreUnidad = useNombreUnidad();
 
   // La API entrega la posición como GeoJSON (coordinates es [lng, lat]); los
   // campos planos latitude y longitude se aceptan como alternativa por si el
@@ -119,7 +121,9 @@ export default function ServiceMap({
                 <p className="text-secundario">
                   {t('desde', {
                     precio: service.priceMin,
-                    unidad: service.priceUnit,
+                    // La unidad se guarda en castellano: sin traducirla, el
+                    // mapa en alemán decía «Ab 30 por hora».
+                    unidad: nombreUnidad(service.priceUnit),
                   })}
                 </p>
                 <Link
