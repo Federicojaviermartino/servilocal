@@ -54,6 +54,8 @@ export default defineConfig({
         'src/common/proxy-frontend.ts',
         'src/common/observabilidad/sentry.ts',
         'src/common/observabilidad/peticion.ts',
+        // Cómo se entiende un mensaje del asistente, con el modelo y sin él.
+        'src/ia/interpretacion.ts',
       ],
       exclude: ['src/**/*.spec.ts'],
       reportsDirectory: 'coverage',

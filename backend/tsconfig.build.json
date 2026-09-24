@@ -13,5 +13,14 @@
     // un cambio silencioso de rutas.
     "rootDir": "./src"
   },
-  "exclude": ["node_modules", "test", "dist", "**/*spec.ts", "vitest*.config.ts"]
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "vitest*.config.ts",
+    // La evaluación del asistente se lanza a mano y no sirve para nada en
+    // producción: ver src/ia/evaluacion.
+    "src/ia/evaluacion"
+  ]
 }

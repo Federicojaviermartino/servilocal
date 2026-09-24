@@ -21,7 +21,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-811%20unit%20%2B%2021%20integration%20%2B%2088%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-817%20unit%20%2B%2021%20integration%20%2B%2088%20e2e-475569)
 
 </div>
 
@@ -151,7 +151,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 460 unit tests on the API with doubles, plus 21 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 351 in the browser. Playwright for 88 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 466 unit tests on the API with doubles, plus 21 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 351 in the browser. Playwright for 88 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -196,6 +196,7 @@ UML diagrams live in [`diagrams/`](diagrams/) and responsive wireframes in [`wir
 - **The component catalogue renders components the way the app does.** Stories run inside the same locale provider and theme tokens as the application, and the toolbar switches both, so a card can be checked in Arabic on a dark background without starting the API. CI builds the catalogue on every push, because a broken story breaks nothing in production and would otherwise rot unnoticed.
 - **The spend ceiling is asked before spending, not measured after.** Usage is accumulated in PostgreSQL with an `ON CONFLICT DO UPDATE`, never in process memory: on a free tier the instance sleeps several times a day, so an in-memory counter resets with it and a ceiling built on one only looks like a ceiling. Failed calls are recorded too — a call that timed out still cost latency, and one that appears nowhere is one nobody notices. Costs are integer cents, computed from the token counts the provider returns rather than estimated.
 - **No API key means no AI, not no application.** The provider is chosen once, by injection: with a key it is the real one, without it a null provider that fails immediately with a typed cause so the caller takes its deterministic path. The app logs which one it got, next to the equivalent line for Sentry. Nothing in the layer throws at boot.
+- **The assistant is measured, not assumed.** A set of 48 messages in the ten interface languages — trades named outright, symptoms instead of trades, no accents, cities with no coverage, a negation and two prompt injections — each with the category and city it should yield. The dictionary path runs against it on every push and must resolve every case it is meant to, inventing nothing beyond one known confusion; the model path goes through the same prompt and the same catalogue validation as production, and is run by hand (`npm run evaluar:ia`, or from the Actions tab) because every case is a paid call. Getting it wrong is scored apart from coming up short: a wrong category narrows the search onto something nobody asked for.
 - **The rate limiter keys on the visitor, and it was measured rather than assumed.** `trust proxy: 1` made `req.ip` the last entry of `X-Forwarded-For`, which on Render is an internal load balancer — and it changes between requests, so one visitor landed in two counters while everyone behind the same balancer shared a third. Reading `X-Forwarded-For` directly is worse: Cloudflare **concatenates** rather than sanitises, so position 0 is whatever the client claims. The key is `CF-Connecting-IP`, which cannot be forged — send it yourself and Cloudflare answers 403 at the edge. Raising `trust proxy` to 3 also works today, and was rejected: it depends on there being exactly two infrastructure hops, which Render documents nowhere.
 - **Lock files are generated on Linux, not on the development machine.** npm resolves peer dependencies differently per operating system: `next-intl` pulls in `@swc/core`, which declares `@swc/helpers >=0.5.17` as an optional peer while Next pins `0.5.5` exactly, and Storybook brings the same clash with `ajv`. Linux resolves each into two entries, Windows into one, and `npm ci` rejects the Windows tree outright. `npm run lock` rebuilds the tree inside a `node:22` container and refuses to write the file until `npm ci` accepts it. The images install with `npm ci` too — they used to run `npm install`, which can resolve a different tree, so all of that work stopped at the CI boundary and never reached what actually gets deployed. CI now builds both images on every push and checks three things about the API one: that it does not run as root, that the source tree is not inside it, and that the build tooling was left behind.
 
@@ -471,9 +472,10 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 460 unit tests across 35 suites, all with doubles (Vitest)
+npm run test          # 466 unit tests across 36 suites, all with doubles (Vitest)
 npm run test:cov      # fails below 90% statements / 80% branches
 npm run test:integracion   # 21 tests against a real database and stripe-mock
+npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run build
 
 # Front end

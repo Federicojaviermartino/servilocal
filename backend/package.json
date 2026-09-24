@@ -26,7 +26,8 @@
     "migration:run": "npm run typeorm -- migration:run -d src/config/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
     "lock": "node ../scripts/regenerar-lockfile.mjs",
-    "test:integracion": "vitest run --config vitest.integracion.config.ts"
+    "test:integracion": "vitest run --config vitest.integracion.config.ts",
+    "evaluar:ia": "vitest run --config vitest.evaluacion.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

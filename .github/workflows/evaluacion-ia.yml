@@ -1,0 +1,59 @@
+# Evaluación del asistente con el modelo de verdad.
+#
+# No va en la integración: cada caso es una llamada de pago. Se lanza a mano
+# desde la pestaña de Actions antes de tocar el prompt, el catálogo o el
+# modelo, que es cuando sirve de algo, y compara lo que sale con lo que
+# debería salir en los casos de backend/src/ia/evaluacion/casos.ts.
+#
+# Necesita el secreto ANTHROPIC_API_KEY en el repositorio. Una pasada con
+# Haiku cuesta unos pocos céntimos; el total se imprime al terminar.
+name: Evaluación del asistente
+
+on:
+  workflow_dispatch:
+    inputs:
+      modelo:
+        description: Modelo a evaluar
+        required: false
+        default: 'claude-haiku-4-5-20251001'
+
+# Solo lee el código; ver ci.yml.
+permissions:
+  contents: read
+
+jobs:
+  evaluar:
+    name: Asistente contra el conjunto de evaluación
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Comprobar que hay clave
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Falta el secreto ANTHROPIC_API_KEY. Sin él la evaluación se saltaría y parecería superada."
+            exit 1
+          fi
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Evaluar
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IA_MODELO: ${{ inputs.modelo }}
+        run: npm run evaluar:ia

@@ -419,6 +419,7 @@ Stated here rather than discovered later.
 | Front end | Vitest | Library helpers, components, and catalogue parity across the ten locales |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
+| AI assistant | Evaluation set, `src/ia/evaluacion` | 48 messages in ten languages with the category and city each should yield. The dictionary path runs in CI; the model path runs by hand, since each case is a paid call, through the same prompt and validation as production |
 | Components | Storybook | Built in CI, because a broken story breaks nothing in production and would otherwise rot unnoticed |
 | Production | Smoke test after each deploy | Waits until each service reports the commit it should now serve — each Render service redeploys only when its own folder changes — then checks the relay, the cookie attributes, the socket handshake and that sign-out revokes the session |
 
