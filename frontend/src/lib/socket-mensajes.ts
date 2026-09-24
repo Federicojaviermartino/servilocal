@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useEffectEvent, useState } from 'react';
+import { useEffect, useEffectEvent, useSyncExternalStore } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -19,6 +19,31 @@ const SOCKET_URL = API_URL.replace(/\/api\/?$/, '');
  */
 let socket: Socket | null = null;
 let suscriptores = 0;
+
+/**
+ * Si el socket de la pestaña está conectado.
+ *
+ * Vive fuera de React, junto al socket, y los componentes lo leen con
+ * useSyncExternalStore. Antes cada suscripción lo copiaba en su propio
+ * estado, y al montar tenía que ponerlo a mano dentro del efecto para no
+ * perderse una conexión que ya estaba hecha: un render de más cada vez.
+ */
+let conectadoAhora = false;
+const oyentesConexion = new Set<() => void>();
+
+function fijarConexion(valor: boolean): void {
+  if (conectadoAhora === valor) return;
+  conectadoAhora = valor;
+  oyentesConexion.forEach((avisar) => avisar());
+}
+
+function suscribirConexion(avisar: () => void): () => void {
+  oyentesConexion.add(avisar);
+  return () => oyentesConexion.delete(avisar);
+}
+
+const leerConexion = () => conectadoAhora;
+const conexionEnServidor = () => false;
 
 /**
  * Pide un pase para cada intento de conexión, reconexiones incluidas.
@@ -45,6 +70,8 @@ function abrir(): Socket {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
     });
+    socket.on('connect', () => fijarConexion(true));
+    socket.on('disconnect', () => fijarConexion(false));
   }
   return socket;
 }
@@ -53,6 +80,7 @@ function cerrar() {
   if (socket && suscriptores === 0) {
     socket.disconnect();
     socket = null;
+    fijarConexion(false);
   }
 }
 
@@ -78,8 +106,6 @@ export interface AvisoMensaje {
  * gastaría el doble de ranuras del servidor para nada.
  */
 function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
-  const [conectado, setConectado] = useState(false);
-
   // El manejador cambia en cada render, y no conviene desuscribir y volver a
   // suscribir con cada pulsación de tecla. Antes se guardaba en una
   // referencia que se reescribía durante el render, algo que React
@@ -100,22 +126,15 @@ function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
     suscriptores += 1;
 
     const alDato = (dato: T) => recibirUltimo(dato);
-    const alConectar = () => setConectado(true);
-    const alDesconectar = () => setConectado(false);
     // El servidor cierra la conexión cuando el token no vale. Reintentar
     // sería insistir con la misma credencial: se deja de intentar.
     const alSesionInvalida = () => s.disconnect();
 
     s.on(evento, alDato);
-    s.on('connect', alConectar);
-    s.on('disconnect', alDesconectar);
     s.on('sesion-invalida', alSesionInvalida);
-    setConectado(s.connected);
 
     return () => {
       s.off(evento, alDato);
-      s.off('connect', alConectar);
-      s.off('disconnect', alDesconectar);
       // Antes no se quitaba: con el socket compartido, cada suscripción
       // dejaba uno más colgado.
       s.off('sesion-invalida', alSesionInvalida);
@@ -124,7 +143,13 @@ function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
     };
   }, [evento, conSesion]);
 
-  return { conectado };
+  const conectado = useSyncExternalStore(
+    suscribirConexion,
+    leerConexion,
+    conexionEnServidor,
+  );
+
+  return { conectado: conSesion && conectado };
 }
 
 /** Un aviso de la plataforma, tal como lo guarda el servidor. */

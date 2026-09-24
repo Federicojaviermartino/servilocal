@@ -1,12 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Booking, BookingStatus, Review } from '@/types';
 import { bookingsApi, reviewsApi } from '@/lib/api';
-import Spinner from '@/components/atoms/Spinner';
 import Button from '@/components/atoms/Button';
 import RatingStars from '@/components/molecules/RatingStars';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
+import { useCarga } from '@/lib/carga';
 
 interface PendingReviewFormProps {
   booking: Booking;
@@ -76,92 +77,85 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
   );
 }
 
+interface Valoraciones {
+  /** Reservas completadas que aún no tienen valoración. */
+  pendientes: Booking[];
+  enviadas: Review[];
+}
+
+async function pedirValoraciones(): Promise<{ data: Valoraciones }> {
+  const [bkRes, rvRes] = await Promise.all([
+    bookingsApi.getMyBookings(),
+    reviewsApi.getMyReviews(),
+  ]);
+  const enviadas: Review[] = rvRes.data || [];
+  const valoradas = new Set(enviadas.map((r) => r.bookingId));
+  const pendientes = (bkRes.data || []).filter(
+    (b: Booking) =>
+      b.status === BookingStatus.COMPLETED && !valoradas.has(b.id),
+  );
+  return { data: { pendientes, enviadas } };
+}
+
 export default function MyReviewsPage() {
   const t = useTranslations('valoracionesPanel');
   const idioma = useLocale();
-  const [pending, setPending] = useState<Booking[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const load = async () => {
-    setIsLoading(true);
-    try {
-      const [bkRes, rvRes] = await Promise.all([
-        bookingsApi.getMyBookings(),
-        reviewsApi.getMyReviews(),
-      ]);
-      const completed: Booking[] = (bkRes.data || []).filter(
-        (b: Booking) => b.status === BookingStatus.COMPLETED,
-      );
-      const reviewed = new Set(
-        (rvRes.data || []).map((r: Review) => r.bookingId),
-      );
-      setPending(completed.filter((b) => !reviewed.has(b.id)));
-      setReviews(rvRes.data || []);
-    } catch {
-      setPending([]);
-      setReviews([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  // Antes un fallo vaciaba las dos listas, y quien tenía valoraciones
+  // pendientes leía que no le quedaba ninguna.
+  const { datos, estado, reintentar } = useCarga(pedirValoraciones, []);
+  const pending = datos?.pendientes ?? [];
+  const reviews = datos?.enviadas ?? [];
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h1 className="text-2xl font-bold text-principal mb-4">
-          {t('pendientes')}
-        </h1>
-        {pending.length === 0 ? (
-          <p className="text-secundario text-sm">{t('sinPendientes')}</p>
-        ) : (
-          <div className="space-y-4">
-            {pending.map((b) => (
-              <PendingReviewForm key={b.id} booking={b} onSubmit={load} />
-            ))}
-          </div>
-        )}
-      </section>
+    <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <div className="space-y-8">
+        <section>
+          <h1 className="text-2xl font-bold text-principal mb-4">
+            {t('pendientes')}
+          </h1>
+          {pending.length === 0 ? (
+            <p className="text-secundario text-sm">{t('sinPendientes')}</p>
+          ) : (
+            <div className="space-y-4">
+              {pending.map((b) => (
+                <PendingReviewForm
+                  key={b.id}
+                  booking={b}
+                  onSubmit={reintentar}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
-      <section>
-        <h2 className="text-xl font-semibold text-principal mb-4">
-          {t('enviadas', { total: reviews.length })}
-        </h2>
-        {reviews.length === 0 ? (
-          <p className="text-secundario text-sm">{t('sinEnviadas')}</p>
-        ) : (
-          <div className="space-y-3">
-            {reviews.map((r) => (
-              <div
-                key={r.id}
-                className="bg-superficie rounded-lg shadow-card p-4"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <RatingStars rating={r.rating} size="sm" />
-                  <span className="text-xs text-tenue">
-                    {new Date(r.createdAt).toLocaleDateString(idioma)}
-                  </span>
+        <section>
+          <h2 className="text-xl font-semibold text-principal mb-4">
+            {t('enviadas', { total: reviews.length })}
+          </h2>
+          {reviews.length === 0 ? (
+            <p className="text-secundario text-sm">{t('sinEnviadas')}</p>
+          ) : (
+            <div className="space-y-3">
+              {reviews.map((r) => (
+                <div
+                  key={r.id}
+                  className="bg-superficie rounded-lg shadow-card p-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <RatingStars rating={r.rating} size="sm" />
+                    <span className="text-xs text-tenue">
+                      {new Date(r.createdAt).toLocaleDateString(idioma)}
+                    </span>
+                  </div>
+                  {r.comment && (
+                    <p className="text-sm text-secundario">{r.comment}</p>
+                  )}
                 </div>
-                {r.comment && (
-                  <p className="text-sm text-secundario">{r.comment}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </EstadoCarga>
   );
 }

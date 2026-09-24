@@ -13,7 +13,8 @@ import Spinner from '../atoms/Spinner';
 interface EstadoCargaProps {
   estado: Estado;
   onReintentar?: () => void;
-  children: React.ReactNode;
+  /** Lo que se pinta cuando ya está listo. Sin él, solo los otros estados. */
+  children?: React.ReactNode;
 }
 
 /**

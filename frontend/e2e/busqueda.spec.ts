@@ -62,6 +62,28 @@ test.describe('Búsqueda de servicios', () => {
     expect(segundoTitulo).not.toBe(primerTitulo);
   });
 
+  test('buscar un texto pide los resultados una sola vez', async ({ page }) => {
+    // Antes se pedía al pulsar y otra vez al cambiar la URL, y la segunda
+    // petición, que era la que se quedaba, perdía los filtros del panel.
+    await page.goto('/services/search');
+    await expect(page.locator(TARJETA).first()).toBeVisible();
+
+    const pedidas: string[] = [];
+    page.on('request', (peticion) => {
+      if (peticion.url().includes('/api/services/search')) {
+        pedidas.push(peticion.url());
+      }
+    });
+
+    await page.getByPlaceholder('¿Qué servicio necesitas?').fill('pintura');
+    await page.getByRole('button', { name: 'Buscar' }).click();
+
+    await expect(page).toHaveURL(/q=pintura/);
+    await expect(page.locator(TARJETA).first()).toBeVisible();
+    expect(pedidas).toHaveLength(1);
+    expect(pedidas[0]).toContain('query=pintura');
+  });
+
   test('filtrar por ciudad acota los resultados y Limpiar los restaura', async ({
     page,
   }) => {

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { useAuthStore } from '@/lib/auth-store';
 import { MapPin, Eye, EyeOff, User, Briefcase } from 'lucide-react';
 
@@ -28,12 +28,15 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RegisterForm>({ defaultValues: { role: 'client' } });
 
-  const password = watch('password');
-  const selectedRole = watch('role');
+  // useWatch y no watch: watch devuelve funciones que el compilador de React
+  // no puede memorizar sin riesgo, y la regla lo marca. useWatch se suscribe
+  // solo a estos dos campos y es lo que recomienda la propia biblioteca.
+  const password = useWatch({ control, name: 'password' });
+  const selectedRole = useWatch({ control, name: 'role' });
 
   const onSubmit = async (data: RegisterForm) => {
     setError('');

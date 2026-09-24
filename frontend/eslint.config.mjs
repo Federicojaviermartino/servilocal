@@ -8,19 +8,14 @@ import nextCoreWebVitals from 'eslint-config-next/core-web-vitals';
  * compilador de React, y encontraron cosas de verdad: el anuncio de los
  * avisos en vivo para lectores de pantalla dependía de que React ejecutara
  * en el acto la función que actualiza el estado, y no salía. Arreglado.
+ *
+ * Todas las reglas con su nivel de fábrica. set-state-in-effect estuvo un
+ * tiempo rebajada a aviso mientras dieciocho cargas de datos ponían el
+ * «cargando» dentro de un efecto; ya no queda ninguna. Y el lint no admite
+ * avisos: uno que se tolera hoy es costumbre mañana.
  */
 const configuracion = [
   ...nextCoreWebVitals,
-  {
-    rules: {
-      // Dieciocho pantallas cargan datos poniendo el estado de «cargando»
-      // dentro de un efecto. La regla avisa de que eso provoca un render de
-      // más, y tiene razón, pero corregirlo es rehacer la carga de datos de
-      // dieciocho pantallas: merece su propio cambio y no ir colado en una
-      // migración. Se queda como aviso, a la vista, no apagada.
-      'react-hooks/set-state-in-effect': 'warn',
-    },
-  },
   {
     ignores: [
       '.next/**',

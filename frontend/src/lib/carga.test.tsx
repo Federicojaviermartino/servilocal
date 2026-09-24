@@ -89,6 +89,25 @@ describe('useCarga', () => {
     expect(pedir).toHaveBeenCalledTimes(1);
   });
 
+  it('al cambiar lo que se pide vuelve a cargando en ese mismo render', async () => {
+    // Antes el «cargando» se ponía dentro del efecto, así que había un
+    // render con el identificador nuevo y el estado viejo: la pantalla
+    // enseñaba por un momento los datos de lo anterior como si fueran lo
+    // que se acababa de pedir.
+    const pedir = vi.fn(async (id: string) => ({ data: `datos de ${id}` }));
+    const { result, rerender } = renderHook(
+      ({ id }) => useCarga(() => pedir(id), [id]),
+      { initialProps: { id: 'a' } },
+    );
+    await waitFor(() => expect(result.current.estado).toBe('listo'));
+
+    rerender({ id: 'b' });
+
+    expect(result.current.estado).toBe('cargando');
+    await waitFor(() => expect(result.current.datos).toBe('datos de b'));
+    expect(result.current.estado).toBe('listo');
+  });
+
   it('una respuesta que llega tarde no pisa el estado actual', async () => {
     // Al desmontar la pantalla, la petición sigue viva: escribir entonces
     // avisa de una fuga y, peor, revive datos de una vista que ya no está.

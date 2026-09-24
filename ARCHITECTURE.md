@@ -215,6 +215,14 @@ its own origin. That client retries
 idempotent reads only: a timed-out `GET` is retried once, a `POST` never, because
 repeating one could duplicate a booking or a charge.
 
+Screens load through `useCarga`, which tells "nothing there" apart from "could not ask"
+— a failure shows a retry, an expired session a way back in — and derives *loading* by
+comparing what was last requested with what last arrived, instead of setting it inside an
+effect. State that lives outside React — the theme class on `<html>`, whether the socket
+is connected — is read with `useSyncExternalStore`, so every reader sees the same value.
+The lint runs with the React compiler's rules at their default level and fails on any
+warning.
+
 ## Real time
 
 One Socket.IO gateway, `TiempoRealGateway`, under `common/` rather than inside the

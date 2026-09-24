@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"e2e/**/*.ts\" \".storybook/**/*.{ts,tsx}\" \"*.{js,mjs,ts}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"e2e/**/*.ts\" \".storybook/**/*.{ts,tsx}\" \"*.{js,mjs,ts}\"",
     "type-check": "tsc --noEmit",

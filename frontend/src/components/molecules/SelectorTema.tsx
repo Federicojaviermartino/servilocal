@@ -8,25 +8,22 @@
  * después y guarda la preferencia.
  */
 'use client';
-import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Moon, Sun } from 'lucide-react';
+import { useTemaOscuro } from '@/lib/tema';
 
 export const CLAVE_TEMA = 'tema';
 
 export default function SelectorTema() {
   const t = useTranslations('tema');
-  // null mientras no se ha montado: el servidor no sabe qué tema tiene el
-  // usuario, así que el primer render del cliente debe coincidir con el suyo.
-  const [oscuro, setOscuro] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setOscuro(document.documentElement.classList.contains('dark'));
-  }, []);
+  // null en el servidor y en el primer render del cliente, que no saben qué
+  // tema tiene el usuario. Ver lib/tema.ts.
+  const oscuro = useTemaOscuro();
 
   const alternar = () => {
     const siguiente = !oscuro;
-    setOscuro(siguiente);
+    // Basta con cambiar la clase: useTemaOscuro se entera y vuelve a pintar
+    // este selector y cualquier otro que haya en la página.
     document.documentElement.classList.toggle('dark', siguiente);
     try {
       localStorage.setItem(CLAVE_TEMA, siguiente ? 'oscuro' : 'claro');

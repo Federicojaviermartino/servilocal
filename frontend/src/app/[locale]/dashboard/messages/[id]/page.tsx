@@ -9,32 +9,55 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useMensajesEnVivo, type AvisoMensaje } from '@/lib/socket-mensajes';
 import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
-import Spinner from '@/components/atoms/Spinner';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
+import type { EstadoCarga as Estado } from '@/lib/carga';
+import type { AxiosError } from 'axios';
 
 export default function ConversationPage() {
-  const t = useTranslations('mensajesPanel');
-  const idioma = useLocale();
   const params = useParams();
   const partnerId = params.id as string;
+  // Una instancia por conversación: al pasar de una a otra, todo empieza de
+  // cero en lugar de enseñar la anterior mientras llega la nueva.
+  return <Conversacion key={partnerId} partnerId={partnerId} />;
+}
+
+function Conversacion({ partnerId }: { partnerId: string }) {
+  const t = useTranslations('mensajesPanel');
+  const idioma = useLocale();
   const { user } = useAuthStore();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [interlocutor, setInterlocutor] = useState<Conversation['partner']>();
-  const [isLoading, setIsLoading] = useState(true);
+  const [estado, setEstado] = useState<Estado>('cargando');
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const { data } = await messagesApi.getConversation(partnerId);
-      setMessages(data || []);
-    } catch {
-      setMessages([]);
-    } finally {
-      setIsLoading(false);
-    }
+  const recargar = useCallback(() => {
+    messagesApi.getConversation(partnerId).then(
+      ({ data }) => {
+        setMessages(data || []);
+        setEstado('listo');
+      },
+      (error: AxiosError) =>
+        // Un refresco que falla no borra lo que ya se ve. Antes vaciaba la
+        // conversación: un corte de un segundo mientras se consultaba cada
+        // diez hacía desaparecer todos los mensajes. Solo la primera carga
+        // se queda sin nada que enseñar, y entonces se dice por qué.
+        setEstado((actual) =>
+          actual === 'listo'
+            ? actual
+            : error?.response?.status === 401
+              ? 'sesion'
+              : 'error',
+        ),
+    );
   }, [partnerId]);
+
+  const reintentar = () => {
+    setEstado('cargando');
+    recargar();
+  };
 
   // Llega por socket: se añade en el sitio en lugar de recargar la
   // conversación entera. El servidor manda el mensaje a los dos, así que
@@ -61,8 +84,8 @@ export default function ConversationPage() {
   );
 
   useEffect(() => {
-    if (partnerId) load();
-  }, [partnerId, load]);
+    recargar();
+  }, [recargar]);
 
   // Quién es el interlocutor no se puede deducir de los mensajes: si aún no
   // ha escrito, ninguno lleva su nombre. Viene de la lista de conversaciones,
@@ -84,9 +107,9 @@ export default function ConversationPage() {
   // mensajes sin enterarse es la peor forma de fallar de una mensajería.
   useEffect(() => {
     if (conectado) return;
-    const intervalo = setInterval(load, 10000);
+    const intervalo = setInterval(recargar, 10000);
     return () => clearInterval(intervalo);
-  }, [conectado, load]);
+  }, [conectado, recargar]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,92 +127,89 @@ export default function ConversationPage() {
       setContent('');
       // Con socket, el propio mensaje vuelve por él. Sin socket hay que
       // pedirlo, o quien escribe no vería lo que acaba de enviar.
-      if (!conectado) load();
+      if (!conectado) recargar();
     } finally {
       setIsSending(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
   const partner = interlocutor;
 
   return (
-    <div className="bg-superficie rounded-lg shadow-card flex flex-col h-[70vh]">
-      {partner && (
-        <div className="p-4 border-b border-borde flex items-center gap-3">
-          <Avatar name={`${partner.firstName} ${partner.lastName}`} size="md" />
-          <div>
-            <p className="font-semibold text-principal">
-              {partner.firstName} {partner.lastName}
-            </p>
+    <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <div className="bg-superficie rounded-lg shadow-card flex flex-col h-[70vh]">
+        {partner && (
+          <div className="p-4 border-b border-borde flex items-center gap-3">
+            <Avatar
+              name={`${partner.firstName} ${partner.lastName}`}
+              size="md"
+            />
+            <div>
+              <p className="font-semibold text-principal">
+                {partner.firstName} {partner.lastName}
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 ? (
-          <p className="text-center text-tenue py-10">{t('sinMensajes')}</p>
-        ) : (
-          messages.map((m) => {
-            const isOwn = m.senderId === user?.id;
-            return (
-              <div
-                key={m.id}
-                className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-              >
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {messages.length === 0 ? (
+            <p className="text-center text-tenue py-10">{t('sinMensajes')}</p>
+          ) : (
+            messages.map((m) => {
+              const isOwn = m.senderId === user?.id;
+              return (
                 <div
-                  className={`max-w-[70%] rounded-lg px-4 py-2 ${
-                    isOwn
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-superficie-alt text-principal'
-                  }`}
+                  key={m.id}
+                  className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p className="text-sm whitespace-pre-line">{m.content}</p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      isOwn ? 'text-primary-100' : 'text-tenue'
+                  <div
+                    className={`max-w-[70%] rounded-lg px-4 py-2 ${
+                      isOwn
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-superficie-alt text-principal'
                     }`}
                   >
-                    {new Date(m.createdAt).toLocaleTimeString(idioma, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
+                    <p className="text-sm whitespace-pre-line">{m.content}</p>
+                    <p
+                      className={`text-xs mt-1 ${
+                        isOwn ? 'text-primary-100' : 'text-tenue'
+                      }`}
+                    >
+                      {new Date(m.createdAt).toLocaleTimeString(idioma, {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={endRef} />
-      </div>
+              );
+            })
+          )}
+          <div ref={endRef} />
+        </div>
 
-      <form
-        onSubmit={handleSend}
-        className="p-3 border-t border-borde flex gap-2"
-      >
-        <input
-          type="text"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={t('escribePlaceholder')}
-          className="flex-1 rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
-        />
-        <Button
-          type="submit"
-          isLoading={isSending}
-          disabled={!content.trim() || isSending}
-          aria-label={t('enviar')}
+        <form
+          onSubmit={handleSend}
+          className="p-3 border-t border-borde flex gap-2"
         >
-          <Send size={18} aria-hidden="true" />
-        </Button>
-      </form>
-    </div>
+          <input
+            type="text"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={t('escribePlaceholder')}
+            className="flex-1 rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
+          <Button
+            type="submit"
+            isLoading={isSending}
+            disabled={!content.trim() || isSending}
+            aria-label={t('enviar')}
+          >
+            <Send size={18} aria-hidden="true" />
+          </Button>
+        </form>
+      </div>
+    </EstadoCarga>
   );
 }

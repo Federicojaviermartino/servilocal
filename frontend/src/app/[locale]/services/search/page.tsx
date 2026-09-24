@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, type ReadonlyURLSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import nextDynamic from 'next/dynamic';
 import { Service, ServiceSearchParams } from '@/types';
@@ -32,122 +32,165 @@ const ServiceMap = nextDynamic(
   },
 );
 
-function SearchPageContent() {
+type FalloBusqueda = 'network' | 'timeout' | 'unavailable';
+
+/** Lo que se ha pedido. Cada cambio es un objeto nuevo, y eso lanza la petición. */
+interface Consulta {
+  filtros: ServiceSearchParams;
+  pagina: number;
+  vista: Vista;
+  /** Sube al reintentar, para volver a pedir lo mismo. */
+  intento: number;
+}
+
+/** Lo que ha llegado, y a qué consulta responde. */
+interface Resultado {
+  consulta: Consulta;
+  services: Service[];
+  total: number;
+  totalEsParcial: boolean;
+  totalPages: number;
+  fallo: FalloBusqueda | null;
+}
+
+function filtrosDeUrl(
+  parametros: ReadonlyURLSearchParams,
+): ServiceSearchParams {
+  return {
+    query: parametros.get('q') || undefined,
+    categoryId: parametros.get('category') || undefined,
+    city: parametros.get('city') || undefined,
+  };
+}
+
+function SearchPageContent({
+  inicial,
+  claveUrl,
+}: {
+  inicial: ServiceSearchParams;
+  claveUrl: string;
+}) {
   const t = useTranslations('resultados');
   const tComun = useTranslations('comun');
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const [services, setServices] = useState<Service[]>([]);
-  const [total, setTotal] = useState(0);
-  const [totalEsParcial, setTotalEsParcial] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [view, setView] = useState<Vista>('list');
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
-  const [filters, setFilters] = useState<ServiceSearchParams>({});
-  const [page, setPage] = useState(1);
-  const [tardando, setTardando] = useState(false);
-  const [totalPages, setTotalPages] = useState(1);
-  const [fetchError, setFetchError] = useState<
-    'network' | 'timeout' | 'unavailable' | null
-  >(null);
+  const [consulta, setConsulta] = useState<Consulta>(() => ({
+    filtros: inicial,
+    pagina: 1,
+    vista: 'list',
+    intento: 0,
+  }));
+  const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [tardandoEn, setTardandoEn] = useState<Consulta | null>(null);
 
-  // Puede haber varias búsquedas en vuelo a la vez (cambiar de vista mientras
-  // carga la inicial, por ejemplo). Sin este contador gana la que responde la
-  // última, no la que se pidió la última, y la lista acaba mostrando datos de
-  // una petición ya descartada.
-  const peticionVigente = useRef(0);
+  // Puede haber varias búsquedas en vuelo a la vez (cambiar de vista
+  // mientras carga la inicial, por ejemplo). Solo se acepta la respuesta de
+  // la consulta vigente: sin eso gana la que responde la última, no la que
+  // se pidió la última, y la lista muestra datos de una petición descartada.
+  useEffect(() => {
+    let vigente = true;
 
-  const fetchResults = useCallback(
-    async (
-      params: ServiceSearchParams,
-      paginaSolicitada: number,
-      vista: Vista,
-    ) => {
-      const idPeticion = ++peticionVigente.current;
-      setIsLoading(true);
-      setFetchError(null);
-      try {
-        const { data } = await servicesApi.search({
-          ...params,
-          page: paginaSolicitada,
-          ...(vista === 'map' ? { limit: LIMITE_MAPA } : {}),
-        });
-        if (idPeticion !== peticionVigente.current) return;
+    servicesApi
+      .search({
+        ...consulta.filtros,
+        page: consulta.pagina,
+        ...(consulta.vista === 'map' ? { limit: LIMITE_MAPA } : {}),
+      })
+      .then(({ data }) => {
+        if (!vigente) return;
         // Soporta respuesta paginada { data, meta } o array directo
-        if (Array.isArray(data)) {
-          setServices(data);
-          setTotal(data.length);
-          setTotalPages(1);
-        } else {
-          const items = data.data || [];
-          setServices(items);
-          setTotal(data.meta?.total ?? data.total ?? items.length);
-          setTotalEsParcial(Boolean(data.meta?.totalEsParcial));
-          setTotalPages(data.meta?.totalPages ?? 1);
-        }
-        setPage(paginaSolicitada);
-      } catch (err: any) {
-        if (idPeticion !== peticionVigente.current) return;
-        setServices([]);
-        setTotal(0);
-        setTotalPages(1);
-        if (err?.code === 'ECONNABORTED') setFetchError('timeout');
-        else if (!err?.response) setFetchError('network');
-        else setFetchError('unavailable');
-      } finally {
-        if (idPeticion === peticionVigente.current) setIsLoading(false);
-      }
-    },
-    [],
-  );
+        const items: Service[] = Array.isArray(data) ? data : data.data || [];
+        setResultado({
+          consulta,
+          services: items,
+          total: Array.isArray(data)
+            ? data.length
+            : (data.meta?.total ?? data.total ?? items.length),
+          totalEsParcial:
+            !Array.isArray(data) && Boolean(data.meta?.totalEsParcial),
+          totalPages: Array.isArray(data) ? 1 : (data.meta?.totalPages ?? 1),
+          fallo: null,
+        });
+      })
+      .catch((err: any) => {
+        if (!vigente) return;
+        setResultado({
+          consulta,
+          services: [],
+          total: 0,
+          totalEsParcial: false,
+          totalPages: 1,
+          fallo:
+            err?.code === 'ECONNABORTED'
+              ? 'timeout'
+              : !err?.response
+                ? 'network'
+                : 'unavailable',
+        });
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, [consulta]);
+
+  // «Cargando» no se guarda: es que lo que hay en pantalla no responde a lo
+  // último que se ha pedido.
+  const isLoading = resultado?.consulta !== consulta;
+  const view = consulta.vista;
+  const filters = consulta.filtros;
+  const services = resultado?.services ?? [];
+  const fetchError = resultado?.fallo ?? null;
 
   // Si la espera se alarga suele ser la instancia gratuita despertando. Vale
   // más explicarlo que dejar al usuario mirando un indicador de carga mudo.
+  // Se marca qué consulta tarda, así el aviso desaparece solo al cambiar.
   useEffect(() => {
-    if (!isLoading) {
-      setTardando(false);
-      return;
-    }
-    const temporizador = setTimeout(() => setTardando(true), 6000);
+    if (!isLoading) return;
+    const temporizador = setTimeout(() => setTardandoEn(consulta), 6000);
     return () => clearTimeout(temporizador);
-  }, [isLoading]);
-
-  useEffect(() => {
-    const initial: ServiceSearchParams = {
-      query: searchParams.get('q') || undefined,
-      categoryId: searchParams.get('category') || undefined,
-      city: searchParams.get('city') || undefined,
-    };
-    setFilters(initial);
-    fetchResults(initial, 1, 'list');
-  }, [searchParams, fetchResults]);
+  }, [isLoading, consulta]);
+  const tardando = isLoading && tardandoEn === consulta;
 
   const handleSearch = (query: string) => {
-    const next = { ...filters, query: query || undefined };
-    setFilters(next);
-    fetchResults(next, 1, view);
     const params = new URLSearchParams();
     if (query) params.set('q', query);
-    router.replace(`/services/search?${params.toString()}`);
+    // La URL manda: si cambia, la página vuelve a empezar desde ella. Antes
+    // se pedía aquí y otra vez al cambiar la URL, y la segunda petición,
+    // que era la que se quedaba, perdía los filtros del panel.
+    if (params.toString() !== claveUrl) {
+      router.replace(`/services/search?${params.toString()}`);
+      return;
+    }
+    setConsulta((c) => ({
+      ...c,
+      filtros: { ...c.filtros, query: query || undefined },
+      pagina: 1,
+      intento: c.intento + 1,
+    }));
   };
 
   const cambiarVista = (nueva: Vista) => {
     if (nueva === view) return;
-    setView(nueva);
-    fetchResults(filters, 1, nueva);
+    setConsulta((c) => ({ ...c, vista: nueva, pagina: 1 }));
   };
 
   const cambiarPagina = (nuevaPagina: number) => {
-    fetchResults(filters, nuevaPagina, view);
+    setConsulta((c) => ({ ...c, pagina: nuevaPagina }));
     // Al saltar de página el usuario espera empezar por el primer resultado.
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleApplyFilters = (newFilters: ServiceSearchParams) => {
-    const merged = { ...filters, ...newFilters };
-    setFilters(merged);
-    fetchResults(merged, 1, view);
+    setConsulta((c) => ({
+      ...c,
+      filtros: { ...c.filtros, ...newFilters },
+      pagina: 1,
+    }));
   };
+
+  const reintentar = () =>
+    setConsulta((c) => ({ ...c, intento: c.intento + 1 }));
 
   return (
     <main className="bg-fondo min-h-screen">
@@ -251,7 +294,7 @@ function SearchPageContent() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => fetchResults(filters, page, view)}
+                  onClick={reintentar}
                   className="mt-2 font-medium underline hover:no-underline"
                 >
                   {tComun('reintentar')}
@@ -260,8 +303,8 @@ function SearchPageContent() {
             ) : view === 'list' ? (
               <ResultsList
                 services={services}
-                total={total}
-                totalEsParcial={totalEsParcial}
+                total={resultado?.total ?? 0}
+                totalEsParcial={resultado?.totalEsParcial ?? false}
               />
             ) : (
               <ServiceMap services={services} />
@@ -269,8 +312,8 @@ function SearchPageContent() {
 
             {!isLoading && !fetchError && view === 'list' && (
               <Pagination
-                page={page}
-                totalPages={totalPages}
+                page={consulta.pagina}
+                totalPages={resultado?.totalPages ?? 1}
                 onChange={cambiarPagina}
               />
             )}
@@ -281,11 +324,28 @@ function SearchPageContent() {
   );
 }
 
+/**
+ * Cada búsqueda que llega por la URL —un enlace, el botón de atrás, el
+ * asistente— empieza de cero con los filtros que trae. Antes un efecto los
+ * copiaba al estado y relanzaba la búsqueda cada vez que la URL cambiaba.
+ */
+function BusquedaDesdeUrl() {
+  const searchParams = useSearchParams();
+  const claveUrl = searchParams.toString();
+  return (
+    <SearchPageContent
+      key={claveUrl}
+      claveUrl={claveUrl}
+      inicial={filtrosDeUrl(searchParams)}
+    />
+  );
+}
+
 export default function SearchPage() {
   return (
     <>
       <Suspense fallback={<div className="bg-fondo min-h-screen" />}>
-        <SearchPageContent />
+        <BusquedaDesdeUrl />
       </Suspense>
       <AsistenteBusqueda />
     </>

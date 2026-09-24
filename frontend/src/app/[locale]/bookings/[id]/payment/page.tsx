@@ -10,6 +10,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { Booking, PaymentIntent } from '@/types';
 import { bookingsApi, paymentsApi } from '@/lib/api';
 import { getStripe } from '@/lib/stripe';
+import { useTemaOscuro } from '@/lib/tema';
 import CheckoutForm from '@/components/organisms/CheckoutForm';
 import Spinner from '@/components/atoms/Spinner';
 
@@ -17,12 +18,8 @@ export default function PaymentPage() {
   const t = useTranslations('pago');
   const idioma = useLocale();
 
-  // El tema vive como clase en <html>, lo pone el script del layout antes del
-  // primer pintado. Se lee tras montar para no discrepar del servidor.
-  const [oscuro, setOscuro] = useState(false);
-  useEffect(() => {
-    setOscuro(document.documentElement.classList.contains('dark'));
-  }, []);
+  // Stripe pinta sus campos con el tema de la página. Ver lib/tema.ts.
+  const oscuro = useTemaOscuro() ?? false;
   const params = useParams();
   const router = useRouter();
   const bookingId = params.id as string;

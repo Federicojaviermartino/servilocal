@@ -5,7 +5,7 @@
  */
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
@@ -37,7 +37,8 @@ import { User, Category, Review, UserRole } from '@/types';
 import Button from '@/components/atoms/Button';
 import Input from '@/components/atoms/Input';
 import Badge from '@/components/atoms/Badge';
-import Spinner from '@/components/atoms/Spinner';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
+import { useCarga } from '@/lib/carga';
 import Pagination from '@/components/molecules/Pagination';
 
 type Tab = (typeof TABS)[number]['key'];
@@ -105,11 +106,39 @@ const contarRol = (stats: Stats, rol: string) =>
   stats.usuarios.porRol.find((r) => r.clave === rol)?.total ?? 0;
 
 export default function AdminPage() {
-  const t = useTranslations('administracion');
   const { user, loadFromStorage } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (user && user.role !== UserRole.ADMIN) {
+      router.replace('/dashboard');
+    }
+    if (!user && !haySesionRecordada()) {
+      router.replace('/auth/login?redirect=/admin');
+    }
+  }, [user, router]);
+
+  if (!user || user.role !== UserRole.ADMIN) return null;
+
+  return <PanelAdmin soloLectura={user.soloLectura} />;
+}
+
+/**
+ * El panel en sí, que solo se monta para quien es administrador.
+ *
+ * Separado de la comprobación de arriba para que sus datos se pidan sin
+ * condiciones: antes las métricas se pedían desde un efecto que primero
+ * miraba el papel del usuario, y cada vez que el usuario cambiaba —al
+ * cargarlo, al confirmarlo con el servidor— se volvían a pedir.
+ */
+function PanelAdmin({ soloLectura }: { soloLectura: boolean }) {
+  const t = useTranslations('administracion');
   const [tab, setTab] = useState<Tab>('users');
-  const [stats, setStats] = useState<Stats | null>(null);
 
   /**
    * Flechas, Inicio y Fin entre pestañas, como manda el patrón de ARIA.
@@ -136,37 +165,12 @@ export default function AdminPage() {
     document.getElementById(`tab-${siguiente.key}`)?.focus();
   };
 
-  useEffect(() => {
-    loadFromStorage();
-  }, [loadFromStorage]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (user && user.role !== UserRole.ADMIN) {
-      router.replace('/dashboard');
-    }
-    if (!user && !haySesionRecordada()) {
-      router.replace('/auth/login?redirect=/admin');
-    }
-  }, [user, router]);
-
   // Antes esto se descargaba la lista entera de usuarios, la de categorías y
   // la de valoraciones reportadas para contar longitudes aquí. Ahora los
-  // agregados llegan calculados y el navegador solo los pinta.
-  const loadStats = useCallback(async () => {
-    try {
-      const { data } = await adminApi.metricas();
-      setStats(data);
-    } catch {
-      // si falla, dejamos stats en null y los contadores no se muestran
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user?.role === UserRole.ADMIN) loadStats();
-  }, [user, loadStats]);
-
-  if (!user || user.role !== UserRole.ADMIN) return null;
+  // agregados llegan calculados y el navegador solo los pinta. Si fallan,
+  // los contadores no se enseñan y el resto del panel sigue.
+  const metricas = useCarga<Stats>(() => adminApi.metricas(), []);
+  const stats = metricas.datos;
 
   return (
     <div className="bg-fondo min-h-screen">
@@ -179,7 +183,7 @@ export default function AdminPage() {
         {/* Se avisa antes de que alguien pulse, no después con un error: el
             bloqueo es deliberado y tiene que parecerlo. Quien manda es el
             servidor; esto solo lo cuenta. */}
-        {user.soloLectura && (
+        {soloLectura && (
           <div
             role="status"
             className="mb-6 flex items-start gap-3 rounded-lg border border-warning-500/30 bg-warning-50 p-4 dark:bg-warning-900/20"
@@ -280,7 +284,7 @@ export default function AdminPage() {
           <div className="p-5">
             {tab === 'users' && (
               <div role="tabpanel" id="panel-users" aria-labelledby="tab-users">
-                <UsersSection onMutate={loadStats} />
+                <UsersSection onMutate={metricas.reintentar} />
               </div>
             )}
             {tab === 'reputation' && (
@@ -298,7 +302,7 @@ export default function AdminPage() {
                 id="panel-categories"
                 aria-labelledby="tab-categories"
               >
-                <CategoriesSection onMutate={loadStats} />
+                <CategoriesSection onMutate={metricas.reintentar} />
               </div>
             )}
             {tab === 'reviews' && (
@@ -307,7 +311,7 @@ export default function AdminPage() {
                 id="panel-reviews"
                 aria-labelledby="tab-reviews"
               >
-                <ReportedReviewsSection onMutate={loadStats} />
+                <ReportedReviewsSection onMutate={metricas.reintentar} />
               </div>
             )}
             {tab === 'auditoria' && (
@@ -375,22 +379,13 @@ function MetricCard({
 function UsersSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | UserRole>('all');
 
-  const load = useCallback(() => {
-    setIsLoading(true);
-    usersApi
-      .getAll()
-      .then((res) => setUsers(res.data || []))
-      .catch(() => toast.error(t('errorUsuarios')))
-      .finally(() => setIsLoading(false));
-  }, [t]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { datos, estado, reintentar } = useCarga<User[]>(
+    () => usersApi.getAll(),
+    [],
+  );
+  const users = datos ?? [];
 
   const handleToggle = async (u: User) => {
     const next = !u.isActive;
@@ -404,7 +399,7 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
     try {
       await usersApi.toggleActive(u.id);
       toast.success(next ? t('cuentaActivada') : t('cuentaDesactivada'));
-      load();
+      reintentar();
       onMutate?.();
     } catch {
       toast.error(t('errorEstadoCuenta'));
@@ -421,12 +416,8 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
     admin: users.filter((u) => u.role === UserRole.ADMIN).length,
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (estado !== 'listo') {
+    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
   }
 
   return (
@@ -560,8 +551,6 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const tComun = useTranslations('comun');
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
@@ -572,18 +561,11 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   const [editDescription, setEditDescription] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const load = useCallback(() => {
-    setIsLoading(true);
-    categoriesApi
-      .getAll()
-      .then((res) => setCategories(flatten(res.data || [])))
-      .catch(() => toast.error(t('errorArbol')))
-      .finally(() => setIsLoading(false));
-  }, [t]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { datos, estado, reintentar } = useCarga<Category[]>(
+    () => categoriesApi.getAll(),
+    [],
+  );
+  const categories = flatten(datos ?? []);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -602,7 +584,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
       setName('');
       setSlug('');
       setDescription('');
-      load();
+      reintentar();
       onMutate?.();
     } catch {
       toast.error(t('errorCrearCategoria'));
@@ -639,7 +621,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
       });
       toast.success(t('categoriaActualizada'));
       cancelEdit();
-      load();
+      reintentar();
       onMutate?.();
     } catch {
       toast.error(t('errorActualizarCategoria'));
@@ -659,19 +641,15 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
     try {
       await categoriesApi.remove(c.id);
       toast.success(t('categoriaEliminada'));
-      load();
+      reintentar();
       onMutate?.();
     } catch {
       toast.error(t('errorEliminarCategoria'));
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (estado !== 'listo') {
+    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
   }
 
   return (
@@ -877,21 +855,12 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const idioma = useLocale();
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const load = useCallback(() => {
-    setIsLoading(true);
-    reviewsApi
-      .getReported()
-      .then((res) => setReviews(res.data || []))
-      .catch(() => toast.error(t('errorReportadas')))
-      .finally(() => setIsLoading(false));
-  }, [t]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { datos, estado, reintentar } = useCarga<Review[]>(
+    () => reviewsApi.getReported(),
+    [],
+  );
+  const reviews = datos ?? [];
 
   const handleDismiss = async (r: Review) => {
     if (!window.confirm(t('confirmarDescartar'))) {
@@ -900,7 +869,7 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
     try {
       await reviewsApi.dismissReport(r.id);
       toast.success(t('reporteDescartado'));
-      load();
+      reintentar();
       onMutate?.();
     } catch {
       toast.error(t('errorDescartar'));
@@ -914,19 +883,15 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
     try {
       await reviewsApi.remove(r.id);
       toast.success(t('valoracionEliminada'));
-      load();
+      reintentar();
       onMutate?.();
     } catch {
       toast.error(t('errorEliminarValoracion'));
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (estado !== 'listo') {
+    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
   }
 
   if (reviews.length === 0) {
@@ -1017,28 +982,15 @@ interface Reputacion {
 function ReputacionSection() {
   const t = useTranslations('administracion');
   const tComun = useTranslations('comun');
-  const [filas, setFilas] = useState<Reputacion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const load = useCallback(() => {
-    setIsLoading(true);
-    adminApi
-      .reputacion()
-      .then((res) => setFilas(res.data || []))
-      .catch(() => toast.error(t('errorReputacion')))
-      .finally(() => setIsLoading(false));
-  }, [t]);
+  const { datos, estado, reintentar } = useCarga<Reputacion[]>(
+    () => adminApi.reputacion(),
+    [],
+  );
+  const filas = datos ?? [];
 
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (estado !== 'listo') {
+    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
   }
 
   return (
@@ -1134,27 +1086,32 @@ function ReputacionSection() {
  * son cero, y un cero sin explicación se lee como una avería. Aquí el panel
  * dice si está inactiva, si se ha agotado el tope o si funciona.
  */
+/** Lo que pinta el panel de IA: el consumo, y si la capa está disponible. */
+async function pedirIa(): Promise<{
+  data: { consumo: ConsumoIa; disponible: boolean; motivo: string | null };
+}> {
+  const [resConsumo, resEstado] = await Promise.all([
+    iaApi.consumo(),
+    iaApi.estado(),
+  ]);
+  return {
+    data: {
+      consumo: resConsumo.data,
+      disponible: resEstado.data?.disponible ?? false,
+      motivo: resEstado.data?.motivo ?? null,
+    },
+  };
+}
+
 function IaSection() {
   const t = useTranslations('administracion');
-  const [consumo, setConsumo] = useState<ConsumoIa | null>(null);
-  const [motivo, setMotivo] = useState<string | null>(null);
-  const [disponible, setDisponible] = useState<boolean | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { datos, estado: carga, reintentar } = useCarga(pedirIa, []);
+  const consumo = datos?.consumo ?? null;
+  const disponible = datos?.disponible ?? null;
+  const motivo = datos?.motivo ?? null;
 
-  useEffect(() => {
-    setIsLoading(true);
-    Promise.all([iaApi.consumo(), iaApi.estado()])
-      .then(([resConsumo, resEstado]) => {
-        setConsumo(resConsumo.data);
-        setDisponible(resEstado.data?.disponible ?? false);
-        setMotivo(resEstado.data?.motivo ?? null);
-      })
-      .catch(() => toast.error(t('errorConsumoIa')))
-      .finally(() => setIsLoading(false));
-  }, [t]);
-
-  if (isLoading) {
-    return <p className="p-4 text-secundario">{t('cargando')}</p>;
+  if (carga !== 'listo') {
+    return <EstadoCarga estado={carga} onReintentar={reintentar} />;
   }
 
   if (!consumo) return null;
@@ -1315,44 +1272,22 @@ interface EntradaAuditoria {
 function AuditoriaSection() {
   const t = useTranslations('auditoria');
   const idioma = useLocale();
-  const [entradas, setEntradas] = useState<EntradaAuditoria[]>([]);
   const [pagina, setPagina] = useState(1);
-  const [paginas, setPaginas] = useState(1);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Cambiar de página antes de que vuelva la anterior dejaría pintada la
-    // respuesta que llegue la última, que no tiene por qué ser la pedida.
-    let vigente = true;
-    setIsLoading(true);
-    adminApi
-      .auditoria(pagina)
-      .then(({ data }) => {
-        if (!vigente) return;
-        setEntradas(data.datos ?? []);
-        setPaginas(data.paginas ?? 1);
-      })
-      .catch(() => {
-        if (vigente) toast.error(t('error'));
-      })
-      .finally(() => {
-        if (vigente) setIsLoading(false);
-      });
-
-    return () => {
-      vigente = false;
-    };
-  }, [pagina, t]);
+  // Cambiar de página antes de que vuelva la anterior no deja pintada la
+  // respuesta que llegue la última: useCarga solo acepta la de la página
+  // pedida por última vez.
+  const { datos, estado, reintentar } = useCarga(
+    () => adminApi.auditoria(pagina),
+    [pagina],
+  );
+  const entradas: EntradaAuditoria[] = datos?.datos ?? [];
+  const paginas: number = datos?.paginas ?? 1;
 
   const traducir = (clave: string) =>
     t.has(clave as never) ? t(clave as never) : clave;
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <Spinner size="lg" />
-      </div>
-    );
+  if (estado !== 'listo') {
+    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
   }
 
   return (

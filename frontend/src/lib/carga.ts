@@ -29,12 +29,19 @@ interface Resultado<T> {
   reintentar: () => void;
 }
 
+/** Cómo terminó una petición, y cuál era: la función y el intento. */
+interface Respuesta<T> {
+  ejecutar: () => Promise<{ data: T }>;
+  intento: number;
+  estado: Exclude<EstadoCarga, 'cargando'>;
+}
+
 export function useCarga<T>(
   pedir: () => Promise<{ data: T }>,
   dependencias: unknown[] = [],
 ): Resultado<T> {
   const [datos, setDatos] = useState<T | null>(null);
-  const [estado, setEstado] = useState<EstadoCarga>('cargando');
+  const [respuesta, setRespuesta] = useState<Respuesta<T> | null>(null);
   const [intento, setIntento] = useState(0);
 
   // La función llega nueva en cada render; guardarla como dependencia
@@ -47,17 +54,20 @@ export function useCarga<T>(
 
   useEffect(() => {
     let vigente = true;
-    setEstado('cargando');
 
     ejecutar()
       .then(({ data }) => {
         if (!vigente) return;
         setDatos(data);
-        setEstado('listo');
+        setRespuesta({ ejecutar, intento, estado: 'listo' });
       })
       .catch((error: AxiosError) => {
         if (!vigente) return;
-        setEstado(error?.response?.status === 401 ? 'sesion' : 'error');
+        setRespuesta({
+          ejecutar,
+          intento,
+          estado: error?.response?.status === 401 ? 'sesion' : 'error',
+        });
       });
 
     return () => {
@@ -67,5 +77,19 @@ export function useCarga<T>(
 
   const reintentar = useCallback(() => setIntento((n) => n + 1), []);
 
-  return { datos, estado, reintentar };
+  // «Cargando» no se guarda: es que la última respuesta no corresponde a lo
+  // último que se ha pedido. Antes se ponía a mano al empezar cada petición,
+  // dentro del efecto, y eso obligaba a React a pintar dos veces seguidas.
+  // Así cambia en el mismo render en que cambian las dependencias o se
+  // reintenta, sin ningún paso intermedio.
+  const alDia =
+    respuesta !== null &&
+    respuesta.ejecutar === ejecutar &&
+    respuesta.intento === intento;
+
+  return {
+    datos,
+    estado: alDia ? respuesta.estado : 'cargando',
+    reintentar,
+  };
 }
