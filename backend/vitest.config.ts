@@ -53,6 +53,7 @@ export default defineConfig({
         'src/auth/sesion.ts',
         'src/common/proxy-frontend.ts',
         'src/common/observabilidad/sentry.ts',
+        'src/common/observabilidad/peticion.ts',
       ],
       exclude: ['src/**/*.spec.ts'],
       reportsDirectory: 'coverage',

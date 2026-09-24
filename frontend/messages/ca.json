@@ -233,7 +233,8 @@
     "errorTexto": "Pot ser un problema de connexió o que el servidor s'estigui engegant. Torna-ho a provar.",
     "reintentar": "Torna-ho a provar",
     "sesionCaducada": "La teva sessió ha caducat",
-    "sesionTexto": "Per seguretat, la sessió dura un dia. Torna a entrar per continuar on ho vas deixar."
+    "sesionTexto": "Per seguretat, la sessió dura un dia. Torna a entrar per continuar on ho vas deixar.",
+    "referencia": "Codi de referència:"
   },
   "categorias": {
     "cerrajeria": "Serralleria",

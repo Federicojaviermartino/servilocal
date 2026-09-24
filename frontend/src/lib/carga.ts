@@ -27,6 +27,12 @@ interface Resultado<T> {
   estado: EstadoCarga;
   /** Vuelve a pedirlo. Lo usa el botón de reintentar. */
   reintentar: () => void;
+  /**
+   * El identificador de la petición que falló, si fue un error del servidor.
+   * Es lo que aparece en su registro: la pantalla lo enseña como código de
+   * referencia, para que quien lo vea pueda darlo y se encuentre el fallo.
+   */
+  referencia?: string;
 }
 
 /** Cómo terminó una petición, y cuál era: la función y el intento. */
@@ -34,6 +40,17 @@ interface Respuesta<T> {
   ejecutar: () => Promise<{ data: T }>;
   intento: number;
   estado: Exclude<EstadoCarga, 'cargando'>;
+  referencia?: string;
+}
+
+/** El identificador que pone la API en cada respuesta, si es de un 5xx. */
+export function referenciaDe(
+  error: AxiosError | undefined,
+): string | undefined {
+  const respuesta = error?.response;
+  if (!respuesta || respuesta.status < 500) return undefined;
+  const id = respuesta.headers?.['x-request-id'];
+  return typeof id === 'string' ? id : undefined;
 }
 
 export function useCarga<T>(
@@ -67,6 +84,7 @@ export function useCarga<T>(
           ejecutar,
           intento,
           estado: error?.response?.status === 401 ? 'sesion' : 'error',
+          referencia: referenciaDe(error),
         });
       });
 
@@ -91,5 +109,6 @@ export function useCarga<T>(
     datos,
     estado: alDia ? respuesta.estado : 'cargando',
     reintentar,
+    referencia: alDia ? respuesta.referencia : undefined,
   };
 }

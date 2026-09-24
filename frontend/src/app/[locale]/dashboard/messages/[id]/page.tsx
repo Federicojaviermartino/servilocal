@@ -10,7 +10,7 @@ import { useMensajesEnVivo, type AvisoMensaje } from '@/lib/socket-mensajes';
 import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
-import type { EstadoCarga as Estado } from '@/lib/carga';
+import { referenciaDe, type EstadoCarga as Estado } from '@/lib/carga';
 import type { AxiosError } from 'axios';
 
 export default function ConversationPage() {
@@ -29,6 +29,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [interlocutor, setInterlocutor] = useState<Conversation['partner']>();
   const [estado, setEstado] = useState<Estado>('cargando');
+  const [referencia, setReferencia] = useState<string>();
   const [content, setContent] = useState('');
   const [isSending, setIsSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -39,7 +40,8 @@ function Conversacion({ partnerId }: { partnerId: string }) {
         setMessages(data || []);
         setEstado('listo');
       },
-      (error: AxiosError) =>
+      (error: AxiosError) => {
+        setReferencia(referenciaDe(error));
         // Un refresco que falla no borra lo que ya se ve. Antes vaciaba la
         // conversación: un corte de un segundo mientras se consultaba cada
         // diez hacía desaparecer todos los mensajes. Solo la primera carga
@@ -50,7 +52,8 @@ function Conversacion({ partnerId }: { partnerId: string }) {
             : error?.response?.status === 401
               ? 'sesion'
               : 'error',
-        ),
+        );
+      },
     );
   }, [partnerId]);
 
@@ -136,7 +139,11 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   const partner = interlocutor;
 
   return (
-    <EstadoCarga estado={estado} onReintentar={reintentar}>
+    <EstadoCarga
+      estado={estado}
+      onReintentar={reintentar}
+      referencia={referencia}
+    >
       <div className="bg-superficie rounded-lg shadow-card flex flex-col h-[70vh]">
         {partner && (
           <div className="p-4 border-b border-borde flex items-center gap-3">

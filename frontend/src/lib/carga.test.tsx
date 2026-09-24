@@ -108,6 +108,37 @@ describe('useCarga', () => {
     expect(result.current.estado).toBe('listo');
   });
 
+  it('un error del servidor trae el identificador de la petición', async () => {
+    // Es lo que sale en el registro de la API: con él se encuentra el fallo.
+    const pedir = vi.fn().mockRejectedValue({
+      response: {
+        status: 500,
+        headers: { 'x-request-id': 'reserva-7f3a9c21' },
+      },
+    });
+    const { result } = renderHook(() => useCarga(pedir));
+
+    await waitFor(() => expect(result.current.estado).toBe('error'));
+    expect(result.current.referencia).toBe('reserva-7f3a9c21');
+  });
+
+  it.each([
+    [
+      'un 404',
+      { response: { status: 404, headers: { 'x-request-id': 'r-12345678' } } },
+    ],
+    ['sin red', { code: 'ERR_NETWORK' }],
+  ])(
+    '%s no trae referencia: no hay nada que buscar en el registro',
+    async (_caso, error) => {
+      const pedir = vi.fn().mockRejectedValue(error);
+      const { result } = renderHook(() => useCarga(pedir));
+
+      await waitFor(() => expect(result.current.estado).toBe('error'));
+      expect(result.current.referencia).toBeUndefined();
+    },
+  );
+
   it('una respuesta que llega tarde no pisa el estado actual', async () => {
     // Al desmontar la pantalla, la petición sigue viva: escribir entonces
     // avisa de una fuga y, peor, revive datos de una vista que ya no está.

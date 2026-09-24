@@ -34,6 +34,7 @@ export default function BookingDetailPage() {
     datos: booking,
     estado,
     reintentar: load,
+    referencia,
   } = useCarga<Booking>(() => bookingsApi.getById(bookingId), [bookingId]);
 
   const changeStatus = async (status: BookingStatus) => {
@@ -51,7 +52,7 @@ export default function BookingDetailPage() {
 
   if (estado !== 'listo' || !booking || !user) {
     return (
-      <EstadoCarga estado={estado} onReintentar={load}>
+      <EstadoCarga estado={estado} onReintentar={load} referencia={referencia}>
         <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
           {t('noEncontrada')}
         </div>

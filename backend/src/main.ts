@@ -24,6 +24,10 @@ import { AppModule } from './app.module';
 import { iniciarSentry } from './common/observabilidad/sentry';
 import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
 import { secretoDelProxy } from './common/proxy-frontend';
+import {
+  identificarPeticion,
+  RegistroConPeticion,
+} from './common/observabilidad/peticion';
 
 async function bootstrap() {
   // Antes de crear la aplicación, para que la instrumentación alcance a todo
@@ -32,7 +36,11 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
+    logger: new RegistroConPeticion(),
   });
+
+  // Lo primero, para que hasta la respuesta de un CORS rechazado lo lleve.
+  app.use(identificarPeticion);
 
   // Render sirve detrás de un proxy: sin esto todas las peticiones parecen
   // venir de la misma IP y el límite de peticiones afectaría a todos a la vez.
@@ -46,6 +54,8 @@ async function bootstrap() {
   app.enableCors({
     origin: origenesPermitidos(),
     credentials: true,
+    // Sin esto, un cliente de otro origen no podría leer el identificador.
+    exposedHeaders: ['X-Request-Id'],
   });
 
   // Con Redis los sockets se reparten entre instancias; sin él se usa el

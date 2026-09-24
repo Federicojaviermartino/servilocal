@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Sentry } from '../observabilidad/sentry';
+import { idPeticionActual } from '../observabilidad/peticion';
 
 /**
  * Filtro global de excepciones.
@@ -52,6 +53,10 @@ export class FiltroDeExcepciones implements ExceptionFilter {
           ruta: peticion.url,
         });
         if (peticion.user) ambito.setUser({ id: peticion.user.id });
+        // El mismo que ve el usuario en pantalla y el que sale en el
+        // registro: con él se llega de uno a otro.
+        const id = idPeticionActual();
+        if (id) ambito.setTag('id_peticion', id);
         Sentry.captureException(excepcion);
       });
     }

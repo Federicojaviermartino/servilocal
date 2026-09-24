@@ -233,7 +233,8 @@
     "errorTexto": "Il peut s'agir d'un problème de connexion, ou le serveur est peut-être en train de démarrer. Réessayez.",
     "reintentar": "Réessayer",
     "sesionCaducada": "Votre session a expiré",
-    "sesionTexto": "Par sécurité, une session dure un jour. Reconnectez-vous pour reprendre où vous en étiez."
+    "sesionTexto": "Par sécurité, une session dure un jour. Reconnectez-vous pour reprendre où vous en étiez.",
+    "referencia": "Code de référence :"
   },
   "categorias": {
     "cerrajeria": "Serrurerie",

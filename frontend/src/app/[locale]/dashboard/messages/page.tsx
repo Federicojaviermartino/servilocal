@@ -14,7 +14,7 @@ import { useCarga } from '@/lib/carga';
 export default function MessagesPage() {
   const t = useTranslations('mensajesPanel');
   const idioma = useLocale();
-  const { datos, estado, reintentar } = useCarga<Conversation[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Conversation[]>(
     () => messagesApi.getConversations(),
     [],
   );
@@ -24,7 +24,11 @@ export default function MessagesPage() {
     <div>
       <h1 className="text-2xl font-bold text-principal mb-6">{t('titulo')}</h1>
 
-      <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      >
         {conversations.length === 0 ? (
           <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
             <p>{t('sinConversaciones')}</p>

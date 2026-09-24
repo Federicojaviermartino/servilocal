@@ -233,7 +233,8 @@
     "errorTexto": "Pode ser un problema de conexión ou que o servidor estea arrancando. Inténtao de novo.",
     "reintentar": "Tentar de novo",
     "sesionCaducada": "A túa sesión caducou",
-    "sesionTexto": "Por seguridade, a sesión dura un día. Volve entrar para seguir onde o deixaches."
+    "sesionTexto": "Por seguridade, a sesión dura un día. Volve entrar para seguir onde o deixaches.",
+    "referencia": "Código de referencia:"
   },
   "categorias": {
     "cerrajeria": "Cerrallaría",

@@ -381,7 +381,7 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const [filter, setFilter] = useState<'all' | UserRole>('all');
 
-  const { datos, estado, reintentar } = useCarga<User[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<User[]>(
     () => usersApi.getAll(),
     [],
   );
@@ -417,7 +417,13 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
   };
 
   if (estado !== 'listo') {
-    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
+    return (
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      />
+    );
   }
 
   return (
@@ -561,7 +567,7 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   const [editDescription, setEditDescription] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const { datos, estado, reintentar } = useCarga<Category[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Category[]>(
     () => categoriesApi.getAll(),
     [],
   );
@@ -649,7 +655,13 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
   };
 
   if (estado !== 'listo') {
-    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
+    return (
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      />
+    );
   }
 
   return (
@@ -856,7 +868,7 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const idioma = useLocale();
 
-  const { datos, estado, reintentar } = useCarga<Review[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Review[]>(
     () => reviewsApi.getReported(),
     [],
   );
@@ -891,7 +903,13 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   };
 
   if (estado !== 'listo') {
-    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
+    return (
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      />
+    );
   }
 
   if (reviews.length === 0) {
@@ -983,14 +1001,20 @@ function ReputacionSection() {
   const t = useTranslations('administracion');
   const tComun = useTranslations('comun');
 
-  const { datos, estado, reintentar } = useCarga<Reputacion[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Reputacion[]>(
     () => adminApi.reputacion(),
     [],
   );
   const filas = datos ?? [];
 
   if (estado !== 'listo') {
-    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
+    return (
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      />
+    );
   }
 
   return (
@@ -1105,13 +1129,24 @@ async function pedirIa(): Promise<{
 
 function IaSection() {
   const t = useTranslations('administracion');
-  const { datos, estado: carga, reintentar } = useCarga(pedirIa, []);
+  const {
+    datos,
+    estado: carga,
+    reintentar,
+    referencia,
+  } = useCarga(pedirIa, []);
   const consumo = datos?.consumo ?? null;
   const disponible = datos?.disponible ?? null;
   const motivo = datos?.motivo ?? null;
 
   if (carga !== 'listo') {
-    return <EstadoCarga estado={carga} onReintentar={reintentar} />;
+    return (
+      <EstadoCarga
+        estado={carga}
+        onReintentar={reintentar}
+        referencia={referencia}
+      />
+    );
   }
 
   if (!consumo) return null;
@@ -1276,7 +1311,7 @@ function AuditoriaSection() {
   // Cambiar de página antes de que vuelva la anterior no deja pintada la
   // respuesta que llegue la última: useCarga solo acepta la de la página
   // pedida por última vez.
-  const { datos, estado, reintentar } = useCarga(
+  const { datos, estado, reintentar, referencia } = useCarga(
     () => adminApi.auditoria(pagina),
     [pagina],
   );
@@ -1287,7 +1322,13 @@ function AuditoriaSection() {
     t.has(clave as never) ? t(clave as never) : clave;
 
   if (estado !== 'listo') {
-    return <EstadoCarga estado={estado} onReintentar={reintentar} />;
+    return (
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      />
+    );
   }
 
   return (

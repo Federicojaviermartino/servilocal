@@ -16,10 +16,15 @@ vi.mock('@/i18n/navigation', async () => {
 function pintar(
   estado: 'cargando' | 'listo' | 'error' | 'sesion',
   onReintentar?: () => void,
+  referencia?: string,
 ) {
   render(
     <NextIntlClientProvider locale="es" messages={es as never}>
-      <EstadoCarga estado={estado} onReintentar={onReintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={onReintentar}
+        referencia={referencia}
+      >
         <p>tus reservas</p>
       </EstadoCarga>
     </NextIntlClientProvider>,
@@ -80,6 +85,22 @@ describe('EstadoCarga', () => {
     expect(
       screen.queryByRole('button', { name: new RegExp(es.carga.reintentar) }),
     ).not.toBeInTheDocument();
+  });
+
+  it('un fallo del servidor enseña su código de referencia', () => {
+    // Quien lo ve puede darlo, y con él se encuentra la petición en el
+    // registro de la API.
+    pintar('error', undefined, 'reserva-7f3a9c21');
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Código de referencia: reserva-7f3a9c21',
+    );
+  });
+
+  it('sin referencia no se enseña una etiqueta vacía', () => {
+    pintar('error');
+
+    expect(screen.queryByText(/Código de referencia/)).toBeNull();
   });
 
   it('el fallo y la sesión caducada no se confunden', () => {

@@ -15,7 +15,7 @@ export default function MyBookingsPage() {
   // Antes un fallo de red dejaba la lista vacía, indistinguible de no tener
   // ninguna reserva: quien reservó ayer entraba hoy y leía «no tienes
   // reservas».
-  const { datos, estado, reintentar } = useCarga<Booking[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Booking[]>(
     () => bookingsApi.getMyBookings(),
     [],
   );
@@ -53,7 +53,11 @@ export default function MyBookingsPage() {
         ))}
       </div>
 
-      <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      >
         {filtered.length === 0 ? (
           <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
             {t('sinReservas')}

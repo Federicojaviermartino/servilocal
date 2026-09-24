@@ -233,7 +233,8 @@
     "errorTexto": "Konexio arazo bat izan daiteke, edo zerbitzaria abiarazten egotea. Saiatu berriro.",
     "reintentar": "Saiatu berriro",
     "sesionCaducada": "Zure saioa iraungi da",
-    "sesionTexto": "Segurtasunagatik, saioak egun bat irauten du. Sartu berriro utzi zenuen tokitik jarraitzeko."
+    "sesionTexto": "Segurtasunagatik, saioak egun bat irauten du. Sartu berriro utzi zenuen tokitik jarraitzeko.",
+    "referencia": "Erreferentzia-kodea:"
   },
   "categorias": {
     "cerrajeria": "Sarrailagintza",

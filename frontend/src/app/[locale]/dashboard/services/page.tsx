@@ -27,7 +27,7 @@ export default function ProviderServicesPage() {
 
   // El panel no se pinta sin usuario, pero se comprueba igual: sin él, pedir
   // los servicios fallaría dentro del efecto en lugar de en la promesa.
-  const { datos, estado, reintentar } = useCarga<Service[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Service[]>(
     () =>
       user
         ? servicesApi.getByProvider(user.id)
@@ -119,7 +119,11 @@ export default function ProviderServicesPage() {
         </Button>
       </div>
 
-      <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      >
         {services.length === 0 ? (
           <div className="bg-superficie rounded-lg shadow-card p-10 text-center">
             <p className="text-secundario">{t('sinServicios')}</p>

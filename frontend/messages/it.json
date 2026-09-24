@@ -233,7 +233,8 @@
     "errorTexto": "Potrebbe essere un problema di connessione o il server potrebbe essere in avvio. Riprova.",
     "reintentar": "Riprova",
     "sesionCaducada": "La tua sessione è scaduta",
-    "sesionTexto": "Per sicurezza, una sessione dura un giorno. Accedi di nuovo per riprendere da dove eri rimasto."
+    "sesionTexto": "Per sicurezza, una sessione dura un giorno. Accedi di nuovo per riprendere da dove eri rimasto.",
+    "referencia": "Codice di riferimento:"
   },
   "categorias": {
     "cerrajeria": "Fabbro",

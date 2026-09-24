@@ -233,7 +233,8 @@
     "errorTexto": "Möglicherweise ein Verbindungsproblem, oder der Server startet gerade. Bitte erneut versuchen.",
     "reintentar": "Erneut versuchen",
     "sesionCaducada": "Ihre Sitzung ist abgelaufen",
-    "sesionTexto": "Aus Sicherheitsgründen dauert eine Sitzung einen Tag. Melden Sie sich erneut an, um dort weiterzumachen, wo Sie aufgehört haben."
+    "sesionTexto": "Aus Sicherheitsgründen dauert eine Sitzung einen Tag. Melden Sie sich erneut an, um dort weiterzumachen, wo Sie aufgehört haben.",
+    "referencia": "Referenzcode:"
   },
   "categorias": {
     "cerrajeria": "Schlüsseldienst",

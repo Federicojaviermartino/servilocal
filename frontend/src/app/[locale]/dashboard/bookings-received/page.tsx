@@ -19,7 +19,7 @@ export default function BookingsReceivedPage() {
 
   // Antes un fallo dejaba la lista vacía, y el profesional leía «no tienes
   // reservas» cuando lo que pasaba era que no se había podido preguntar.
-  const { datos, estado, reintentar } = useCarga<Booking[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Booking[]>(
     () => bookingsApi.getReceived(),
     [],
   );
@@ -67,7 +67,11 @@ export default function BookingsReceivedPage() {
         ))}
       </div>
 
-      <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      >
         {filtered.length === 0 ? (
           <div className="bg-superficie rounded-lg shadow-card p-10 text-center text-secundario">
             {t('sinReservas')}

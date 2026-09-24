@@ -233,7 +233,8 @@
     "errorTexto": "Pode ser um problema de ligação ou o servidor pode estar a arrancar. Tenta novamente.",
     "reintentar": "Tentar novamente",
     "sesionCaducada": "A tua sessão expirou",
-    "sesionTexto": "Por segurança, a sessão dura um dia. Entra novamente para continuar onde ficaste."
+    "sesionTexto": "Por segurança, a sessão dura um dia. Entra novamente para continuar onde ficaste.",
+    "referencia": "Código de referência:"
   },
   "categorias": {
     "cerrajeria": "Serralharia",

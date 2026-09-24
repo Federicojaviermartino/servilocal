@@ -28,7 +28,7 @@ export default function ProfilePage() {
   // campos en blanco y con aspecto de estar listo; al guardar se enviaba el
   // teléfono, la biografía y la dirección vacíos, y el usuario perdía sus
   // propios datos sin haber tocado nada.
-  const { datos, estado, reintentar } = useCarga<Perfil>(
+  const { datos, estado, reintentar, referencia } = useCarga<Perfil>(
     () => usersApi.getById(user!.id),
     [user?.id],
   );
@@ -38,7 +38,11 @@ export default function ProfilePage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-principal mb-6">{t('titulo')}</h1>
-      <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      >
         {datos && <FormularioPerfil perfil={datos} email={user.email} />}
       </EstadoCarga>
     </div>

@@ -23,7 +23,7 @@ export default function DashboardHomePage() {
 
   // Los contadores del resumen salen de aquí. Con la lista vacía por un
   // fallo de red enseñaban tres ceros, que es una afirmación, no un hueco.
-  const { datos, estado, reintentar } = useCarga<Booking[]>(
+  const { datos, estado, reintentar, referencia } = useCarga<Booking[]>(
     () =>
       user?.role === UserRole.PROVIDER
         ? bookingsApi.getReceived()
@@ -57,7 +57,11 @@ export default function DashboardHomePage() {
         </p>
       </div>
 
-      <EstadoCarga estado={estado} onReintentar={reintentar}>
+      <EstadoCarga
+        estado={estado}
+        onReintentar={reintentar}
+        referencia={referencia}
+      >
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-superficie rounded-lg shadow-card p-5">

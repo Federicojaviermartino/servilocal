@@ -13,6 +13,8 @@ import Spinner from '../atoms/Spinner';
 interface EstadoCargaProps {
   estado: Estado;
   onReintentar?: () => void;
+  /** Identificador de la petición que falló, para dárselo a quien lo mire. */
+  referencia?: string;
   /** Lo que se pinta cuando ya está listo. Sin él, solo los otros estados. */
   children?: React.ReactNode;
 }
@@ -28,6 +30,7 @@ interface EstadoCargaProps {
 export default function EstadoCarga({
   estado,
   onReintentar,
+  referencia,
   children,
 }: EstadoCargaProps) {
   const t = useTranslations('carga');
@@ -71,6 +74,12 @@ export default function EstadoCarga({
         />
         <p className="mt-3 font-medium text-principal">{t('error')}</p>
         <p className="mt-1 text-sm text-secundario">{t('errorTexto')}</p>
+        {referencia && (
+          <p className="mt-2 text-xs text-tenue">
+            {t('referencia')}{' '}
+            <code className="select-all font-mono">{referencia}</code>
+          </p>
+        )}
         {onReintentar && (
           <Button
             variant="secondary"

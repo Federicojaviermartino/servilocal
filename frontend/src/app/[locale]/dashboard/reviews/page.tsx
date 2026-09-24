@@ -102,12 +102,19 @@ export default function MyReviewsPage() {
   const idioma = useLocale();
   // Antes un fallo vaciaba las dos listas, y quien tenía valoraciones
   // pendientes leía que no le quedaba ninguna.
-  const { datos, estado, reintentar } = useCarga(pedirValoraciones, []);
+  const { datos, estado, reintentar, referencia } = useCarga(
+    pedirValoraciones,
+    [],
+  );
   const pending = datos?.pendientes ?? [];
   const reviews = datos?.enviadas ?? [];
 
   return (
-    <EstadoCarga estado={estado} onReintentar={reintentar}>
+    <EstadoCarga
+      estado={estado}
+      onReintentar={reintentar}
+      referencia={referencia}
+    >
       <div className="space-y-8">
         <section>
           <h1 className="text-2xl font-bold text-principal mb-4">

@@ -81,7 +81,11 @@ Order matters here, and one ordering detail drove a design choice.
 ```
   request
     │
-    ├─ helmet · CORS · cookie-parser · rawBody capture   (Express middleware)
+    ├─ request id (AsyncLocalStorage)                    (Express middleware)
+    │     one per request: in the response, in every log line
+    │     written while serving it, and in Sentry
+    │
+    ├─ helmet · CORS · cookie-parser · rawBody capture
     │
     ├─ ThrottlerVisitanteGuard                           (global guard)
     │     keyed on the visitor the front end relays, if the

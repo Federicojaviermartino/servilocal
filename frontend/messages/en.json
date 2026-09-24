@@ -233,7 +233,8 @@
     "errorTexto": "It may be a connection problem, or the server may still be starting up. Please try again.",
     "reintentar": "Try again",
     "sesionCaducada": "Your session has expired",
-    "sesionTexto": "For security, a session lasts one day. Sign in again to pick up where you left off."
+    "sesionTexto": "For security, a session lasts one day. Sign in again to pick up where you left off.",
+    "referencia": "Reference code:"
   },
   "categorias": {
     "cerrajeria": "Locksmithing",
