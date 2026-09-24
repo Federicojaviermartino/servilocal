@@ -124,7 +124,7 @@ describe('Pantalla de error global', () => {
     pintarGlobal();
 
     expect(screen.getByRole('heading').textContent).toBe(
-      "Une erreur est survenue",
+      'Une erreur est survenue',
     );
   });
 

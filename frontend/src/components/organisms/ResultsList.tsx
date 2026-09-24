@@ -38,7 +38,9 @@ export default function ResultsList({
               todas las coincidencias de una palabra común costaba más que
               traer la página. Decir «1.000 resultados» sería dar por exacto
               un número que no lo es. */}
-          {totalEsParcial ? t('cuentaParcial', { total }) : t('cuenta', { total })}
+          {totalEsParcial
+            ? t('cuentaParcial', { total })
+            : t('cuenta', { total })}
         </p>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

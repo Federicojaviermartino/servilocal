@@ -1,0 +1,7 @@
+# Lo genera Next en cada compilación, con su propio formato.
+next-env.d.ts
+.next
+coverage
+storybook-static
+playwright-report
+test-results

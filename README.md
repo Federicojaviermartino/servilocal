@@ -479,6 +479,7 @@ npm run build
 # Front end
 cd frontend
 npm run lint
+npm run format:check  # Prettier, also enforced in CI
 npm run type-check
 npm run test          # 321 unit tests (Vitest)
 npm run test:cov      # fails below 78% statements / 78% branches

@@ -39,7 +39,10 @@ async function reservaPendiente(
   const servicio = data.find(
     (s: { providerId: string }) => s.providerId === profesional.id,
   );
-  expect(servicio, 'el profesional de demostración tiene servicios').toBeTruthy();
+  expect(
+    servicio,
+    'el profesional de demostración tiene servicios',
+  ).toBeTruthy();
 
   const creada = await peticion.post(`${API}/bookings`, {
     headers: { Authorization: `Bearer ${cliente.token}` },
@@ -88,13 +91,10 @@ test.describe('Quién decide sobre una reserva', () => {
     const profesional = await entrar(request, 'carlos@ejemplo.com');
     const reserva = await reservaPendiente(request, cliente, profesional);
 
-    const salto = await request.patch(
-      `${API}/bookings/${reserva.id}/status`,
-      {
-        headers: { Authorization: `Bearer ${profesional.token}` },
-        data: { status: 'completed' },
-      },
-    );
+    const salto = await request.patch(`${API}/bookings/${reserva.id}/status`, {
+      headers: { Authorization: `Bearer ${profesional.token}` },
+      data: { status: 'completed' },
+    });
 
     expect(salto.status()).toBe(400);
   });

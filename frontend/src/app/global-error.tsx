@@ -18,15 +18,43 @@
 import { useEffect } from 'react';
 
 const TEXTOS: Record<string, [string, string, string]> = {
-  es: ['Algo ha fallado', 'Vuelve a intentarlo en unos segundos.', 'Reintentar'],
-  ca: ['Alguna cosa ha fallat', 'Torna-ho a provar en uns segons.', 'Torna-ho a provar'],
+  es: [
+    'Algo ha fallado',
+    'Vuelve a intentarlo en unos segundos.',
+    'Reintentar',
+  ],
+  ca: [
+    'Alguna cosa ha fallat',
+    'Torna-ho a provar en uns segons.',
+    'Torna-ho a provar',
+  ],
   gl: ['Algo fallou', 'Téntao de novo nuns segundos.', 'Tentar de novo'],
-  eu: ['Zerbaitek huts egin du', 'Saiatu berriro segundo batzuk barru.', 'Saiatu berriro'],
-  en: ['Something went wrong', 'Please try again in a few seconds.', 'Try again'],
-  fr: ['Une erreur est survenue', 'Réessayez dans quelques secondes.', 'Réessayer'],
-  de: ['Etwas ist schiefgelaufen', 'Bitte versuchen Sie es in einigen Sekunden erneut.', 'Erneut versuchen'],
+  eu: [
+    'Zerbaitek huts egin du',
+    'Saiatu berriro segundo batzuk barru.',
+    'Saiatu berriro',
+  ],
+  en: [
+    'Something went wrong',
+    'Please try again in a few seconds.',
+    'Try again',
+  ],
+  fr: [
+    'Une erreur est survenue',
+    'Réessayez dans quelques secondes.',
+    'Réessayer',
+  ],
+  de: [
+    'Etwas ist schiefgelaufen',
+    'Bitte versuchen Sie es in einigen Sekunden erneut.',
+    'Erneut versuchen',
+  ],
   it: ['Qualcosa è andato storto', 'Riprova tra qualche secondo.', 'Riprova'],
-  pt: ['Algo correu mal', 'Tenta de novo dentro de alguns segundos.', 'Tentar de novo'],
+  pt: [
+    'Algo correu mal',
+    'Tenta de novo dentro de alguns segundos.',
+    'Tentar de novo',
+  ],
   ar: ['حدث خطأ ما', 'حاول مرة أخرى بعد بضع ثوانٍ.', 'إعادة المحاولة'],
 };
 
@@ -88,7 +116,13 @@ export default function ErrorGlobal({
             {reintentar}
           </button>
           {error.digest && (
-            <p style={{ marginTop: '1.5rem', fontSize: '0.75rem', color: '#64748b' }}>
+            <p
+              style={{
+                marginTop: '1.5rem',
+                fontSize: '0.75rem',
+                color: '#64748b',
+              }}
+            >
               {error.digest}
             </p>
           )}

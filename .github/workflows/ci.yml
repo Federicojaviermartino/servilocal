@@ -106,6 +106,12 @@ jobs:
       - name: Ejecutar linter
         run: npm run lint
 
+      # En la API el formato lo comprueba el propio linter. Aquí no había
+      # nada que lo mirara, y cinco ficheros se habían ido desajustando sin
+      # que nadie lo notara.
+      - name: Comprobar el formato
+        run: npm run format:check
+
       - name: Comprobar tipos
         run: npm run type-check
 

@@ -161,9 +161,9 @@ describe('ServiceForm', () => {
     expect(
       screen.getByRole('option', { name: 'Villanueva del Trabuco' }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText(es.comun.ciudad),
-    ).toHaveValue('Villanueva del Trabuco');
+    expect(screen.getByLabelText(es.comun.ciudad)).toHaveValue(
+      'Villanueva del Trabuco',
+    );
   });
 
   it('el radio de cobertura no admite cualquier número', async () => {
