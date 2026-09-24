@@ -226,7 +226,7 @@ async function main() {
 
   console.log(
     fallos.length
-      ? `\n${fallos.length} comprobaciones fallidas.`
+      ? `\n${fallos.length} ${fallos.length === 1 ? 'comprobación fallida' : 'comprobaciones fallidas'}.`
       : '\nTodo en orden.',
   );
   process.exit(fallos.length ? 1 : 0);
