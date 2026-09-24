@@ -7,11 +7,12 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
-import { User, UserRole } from '../entities';
+import { SesionRevocada, User, UserRole } from '../entities';
 import { OrigenGuard } from '../common/guards/origen.guard';
 import { SoloLecturaInterceptor } from '../common/interceptores/solo-lectura.interceptor';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { SesionesService } from './sesiones.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
 /**
@@ -42,6 +43,16 @@ const usuarios = {
   })),
 };
 
+/** La lista de sesiones cerradas, en memoria: lo que importa es qué entra. */
+const cerradas = new Map<string, Date>();
+const revocadas = {
+  existsBy: vi.fn(async ({ jti }: { jti: string }) => cerradas.has(jti)),
+  upsert: vi.fn(async ({ jti, caduca }: { jti: string; caduca: Date }) => {
+    cerradas.set(jti, caduca);
+  }),
+  delete: vi.fn(async () => undefined),
+};
+
 let app: NestExpressApplication;
 let base: string;
 const jwt = new JwtService({ secret: SECRETO });
@@ -62,7 +73,9 @@ beforeAll(async () => {
     providers: [
       AuthService,
       JwtStrategy,
+      SesionesService,
       { provide: getRepositoryToken(User), useValue: usuarios },
+      { provide: getRepositoryToken(SesionRevocada), useValue: revocadas },
       {
         provide: ConfigService,
         useValue: { get: () => SECRETO, getOrThrow: () => SECRETO },
@@ -217,6 +230,20 @@ describe('Sesión en cookie', () => {
       expect(respuesta.status).toBe(401);
     });
 
+    it('un token sin identificador de sesión no vale', async () => {
+      // No se podría cerrar desde el servidor.
+      const sinIdentificador = jwt.sign(
+        { sub: 'uuid-123', email: 'laura@ejemplo.com', role: 'client' },
+        { audience: 'servilocal-api', expiresIn: '1h' },
+      );
+
+      const respuesta = await pedir('/auth/profile', {
+        headers: { cookie: `sesion=${sinIdentificador}` },
+      });
+
+      expect(respuesta.status).toBe(401);
+    });
+
     it('una sesión de antes del cambio, sin audiencia, ya no vale', async () => {
       // Los tokens emitidos antes no llevan audiencia. Tras desplegar, todo
       // el mundo vuelve a entrar una vez.
@@ -320,6 +347,69 @@ describe('Sesión en cookie', () => {
       });
 
       expect(respuesta.status).toBe(204);
+    });
+
+    it('el token deja de valer aunque alguien lo hubiera copiado', async () => {
+      // Borrar la cookie solo cierra este navegador. Sin apuntar la sesión
+      // en el servidor, una copia del token seguía entrando hasta caducar.
+      const cookie = await entrar();
+      const token = cookie.slice('sesion='.length);
+
+      await pedir('/auth/logout', { method: 'POST', headers: { cookie } });
+
+      const comoCookie = await pedir('/auth/profile', { headers: { cookie } });
+      const comoCabecera = await pedir('/auth/profile', {
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(comoCookie.status).toBe(401);
+      expect(comoCabecera.status).toBe(401);
+    });
+
+    it('ni sirve para pedir un pase del socket', async () => {
+      const cookie = await entrar();
+
+      await pedir('/auth/logout', { method: 'POST', headers: { cookie } });
+
+      const pase = await pedir('/auth/socket-ticket', { headers: { cookie } });
+      expect(pase.status).toBe(401);
+    });
+
+    it('las demás sesiones de la misma cuenta siguen abiertas', async () => {
+      // Las cuentas de demostración las usan muchos a la vez: que uno salga
+      // no puede echar a los demás.
+      const mia = await entrar();
+      const deOtro = await entrar();
+
+      await pedir('/auth/logout', { method: 'POST', headers: { cookie: mia } });
+
+      const respuesta = await pedir('/auth/profile', {
+        headers: { cookie: deOtro },
+      });
+      expect(respuesta.status).toBe(200);
+    });
+
+    it('también cierra un token de /auth/token enviado como Bearer', async () => {
+      const { accessToken } = await (
+        await pedir('/auth/token', { method: 'POST', body: credenciales })
+      ).json();
+      const cabecera = { authorization: `Bearer ${accessToken}` };
+
+      await pedir('/auth/logout', { method: 'POST', headers: cabecera });
+
+      const respuesta = await pedir('/auth/profile', { headers: cabecera });
+      expect(respuesta.status).toBe(401);
+    });
+
+    it('lo que no es un token válido no se apunta', async () => {
+      // Si se apuntara lo que llegue, cualquiera podría llenar la tabla.
+      revocadas.upsert.mockClear();
+
+      await pedir('/auth/logout', {
+        method: 'POST',
+        headers: { cookie: 'sesion=basura', authorization: 'Bearer basura' },
+      });
+
+      expect(revocadas.upsert).not.toHaveBeenCalled();
     });
   });
 

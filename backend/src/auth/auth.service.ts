@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   Injectable,
   ConflictException,
@@ -110,6 +111,9 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       audience: AUDIENCIA_API,
+      // Un identificador por sesión, para poder cerrarla en el servidor: ver
+      // SesionesService.
+      jwtid: randomUUID(),
     });
     // Se lee del propio token en vez de volver a interpretar JWT_EXPIRATION:
     // así la cookie y el token no pueden caducar en momentos distintos.

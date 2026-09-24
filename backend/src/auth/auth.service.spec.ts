@@ -110,6 +110,25 @@ describe('AuthService', () => {
       expect(result.user.email).toBe(loginDto.email);
     });
 
+    it('cada sesión lleva su propio identificador', async () => {
+      // Es lo que permite cerrar una sola sesión en el servidor sin tocar
+      // las demás de la misma cuenta.
+      mockUserRepository.findOne.mockResolvedValue({
+        id: 'uuid-123',
+        email: loginDto.email,
+        password: await bcrypt.hash('Password123!', 10),
+        role: UserRole.CLIENT,
+        isActive: true,
+      });
+
+      const una = await service.login(loginDto);
+      const otra = await service.login(loginDto);
+      const jti = (token: string) => jwt.decode<{ jti: string }>(token).jti;
+
+      expect(jti(una.accessToken)).toMatch(/^[0-9a-f-]{36}$/);
+      expect(jti(una.accessToken)).not.toBe(jti(otra.accessToken));
+    });
+
     it('la cookie caduca a la vez que el token que lleva', async () => {
       // Si la cookie durara más, el navegador seguiría mandando un token
       // caducado; si durara menos, la sesión se cortaría antes de tiempo.

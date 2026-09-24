@@ -92,7 +92,8 @@ Order matters here, and one ordering detail drove a design choice.
     │
     ├─ AuthGuard('jwt') → RolesGuard                     (route guards)
     │     token from Authorization: Bearer or the session
-    │     cookie, audience checked; populate request.user
+    │     cookie, audience and revocation checked;
+    │     populate request.user
     │
     ├─ ValidationPipe (whitelist, forbidNonWhitelisted)  (global pipe)
     │  ParseUUIDPipe on every :id                        (param pipe)
@@ -361,6 +362,11 @@ Browsers still send the cookie on their own, so every state-changing request is 
 against `Origin` as well as relying on `SameSite=Lax`. Clients without a browser get a
 bearer token from `POST /auth/token`, which never sets a cookie — `/auth/login` never
 returns the token, so there is no way for page scripts to receive it.
+
+Signing out revokes the session on the server as well as deleting the cookie: every token
+carries its own `jti`, which goes into `sesiones_revocadas` until the token would have
+expired anyway. It is per session rather than per account because the demo accounts are
+shared by many visitors at once.
 
 Running the end-to-end suite on WebKit, which is what the whole detour is for, found two
 things Chrome and Firefox never showed. `upgrade-insecure-requests` in the CSP made Safari

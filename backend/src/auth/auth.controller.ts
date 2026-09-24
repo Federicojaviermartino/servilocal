@@ -17,8 +17,9 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { ExtractJwt } from 'passport-jwt';
 import { Throttle } from '@nestjs/throttler';
-import type { Response } from 'express';
+import type { Request as Peticion, Response } from 'express';
 import { AuthService } from './auth.service';
 import {
   RegisterDto,
@@ -27,7 +28,8 @@ import {
   SessionResponseDto,
   SocketTicketDto,
 } from './dto/auth.dto';
-import { abrirSesion, cerrarSesion } from './sesion';
+import { abrirSesion, cerrarSesion, tokenDeCookie } from './sesion';
+import { SesionesService } from './sesiones.service';
 import { User } from '../entities';
 
 /**
@@ -49,7 +51,10 @@ const LIMITE_AUTENTICACION = {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly sesiones: SesionesService,
+  ) {}
 
   @Throttle(LIMITE_AUTENTICACION)
   @Post('register')
@@ -111,15 +116,32 @@ export class AuthController {
   }
 
   /**
-   * Sin guarda a propósito: borrar una cookie no necesita demostrar nada, y
-   * con guarda una sesión caducada no se podría cerrar.
+   * Borra la cookie y cierra la sesión en el servidor: el token deja de
+   * valer aunque alguien lo hubiera copiado antes. Solo esa sesión; las
+   * demás de la misma cuenta siguen abiertas.
+   *
+   * Sin guarda a propósito: con guarda, una sesión caducada no se podría
+   * cerrar. Lo que no sea un token válido simplemente no se apunta.
    */
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Cerrar la sesión del navegador' })
-  @ApiResponse({ status: 204, description: 'Cookie de sesión borrada' })
-  logout(@Res({ passthrough: true }) respuesta: Response): void {
+  @ApiOperation({
+    summary: 'Cerrar la sesión',
+    description:
+      'Borra la cookie y revoca el token, venga en la cookie o en ' +
+      'Authorization: Bearer. Las demás sesiones de la cuenta no se tocan.',
+  })
+  @ApiResponse({ status: 204, description: 'Sesión cerrada' })
+  async logout(
+    @Request() peticion: Peticion,
+    @Res({ passthrough: true }) respuesta: Response,
+  ): Promise<void> {
     cerrarSesion(respuesta);
+    const tokens = new Set([
+      tokenDeCookie(peticion),
+      ExtractJwt.fromAuthHeaderAsBearerToken()(peticion),
+    ]);
+    for (const token of tokens) await this.sesiones.revocar(token);
   }
 
   /**

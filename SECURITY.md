@@ -50,6 +50,11 @@ dependencies of either the API or the front end.
 - Requests that change state are rejected when their `Origin` is not the
   front end, which covers cross-site request forgery and login CSRF on top of
   `SameSite`.
+- Signing out revokes the session on the server, not just the cookie: each
+  token carries its own id, which goes on a revocation list until the token
+  would have expired anyway. Only that session is closed — the demo accounts
+  are shared by many visitors at once, and one of them signing out must not
+  sign out the rest.
 - The WebSocket connects straight to the API and authenticates with a
   one-minute ticket signed for a different audience; the API refuses it as a
   session, and the socket refuses a session token.
@@ -69,10 +74,6 @@ dependencies of either the API or the front end.
 
 These are open, listed here rather than left implicit:
 
-- Signing out deletes the cookie but does not revoke the token: tokens are
-  stateless, so one copied before sign-out stays valid until it expires
-  (`JWT_EXPIRATION`, 24 hours when unset). With the token out of reach of
-  page scripts, copying it takes access to the device itself.
 - There is no staging environment; `main` deploys straight to the demo.
 - Accessibility conformance is partial and documented separately in
   [ACCESSIBILITY.md](ACCESSIBILITY.md).

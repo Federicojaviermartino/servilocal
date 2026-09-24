@@ -75,6 +75,26 @@ test.describe('La sesión', () => {
     const nombres = (await context.cookies()).map((c) => c.name);
     expect(nombres).not.toContain('sesion');
   });
+
+  test('al salir, una copia de la cookie ya no sirve', async ({
+    page,
+    context,
+    request,
+  }) => {
+    // Borrar la cookie solo cierra este navegador. La sesión se cierra en
+    // el servidor, así que quien se hubiera guardado el valor antes tampoco
+    // entra.
+    await entrarComo(page, 'cliente');
+    const copia = (await context.cookies()).find((c) => c.name === 'sesion');
+    expect(copia, 'hay cookie de sesión').toBeTruthy();
+
+    await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
+
+    const conLaCopia = await request.get('/api/auth/profile', {
+      headers: { cookie: `sesion=${copia!.value}` },
+    });
+    expect(conLaCopia.status()).toBe(401);
+  });
 });
 
 test.describe('Acceso a la aplicación', () => {

@@ -8,3 +8,4 @@ export { Payment, PaymentStatus } from './payment.entity';
 export { Notification, NotificationType } from './notification.entity';
 export { UsoIa } from './uso-ia.entity';
 export { RegistroAuditoria, AccionAuditada } from './registro-auditoria.entity';
+export { SesionRevocada } from './sesion-revocada.entity';
