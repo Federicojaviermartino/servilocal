@@ -1,8 +1,15 @@
-import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Req,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { SkipThrottle } from '@nestjs/throttler';
+import type { Request } from 'express';
+import { visitanteReenviado } from '../common/proxy-frontend';
 
 /**
  * Comprobación de estado para monitorización y para el orquestador.
@@ -22,7 +29,7 @@ export class HealthController {
   @ApiOperation({ summary: 'Estado del servicio y de la base de datos' })
   @ApiResponse({ status: 200, description: 'Todo operativo' })
   @ApiResponse({ status: 503, description: 'La base de datos no responde' })
-  async comprobar() {
+  async comprobar(@Req() peticion: Request) {
     const inicio = Date.now();
     let baseDeDatos: 'ok' | 'sin respuesta' = 'ok';
 
@@ -38,6 +45,15 @@ export class HealthController {
       latenciaMs: Date.now() - inicio,
       enMarchaSegundos: Math.round(process.uptime()),
       momento: new Date().toISOString(),
+      // Qué commit está sirviendo. Lo pone Render; la prueba de humo espera
+      // a verlo para saber que el despliegue nuevo ya está atendiendo.
+      version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || null,
+      // Si esta petición llegó por el frontend con el secreto que comparten
+      // los dos servicios. Llamando a través del frontend tiene que salir
+      // true: si no, los dos no tienen el mismo PROXY_SECRETO y el límite de
+      // peticiones cuenta a todos los visitantes como uno. Solo dice sí o no;
+      // ni el secreto ni ninguna dirección.
+      atravesDelFrontend: visitanteReenviado(peticion.headers) !== null,
     };
 
     // Un 200 con "degradado" dentro no lo detecta ningún monitor: hay que

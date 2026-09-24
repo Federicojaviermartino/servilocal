@@ -29,8 +29,8 @@ export default function proxy(peticion: NextRequest) {
 export const config = {
   matcher: [
     '/api/:path*',
-    // Los recursos de Next y cualquier ruta con extensión (robots.txt,
-    // sitemap.xml, imágenes) no deben llevar prefijo de idioma.
-    '/((?!api|_next|_vercel|.*\\..*).*)',
+    // Los recursos de Next, /salud y cualquier ruta con extensión
+    // (robots.txt, sitemap.xml, imágenes) no deben llevar prefijo de idioma.
+    '/((?!api|salud|_next|_vercel|.*\\..*).*)',
   ],
 };

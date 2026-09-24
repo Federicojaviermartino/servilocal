@@ -420,6 +420,7 @@ Stated here rather than discovered later.
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
 | Components | Storybook | Built in CI, because a broken story breaks nothing in production and would otherwise rot unnoticed |
+| Production | Smoke test after each deploy | Waits until each service reports the commit it should now serve — each Render service redeploys only when its own folder changes — then checks the relay, the cookie attributes, the socket handshake and that sign-out revokes the session |
 
 The catalogue test is worth singling out: it checks that the ten translation files have
 the same sections, the same keys, no empty strings, and the **same ICU placeholders**.

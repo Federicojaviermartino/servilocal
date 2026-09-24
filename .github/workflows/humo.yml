@@ -1,0 +1,66 @@
+# Prueba de humo contra producción, después de cada despliegue.
+#
+# La integración prueba el código antes de desplegarlo; esto prueba lo que
+# queda desplegado: que el commit nuevo es el que sirve cada servicio, que el
+# proxy del frontend llega a la API, que la cookie sale bien, que el socket
+# abre y que salir cierra la sesión. Hasta ahora se comprobaba a mano, cuando
+# alguien se acordaba. Ver scripts/humo/comprobar.mjs.
+#
+# Corre cuando la integración termina en verde sobre main, que es lo que
+# Render despliega, y también a mano desde la pestaña de Actions.
+name: Prueba de humo
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+# Solo lee el código; ver ci.yml.
+permissions:
+  contents: read
+
+# Dos despliegues seguidos: solo importa el último.
+concurrency:
+  group: humo
+  cancel-in-progress: true
+
+jobs:
+  produccion:
+    name: Producción tras desplegar
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # La cabeza de main, que es lo que Render despliega. No el commit del
+      # flujo que la dispara: sacar ese código en un workflow_run es el
+      # patrón que CodeQL marca, con razón, como checkout no confiable.
+      - uses: actions/checkout@v7
+        with:
+          # Hace falta la historia: la versión de cada servicio es el último
+          # commit que tocó su carpeta.
+          fetch-depth: 0
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # Cada servicio de Render tiene su carpeta raíz y solo se redespliega
+      # cuando cambia algo dentro. Un commit que toca solo la documentación
+      # no despliega nada, y uno que toca solo el frontend deja la API como
+      # estaba: la versión que tiene que estar sirviendo cada uno es el último
+      # commit que tocó su carpeta, no el último de main.
+      - name: Qué versión tiene que estar sirviendo cada servicio
+        id: versiones
+        run: |
+          echo "api=$(git log -1 --format=%H -- backend)" >> "$GITHUB_OUTPUT"
+          echo "web=$(git log -1 --format=%H -- frontend)" >> "$GITHUB_OUTPUT"
+
+      - name: Esperar al despliegue y comprobar producción
+        env:
+          HUMO_VERSION_API: ${{ steps.versiones.outputs.api }}
+          HUMO_VERSION_WEB: ${{ steps.versiones.outputs.web }}
+        run: node scripts/humo/comprobar.mjs
