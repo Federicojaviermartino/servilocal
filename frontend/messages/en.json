@@ -532,7 +532,8 @@
     "nuevo": "New service",
     "sinServicios": "You have not published any services yet.",
     "sinServiciosPista": "Create your first service to start receiving bookings.",
-    "titulo": "My services"
+    "titulo": "My services",
+    "resumenValoraciones": "{total, plural, =0 {No reviews} one {# review} other {# reviews}}"
   },
   "tarjeta": {
     "precioRango": "{min} to {max} {unidad}",

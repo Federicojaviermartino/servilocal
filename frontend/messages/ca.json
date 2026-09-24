@@ -532,7 +532,8 @@
     "nuevo": "Servei nou",
     "sinServicios": "Encara no has publicat cap servei.",
     "sinServiciosPista": "Crea el teu primer servei per començar a rebre reserves.",
-    "titulo": "Els meus serveis"
+    "titulo": "Els meus serveis",
+    "resumenValoraciones": "{total, plural, =0 {Sense valoracions} one {# valoració} other {# valoracions}}"
   },
   "tarjeta": {
     "precioRango": "{min} a {max} {unidad}",

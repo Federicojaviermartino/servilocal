@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Service } from '@/types';
@@ -10,12 +10,16 @@ import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
+import { useNombreUnidad } from '@/lib/unidades';
 import ServiceForm from '@/components/organisms/ServiceForm';
 
 export default function ProviderServicesPage() {
   const t = useTranslations('serviciosPanel');
   const tEstados = useTranslations('estados');
   const tComun = useTranslations('comun');
+  const tTarjeta = useTranslations('tarjeta');
+  const nombreUnidad = useNombreUnidad();
+  const formato = useFormatter();
   const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
@@ -142,10 +146,28 @@ export default function ProviderServicesPage() {
                   </p>
                   <div className="mt-2 flex items-center gap-4 text-sm text-secundario">
                     <span>{s.city}</span>
-                    <span>Desde {s.priceMin} euros</span>
+                    {/* Estaban escritos a mano en castellano: en los otros
+                        nueve idiomas el profesional veía «Desde 35 euros».
+                        El precio sale igual que en la tarjeta pública. */}
                     <span>
-                      {s.totalReviews} valoraciones (
-                      {(s.averageRating || 0).toFixed(1)})
+                      {s.priceMax && s.priceMax !== s.priceMin
+                        ? tTarjeta('precioRango', {
+                            min: s.priceMin,
+                            max: s.priceMax,
+                            unidad: nombreUnidad(s.priceUnit),
+                          })
+                        : tTarjeta('precioUnico', {
+                            min: s.priceMin,
+                            unidad: nombreUnidad(s.priceUnit),
+                          })}
+                    </span>
+                    <span>
+                      {t('resumenValoraciones', { total: s.totalReviews })}
+                      {s.totalReviews > 0 &&
+                        ` · ${formato.number(s.averageRating || 0, {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        })}`}
                     </span>
                   </div>
                 </div>

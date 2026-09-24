@@ -532,7 +532,8 @@
     "nuevo": "خدمة جديدة",
     "sinServicios": "لم تنشر أي خدمة بعد.",
     "sinServiciosPista": "أنشئ خدمتك الأولى لتبدأ في استقبال الحجوزات.",
-    "titulo": "خدماتي"
+    "titulo": "خدماتي",
+    "resumenValoraciones": "{total, plural, =0 {لا توجد تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}"
   },
   "tarjeta": {
     "precioRango": "{min} إلى {max} {unidad}",

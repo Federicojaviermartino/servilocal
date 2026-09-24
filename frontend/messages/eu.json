@@ -532,7 +532,8 @@
     "nuevo": "Zerbitzu berria",
     "sinServicios": "Oraindik ez duzu zerbitzurik argitaratu.",
     "sinServiciosPista": "Sortu zure lehen zerbitzua erreserbak jasotzen hasteko.",
-    "titulo": "Nire zerbitzuak"
+    "titulo": "Nire zerbitzuak",
+    "resumenValoraciones": "{total, plural, =0 {Baloraziorik ez} one {# balorazio} other {# balorazio}}"
   },
   "tarjeta": {
     "precioRango": "{min} - {max} {unidad}",
