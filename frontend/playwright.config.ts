@@ -42,6 +42,23 @@ export default defineConfig({
       name: 'movil',
       use: { ...devices['Pixel 5'] },
     },
+    // Los otros dos motores. Safari es la razón de que la API se llame a
+    // través del propio frontend: bloquea las cookies de otro sitio, y sin
+    // probar en WebKit eso era una suposición.
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: 'safari',
+      use: {
+        ...devices['Desktop Safari'],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

@@ -17,9 +17,16 @@ async function abrirMenuSiHaceFalta(page: Page) {
 test.describe('Uso con teclado', () => {
   test('el enlace de salto aparece al tabular y lleva al contenido', async ({
     page,
+    browserName,
   }) => {
     // Está oculto hasta que recibe el foco: si no apareciera, el primer
     // tabulador de la página no serviría para nada.
+    test.skip(
+      browserName === 'webkit',
+      'El WebKit de Playwright tabula como Safari de fábrica: solo campos de ' +
+        'formulario y menús, ni enlaces ni botones. En Safari se llega a los ' +
+        'enlaces con Opción+Tab, y eso aquí no se puede emular.',
+    );
     await page.goto('/');
     await page.keyboard.press('Tab');
 
@@ -87,14 +94,18 @@ test.describe('Uso con teclado', () => {
     await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
-    const tabulables = await page
-      .getByRole('tab')
-      .evaluateAll(
-        (nodos) =>
-          nodos.filter((n) => n.getAttribute('tabindex') !== '-1').length,
-      );
-
-    expect(tabulables).toBe(1);
+    // Con espera: evaluateAll no aguarda a que las pestañas se pinten, y en
+    // un navegador más lento contaba cero antes de que existieran.
+    await expect
+      .poll(() =>
+        page
+          .getByRole('tab')
+          .evaluateAll(
+            (nodos) =>
+              nodos.filter((n) => n.getAttribute('tabindex') !== '-1').length,
+          ),
+      )
+      .toBe(1);
   });
 
   test('la navegación principal dice en qué sección estás', async ({

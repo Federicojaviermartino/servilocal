@@ -1,4 +1,4 @@
-import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule, JwtService } from '@nestjs/jwt';
@@ -42,7 +42,7 @@ const usuarios = {
   })),
 };
 
-let app: INestApplication;
+let app: NestExpressApplication;
 let base: string;
 const jwt = new JwtService({ secret: SECRETO });
 
@@ -72,7 +72,9 @@ beforeAll(async () => {
     ],
   }).compile();
 
-  app = modulo.createNestApplication();
+  app = modulo.createNestApplication<NestExpressApplication>();
+  // Como en main.ts: sin esto, X-Forwarded-Proto no cuenta.
+  app.set('trust proxy', 1);
   app.use(cookieParser());
   app.setGlobalPrefix('api');
   await app.listen(0, '127.0.0.1');
@@ -146,7 +148,21 @@ describe('Sesión en cookie', () => {
       expect(JSON.stringify(cuerpo)).not.toMatch(/eyJ/);
     });
 
-    it('en producción la cookie solo viaja por https', async () => {
+    it('si la petición llegó por https, la cookie solo viaja por https', async () => {
+      // En producción es siempre así: Render lo dice en X-Forwarded-Proto.
+      const respuesta = await pedir('/auth/login', {
+        method: 'POST',
+        body: credenciales,
+        headers: { 'x-forwarded-proto': 'https' },
+      });
+
+      expect(respuesta.headers.getSetCookie()[0]).toMatch(/; Secure/i);
+    });
+
+    it('por http no la marca como segura, aunque sea producción', async () => {
+      // Safari guarda una cookie segura recibida por http://localhost y
+      // luego no la manda: la integración continua corre en producción
+      // sobre http, y ahí todo lo que pide sesión fallaba en WebKit.
       vi.stubEnv('NODE_ENV', 'production');
 
       const respuesta = await pedir('/auth/login', {
@@ -154,7 +170,7 @@ describe('Sesión en cookie', () => {
         body: credenciales,
       });
 
-      expect(respuesta.headers.getSetCookie()[0]).toMatch(/; Secure/i);
+      expect(respuesta.headers.getSetCookie()[0]).not.toMatch(/Secure/i);
     });
 
     it('el registro también abre la sesión en la cookie', async () => {

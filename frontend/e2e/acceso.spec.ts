@@ -8,12 +8,23 @@ test.describe('La sesión', () => {
     page,
     context,
   }) => {
+    const acceso = page.waitForResponse((r) =>
+      r.url().endsWith('/api/auth/login'),
+    );
     await entrarComo(page, 'cliente');
+
+    // Los atributos, tal como llegan al navegador a través del frontend. Se
+    // miran en la cabecera y no en el almacén de cookies porque el WebKit de
+    // Playwright para Windows no guarda SameSite y lo devuelve siempre como
+    // None, aunque la cabecera diga otra cosa.
+    const puesta = (await (await acceso).headerValue('set-cookie')) ?? '';
+    expect(puesta).toMatch(/^sesion=/);
+    expect(puesta).toMatch(/;\s*HttpOnly/i);
+    expect(puesta).toMatch(/;\s*SameSite=Lax/i);
 
     const sesion = (await context.cookies()).find((c) => c.name === 'sesion');
     expect(sesion, 'hay cookie de sesión').toBeTruthy();
     expect(sesion!.httpOnly).toBe(true);
-    expect(sesion!.sameSite).toBe('Lax');
     // Del frontend y no de la API: si fuera de la API, para el navegador
     // sería de otro sitio, y Safari no la mandaría.
     expect(sesion!.domain).toBe(new URL(page.url()).hostname);

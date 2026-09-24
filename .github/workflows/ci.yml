@@ -425,7 +425,11 @@ jobs:
         run: |
           npm ci
           npm run build
-          npx playwright install --with-deps chromium
+          # Los tres motores: Chrome, Firefox y el WebKit de Safari. Con
+          # Chrome solo, lo que se rompía únicamente en Safari —la página
+          # entera por upgrade-insecure-requests, la cookie de sesión por
+          # http— no lo veía nadie.
+          npx playwright install --with-deps chromium firefox webkit
 
       - name: Ejecutar Playwright
         working-directory: ./frontend

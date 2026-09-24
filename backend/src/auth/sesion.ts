@@ -31,16 +31,20 @@ export const AUDIENCIA_SOCKET = 'servilocal-socket';
 /** Lo justo para que el socket se identifique; se pide en cada conexión. */
 export const DURACION_PASE_SOCKET = '60s';
 
-function opciones(): CookieOptions {
+function opciones(respuesta: Response): CookieOptions {
   return {
     httpOnly: true,
     // Lax y no Strict: con Strict, quien llega desde un enlace en un correo
     // aparecería sin sesión en la primera página. Lax ya impide que otro
     // sitio mande la cookie en un POST, que es lo que importa.
     sameSite: 'lax',
-    // En desarrollo se sirve por http. Chrome y Firefox aceptan cookies
-    // seguras en localhost, Safari no, y no hay nada que proteger ahí.
-    secure: process.env.NODE_ENV === 'production',
+    // Segura si la petición llegó por https, que en producción es siempre:
+    // Render lo dice en X-Forwarded-Proto y trust proxy lo lee. Se decide
+    // por la petición y no por NODE_ENV porque Safari guarda una cookie
+    // segura recibida por http://localhost pero luego no la manda, y la
+    // integración continua corre en producción sobre http. Chrome y Firefox
+    // hacen una excepción con localhost; WebKit no.
+    secure: respuesta.req?.secure === true,
     path: '/',
   };
 }
@@ -51,14 +55,14 @@ export function abrirSesion(
   sesion: { accessToken: string; caduca: Date },
 ): void {
   respuesta.cookie(COOKIE_SESION, sesion.accessToken, {
-    ...opciones(),
+    ...opciones(respuesta),
     expires: sesion.caduca,
   });
 }
 
 /** Tiene que llevar los mismos atributos con que se puso, o no se borra. */
 export function cerrarSesion(respuesta: Response): void {
-  respuesta.clearCookie(COOKIE_SESION, opciones());
+  respuesta.clearCookie(COOKIE_SESION, opciones(respuesta));
 }
 
 /** Para passport-jwt: el token de la cookie, si lo hay. */

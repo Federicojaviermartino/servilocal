@@ -21,7 +21,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-745%20unit%20%2B%2018%20integration%20%2B%2086%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-746%20unit%20%2B%2018%20integration%20%2B%2086%20e2e-475569)
 
 </div>
 
@@ -151,7 +151,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 424 unit tests on the API with doubles, plus 18 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 321 in the browser. Playwright for 86 end-to-end tests, each run on desktop and on a 375 px phone, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 425 unit tests on the API with doubles, plus 18 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 321 in the browser. Playwright for 86 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -471,7 +471,7 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 424 unit tests across 32 suites, all with doubles (Vitest)
+npm run test          # 425 unit tests across 32 suites, all with doubles (Vitest)
 npm run test:cov      # fails below 90% statements / 80% branches
 npm run test:integracion   # 18 tests against a real database and stripe-mock
 npm run build
@@ -485,9 +485,9 @@ npm run test          # 321 unit tests (Vitest)
 npm run test:cov      # fails below 78% statements / 78% branches
 npm run build
 
-# End-to-end (Playwright, desktop and mobile viewports)
+# End-to-end (Playwright: Chrome desktop and mobile, Firefox, Safari's WebKit)
 cd frontend
-npx playwright install chromium   # first run only
+npx playwright install chromium firefox webkit   # first run only
 npm run e2e
 
 # Component catalogue
@@ -498,7 +498,7 @@ npm run storybook
 npm run lock
 ```
 
-86 end-to-end tests run against two viewports — desktop and a 375 px phone — for 172 executions per run. They cover search with accent-insensitive matching, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, theme switching, language detection and switching, the admin panel including its charts, moderation queue and audit log, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, and a full booking paid with a Stripe test card.
+86 end-to-end tests run on four projects — Chrome on desktop and on a 375 px phone, Firefox, and Safari's WebKit — for 344 executions per run. They cover search with accent-insensitive matching, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, theme switching, language detection and switching, the admin panel including its charts, moderation queue and audit log, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, and a full booking paid with a Stripe test card.
 
 The payment test skips itself, with an explicit reason, when Stripe keys are not configured — the booking is still created, but there is nothing to charge. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 

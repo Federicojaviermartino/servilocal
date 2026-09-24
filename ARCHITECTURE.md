@@ -362,6 +362,14 @@ against `Origin` as well as relying on `SameSite=Lax`. Clients without a browser
 bearer token from `POST /auth/token`, which never sets a cookie — `/auth/login` never
 returns the token, so there is no way for page scripts to receive it.
 
+Running the end-to-end suite on WebKit, which is what the whole detour is for, found two
+things Chrome and Firefox never showed. `upgrade-insecure-requests` in the CSP made Safari
+request every script over `https://localhost`, so locally the page never hydrated; the
+directive is now left out when the API is on localhost. And a `Secure` cookie received over
+`http://localhost` is stored but never sent back, which is why the cookie is `Secure` when
+the request arrived over HTTPS — always, in production — rather than whenever `NODE_ENV` is
+`production`.
+
 ## Known limitations
 
 Stated here rather than discovered later.
@@ -391,7 +399,7 @@ Stated here rather than discovered later.
 | Back end | Vitest + SWC | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
 | Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that Stripe rejects a non-integer amount |
 | Front end | Vitest | Library helpers, components, and catalogue parity across the ten locales |
-| End to end | Playwright | Desktop and a narrow mobile viewport, against a real API and database |
+| End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
 | Components | Storybook | Built in CI, because a broken story breaks nothing in production and would otherwise rot unnoticed |
 

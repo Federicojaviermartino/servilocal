@@ -23,6 +23,13 @@ const apiOrigen = (() => {
 // el navegador lo bloquea sin que el código se entere de nada.
 const apiOrigenSocket = apiOrigen.replace(/^http/, 'ws');
 
+// Con la API en localhost la página también se sirve por http: es el
+// desarrollo y la integración continua. Ahí upgrade-insecure-requests sobra,
+// y en Safari rompe la página entera: aplica la directiva también a
+// localhost, pide cada script por https y no carga ninguno. Chrome y Firefox
+// hacen una excepción con localhost; WebKit no.
+const enLocal = /^http:\/\/(localhost|127\.0\.0\.1)(:|$)/.test(apiOrigen);
+
 const csp = [
   "default-src 'self'",
   // 'unsafe-inline' es obligatorio mientras Next inyecte scripts en línea sin
@@ -38,7 +45,7 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  'upgrade-insecure-requests',
+  ...(enLocal ? [] : ['upgrade-insecure-requests']),
 ].join('; ');
 
 const securityHeaders = [
