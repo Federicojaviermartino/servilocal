@@ -17,6 +17,11 @@ the project, and carry that commit's date.
 - Dependencies brought up to date where no code change was needed: dotenv 18, date-fns 4,
   zustand 5, jsdom 30, eslint-config-prettier 10, the bcrypt types, and the minor and
   patch releases behind them in both packages.
+- ioredis 6, which speaks RESP3 and so needs Redis 6 or later, or any Valkey. TypeORM
+  still declares ioredis 5 as a peer, for a Redis query cache this project does not use,
+  and that peer is overridden. Checked with two API instances sharing one Valkey: the
+  sign-in limit counts across both, the cache lives in Valkey, and a message sent through
+  one reaches a socket open on the other.
 
 ## [2.1.1] — 2026-09-25
 

@@ -270,7 +270,11 @@ optional takes anything else down.**
 
 Redis connections are split by purpose: queries fail fast (`enableOfflineQueue: false`),
 subscriptions queue — the socket adapter issues `psubscribe` before the connection is up,
-and failing that call fast kills the API at boot.
+and failing that call fast kills the API at boot. The client speaks RESP3, so the server
+has to be Redis 6 or later, or any Valkey. CI does not run a Redis: what it shares
+between instances — the throttler count, the cache, a message crossing from one
+instance's socket to another's — was checked by hand with two APIs on one Valkey, and
+again with Redis switched off, to see the same checks fail.
 
 The read cache treats every failure — disconnection, corrupt JSON, a cold instance — as
 a miss. It exposes `recordar(key, seconds, compute)`, with no method that can return an
