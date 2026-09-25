@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  type Point,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Category } from './category.entity';
@@ -63,7 +64,8 @@ export class Service {
     srid: 4326,
   })
   @Index({ spatial: true })
-  location: string;
+  // TypeORM la lee y la escribe como GeoJSON: ver common/geografia.ts.
+  location: Point | null;
 
   @Column({ length: 255 })
   address: string;

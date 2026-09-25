@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, IsNumber } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class UpdateUserDto {
   @ApiProperty({ required: false, example: 'Federico' })
@@ -45,10 +52,14 @@ export class UpdateUserDto {
   @ApiProperty({ required: false, example: 40.4168 })
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiProperty({ required: false, example: -3.7038 })
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 }

@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  type Point,
 } from 'typeorm';
 
 export enum UserRole {
@@ -61,7 +62,8 @@ export class User {
     nullable: true,
   })
   @Index({ spatial: true })
-  location: string;
+  // TypeORM la lee y la escribe como GeoJSON: ver common/geografia.ts.
+  location: Point | null;
 
   @Column({ default: true })
   isActive: boolean;

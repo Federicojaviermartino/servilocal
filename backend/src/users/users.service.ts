@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { AccionAuditada, User } from '../entities';
 import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { puntoGeografico } from '../common/geografia';
 
 @Injectable()
 export class UsersService {
@@ -45,9 +46,8 @@ export class UsersService {
   async update(id: string, updateDto: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);
 
-    if (updateDto.latitude && updateDto.longitude) {
-      const point = `SRID=4326;POINT(${updateDto.longitude} ${updateDto.latitude})`;
-      user.location = point;
+    if (updateDto.latitude !== undefined && updateDto.longitude !== undefined) {
+      user.location = puntoGeografico(updateDto.latitude, updateDto.longitude);
     }
 
     const { latitude, longitude, ...rest } = updateDto;

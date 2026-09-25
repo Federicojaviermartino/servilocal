@@ -84,14 +84,33 @@ describe('UsersService', () => {
     });
 
     it('el punto lleva la longitud delante de la latitud', async () => {
-      // POINT toma (x, y), o sea (longitud, latitud). Invertirlo compila
+      // GeoJSON va en (x, y), o sea (longitud, latitud). Invertirlo compila
       // igual y coloca a la persona en el hemisferio equivocado.
+      //
+      // Antes esta prueba daba por bueno `SRID=4326;POINT(-4.42 36.72)`, y
+      // con PostGIS ese texto hacía fallar la consulta: un doble no sabe que
+      // TypeORM espera GeoJSON. Lo que llega a la base de verdad lo mira la
+      // integración.
       const r = await servicio.update(OTRO, {
         latitude: 36.72,
         longitude: -4.42,
       } as never);
 
-      expect(r.location).toBe('SRID=4326;POINT(-4.42 36.72)');
+      expect(r.location).toEqual({
+        type: 'Point',
+        coordinates: [-4.42, 36.72],
+      });
+    });
+
+    it('una coordenada 0 también cuenta', async () => {
+      // Se comparaba por verdad, y 0 es falso: el meridiano de Greenwich,
+      // que pasa por Castellón, no se podía guardar.
+      const r = await servicio.update(OTRO, {
+        latitude: 39.99,
+        longitude: 0,
+      } as never);
+
+      expect(r.location).toEqual({ type: 'Point', coordinates: [0, 39.99] });
     });
 
     it('sin las dos coordenadas no se toca la ubicación', async () => {

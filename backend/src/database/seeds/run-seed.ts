@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserRole } from '../../entities/user.entity';
 import { Category } from '../../entities/category.entity';
 import { Service } from '../../entities/service.entity';
+import { puntoGeografico } from '../../common/geografia';
 import { Booking, BookingStatus } from '../../entities/booking.entity';
 import { Review } from '../../entities/review.entity';
 
@@ -905,12 +906,6 @@ async function runSeed() {
     // Se dispersan ligeramente las coordenadas para que los marcadores del
     // mapa no queden apilados en el centro exacto de cada ciudad.
     const dispersion = (serviciosGuardados.length % 7) * 0.004 - 0.012;
-    const punto =
-      'ST_SetSRID(ST_MakePoint(' +
-      (lng + dispersion) +
-      ', ' +
-      (lat + dispersion) +
-      '), 4326)';
 
     const servicio = serviceRepo.create({
       providerId: proveedorPorClave[def.proveedor].id,
@@ -924,7 +919,7 @@ async function runSeed() {
       city: def.city,
       coverageRadiusKm: def.coverageRadiusKm,
       images: def.images,
-      location: (() => punto) as any,
+      location: puntoGeografico(lat + dispersion, lng + dispersion),
     });
     serviciosGuardados.push(await serviceRepo.save(servicio));
   }

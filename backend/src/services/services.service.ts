@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Category, Service } from '../entities';
+import { puntoGeografico } from '../common/geografia';
 import {
   CreateServiceDto,
   UpdateServiceDto,
@@ -91,8 +92,7 @@ export class ServicesService {
     const service = this.serviceRepository.create({
       ...rest,
       providerId,
-      location: (() =>
-        `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`) as any,
+      location: puntoGeografico(latitude, longitude),
     });
 
     return this.serviceRepository.save(service);
@@ -129,9 +129,10 @@ export class ServicesService {
 
     const { latitude, longitude, ...rest } = updateDto;
 
-    if (latitude && longitude) {
-      service.location = (() =>
-        `ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326)`) as any;
+    // Comparando con undefined y no por verdad: 0 es una coordenada válida,
+    // y el meridiano de Greenwich pasa por Castellón.
+    if (latitude !== undefined && longitude !== undefined) {
+      service.location = puntoGeografico(latitude, longitude);
     }
 
     Object.assign(service, rest);

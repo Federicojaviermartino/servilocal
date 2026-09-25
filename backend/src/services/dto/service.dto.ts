@@ -51,6 +51,8 @@ export class CreateServiceDto {
     description: 'Latitud de la ubicación del servicio',
   })
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude: number;
 
   @ApiProperty({
@@ -58,6 +60,8 @@ export class CreateServiceDto {
     description: 'Longitud de la ubicación del servicio',
   })
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude: number;
 
   @ApiProperty({ example: 'Calle Gran Vía 1, Madrid' })
@@ -121,11 +125,15 @@ export class UpdateServiceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @ApiPropertyOptional()
@@ -171,12 +179,16 @@ export class SearchServicesDto {
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @Min(-90)
+  @Max(90)
   latitude?: number;
 
   @ApiPropertyOptional({ example: -3.7038 })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @Min(-180)
+  @Max(180)
   longitude?: number;
 
   @ApiPropertyOptional({ example: 10, description: 'Radio de búsqueda en km' })

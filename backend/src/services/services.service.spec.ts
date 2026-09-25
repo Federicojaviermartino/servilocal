@@ -555,8 +555,10 @@ describe('ServicesService', () => {
 
   describe('alta y edición', () => {
     it('el punto se construye con la longitud primero', async () => {
-      // ST_MakePoint toma (x, y), es decir (longitud, latitud). Invertirlo
-      // compila igual y coloca Madrid en mitad del océano.
+      // GeoJSON va en (x, y), es decir (longitud, latitud). Invertirlo
+      // compila igual y coloca Madrid en mitad del océano. Que TypeORM lo
+      // guarde bien en PostGIS lo comprueba la integración: aquí solo se ve
+      // lo que se le pasa.
       const qb = constructorFalso();
       const { servicio, repo } = await construir(qb);
 
@@ -567,11 +569,14 @@ describe('ServicesService', () => {
       } as never);
 
       const creado = repo.create.mock.calls[0][0] as {
-        location: () => string;
+        location: unknown;
         providerId: string;
       };
       expect(creado.providerId).toBe('p1');
-      expect(creado.location()).toContain('ST_MakePoint(-3.7, 40.4)');
+      expect(creado.location).toEqual({
+        type: 'Point',
+        coordinates: [-3.7, 40.4],
+      });
     });
 
     it('editar sin coordenadas no mueve el servicio de sitio', async () => {
