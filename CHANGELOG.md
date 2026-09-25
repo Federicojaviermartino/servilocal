@@ -10,6 +10,14 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [Unreleased]
+
+### Changed
+
+- Dependencies brought up to date where no code change was needed: dotenv 18, date-fns 4,
+  zustand 5, jsdom 30, eslint-config-prettier 10, the bcrypt types, and the minor and
+  patch releases behind them in both packages.
+
 ## [2.1.1] — 2026-09-25
 
 ### Fixed
@@ -222,6 +230,7 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.1...HEAD
 [2.1.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Federicojaviermartino/servilocal/compare/v1.4.0...v2.0.0
