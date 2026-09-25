@@ -33,7 +33,7 @@ updates:
     groups:
       # El orden importa: un paquete va al primer grupo que lo recoge.
       typescript-eslint:
-        patterns: ['@typescript-eslint/*']
+        patterns: ['typescript-eslint', '@typescript-eslint/*']
       nestjs:
         patterns: ['@nestjs/*']
         update-types: ['minor', 'patch']

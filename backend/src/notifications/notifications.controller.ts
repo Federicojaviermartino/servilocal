@@ -15,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -28,26 +29,29 @@ export class NotificationsController {
   // existe la posibilidad de leer los de otro.
   @Get()
   @ApiOperation({ summary: 'Mis avisos, del más reciente al más antiguo' })
-  listar(@Request() req: any) {
+  listar(@Request() req: PeticionAutenticada) {
     return this.avisos.listar(req.user.id);
   }
 
   @Get('unread/count')
   @ApiOperation({ summary: 'Cuántos avisos tengo sin leer' })
-  async sinLeer(@Request() req: any) {
+  async sinLeer(@Request() req: PeticionAutenticada) {
     return { total: await this.avisos.sinLeer(req.user.id) };
   }
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Marcar un aviso como leído' })
   @ApiResponse({ status: 404, description: 'El aviso no existe o no es tuyo' })
-  marcarLeido(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+  marcarLeido(
+    @Request() req: PeticionAutenticada,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.avisos.marcarLeido(id, req.user.id);
   }
 
   @Patch('read-all')
   @ApiOperation({ summary: 'Marcar todos como leídos' })
-  marcarTodos(@Request() req: any) {
+  marcarTodos(@Request() req: PeticionAutenticada) {
     return this.avisos.marcarTodosLeidos(req.user.id);
   }
 }

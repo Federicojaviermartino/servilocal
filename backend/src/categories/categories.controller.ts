@@ -21,6 +21,7 @@ import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -51,7 +52,10 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Crear categoría (solo admin)' })
   @ApiResponse({ status: 201, description: 'Categoría creada' })
-  async create(@Request() req: any, @Body() createDto: CreateCategoryDto) {
+  async create(
+    @Request() req: PeticionAutenticada,
+    @Body() createDto: CreateCategoryDto,
+  ) {
     return this.categoriesService.create(createDto, {
       id: req.user.id,
       email: req.user.email,
@@ -65,7 +69,7 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Actualizar categoría (solo admin)' })
   @ApiResponse({ status: 200, description: 'Categoría actualizada' })
   async update(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateCategoryDto,
   ) {
@@ -81,7 +85,10 @@ export class CategoriesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar categoría (solo admin)' })
   @ApiResponse({ status: 200, description: 'Categoría eliminada' })
-  async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+  async remove(
+    @Request() req: PeticionAutenticada,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     await this.categoriesService.remove(id, {
       id: req.user.id,
       email: req.user.email,

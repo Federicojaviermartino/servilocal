@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { MessagesService } from './messages.service';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('messages')
 @ApiBearerAuth()
@@ -24,14 +25,14 @@ export class MessagesController {
   @ApiOperation({
     summary: 'Enviar mensaje a otro usuario (crea conversación si no existe)',
   })
-  async send(@Request() req: any, @Body() dto: SendMessageDto) {
+  async send(@Request() req: PeticionAutenticada, @Body() dto: SendMessageDto) {
     return this.messagesService.sendMessage(req.user.id, dto);
   }
 
   @Post('conversation/:conversationId')
   @ApiOperation({ summary: 'Responder en una conversación existente' })
   async reply(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('conversationId', ParseUUIDPipe) conversationId: string,
     @Body() dto: ReplyMessageDto,
   ) {
@@ -44,7 +45,7 @@ export class MessagesController {
 
   @Get('conversations')
   @ApiOperation({ summary: 'Listar mis conversaciones' })
-  async getConversations(@Request() req: any) {
+  async getConversations(@Request() req: PeticionAutenticada) {
     return this.messagesService.getConversations(req.user.id);
   }
 
@@ -54,7 +55,7 @@ export class MessagesController {
       'Obtener los mensajes intercambiados con un interlocutor (marca como leídos)',
   })
   async getMessages(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('partnerId', ParseUUIDPipe) partnerId: string,
   ) {
     return this.messagesService.findMessagesWithPartner(req.user.id, partnerId);
@@ -62,7 +63,7 @@ export class MessagesController {
 
   @Get('unread/count')
   @ApiOperation({ summary: 'Obtener cantidad de mensajes no leídos' })
-  async getUnreadCount(@Request() req: any) {
+  async getUnreadCount(@Request() req: PeticionAutenticada) {
     const count = await this.messagesService.getUnreadCount(req.user.id);
     return { unreadCount: count };
   }

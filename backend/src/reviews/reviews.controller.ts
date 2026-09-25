@@ -25,6 +25,7 @@ import {
   ProviderResponseDto,
   ReportReviewDto,
 } from './dto/review.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('reviews')
 @Controller('reviews')
@@ -44,7 +45,7 @@ export class ReviewsController {
     summary: 'Listar las valoraciones escritas por el usuario autenticado',
   })
   @ApiResponse({ status: 200, description: 'Valoraciones del usuario' })
-  async findMine(@Request() req: any) {
+  async findMine(@Request() req: PeticionAutenticada) {
     return this.reviewsService.findByClient(req.user.id);
   }
 
@@ -65,7 +66,10 @@ export class ReviewsController {
     summary: 'Crear valoración tras reserva completada (solo cliente)',
   })
   @ApiResponse({ status: 201, description: 'Valoración creada' })
-  async create(@Request() req: any, @Body() createDto: CreateReviewDto) {
+  async create(
+    @Request() req: PeticionAutenticada,
+    @Body() createDto: CreateReviewDto,
+  ) {
     return this.reviewsService.create(req.user.id, createDto);
   }
 
@@ -76,7 +80,7 @@ export class ReviewsController {
   @ApiOperation({ summary: 'Responder a una valoración (solo proveedor)' })
   async addResponse(
     @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Body() dto: ProviderResponseDto,
   ) {
     return this.reviewsService.addProviderResponse(id, req.user.id, dto);
@@ -101,7 +105,7 @@ export class ReviewsController {
     summary: 'Descartar el reporte de una valoración (solo admin - moderación)',
   })
   async dismissReport(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.reviewsService.dismissReport(id, {
@@ -115,7 +119,10 @@ export class ReviewsController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar valoración (solo admin - moderación)' })
-  async remove(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+  async remove(
+    @Request() req: PeticionAutenticada,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     await this.reviewsService.deleteReview(id, {
       id: req.user.id,
       email: req.user.email,

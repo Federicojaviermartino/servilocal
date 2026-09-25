@@ -26,6 +26,7 @@ import {
   UpdateServiceDto,
   SearchServicesDto,
 } from './dto/service.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('services')
 @Controller('services')
@@ -61,7 +62,10 @@ export class ServicesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Crear servicio (solo proveedor)' })
   @ApiResponse({ status: 201, description: 'Servicio creado' })
-  async create(@Request() req: any, @Body() createDto: CreateServiceDto) {
+  async create(
+    @Request() req: PeticionAutenticada,
+    @Body() createDto: CreateServiceDto,
+  ) {
     return this.servicesService.create(req.user.id, createDto);
   }
 
@@ -73,7 +77,7 @@ export class ServicesController {
   @ApiResponse({ status: 200, description: 'Servicio actualizado' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Body() updateDto: UpdateServiceDto,
   ) {
     return this.servicesService.update(id, req.user.id, updateDto);
@@ -84,7 +88,10 @@ export class ServicesController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar servicio (proveedor dueño o admin)' })
   @ApiResponse({ status: 200, description: 'Servicio eliminado' })
-  async remove(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: PeticionAutenticada,
+  ) {
     await this.servicesService.remove(id, req.user.id, req.user.role);
     return { message: 'Servicio eliminado correctamente' };
   }

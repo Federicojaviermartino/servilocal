@@ -48,7 +48,7 @@ export class PaymentsWebhookController {
       throw new BadRequestException('Falta cabecera stripe-signature');
     }
     if (!req.rawBody) {
-      throw new BadRequestException('Body vacio en el webhook');
+      throw new BadRequestException('Cuerpo vacío en el webhook');
     }
 
     let event: Stripe.Event;
@@ -58,9 +58,11 @@ export class PaymentsWebhookController {
         signature,
         this.webhookSecret,
       );
-    } catch (err: any) {
+    } catch (error) {
       throw new BadRequestException(
-        `Firma invalida en webhook de Stripe: ${err?.message}`,
+        `Firma inválida en el webhook de Stripe: ${
+          error instanceof Error ? error.message : 'causa desconocida'
+        }`,
       );
     }
 

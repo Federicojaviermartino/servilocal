@@ -19,6 +19,7 @@ import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentIntentDto } from './dto/payment.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('payments')
 @ApiBearerAuth()
@@ -33,7 +34,10 @@ export class PaymentsController {
   @ApiOperation({
     summary: 'Crear intención de pago con Stripe (solo cliente)',
   })
-  async createIntent(@Request() req: any, @Body() dto: CreatePaymentIntentDto) {
+  async createIntent(
+    @Request() req: PeticionAutenticada,
+    @Body() dto: CreatePaymentIntentDto,
+  ) {
     return this.paymentsService.createPaymentIntent(req.user.id, dto.bookingId);
   }
 
@@ -42,7 +46,7 @@ export class PaymentsController {
   @ApiResponse({ status: 403, description: 'Ese pago no es tuyo' })
   @ApiResponse({ status: 400, description: 'Stripe no ha retenido nada' })
   async confirmHold(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('paymentIntentId') paymentIntentId: string,
   ) {
     return this.paymentsService.confirmPaymentHold(
@@ -71,7 +75,7 @@ export class PaymentsController {
 
   @Get('my')
   @ApiOperation({ summary: 'Mis pagos como cliente' })
-  async findMy(@Request() req: any) {
+  async findMy(@Request() req: PeticionAutenticada) {
     return this.paymentsService.findByClient(req.user.id);
   }
 
@@ -79,7 +83,7 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Pago de una reserva específica' })
   @ApiResponse({ status: 403, description: 'Esa reserva no es tuya' })
   async findByBooking(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('bookingId', ParseUUIDPipe) bookingId: string,
   ) {
     return this.paymentsService.findByBooking(bookingId, {

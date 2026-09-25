@@ -20,6 +20,7 @@ import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('bookings')
 @ApiBearerAuth()
@@ -33,13 +34,16 @@ export class BookingsController {
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Crear reserva (solo cliente)' })
   @ApiResponse({ status: 201, description: 'Reserva creada' })
-  async create(@Request() req: any, @Body() createDto: CreateBookingDto) {
+  async create(
+    @Request() req: PeticionAutenticada,
+    @Body() createDto: CreateBookingDto,
+  ) {
     return this.bookingsService.create(req.user.id, createDto);
   }
 
   @Get('my')
   @ApiOperation({ summary: 'Mis reservas como cliente' })
-  async findMyAsClient(@Request() req: any) {
+  async findMyAsClient(@Request() req: PeticionAutenticada) {
     return this.bookingsService.findByClient(req.user.id);
   }
 
@@ -47,14 +51,17 @@ export class BookingsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.PROVIDER)
   @ApiOperation({ summary: 'Reservas recibidas como proveedor' })
-  async findMyAsProvider(@Request() req: any) {
+  async findMyAsProvider(@Request() req: PeticionAutenticada) {
     return this.bookingsService.findByProvider(req.user.id);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Obtener reserva por ID' })
   @ApiResponse({ status: 403, description: 'La reserva no es tuya' })
-  async findOne(@Request() req: any, @Param('id', ParseUUIDPipe) id: string) {
+  async findOne(
+    @Request() req: PeticionAutenticada,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     return this.bookingsService.findById(id, {
       id: req.user.id,
       role: req.user.role,
@@ -70,7 +77,7 @@ export class BookingsController {
   @ApiResponse({ status: 400, description: 'Transición de estado no válida' })
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Body() updateDto: UpdateBookingStatusDto,
   ) {
     return this.bookingsService.updateStatus(

@@ -20,6 +20,7 @@ import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 
 @ApiTags('users')
 @Controller('users')
@@ -41,7 +42,7 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener datos del usuario autenticado' })
   @ApiResponse({ status: 200, description: 'Datos del usuario autenticado' })
-  async findMe(@Request() req: any) {
+  async findMe(@Request() req: PeticionAutenticada) {
     const user = await this.usersService.findById(req.user.id);
     const { password, ...result } = user;
     return result;
@@ -52,7 +53,10 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Actualizar perfil propio' })
   @ApiResponse({ status: 200, description: 'Perfil actualizado' })
-  async updateProfile(@Request() req: any, @Body() updateDto: UpdateUserDto) {
+  async updateProfile(
+    @Request() req: PeticionAutenticada,
+    @Body() updateDto: UpdateUserDto,
+  ) {
     const user = await this.usersService.update(req.user.id, updateDto);
     const { password, ...result } = user;
     return result;
@@ -86,7 +90,7 @@ export class UsersController {
     description: 'No se puede desactivar la propia cuenta',
   })
   async toggleActive(
-    @Request() req: any,
+    @Request() req: PeticionAutenticada,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.usersService.toggleActive(id, {

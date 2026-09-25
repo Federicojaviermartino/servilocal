@@ -30,7 +30,7 @@ import {
 } from './dto/auth.dto';
 import { abrirSesion, cerrarSesion, tokenDeCookie } from './sesion';
 import { SesionesService } from './sesiones.service';
-import { User } from '../entities';
+import type { PeticionAutenticada } from './peticion-autenticada';
 
 /**
  * Registro e inicio de sesión aceptan cinco intentos por minuto y por IP.
@@ -156,7 +156,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Pase de un minuto para abrir el socket' })
   @ApiResponse({ status: 200, description: 'Pase emitido' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
-  socketTicket(@Request() req: { user: User }): SocketTicketDto {
+  socketTicket(@Request() req: PeticionAutenticada): SocketTicketDto {
     return { ticket: this.authService.ticketDeSocket(req.user.id) };
   }
 
@@ -166,7 +166,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Obtener perfil del usuario autenticado' })
   @ApiResponse({ status: 200, description: 'Perfil del usuario' })
   @ApiResponse({ status: 401, description: 'No autorizado' })
-  async getProfile(@Request() req: any) {
+  async getProfile(@Request() req: PeticionAutenticada) {
     const { password, ...userData } = req.user;
     return userData;
   }
