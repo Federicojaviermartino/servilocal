@@ -108,4 +108,16 @@ describe('Esquema real', () => {
 
     expect(claves).toEqual([]);
   });
+
+  it('las entidades y las migraciones describen el mismo esquema', async () => {
+    // Una columna que se añade a una entidad sin su migración pasa todas las
+    // pruebas con dobles y falla al desplegar, con la primera consulta que
+    // la nombre. TypeORM sabe decir qué cambiaría para que la base coincida
+    // con las entidades: tiene que ser nada. Los índices llevan en la
+    // entidad el mismo nombre que en su migración por esto mismo; sin él,
+    // TypeORM inventa uno y cree que el de la base sobra.
+    const { upQueries } = await fuente.driver.createSchemaBuilder().log();
+
+    expect(upQueries.map((consulta) => consulta.query)).toEqual([]);
+  });
 });

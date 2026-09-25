@@ -19,7 +19,9 @@ import {
  * control.
  */
 @Entity('uso_ia')
-@Index(['fecha', 'funcionalidad'], { unique: true })
+@Index('IDX_uso_ia_fecha_funcionalidad', ['fecha', 'funcionalidad'], {
+  unique: true,
+})
 export class UsoIa {
   @PrimaryGeneratedColumn('uuid')
   id: string;

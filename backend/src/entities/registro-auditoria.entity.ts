@@ -36,7 +36,7 @@ export enum AccionAuditada {
  * entrada. Un registro que se puede editar no prueba nada.
  */
 @Entity('audit_logs')
-@Index(['createdAt'])
+@Index('IDX_audit_logs_created', ['createdAt'])
 export class RegistroAuditoria {
   @PrimaryGeneratedColumn('uuid')
   id: string;
