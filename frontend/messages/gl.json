@@ -216,6 +216,7 @@
     "marcarTodos": "Marcar todos como lidos",
     "new_message": "Tes unha mensaxe nova.",
     "new_review": "Recibiches unha valoración de {nota} estrelas.",
+    "payment_reauthorization_required": "{rol, select, cliente {A retención do teu pagamento xa non está activa: volve autorizalo para manter a reserva.} other {O pagamento dunha reserva xa non está retido: pedíuselle ao cliente que o volva autorizar.}}",
     "payment_received": "Rexistrouse o teu pagamento.",
     "payment_refunded": "Emitiuse o reembolso.",
     "sinAvisos": "Aínda non tes avisos.",
@@ -499,11 +500,15 @@
     "confirmar": "Confirmar",
     "descripcion": "Descrición",
     "errorActualizar": "Non se puido actualizar a reserva",
+    "fechaYHora": "{fecha} ás {hora}",
+    "importe": "Importe",
+    "importeEnEuros": "{importe} euros",
     "misReservas": "As miñas reservas",
     "noEncontrada": "Reserva non atopada.",
     "pagarAhora": "Pagar agora",
     "rechazar": "Rexeitar",
     "reservasRecibidas": "Reservas recibidas",
+    "sinDescripcion": "Sen descrición.",
     "sinReservas": "Non tes reservas nesta sección."
   },
   "resultados": {

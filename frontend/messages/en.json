@@ -216,6 +216,7 @@
     "marcarTodos": "Mark all as read",
     "new_message": "You have a new message.",
     "new_review": "You received a {nota}-star review.",
+    "payment_reauthorization_required": "{rol, select, cliente {The hold on your payment is no longer active: authorise it again to keep the booking.} other {The payment for a booking is no longer on hold: the client has been asked to authorise it again.}}",
     "payment_received": "Your payment has been recorded.",
     "payment_refunded": "The refund has been issued.",
     "sinAvisos": "No notifications yet.",
@@ -499,11 +500,15 @@
     "confirmar": "Confirm",
     "descripcion": "Description",
     "errorActualizar": "The booking could not be updated",
+    "fechaYHora": "{fecha} at {hora}",
+    "importe": "Amount",
+    "importeEnEuros": "{importe} euros",
     "misReservas": "My bookings",
     "noEncontrada": "Booking not found.",
     "pagarAhora": "Pay now",
     "rechazar": "Decline",
     "reservasRecibidas": "Incoming bookings",
+    "sinDescripcion": "No description.",
     "sinReservas": "You have no bookings in this section."
   },
   "resultados": {

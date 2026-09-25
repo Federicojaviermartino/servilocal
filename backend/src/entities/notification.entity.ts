@@ -17,6 +17,9 @@ export enum NotificationType {
   NEW_MESSAGE = 'new_message',
   PAYMENT_RECEIVED = 'payment_received',
   PAYMENT_REFUNDED = 'payment_refunded',
+  /** La retención del pago se ha perdido y el cliente tiene que volver a
+   *  autorizarlo: el banco no dejó renovarla, o Stripe la dejó caducar. */
+  PAYMENT_REAUTHORIZATION_REQUIRED = 'payment_reauthorization_required',
   SYSTEM = 'system',
 }
 

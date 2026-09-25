@@ -7,10 +7,18 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { Payment, PaymentStatus, Booking, BookingStatus } from '../entities';
+import {
+  Payment,
+  PaymentStatus,
+  Booking,
+  BookingStatus,
+  NotificationType,
+  User,
+} from '../entities';
+import { NotificationsService } from '../notifications/notifications.service';
 
 /**
  * Desde dónde puede llegar un pago a cada estado.
@@ -43,6 +51,28 @@ const TRANSICIONES: Record<PaymentStatus, PaymentStatus[]> = {
 const puedePasarA = (desde: PaymentStatus, hasta: PaymentStatus): boolean =>
   TRANSICIONES[desde]?.includes(hasta) ?? false;
 
+/**
+ * A partir de cuántos días se renueva una retención. Stripe suelta una
+ * autorización sin cobrar a los siete; con cuatro, la revisión tiene tres
+ * días para encontrar la API despierta antes de que caduque.
+ */
+export const DIAS_PARA_RENOVAR = 4;
+
+/** Reservas cuyo dinero tiene que seguir retenido. */
+const RESERVAS_ABIERTAS = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
+
+/**
+ * Los motivos con los que la plataforma cancela una retención. Una
+ * cancelación con otro motivo la ha hecho Stripe —la que caduca— o alguien
+ * desde su panel, y en los dos casos la reserva se ha quedado sin garantía.
+ */
+const CANCELACIONES_PROPIAS: Stripe.PaymentIntent.CancellationReason[] = [
+  'requested_by_customer',
+  'abandoned',
+];
+
+export type ResultadoRevision = 'renovada' | 'perdida' | 'conciliada' | 'nada';
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -55,6 +85,7 @@ export class PaymentsService {
     private bookingRepository: Repository<Booking>,
     private readonly dataSource: DataSource,
     private configService: ConfigService,
+    private readonly avisos: NotificationsService,
   ) {
     this.stripe = new Stripe(
       this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
@@ -173,11 +204,19 @@ export class PaymentsService {
         existingPayment?.stripePaymentIntentId ?? 'ninguna',
       ].join(':');
 
+      const cliente = await this.clienteDeStripe(gestor, clientId);
+
       const paymentIntent = await this.stripe.paymentIntents.create(
         {
           amount: amountInCents,
           currency: 'eur',
           capture_method: 'manual',
+          // La tarjeta se guarda en su ficha de cliente para poder renovar la
+          // retención sin que tenga que estar delante: Stripe la suelta a los
+          // siete días, y una reserva puede ser para dentro de un mes. Ver
+          // revisarRetenciones.
+          customer: cliente,
+          setup_future_usage: 'off_session',
           metadata: {
             bookingId: booking.id,
             clientId,
@@ -297,7 +336,9 @@ export class PaymentsService {
     if (payment.stripePaymentIntentId) {
       if (payment.status === PaymentStatus.HELD) {
         // Retenido y sin cobrar: se suelta la retención.
-        await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
+        await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
+          cancellation_reason: 'requested_by_customer',
+        });
       } else {
         // Ya cobrado: hay que devolver el dinero de verdad.
         await this.stripe.refunds.create({
@@ -352,7 +393,9 @@ export class PaymentsService {
     if (!payment) return null;
 
     try {
-      await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId);
+      await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
+        cancellation_reason: 'abandoned',
+      });
     } catch (error) {
       this.logger.warn(
         `Retención sin liberar en la reserva ${bookingId}: ${
@@ -417,9 +460,24 @@ export class PaymentsService {
         await this.marcarPago(pi.id, PaymentStatus.COMPLETED);
         break;
       }
-      case 'payment_intent.payment_failed':
-      case 'payment_intent.canceled': {
+      case 'payment_intent.payment_failed': {
         await this.markPaymentFailed(pi.id, pi.last_payment_error?.message);
+        break;
+      }
+      case 'payment_intent.canceled': {
+        const antes = await this.markPaymentFailed(
+          pi.id,
+          pi.last_payment_error?.message,
+        );
+        // Una retención que se pierde sin que la plataforma la haya soltado:
+        // hay que pedir que se vuelva a autorizar. Las que suelta la
+        // plataforma llegan también por aquí, y avisar entonces sería mentir.
+        if (
+          antes?.estadoAnterior === PaymentStatus.HELD &&
+          !CANCELACIONES_PROPIAS.includes(pi.cancellation_reason!)
+        ) {
+          await this.avisarReautorizacion(antes.pago);
+        }
         break;
       }
       default:
@@ -454,19 +512,261 @@ export class PaymentsService {
     await this.paymentRepository.save(payment);
   }
 
+  /** Devuelve el pago y de dónde venía, o null si no ha cambiado nada. */
   private async markPaymentFailed(
     paymentIntentId: string,
     reason?: string,
-  ): Promise<void> {
+  ): Promise<{ pago: Payment; estadoAnterior: PaymentStatus } | null> {
     const payment = await this.paymentRepository.findOne({
       where: { stripePaymentIntentId: paymentIntentId },
     });
-    if (!payment) return;
+    if (!payment) return null;
 
-    if (!puedePasarA(payment.status, PaymentStatus.FAILED)) return;
+    if (!puedePasarA(payment.status, PaymentStatus.FAILED)) return null;
 
+    const estadoAnterior = payment.status;
     payment.status = PaymentStatus.FAILED;
     if (reason) payment.failureReason = reason;
     await this.paymentRepository.save(payment);
+    return { pago: payment, estadoAnterior };
+  }
+
+  /**
+   * La ficha de cliente en Stripe de quien paga, creándola la primera vez.
+   *
+   * La clave de idempotencia es su identificador: dos pestañas pagando a la
+   * vez, o un reintento tras un corte, reciben la misma ficha y no dos.
+   */
+  private async clienteDeStripe(
+    gestor: EntityManager,
+    clientId: string,
+  ): Promise<string> {
+    const usuario = await gestor.findOne(User, {
+      where: { id: clientId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        stripeCustomerId: true,
+      },
+    });
+    if (!usuario) throw new NotFoundException('Cliente no encontrado');
+    if (usuario.stripeCustomerId) return usuario.stripeCustomerId;
+
+    const cliente = await this.stripe.customers.create(
+      {
+        email: usuario.email,
+        name: `${usuario.firstName} ${usuario.lastName}`.trim(),
+        metadata: { userId: usuario.id },
+      },
+      { idempotencyKey: `cliente:${usuario.id}` },
+    );
+    await gestor.update(User, usuario.id, { stripeCustomerId: cliente.id });
+    return cliente.id;
+  }
+
+  /**
+   * Revisa las retenciones de las reservas que siguen abiertas.
+   *
+   * Stripe suelta una autorización sin cobrar a los siete días, y una
+   * reserva puede ser para dentro de un mes: sin esto, el trabajo se hacía y
+   * a la hora de cobrar ya no quedaba nada retenido. De paso concilia con
+   * Stripe lo que el webhook no haya contado.
+   *
+   * Cada pago va en su propia transacción, con la fila bloqueada y saltando
+   * las que ya bloquea otra instancia: dos a la vez no renuevan dos veces. Un
+   * fallo pasajero —Stripe caído, un corte— deja el pago como estaba, y se
+   * vuelve a intentar en la revisión siguiente.
+   */
+  async revisarRetenciones(
+    ahora = new Date(),
+  ): Promise<Record<ResultadoRevision, number>> {
+    const retenidos = await this.paymentRepository.find({
+      where: { status: PaymentStatus.HELD },
+      relations: ['booking'],
+    });
+
+    const resumen: Record<ResultadoRevision, number> = {
+      renovada: 0,
+      perdida: 0,
+      conciliada: 0,
+      nada: 0,
+    };
+    for (const pago of retenidos) {
+      if (!pago.booking || !RESERVAS_ABIERTAS.includes(pago.booking.status)) {
+        continue;
+      }
+      try {
+        resumen[await this.revisarRetencion(pago.id, ahora)] += 1;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo revisar la retención del pago ${pago.id}: ${
+            error instanceof Error ? error.message : 'causa desconocida'
+          }. Se volverá a intentar en la próxima revisión.`,
+        );
+      }
+    }
+    return resumen;
+  }
+
+  private async revisarRetencion(
+    pagoId: string,
+    ahora: Date,
+  ): Promise<ResultadoRevision> {
+    // Lo que se hace fuera de la transacción, una vez guardado el cambio:
+    // soltar en Stripe la retención que sobra y avisar.
+    let soltar: string | null = null;
+    let avisar: Payment | null = null;
+
+    const resultado = await this.dataSource.transaction(
+      async (gestor): Promise<ResultadoRevision> => {
+        const pago = await gestor.findOne(Payment, {
+          where: { id: pagoId, status: PaymentStatus.HELD },
+          lock: { mode: 'pessimistic_write', onLocked: 'skip_locked' },
+        });
+        if (!pago) return 'nada';
+
+        const actual = await this.stripe.paymentIntents.retrieve(
+          pago.stripePaymentIntentId,
+        );
+
+        // Lo que el webhook no haya llegado a contar.
+        if (actual.status === 'succeeded') {
+          pago.status = PaymentStatus.COMPLETED;
+          await gestor.save(pago);
+          return 'conciliada';
+        }
+        if (actual.status === 'canceled') {
+          pago.status = PaymentStatus.FAILED;
+          pago.failureReason = 'La retención caducó sin llegar a cobrarse.';
+          await gestor.save(pago);
+          avisar = pago;
+          return 'perdida';
+        }
+        if (actual.status !== 'requires_capture') return 'nada';
+
+        const desde = pago.paidAt ?? pago.createdAt;
+        const dias = (ahora.getTime() - desde.getTime()) / 86_400_000;
+        if (dias < DIAS_PARA_RENOVAR) return 'nada';
+
+        const nueva = await this.renovar(pago, actual);
+        soltar = actual.id;
+        if (nueva) {
+          // La vieja se suelta después de guardar la nueva: así el aviso de
+          // Stripe de que la vieja se ha cancelado ya no encuentra este pago.
+          pago.stripePaymentIntentId = nueva;
+          pago.paidAt = ahora;
+          await gestor.save(pago);
+          return 'renovada';
+        }
+
+        // No se puede renovar sin el titular delante. Se suelta ya y se le
+        // pide que vuelva a autorizar el pago desde la reserva: mientras siga
+        // retenido no puede, y caducaría igual en tres días.
+        pago.status = PaymentStatus.FAILED;
+        pago.failureReason =
+          'No se pudo renovar la retención: hay que volver a autorizar el pago.';
+        await gestor.save(pago);
+        avisar = pago;
+        return 'perdida';
+      },
+    );
+
+    if (soltar) await this.soltar(soltar);
+    if (avisar) await this.avisarReautorizacion(avisar);
+    return resultado;
+  }
+
+  /**
+   * Una retención nueva sobre la misma tarjeta, sin el titular delante.
+   *
+   * Devuelve su identificador, o null si no se puede: una retención de antes
+   * de guardar las tarjetas no tiene ninguna guardada, la tarjeta puede haber
+   * caducado y el banco puede pedir que el titular confirme. Un fallo que no
+   * sea de la tarjeta se propaga, para volver a intentarlo más tarde.
+   */
+  private async renovar(
+    pago: Payment,
+    actual: Stripe.PaymentIntent,
+  ): Promise<string | null> {
+    const cliente =
+      typeof actual.customer === 'string'
+        ? actual.customer
+        : actual.customer?.id;
+    const metodo =
+      typeof actual.payment_method === 'string'
+        ? actual.payment_method
+        : actual.payment_method?.id;
+    if (!cliente || !metodo) return null;
+
+    let nueva: Stripe.PaymentIntent;
+    try {
+      nueva = await this.stripe.paymentIntents.create(
+        {
+          amount: actual.amount,
+          currency: actual.currency,
+          customer: cliente,
+          payment_method: metodo,
+          capture_method: 'manual',
+          off_session: true,
+          confirm: true,
+          metadata: { ...actual.metadata, renuevaA: actual.id },
+        },
+        // Si se repite tras un corte, Stripe devuelve la misma y no otra.
+        { idempotencyKey: `renovacion:${pago.id}:${actual.id}` },
+      );
+    } catch (error) {
+      if ((error as { type?: string }).type === 'StripeCardError') return null;
+      throw error;
+    }
+
+    if (nueva.status === 'requires_capture') return nueva.id;
+
+    // Pide que el titular confirme, y sin él no va a quedar retenida.
+    await this.soltar(nueva.id);
+    return null;
+  }
+
+  /** Suelta una retención. Si Stripe no responde, caducará sola. */
+  private async soltar(paymentIntentId: string): Promise<void> {
+    try {
+      await this.stripe.paymentIntents.cancel(paymentIntentId, {
+        cancellation_reason: 'abandoned',
+      });
+    } catch (error) {
+      this.logger.warn(
+        `No se soltó la retención ${paymentIntentId}: ${
+          error instanceof Error ? error.message : 'causa desconocida'
+        }. Caducará sola.`,
+      );
+    }
+  }
+
+  /**
+   * Avisa de que hay que volver a autorizar el pago: al cliente, que es quien
+   * puede hacerlo, y al profesional, que se ha quedado sin la garantía.
+   */
+  private async avisarReautorizacion(pago: Payment): Promise<void> {
+    const reserva =
+      pago.booking ??
+      (await this.bookingRepository.findOne({
+        where: { id: pago.bookingId },
+      }));
+
+    await this.avisos.crear({
+      usuarioId: pago.clientId,
+      tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
+      datos: { rol: 'cliente' },
+      enlace: `/bookings/${pago.bookingId}/payment`,
+    });
+    if (reserva) {
+      await this.avisos.crear({
+        usuarioId: reserva.providerId,
+        tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
+        datos: { rol: 'profesional' },
+        enlace: `/dashboard/bookings/${pago.bookingId}`,
+      });
+    }
   }
 }

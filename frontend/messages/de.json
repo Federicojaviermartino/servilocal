@@ -216,6 +216,7 @@
     "marcarTodos": "Alle als gelesen markieren",
     "new_message": "Sie haben eine neue Nachricht.",
     "new_review": "Sie haben eine Bewertung mit {nota} Sternen erhalten.",
+    "payment_reauthorization_required": "{rol, select, cliente {Die Reservierung Ihrer Zahlung ist nicht mehr aktiv: Autorisieren Sie sie erneut, damit die Buchung bestehen bleibt.} other {Die Zahlung für eine Buchung ist nicht mehr reserviert: Der Kunde wurde gebeten, sie erneut zu autorisieren.}}",
     "payment_received": "Ihre Zahlung wurde erfasst.",
     "payment_refunded": "Die Rückerstattung wurde veranlasst.",
     "sinAvisos": "Noch keine Benachrichtigungen.",
@@ -499,11 +500,15 @@
     "confirmar": "Bestätigen",
     "descripcion": "Beschreibung",
     "errorActualizar": "Die Buchung konnte nicht aktualisiert werden",
+    "fechaYHora": "{fecha} um {hora}",
+    "importe": "Betrag",
+    "importeEnEuros": "{importe} Euro",
     "misReservas": "Meine Buchungen",
     "noEncontrada": "Buchung nicht gefunden.",
     "pagarAhora": "Jetzt bezahlen",
     "rechazar": "Ablehnen",
     "reservasRecibidas": "Erhaltene Buchungen",
+    "sinDescripcion": "Keine Beschreibung.",
     "sinReservas": "In diesem Bereich haben Sie keine Buchungen."
   },
   "resultados": {

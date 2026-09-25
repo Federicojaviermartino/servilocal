@@ -216,6 +216,7 @@
     "marcarTodos": "Markatu denak irakurritzat",
     "new_message": "Mezu berri bat duzu.",
     "new_review": "{nota} izarreko balorazioa jaso duzu.",
+    "payment_reauthorization_required": "{rol, select, cliente {Zure ordainketaren atxikipena ez dago aktibo: baimendu berriro erreserbari eusteko.} other {Erreserba baten ordainketa ez dago atxikita: bezeroari berriro baimentzeko eskatu zaio.}}",
     "payment_received": "Zure ordainketa erregistratu da.",
     "payment_refunded": "Itzulketa egin da.",
     "sinAvisos": "Oraindik ez duzu abisurik.",
@@ -499,11 +500,15 @@
     "confirmar": "Berretsi",
     "descripcion": "Deskribapena",
     "errorActualizar": "Ezin izan da erreserba eguneratu",
+    "fechaYHora": "{fecha}, {hora}etan",
+    "importe": "Zenbatekoa",
+    "importeEnEuros": "{importe} euro",
     "misReservas": "Nire erreserbak",
     "noEncontrada": "Ez da erreserba aurkitu.",
     "pagarAhora": "Ordaindu orain",
     "rechazar": "Baztertu",
     "reservasRecibidas": "Jasotako erreserbak",
+    "sinDescripcion": "Deskribapenik gabe.",
     "sinReservas": "Ez duzu erreserbarik atal honetan."
   },
   "resultados": {

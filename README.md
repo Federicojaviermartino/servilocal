@@ -21,7 +21,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-817%20unit%20%2B%2021%20integration%20%2B%2088%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-851%20unit%20%2B%2026%20integration%20%2B%2088%20e2e-475569)
 
 </div>
 
@@ -113,7 +113,7 @@ later is blocked without anyone having to remember it.
 
 **Clients**
 - Booking form with validation, dates handled in ISO UTC to avoid timezone drift
-- Payment through Stripe Payment Element using **manual capture**: funds are held, not taken, until the job is confirmed
+- Payment through Stripe Payment Element using **manual capture**: funds are held, not taken, until the job is done, and the hold is renewed before Stripe drops it
 - Bookings filtered by status, with cancellation where allowed
 - Reviews — only after a completed booking, so ratings reflect real work
 - Direct messaging with providers
@@ -151,7 +151,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 466 unit tests on the API with doubles, plus 21 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 351 in the browser. Playwright for 88 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 492 unit tests on the API with doubles, plus 26 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 359 in the browser. Playwright for 88 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -398,6 +398,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `SENTRY_DSN` | Optional. Without it, error reporting stays off and the app boots normally |
 | `THROTTLE_AUTH_LIMIT` | Optional. Raises the login rate limit in test environments |
 | `ANTHROPIC_API_KEY` | Optional. Without it the AI layer stays inactive and the app boots normally |
+| `RETENCIONES_AUTOMATICAS` | Optional. `false` turns off the hourly review that renews payment holds |
 | `IA_ACTIVA` | Optional. `false` turns the AI layer off even when a key is present |
 | `IA_MODELO` | Optional. Defaults to `claude-haiku-4-5-20251001` |
 | `IA_TOPE_MENSUAL_CENTIMOS` | Optional. Hard monthly ceiling in cents, checked before every call. Defaults to `100` (1 €) |
@@ -428,10 +429,10 @@ The deployed demo uses:
 
 Register `https://servilocal-api.onrender.com/api/payments/webhook` in the Stripe dashboard for these events:
 
-- `payment_intent.amount_capturable_updated` — marks the booking as confirmed
+- `payment_intent.amount_capturable_updated` — records the funds as held; accepting the booking is still the provider's call
 - `payment_intent.succeeded` — completes the payment
 - `payment_intent.payment_failed` — leaves the booking awaiting retry
-- `payment_intent.canceled`
+- `payment_intent.canceled` — marks the payment failed; if Stripe dropped a hold on its own, the client is asked to authorise again and the provider is told
 
 ---
 
@@ -472,9 +473,9 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 466 unit tests across 36 suites, all with doubles (Vitest)
+npm run test          # 492 unit tests across 37 suites, all with doubles (Vitest)
 npm run test:cov      # fails below 90% statements / 80% branches
-npm run test:integracion   # 21 tests against a real database and stripe-mock
+npm run test:integracion   # 26 tests against a real database and stripe-mock
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run build
 
@@ -483,7 +484,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 351 unit tests (Vitest)
+npm run test          # 359 unit tests (Vitest)
 npm run test:cov      # fails below 78% statements / 78% branches
 npm run build
 
@@ -512,11 +513,11 @@ All of these run in CI on every push, to any branch. The end-to-end job spins up
 
 | Status | Item |
 |--------|------|
-| Next | Renew a payment hold before Stripe drops it, about seven days after booking. Today a booking left open longer than that can no longer be charged |
 | Next | Redis in production, so rate-limit counters survive a deploy and sockets span instances. The application already runs without it, by design |
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
 | Done | Money loop: the provider accepts or rejects, completing captures the hold, cancelling or rejecting releases it |
+| Done | Payment holds renewed on the saved card before Stripe drops them; when the bank insists on the cardholder, both parties are told and the client authorises again |
 | Done | Browser session in an `HttpOnly` cookie, kept first-party by relaying API calls through the front end |
 | Done | Public search returns a provider projection, not the full row |
 | Done | Admin metrics aggregated in SQL instead of counting arrays in the browser |

@@ -9,7 +9,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import Stripe from 'stripe';
-import { Booking, BookingStatus, Payment, PaymentStatus } from '../entities';
+import {
+  Booking,
+  BookingStatus,
+  NotificationType,
+  Payment,
+  PaymentStatus,
+  User,
+} from '../entities';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from './payments.service';
 
 const INTENCION = 'pi_prueba_123';
@@ -19,23 +27,38 @@ function stripeFalso() {
   return {
     paymentIntents: {
       capture: vi.fn(async () => ({ id: INTENCION })),
-      cancel: vi.fn(async () => ({ id: INTENCION })),
+      cancel: vi.fn(
+        async (id: string, _parametros?: Stripe.PaymentIntentCancelParams) => ({
+          id,
+        }),
+      ),
       // Los parámetros están declarados porque alguna comprobación mira el
       // segundo, el de la clave de idempotencia.
       create: vi.fn(
         async (
           _parametros: Stripe.PaymentIntentCreateParams,
           _opciones?: Stripe.RequestOptions,
-        ) => ({
+        ): Promise<Partial<Stripe.PaymentIntent>> => ({
           id: NUEVA,
           client_secret: 'cs_nueva',
+          status: 'requires_payment_method',
         }),
       ),
-      retrieve: vi.fn(async () => ({
-        id: INTENCION,
-        client_secret: 'cs_existente',
-        status: 'requires_payment_method' as Stripe.PaymentIntent.Status,
-      })),
+      retrieve: vi.fn(
+        async (_id: string): Promise<Partial<Stripe.PaymentIntent>> => ({
+          id: INTENCION,
+          client_secret: 'cs_existente',
+          status: 'requires_payment_method',
+        }),
+      ),
+    },
+    customers: {
+      create: vi.fn(
+        async (
+          _parametros: Stripe.CustomerCreateParams,
+          _opciones?: Stripe.RequestOptions,
+        ) => ({ id: 'cus_nuevo' }),
+      ),
     },
     refunds: {
       create: vi.fn(async () => ({ id: 're_prueba' })),
@@ -43,9 +66,19 @@ function stripeFalso() {
   };
 }
 
+/** Quien paga, tal como lo lee el servicio al abrir el cobro. */
+const CLIENTE = (stripeCustomerId: string | null = null) => ({
+  id: 'c1',
+  email: 'ana@ejemplo.com',
+  firstName: 'Ana',
+  lastName: 'Núñez',
+  stripeCustomerId,
+});
+
 async function construir(
   pago: Partial<Payment> | null,
   reserva: Partial<Booking> | null = null,
+  usuario: Partial<User> | null = CLIENTE(),
 ) {
   const pagos = {
     // El doble respeta el filtro por estado, porque el servicio se apoya en
@@ -57,7 +90,11 @@ async function construir(
       if (buscado && pago && (pago as Payment).status !== buscado) return null;
       return pago as Payment | null;
     }),
-    find: vi.fn(async () => [] as Payment[]),
+    find: vi.fn(async (opciones?: { where?: { status?: string } }) => {
+      const buscado = opciones?.where?.status;
+      if (!pago || (buscado && (pago as Payment).status !== buscado)) return [];
+      return [pago as Payment];
+    }),
     create: vi.fn((p: Partial<Payment>) => p as Payment),
     save: vi.fn(async (p: Payment) => p),
   };
@@ -70,16 +107,19 @@ async function construir(
   // El gestor que recibe la transacción reparte según la entidad, de modo
   // que las comprobaciones siguen mirando los mismos dobles de siempre.
   const gestor = {
-    findOne: vi.fn(async (entidad: unknown, opciones?: unknown) =>
-      entidad === Booking
-        ? await reservas.findOne()
-        : await pagos.findOne(opciones as never),
-    ),
+    findOne: vi.fn(async (entidad: unknown, opciones?: unknown) => {
+      if (entidad === Booking) return await reservas.findOne();
+      if (entidad === User) return usuario;
+      return await pagos.findOne(opciones as never);
+    }),
     save: vi.fn(async (entidad: unknown) => pagos.save(entidad as never)),
     create: vi.fn((_entidad: unknown, datos: unknown) =>
       pagos.create(datos as never),
     ),
+    update: vi.fn(async () => ({ affected: 1 })),
   };
+
+  const avisos = { crear: vi.fn(async () => null) };
 
   const dataSource = {
     transaction: vi.fn(
@@ -95,6 +135,7 @@ async function construir(
       { provide: getRepositoryToken(Booking), useValue: reservas },
       { provide: DataSource, useValue: dataSource },
       { provide: ConfigService, useValue: { getOrThrow: () => 'sk_test_x' } },
+      { provide: NotificationsService, useValue: avisos },
     ],
   }).compile();
 
@@ -104,7 +145,7 @@ async function construir(
   // no llamar a la pasarela de verdad desde una batería de tests.
   (servicio as unknown as { stripe: unknown }).stripe = stripe;
 
-  return { servicio, pagos, reservas, stripe, gestor, dataSource };
+  return { servicio, pagos, reservas, stripe, gestor, dataSource, avisos };
 }
 
 /** Evento de Stripe con lo justo que el servicio mira. */
@@ -149,7 +190,11 @@ describe('PaymentsService', () => {
 
       const resultado = await servicio.refundPayment('b1');
 
-      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION);
+      // Con el motivo, para que el aviso que devuelve Stripe se reconozca
+      // como propio y no pida volver a pagar.
+      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+        cancellation_reason: 'requested_by_customer',
+      });
       expect(stripe.refunds.create).not.toHaveBeenCalled();
       expect(resultado.status).toBe(PaymentStatus.REFUNDED);
     });
@@ -434,6 +479,67 @@ describe('PaymentsService', () => {
       );
     });
 
+    it('guarda la tarjeta en una ficha de cliente, para poder renovar', async () => {
+      // Sin cliente y sin permiso para usarla sin el titular delante, la
+      // retención no se puede renovar y caduca a los siete días.
+      const { servicio, stripe, gestor } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(stripe.customers.create).toHaveBeenCalledWith(
+        {
+          email: 'ana@ejemplo.com',
+          name: 'Ana Núñez',
+          metadata: { userId: 'c1' },
+        },
+        // Dos pestañas a la vez reciben la misma ficha, no dos.
+        { idempotencyKey: 'cliente:c1' },
+      );
+      expect(gestor.update).toHaveBeenCalledWith(User, 'c1', {
+        stripeCustomerId: 'cus_nuevo',
+      });
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customer: 'cus_nuevo',
+          setup_future_usage: 'off_session',
+          capture_method: 'manual',
+        }),
+        expect.anything(),
+      );
+    });
+
+    it('y la ficha se crea una vez: la siguiente se reutiliza', async () => {
+      const { servicio, stripe, gestor } = await construir(
+        null,
+        RESERVA,
+        CLIENTE('cus_de_antes'),
+      );
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(stripe.customers.create).not.toHaveBeenCalled();
+      expect(gestor.update).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        expect.objectContaining({ customer: 'cus_de_antes' }),
+        expect.anything(),
+      );
+    });
+
+    it('la columna del cliente se pide aparte, porque no viaja por defecto', async () => {
+      // Está marcada para no salir en cada consulta de usuarios; si no se
+      // pidiera, llegaría vacía y se crearía una ficha nueva en cada pago.
+      const { servicio, gestor } = await construir(null, RESERVA);
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(gestor.findOne).toHaveBeenCalledWith(
+        User,
+        expect.objectContaining({
+          select: expect.objectContaining({ stripeCustomerId: true }),
+        }),
+      );
+    });
+
     it('no deja pagar la reserva de otro', async () => {
       const { servicio, stripe } = await construir(null, RESERVA);
 
@@ -634,6 +740,71 @@ describe('PaymentsService', () => {
       expect(pagos.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: PaymentStatus.FAILED }),
       );
+    });
+
+    it('si caduca una retención, pide a las dos partes que se vuelva a autorizar', async () => {
+      const { servicio, pagos, avisos } = await construir(
+        { ...PAGO(PaymentStatus.HELD), clientId: 'c1' },
+        { ...RESERVA(BookingStatus.CONFIRMED), providerId: 'pr1' },
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.canceled', {
+          id: INTENCION,
+          cancellation_reason: 'automatic',
+        }),
+      );
+
+      expect(pagos.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: PaymentStatus.FAILED }),
+      );
+      expect(avisos.crear).toHaveBeenCalledWith({
+        usuarioId: 'c1',
+        tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
+        datos: { rol: 'cliente' },
+        enlace: '/bookings/b1/payment',
+      });
+      expect(avisos.crear).toHaveBeenCalledWith({
+        usuarioId: 'pr1',
+        tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
+        datos: { rol: 'profesional' },
+        enlace: '/dashboard/bookings/b1',
+      });
+    });
+
+    it.each(['requested_by_customer', 'abandoned'])(
+      'pero no si la soltó la plataforma (%s)',
+      async (motivo) => {
+        // Al cancelar una reserva o al renovar, la plataforma suelta la
+        // retención con uno de estos motivos. Si el aviso llega antes de que
+        // se guarde el cambio, encuentra el pago aún retenido.
+        const { servicio, avisos } = await construir(
+          PAGO(PaymentStatus.HELD),
+          RESERVA(BookingStatus.CONFIRMED),
+        );
+
+        await servicio.handleWebhookEvent(
+          evento('payment_intent.canceled', {
+            id: INTENCION,
+            cancellation_reason: motivo,
+          }),
+        );
+
+        expect(avisos.crear).not.toHaveBeenCalled();
+      },
+    );
+
+    it('ni si lo cancelado no llegó a retener nada', async () => {
+      const { servicio, avisos } = await construir(PAGO(), RESERVA());
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.canceled', {
+          id: INTENCION,
+          cancellation_reason: 'automatic',
+        }),
+      );
+
+      expect(avisos.crear).not.toHaveBeenCalled();
     });
 
     it('un evento de un pago que aquí no existe no rompe nada', async () => {
@@ -902,7 +1073,9 @@ describe('PaymentsService', () => {
 
       const r = await servicio.liberarRetencion('b1');
 
-      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION);
+      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+        cancellation_reason: 'abandoned',
+      });
       expect(r?.status).toBe(PaymentStatus.REFUNDED);
       expect(r?.refundedAt).toBeInstanceOf(Date);
     });
@@ -936,6 +1109,266 @@ describe('PaymentsService', () => {
 
       expect(await servicio.cobrarAlCompletar('b1')).toBeNull();
       expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('renovar las retenciones', () => {
+    const AHORA = new Date('2027-03-10T12:00:00Z');
+    const HACE = (dias: number) =>
+      new Date(AHORA.getTime() - dias * 86_400_000);
+
+    const RETENIDO = (
+      dias = 5,
+      reserva: BookingStatus = BookingStatus.CONFIRMED,
+    ): Partial<Payment> => ({
+      id: 'p1',
+      bookingId: 'b1',
+      clientId: 'c1',
+      status: PaymentStatus.HELD,
+      stripePaymentIntentId: INTENCION,
+      paidAt: HACE(dias),
+      booking: { id: 'b1', status: reserva, providerId: 'pr1' } as Booking,
+    });
+
+    /** Lo que Stripe cuenta de la retención vieja. */
+    const EN_STRIPE = (
+      extra: Partial<Stripe.PaymentIntent> = {},
+    ): Partial<Stripe.PaymentIntent> => ({
+      id: INTENCION,
+      status: 'requires_capture',
+      amount: 1999,
+      currency: 'eur',
+      customer: 'cus_1',
+      payment_method: 'pm_1',
+      metadata: { bookingId: 'b1' },
+      ...extra,
+    });
+
+    async function preparar(
+      pago = RETENIDO(),
+      enStripe = EN_STRIPE(),
+      nueva: Partial<Stripe.PaymentIntent> = {
+        id: NUEVA,
+        status: 'requires_capture',
+      },
+    ) {
+      const partes = await construir(pago);
+      partes.stripe.paymentIntents.retrieve.mockResolvedValue(enStripe);
+      partes.stripe.paymentIntents.create.mockResolvedValue(nueva);
+      return { ...partes, pago };
+    }
+
+    it('una de menos de cuatro días se deja como está', async () => {
+      const { servicio, stripe, pagos } = await preparar(RETENIDO(3));
+
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen.nada).toBe(1);
+      expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
+    it('a los cuatro días se retiene de nuevo sobre la misma tarjeta', async () => {
+      const { servicio, stripe } = await preparar();
+
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen.renovada).toBe(1);
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        {
+          amount: 1999,
+          currency: 'eur',
+          customer: 'cus_1',
+          payment_method: 'pm_1',
+          capture_method: 'manual',
+          off_session: true,
+          confirm: true,
+          metadata: { bookingId: 'b1', renuevaA: INTENCION },
+        },
+        // Un reintento tras un corte recibe la misma, no otra más.
+        { idempotencyKey: `renovacion:p1:${INTENCION}` },
+      );
+    });
+
+    it('guarda la nueva, y solo después suelta la vieja', async () => {
+      // En el otro orden, el aviso de Stripe de que la vieja se ha
+      // cancelado encontraría el pago aún con ella y lo daría por fallido.
+      const { servicio, stripe, pagos, dataSource, pago, avisos } =
+        await preparar();
+
+      await servicio.revisarRetenciones(AHORA);
+
+      expect(pago.stripePaymentIntentId).toBe(NUEVA);
+      expect(pago.status).toBe(PaymentStatus.HELD);
+      // La cuenta de los días empieza de nuevo.
+      expect(pago.paidAt).toEqual(AHORA);
+      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+        cancellation_reason: 'abandoned',
+      });
+      const guardado = pagos.save.mock.invocationCallOrder[0];
+      const soltado = stripe.paymentIntents.cancel.mock.invocationCallOrder[0];
+      expect(soltado).toBeGreaterThan(guardado);
+      // Y fuera de la transacción, ya confirmada.
+      const transaccion = await dataSource.transaction.mock.results[0].value;
+      expect(transaccion).toBe('renovada');
+      expect(avisos.crear).not.toHaveBeenCalled();
+    });
+
+    it('cuenta los días desde la creación si no consta cuándo se retuvo', async () => {
+      const { servicio, stripe } = await preparar({
+        ...RETENIDO(),
+        paidAt: null as unknown as Date,
+        createdAt: HACE(6),
+      });
+
+      expect((await servicio.revisarRetenciones(AHORA)).renovada).toBe(1);
+      expect(stripe.paymentIntents.create).toHaveBeenCalled();
+    });
+
+    it('bloquea la fila y salta la que ya revisa otra instancia', async () => {
+      const { servicio, gestor } = await preparar();
+
+      await servicio.revisarRetenciones(AHORA);
+
+      expect(gestor.findOne).toHaveBeenCalledWith(Payment, {
+        where: { id: 'p1', status: PaymentStatus.HELD },
+        lock: { mode: 'pessimistic_write', onLocked: 'skip_locked' },
+      });
+    });
+
+    it('si otra instancia la tiene, no hace nada', async () => {
+      const { servicio, stripe, gestor } = await preparar();
+      gestor.findOne.mockResolvedValueOnce(null);
+
+      expect((await servicio.revisarRetenciones(AHORA)).nada).toBe(1);
+      expect(stripe.paymentIntents.retrieve).not.toHaveBeenCalled();
+    });
+
+    it.each([BookingStatus.COMPLETED, BookingStatus.CANCELLED])(
+      'no toca la de una reserva ya %s',
+      async (estado) => {
+        const { servicio, stripe } = await preparar(RETENIDO(5, estado));
+
+        await servicio.revisarRetenciones(AHORA);
+
+        expect(stripe.paymentIntents.retrieve).not.toHaveBeenCalled();
+      },
+    );
+
+    describe('cuando no se puede renovar', () => {
+      async function comprobarPerdida(
+        partes: Awaited<ReturnType<typeof preparar>>,
+      ) {
+        const { servicio, stripe, pago, avisos } = partes;
+
+        const resumen = await servicio.revisarRetenciones(AHORA);
+
+        expect(resumen.perdida).toBe(1);
+        expect(pago.status).toBe(PaymentStatus.FAILED);
+        expect(pago.failureReason).toMatch(/volver a autorizar/);
+        // Se suelta ya: mientras siga retenida no se puede volver a pagar.
+        expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+          cancellation_reason: 'abandoned',
+        });
+        expect(avisos.crear).toHaveBeenCalledWith(
+          expect.objectContaining({
+            usuarioId: 'c1',
+            tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
+            enlace: '/bookings/b1/payment',
+          }),
+        );
+        expect(avisos.crear).toHaveBeenCalledWith(
+          expect.objectContaining({
+            usuarioId: 'pr1',
+            enlace: '/dashboard/bookings/b1',
+          }),
+        );
+      }
+
+      it('la tarjeta ya no vale', async () => {
+        const partes = await preparar();
+        partes.stripe.paymentIntents.create.mockRejectedValue(
+          Object.assign(new Error('Your card was declined.'), {
+            type: 'StripeCardError',
+          }),
+        );
+
+        await comprobarPerdida(partes);
+      });
+
+      it('el banco pide que el titular confirme', async () => {
+        const partes = await preparar(RETENIDO(), EN_STRIPE(), {
+          id: NUEVA,
+          status: 'requires_action',
+        });
+
+        await comprobarPerdida(partes);
+        // Y la nueva, que no retiene nada, también se suelta.
+        expect(partes.stripe.paymentIntents.cancel).toHaveBeenCalledWith(
+          NUEVA,
+          { cancellation_reason: 'abandoned' },
+        );
+      });
+
+      it('es de antes de guardar las tarjetas', async () => {
+        const partes = await preparar(
+          RETENIDO(),
+          EN_STRIPE({ customer: null, payment_method: null }),
+        );
+
+        await comprobarPerdida(partes);
+        expect(partes.stripe.paymentIntents.create).not.toHaveBeenCalled();
+      });
+    });
+
+    it('un fallo pasajero deja el pago como estaba, para la próxima', async () => {
+      const { servicio, stripe, pagos, avisos, pago } = await preparar();
+      stripe.paymentIntents.create.mockRejectedValue(
+        Object.assign(new Error('Stripe no responde'), {
+          type: 'StripeConnectionError',
+        }),
+      );
+
+      // No lanza: una revisión que falla no puede tumbar a quien la llama.
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen).toEqual({
+        renovada: 0,
+        perdida: 0,
+        conciliada: 0,
+        nada: 0,
+      });
+      expect(pago.status).toBe(PaymentStatus.HELD);
+      expect(pago.stripePaymentIntentId).toBe(INTENCION);
+      expect(pagos.save).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+      expect(avisos.crear).not.toHaveBeenCalled();
+    });
+
+    it('si Stripe ya la cobró, lo anota sin renovar', async () => {
+      // Un aviso de Stripe que no llegó: la revisión lo pone al día.
+      const { servicio, stripe, pago } = await preparar(
+        RETENIDO(),
+        EN_STRIPE({ status: 'succeeded' }),
+      );
+
+      expect((await servicio.revisarRetenciones(AHORA)).conciliada).toBe(1);
+      expect(pago.status).toBe(PaymentStatus.COMPLETED);
+      expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+    });
+
+    it('si ya había caducado, la da por perdida y avisa', async () => {
+      const { servicio, stripe, pago, avisos } = await preparar(
+        RETENIDO(8),
+        EN_STRIPE({ status: 'canceled' }),
+      );
+
+      expect((await servicio.revisarRetenciones(AHORA)).perdida).toBe(1);
+      expect(pago.status).toBe(PaymentStatus.FAILED);
+      expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+      expect(avisos.crear).toHaveBeenCalledTimes(2);
     });
   });
 

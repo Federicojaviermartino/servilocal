@@ -216,6 +216,7 @@
     "marcarTodos": "تعليم الكل كمقروء",
     "new_message": "لديك رسالة جديدة.",
     "new_review": "تلقّيت تقييمًا بـ {nota} نجوم.",
+    "payment_reauthorization_required": "{rol, select, cliente {لم يعد المبلغ المحجوز على بطاقتك ساريًا: أعد تفويض الدفع للحفاظ على الحجز.} other {لم يعد مبلغ أحد الحجوزات محجوزًا على البطاقة: طُلب من العميل تفويض الدفع من جديد.}}",
     "payment_received": "تم تسجيل دفعتك.",
     "payment_refunded": "تم إصدار المبلغ المُعاد.",
     "sinAvisos": "لا توجد إشعارات بعد.",
@@ -499,11 +500,15 @@
     "confirmar": "تأكيد",
     "descripcion": "الوصف",
     "errorActualizar": "تعذّر تحديث الحجز",
+    "fechaYHora": "{fecha} في الساعة {hora}",
+    "importe": "المبلغ",
+    "importeEnEuros": "{importe} يورو",
     "misReservas": "حجوزاتي",
     "noEncontrada": "لم يتم العثور على الحجز.",
     "pagarAhora": "ادفع الآن",
     "rechazar": "رفض",
     "reservasRecibidas": "الحجوزات الواردة",
+    "sinDescripcion": "لا يوجد وصف.",
     "sinReservas": "لا توجد حجوزات في هذا القسم."
   },
   "resultados": {

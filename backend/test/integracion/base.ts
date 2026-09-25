@@ -14,6 +14,7 @@ import { CosteEnMilicentimos1789800000000 } from '../../src/database/migrations/
 import { IndiceGeografico1789900000000 } from '../../src/database/migrations/1789900000000-IndiceGeografico';
 import { IndicesDeBusquedaTexto1790000000000 } from '../../src/database/migrations/1790000000000-IndicesDeBusquedaTexto';
 import { SesionesRevocadas1790100000000 } from '../../src/database/migrations/1790100000000-SesionesRevocadas';
+import { RenovacionRetenciones1790200000000 } from '../../src/database/migrations/1790200000000-RenovacionRetenciones';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -43,6 +44,7 @@ const MIGRACIONES = [
   IndiceGeografico1789900000000,
   IndicesDeBusquedaTexto1790000000000,
   SesionesRevocadas1790100000000,
+  RenovacionRetenciones1790200000000,
 ];
 
 /**

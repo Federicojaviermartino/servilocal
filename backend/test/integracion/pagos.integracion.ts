@@ -1,12 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import Stripe from 'stripe';
-import {
-  Booking,
-  BookingStatus,
-  Payment,
-  PaymentStatus,
-} from '../../src/entities';
+import { Booking, Payment, PaymentStatus } from '../../src/entities';
+import { NotificationsService } from '../../src/notifications/notifications.service';
 import { PaymentsService } from '../../src/payments/payments.service';
 import { crearFuente } from './base';
 
@@ -40,6 +36,7 @@ describe('Pagos contra la API de Stripe', () => {
       fuente.getRepository(Booking),
       fuente,
       { getOrThrow: () => 'sk_test_integracion' } as unknown as ConfigService,
+      { crear: vi.fn(async () => null) } as unknown as NotificationsService,
     );
 
     // El cliente apunta al emulador en vez de a Stripe.
@@ -62,8 +59,18 @@ describe('Pagos contra la API de Stripe', () => {
   });
 
   afterAll(async () => {
-    if (fuente?.isInitialized) await fuente.destroy();
+    if (fuente?.isInitialized) {
+      // La ficha de cliente que el emulador le ha dado no existe en ningún
+      // Stripe: que no se quede en la base para lo que venga después.
+      await fuente.query(
+        `UPDATE users SET "stripeCustomerId" = NULL WHERE id = $1`,
+        [reserva.clientId],
+      );
+      await fuente.destroy();
+    }
   });
+
+  const stripe = () => (servicio as unknown as { stripe: Stripe }).stripe;
 
   /** Una reserva propia y desechable, para no tocar las sembradas. */
   async function reservaNueva(): Promise<string> {
@@ -229,6 +236,157 @@ describe('Pagos contra la API de Stripe', () => {
       expect(soltado?.status).toBe(PaymentStatus.REFUNDED);
       expect(soltado?.refundedAt).toBeTruthy();
     } finally {
+      await limpiar(bookingId);
+    }
+  });
+
+  it('la primera vez crea la ficha de cliente, y después la reutiliza', async () => {
+    // La intención se abre con la ficha y con permiso para usar la tarjeta
+    // sin el titular delante; que el emulador lo acepte dice que los
+    // parámetros existen y se pueden combinar con la captura manual.
+    await fuente.query(
+      `UPDATE users SET "stripeCustomerId" = NULL WHERE id = $1`,
+      [reserva.clientId],
+    );
+    const primera = await reservaNueva();
+    const segunda = await reservaNueva();
+    const fichas = vi.spyOn(stripe().customers, 'create');
+
+    try {
+      await servicio.createPaymentIntent(reserva.clientId, primera);
+      const [{ stripeCustomerId }] = await fuente.query(
+        `SELECT "stripeCustomerId" FROM users WHERE id = $1`,
+        [reserva.clientId],
+      );
+      expect(stripeCustomerId).toMatch(/^cus_/);
+
+      await servicio.createPaymentIntent(reserva.clientId, segunda);
+      expect(fichas).toHaveBeenCalledTimes(1);
+    } finally {
+      fichas.mockRestore();
+      await limpiar(primera);
+      await limpiar(segunda);
+    }
+  });
+
+  it('renovar sin el titular delante es una llamada que Stripe acepta', async () => {
+    // Solo se puede comprobar la llamada: el emulador responde siempre con
+    // su plantilla, que no está retenida, así que la renovación acaba
+    // soltando la nueva y devolviendo null. Pero si los parámetros no
+    // valieran —off_session sin confirm, un motivo de cancelación que no
+    // existe— la API respondería con un error y la prueba fallaría, porque
+    // un error que no es de la tarjeta se propaga.
+    const renovar = (
+      servicio as unknown as {
+        renovar: (
+          pago: Partial<Payment>,
+          actual: Partial<Stripe.PaymentIntent>,
+        ) => Promise<string | null>;
+      }
+    ).renovar.bind(servicio);
+    const crear = vi.spyOn(stripe().paymentIntents, 'create');
+    const soltar = vi.spyOn(stripe().paymentIntents, 'cancel');
+
+    try {
+      const nueva = await renovar(
+        { id: '00000000-0000-4000-8000-000000000001' },
+        {
+          id: 'pi_vieja',
+          amount: 2000,
+          currency: 'eur',
+          customer: 'cus_integracion',
+          payment_method: 'pm_card_visa',
+          metadata: { bookingId: 'b1' },
+        },
+      );
+
+      expect(nueva).toBeNull();
+      expect(crear).toHaveBeenCalledWith(
+        expect.objectContaining({ off_session: true, confirm: true }),
+        expect.anything(),
+      );
+      expect(soltar).toHaveBeenCalledWith(expect.stringMatching(/^pi_/), {
+        cancellation_reason: 'abandoned',
+      });
+    } finally {
+      crear.mockRestore();
+      soltar.mockRestore();
+    }
+  });
+
+  it('la revisión salta el pago que otra instancia ya tiene bloqueado', async () => {
+    // Es lo que evita renovar dos veces con dos instancias despiertas a la
+    // vez. Sin SKIP LOCKED la revisión no fallaría: se quedaría esperando a
+    // que la otra soltara la fila, y renovaría después sobre lo ya renovado.
+    const bookingId = await reservaNueva();
+    await servicio.createPaymentIntent(reserva.clientId, bookingId);
+    await fuente.query(
+      `UPDATE payments SET status = 'held', "paidAt" = now() - interval '5 days'
+       WHERE "bookingId" = $1`,
+      [bookingId],
+    );
+    const consultas = vi.spyOn(stripe().paymentIntents, 'retrieve');
+    const otra = fuente.createQueryRunner();
+    await otra.connect();
+    await otra.startTransaction();
+
+    try {
+      await otra.query(
+        `SELECT id FROM payments WHERE "bookingId" = $1 FOR UPDATE`,
+        [bookingId],
+      );
+
+      const resumen = await Promise.race([
+        servicio.revisarRetenciones(),
+        new Promise<never>((_, rechazar) =>
+          setTimeout(
+            () => rechazar(new Error('se ha quedado esperando al bloqueo')),
+            5000,
+          ),
+        ),
+      ]);
+
+      expect(resumen.nada).toBe(1);
+      expect(consultas).not.toHaveBeenCalled();
+    } finally {
+      await otra.rollbackTransaction();
+      await otra.release();
+      consultas.mockRestore();
+      await limpiar(bookingId);
+    }
+  });
+
+  it('y sin bloqueo la revisa contra Stripe, dejando la que no toca', async () => {
+    // La plantilla del emulador no está retenida, así que no hay nada que
+    // renovar: lo que se comprueba es la consulta de verdad, con su
+    // relación y su bloqueo, y que el pago sale como entró.
+    const bookingId = await reservaNueva();
+    const { paymentIntentId } = await servicio.createPaymentIntent(
+      reserva.clientId,
+      bookingId,
+    );
+    await fuente.query(
+      `UPDATE payments SET status = 'held', "paidAt" = now() - interval '5 days'
+       WHERE "bookingId" = $1`,
+      [bookingId],
+    );
+    const consultas = vi.spyOn(stripe().paymentIntents, 'retrieve');
+
+    try {
+      await servicio.revisarRetenciones();
+
+      expect(consultas).toHaveBeenCalledWith(paymentIntentId);
+      const [pago] = await fuente.query(
+        `SELECT status, "stripePaymentIntentId" FROM payments
+         WHERE "bookingId" = $1`,
+        [bookingId],
+      );
+      expect(pago).toEqual({
+        status: PaymentStatus.HELD,
+        stripePaymentIntentId: paymentIntentId,
+      });
+    } finally {
+      consultas.mockRestore();
       await limpiar(bookingId);
     }
   });

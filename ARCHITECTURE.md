@@ -301,8 +301,19 @@ was written for that branch.
 The booking state machine moves the money. Completing a booking captures the hold,
 cancelling or rejecting it releases the hold, and the money moves *before* the state does:
 if the capture fails, the booking is not marked complete, because a job closed without
-being charged is one nobody looks at again. What is still missing is renewing a hold
-before Stripe drops it, about seven days in — see [Known limitations](#known-limitations).
+being charged is one nobody looks at again.
+
+A hold does not outlive seven days, and a booking can be weeks away, so holds are
+renewed. Paying saves the card to a Stripe customer (`setup_future_usage: off_session`),
+and an hourly review inside the API — started at boot, because the free tier sleeps —
+places a new hold on the same card once the current one is four days old, then releases
+the old one. The new hold is saved first, so Stripe's cancellation event for the old one
+finds no payment to mark failed. Each payment is reviewed in its own transaction with
+`FOR UPDATE SKIP LOCKED`, and the renewal carries an idempotency key, so neither a second
+instance nor a retry after a lost response can hold twice. When the bank wants the
+cardholder present, or the card no longer works, the hold is released, the payment is
+marked failed and both parties are notified; the client authorises again from the
+booking. The same review reconciles what a missed webhook left behind.
 
 **3 · The audit log is append-only and denormalised.**
 No route creates, edits or deletes an entry; the service exposes only `anotar` and
@@ -399,12 +410,12 @@ Stated here rather than discovered later.
   history is unavailable was judged the worse outcome. A decision, not an oversight.
 - **Socket delivery is per-instance without Redis.** With one instance — the current
   deployment — this changes nothing; it becomes real the moment a second one starts.
-- **A hold lasts seven days.** Funds are authorised at booking time, captured when the
-  provider marks the job complete, and released when the booking is cancelled or
-  rejected. But Stripe drops an uncaptured authorisation after about a week, so a
-  booking left open longer than that can no longer be charged: completing it fails at
-  capture and the booking stays open rather than being marked paid. Re-authorising
-  before the hold lapses is not implemented.
+- **Renewing a hold can need the client.** Holds are renewed off-session every four
+  days (decision 2), but a bank may insist on the cardholder, and then the client is
+  asked to authorise again and the booking has no guarantee until they do. Holds placed
+  before cards were saved cannot be renewed at all and take the same path. The review
+  runs only while the API is awake; if it slept for three days running, Stripe's own
+  expiry would arrive through the webhook and be reported the same way.
 - **Cached reads expire by time, not by event**, except for the category tree, which is
   invalidated explicitly on write. Everything else can be at most one TTL stale.
 - **The free tier sleeps.** Cold starts are visible on the first request after an idle
@@ -415,7 +426,7 @@ Stated here rather than discovered later.
 | Layer | Tool | What it protects |
 |-------|------|------------------|
 | Back end | Vitest + SWC | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
-| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that Stripe rejects a non-integer amount |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, and that the entities describe exactly the schema the migrations build |
 | Front end | Vitest | Library helpers, components, and catalogue parity across the ten locales |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |

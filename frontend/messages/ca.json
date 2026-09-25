@@ -216,6 +216,7 @@
     "marcarTodos": "Marca'ls tots com a llegits",
     "new_message": "Tens un missatge nou.",
     "new_review": "Has rebut una valoració de {nota} estrelles.",
+    "payment_reauthorization_required": "{rol, select, cliente {La retenció del teu pagament ja no és activa: torna a autoritzar-lo per mantenir la reserva.} other {El pagament d'una reserva ja no està retingut: s'ha demanat al client que el torni a autoritzar.}}",
     "payment_received": "S'ha registrat el teu pagament.",
     "payment_refunded": "S'ha emès el reemborsament.",
     "sinAvisos": "Encara no tens avisos.",
@@ -499,11 +500,15 @@
     "confirmar": "Confirma",
     "descripcion": "Descripció",
     "errorActualizar": "No s'ha pogut actualitzar la reserva",
+    "fechaYHora": "{fecha} a les {hora}",
+    "importe": "Import",
+    "importeEnEuros": "{importe} euros",
     "misReservas": "Les meves reserves",
     "noEncontrada": "Reserva no trobada.",
     "pagarAhora": "Paga ara",
     "rechazar": "Rebutja",
     "reservasRecibidas": "Reserves rebudes",
+    "sinDescripcion": "Sense descripció.",
     "sinReservas": "No tens reserves en aquesta secció."
   },
   "resultados": {

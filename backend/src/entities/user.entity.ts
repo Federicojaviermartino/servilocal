@@ -77,6 +77,19 @@ export class User {
   @Column({ default: false })
   soloLectura: boolean;
 
+  /**
+   * Su ficha de cliente en Stripe, donde queda guardada la tarjeta con la que
+   * pagó. Hace falta para renovar una retención sin que tenga que estar
+   * delante: Stripe solo deja cobrar de nuevo una tarjeta guardada en un
+   * cliente. No se selecciona por defecto: es un dato interno y no tiene por
+   * qué salir en el perfil ni en los listados.
+   *
+   * El tipo va escrito porque no se puede deducir: de `string | null` a
+   * TypeORM solo le llega Object, y con eso la API no arranca.
+   */
+  @Column({ type: 'varchar', length: 255, nullable: true, select: false })
+  stripeCustomerId: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

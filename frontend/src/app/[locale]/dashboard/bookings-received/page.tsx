@@ -126,7 +126,7 @@ export default function BookingsReceivedPage() {
                       </div>
                     </div>
                     <p className="text-lg font-bold text-principal whitespace-nowrap">
-                      {b.totalPrice} euros
+                      {t('importeEnEuros', { importe: b.totalPrice })}
                     </p>
                   </div>
 

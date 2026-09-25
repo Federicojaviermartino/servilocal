@@ -18,6 +18,7 @@ interface BookingCardProps {
 
 export default function BookingCard({ booking, viewAs }: BookingCardProps) {
   const t = useTranslations('estados');
+  const tReservas = useTranslations('reservasPanel');
   const idioma = useLocale();
   const counterpart = viewAs === 'client' ? booking.provider : booking.client;
   const date = new Date(booking.scheduledDate);
@@ -74,7 +75,7 @@ export default function BookingCard({ booking, viewAs }: BookingCardProps) {
         </div>
         <div className="text-end">
           <p className="text-lg font-bold text-principal">
-            {booking.totalPrice} euros
+            {tReservas('importeEnEuros', { importe: booking.totalPrice })}
           </p>
         </div>
       </div>

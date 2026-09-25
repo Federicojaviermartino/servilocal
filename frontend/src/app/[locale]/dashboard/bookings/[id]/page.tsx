@@ -6,15 +6,24 @@ import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { Calendar, MapPin, ArrowLeft } from 'lucide-react';
-import { Booking, BookingStatus, UserRole } from '@/types';
+import {
+  Booking,
+  BookingStatus,
+  Payment,
+  PaymentStatus,
+  UserRole,
+} from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
-import { bookingsApi } from '@/lib/api';
+import { bookingsApi, paymentsApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
+
+/** Un pago en estos estados no retiene nada: se puede volver a pagar. */
+const SIN_RETENER = [PaymentStatus.PENDING, PaymentStatus.FAILED];
 
 export default function BookingDetailPage() {
   const t = useTranslations('reservasPanel');
@@ -36,6 +45,14 @@ export default function BookingDetailPage() {
     reintentar: load,
     referencia,
   } = useCarga<Booking>(() => bookingsApi.getById(bookingId), [bookingId]);
+
+  // El pago decide si hay algo que pagar. Una reserva confirmada cuya
+  // retención se ha perdido tiene que poder volver a autorizarse desde aquí,
+  // y una ya retenida no debe ofrecer pagar otra vez.
+  const { datos: pago, estado: estadoPago } = useCarga<Payment | ''>(
+    () => paymentsApi.getByBooking(bookingId),
+    [bookingId],
+  );
 
   const changeStatus = async (status: BookingStatus) => {
     setIsUpdating(true);
@@ -68,15 +85,21 @@ export default function BookingDetailPage() {
     : '/dashboard/bookings';
   const date = new Date(booking.scheduledDate);
 
-  const canClientPay = isClient && booking.status === BookingStatus.PENDING;
+  const abierta =
+    booking.status === BookingStatus.PENDING ||
+    booking.status === BookingStatus.CONFIRMED;
+  // Sin saber del pago, lo de antes: solo mientras está pendiente.
+  const faltaPagar =
+    estadoPago === 'listo'
+      ? !pago || SIN_RETENER.includes(pago.status)
+      : booking.status === BookingStatus.PENDING;
+  const canClientPay = isClient && abierta && faltaPagar;
   const canProviderDecide =
     isProvider && booking.status === BookingStatus.PENDING;
   const canProviderComplete =
     isProvider && booking.status === BookingStatus.CONFIRMED;
   const canCancel =
-    (booking.status === BookingStatus.PENDING ||
-      booking.status === BookingStatus.CONFIRMED) &&
-    (booking.clientId === user.id || booking.providerId === user.id);
+    abierta && (booking.clientId === user.id || booking.providerId === user.id);
 
   return (
     <div>
@@ -104,15 +127,16 @@ export default function BookingDetailPage() {
           <div className="flex items-center gap-2">
             <Calendar size={16} />
             <span>
-              {date.toLocaleDateString(idioma, {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-              })}{' '}
-              a las{' '}
-              {date.toLocaleTimeString(idioma, {
-                hour: '2-digit',
-                minute: '2-digit',
+              {t('fechaYHora', {
+                fecha: date.toLocaleDateString(idioma, {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                }),
+                hora: date.toLocaleTimeString(idioma, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
               })}
             </span>
           </div>
@@ -129,7 +153,7 @@ export default function BookingDetailPage() {
             {t('descripcion')}
           </h2>
           <p className="text-secundario whitespace-pre-line">
-            {booking.description || 'Sin descripción.'}
+            {booking.description || t('sinDescripcion')}
           </p>
         </div>
 
@@ -154,9 +178,9 @@ export default function BookingDetailPage() {
         </div>
 
         <div className="flex items-center justify-between border-t border-borde pt-4 mb-6">
-          <span className="text-secundario">Importe</span>
+          <span className="text-secundario">{t('importe')}</span>
           <span className="text-2xl font-bold text-principal">
-            {booking.totalPrice} euros
+            {t('importeEnEuros', { importe: booking.totalPrice })}
           </span>
         </div>
 

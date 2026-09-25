@@ -159,6 +159,21 @@ export interface Conversation {
   unreadCount: number;
 }
 
+export enum PaymentStatus {
+  PENDING = 'pending',
+  HELD = 'held',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+  REFUNDED = 'refunded',
+}
+
+export interface Payment {
+  id: string;
+  bookingId: string;
+  status: PaymentStatus;
+  amount: number;
+}
+
 export interface PaymentIntent {
   clientSecret: string;
   paymentIntentId: string;

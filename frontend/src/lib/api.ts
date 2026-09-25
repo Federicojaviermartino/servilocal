@@ -3,6 +3,7 @@ import {
   ServiceSearchParams,
   CreateBookingDto,
   CreateReviewDto,
+  Payment,
 } from '@/types';
 
 // El navegador no llama a la API directamente sino a /api en el propio
@@ -164,6 +165,9 @@ export const paymentsApi = {
     api.post('/payments/create-intent', { bookingId }),
   confirm: (paymentIntentId: string) =>
     api.post(`/payments/confirm/${paymentIntentId}`),
+  // Sin pago, la API responde vacío.
+  getByBooking: (bookingId: string) =>
+    api.get<Payment | ''>(`/payments/booking/${bookingId}`),
 };
 
 export default api;
