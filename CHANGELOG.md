@@ -10,6 +10,27 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.1.1] — 2026-09-25
+
+### Fixed
+
+- Saving a location on the profile failed with a 500. The value reached PostGIS as EWKT
+  text, and TypeORM converts spatial values with `ST_GeomFromGeoJSON`; the unit tests
+  approved the text because a double cannot know that. Services and the seed now write
+  GeoJSON too, instead of SQL with the coordinates spliced in.
+- Editing a location ignored a coordinate of exactly 0, so the Greenwich meridian, which
+  crosses Castellón, could not be saved.
+- Coordinates are range-checked: a latitude of 1000 used to be stored.
+
+### Changed
+
+- The API lints with ESLint 10 and typescript-eslint 8, in flat configuration, over the
+  whole package including the integration tests, and allows no warnings. The 37 `any`
+  it used to tolerate are typed. The front end stays on ESLint 9 until the plugins that
+  come with Next's configuration support 10.
+- The architecture document counts twelve entities, not eleven, and the thesis UML
+  diagrams are labelled as the thesis snapshot they are.
+
 ## [2.1.0] — 2026-09-25
 
 ### Added
@@ -201,6 +222,7 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[2.1.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Federicojaviermartino/servilocal/compare/v1.4.0...v2.0.0
 [1.4.0]: https://github.com/Federicojaviermartino/servilocal/compare/v1.3.0...v1.4.0

@@ -146,7 +146,7 @@ endpoint now returns them already aggregated.
 
 ## Data model
 
-Eleven entities, all UUID-keyed, all managed through TypeORM migrations.
+Twelve entities, all UUID-keyed, all managed through TypeORM migrations.
 
 ```
 User ──< Service >── Category ──┐
@@ -162,6 +162,7 @@ User ──< Service >── Category ──┐
  └     RegistroAuditoria             (no foreign key — see below)
 
 UsoIa                                (UNIQUE on fecha + funcionalidad)
+SesionRevocada                       (keyed by the token's jti; see decision 9)
 ```
 
 Constraints worth naming:
@@ -171,7 +172,10 @@ Constraints worth naming:
   out collusion, since a provider with a second account can book their own service
   through it. A raised cost, not a guarantee.
 - **`Service.location` and `User.location`** are PostGIS geometry columns with GiST
-  spatial indexes. Search uses `ST_DWithin`, not a bounding box.
+  spatial indexes. Search uses `ST_DWithin`, not a bounding box. They are written as
+  GeoJSON, because TypeORM converts every value for a spatial column with
+  `ST_GeomFromGeoJSON`: the profile used to pass EWKT text, and saving a location
+  failed with a 500 that only a test against PostGIS could show.
 - **City and text matching** go through an `IMMUTABLE` accent-stripping SQL expression
   with a functional index behind it, so it stays indexable rather than degrading to a
   sequential scan.
