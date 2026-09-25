@@ -1,6 +1,6 @@
 {
   "name": "servilocal-frontend",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "ServiLocal - Frontend con React/Next.js",
   "private": true,
   "scripts": {
