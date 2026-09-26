@@ -361,7 +361,7 @@ describe('ReviewsService', () => {
       expect(mockReviewRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { isReported: true },
-          relations: ['client', 'service'],
+          relations: { client: true, service: true },
           order: { createdAt: 'DESC' },
         }),
       );
@@ -425,7 +425,7 @@ describe('ReviewsService', () => {
       expect(mockReviewRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { clientId: 'c1' },
-          relations: ['service'],
+          relations: { service: true },
         }),
       );
     });

@@ -30,7 +30,9 @@ export class CategoriesService {
     return this.cache.recordar(CLAVE, SEGUNDOS, () =>
       this.categoryRepository.find({
         where: { parentId: IsNull() },
-        relations: ['children'],
+        relations: {
+          children: true,
+        },
         order: { sortOrder: 'ASC', name: 'ASC' },
       }),
     );
@@ -39,7 +41,10 @@ export class CategoriesService {
   async findById(id: string): Promise<Category> {
     const category = await this.categoryRepository.findOne({
       where: { id },
-      relations: ['children', 'parent'],
+      relations: {
+        children: true,
+        parent: true,
+      },
     });
 
     if (!category) {

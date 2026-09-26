@@ -146,7 +146,14 @@ export class BookingsService {
   async findById(id: string, quien?: Solicitante): Promise<Booking> {
     const booking = await this.bookingRepository.findOne({
       where: { id },
-      relations: ['client', 'provider', 'service', 'service.category'],
+      relations: {
+        client: true,
+        provider: true,
+
+        service: {
+          category: true,
+        },
+      },
     });
 
     if (!booking) {
@@ -227,7 +234,13 @@ export class BookingsService {
   async findByClient(clientId: string): Promise<Booking[]> {
     return this.bookingRepository.find({
       where: { clientId },
-      relations: ['service', 'service.category', 'provider'],
+      relations: {
+        service: {
+          category: true,
+        },
+
+        provider: true,
+      },
       order: { createdAt: 'DESC' },
     });
   }
@@ -235,7 +248,13 @@ export class BookingsService {
   async findByProvider(providerId: string): Promise<Booking[]> {
     return this.bookingRepository.find({
       where: { providerId },
-      relations: ['service', 'service.category', 'client'],
+      relations: {
+        service: {
+          category: true,
+        },
+
+        client: true,
+      },
       order: { createdAt: 'DESC' },
     });
   }

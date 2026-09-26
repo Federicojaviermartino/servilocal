@@ -95,7 +95,9 @@ export class ReviewsService {
   ): Promise<Review> {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },
-      relations: ['booking'],
+      relations: {
+        booking: true,
+      },
     });
 
     if (!review) {
@@ -170,7 +172,9 @@ export class ReviewsService {
   async findByClient(clientId: string): Promise<Review[]> {
     return this.reviewRepository.find({
       where: { clientId },
-      relations: ['service'],
+      relations: {
+        service: true,
+      },
       order: { createdAt: 'DESC' },
     });
   }
@@ -178,7 +182,10 @@ export class ReviewsService {
   async findReported(): Promise<Review[]> {
     return this.reviewRepository.find({
       where: { isReported: true },
-      relations: ['client', 'service'],
+      relations: {
+        client: true,
+        service: true,
+      },
       order: { createdAt: 'DESC' },
     });
   }

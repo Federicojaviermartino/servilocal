@@ -1383,7 +1383,7 @@ describe('PaymentsService', () => {
       expect(pagos.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { clientId: 'c1' },
-          relations: ['booking', 'booking.service'],
+          relations: { booking: { service: true } },
           order: { createdAt: 'DESC' },
         }),
       );

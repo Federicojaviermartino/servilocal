@@ -413,7 +413,11 @@ export class PaymentsService {
   async findByClient(clientId: string): Promise<Payment[]> {
     return this.paymentRepository.find({
       where: { clientId },
-      relations: ['booking', 'booking.service'],
+      relations: {
+        booking: {
+          service: true,
+        },
+      },
       order: { createdAt: 'DESC' },
     });
   }
@@ -584,7 +588,9 @@ export class PaymentsService {
   ): Promise<Record<ResultadoRevision, number>> {
     const retenidos = await this.paymentRepository.find({
       where: { status: PaymentStatus.HELD },
-      relations: ['booking'],
+      relations: {
+        booking: true,
+      },
     });
 
     const resumen: Record<ResultadoRevision, number> = {

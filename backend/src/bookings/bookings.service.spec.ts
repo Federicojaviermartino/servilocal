@@ -364,7 +364,7 @@ describe('BookingsService', () => {
       expect(mockBookingRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { clientId: 'c1' },
-          relations: ['service', 'service.category', 'provider'],
+          relations: { service: { category: true }, provider: true },
           order: { createdAt: 'DESC' },
         }),
       );
@@ -378,7 +378,7 @@ describe('BookingsService', () => {
       expect(mockBookingRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { providerId: 'p1' },
-          relations: ['service', 'service.category', 'client'],
+          relations: { service: { category: true }, client: true },
         }),
       );
     });

@@ -377,7 +377,9 @@ export class ServicesService {
   async findByProvider(providerId: string): Promise<Service[]> {
     return this.serviceRepository.find({
       where: { providerId },
-      relations: ['category'],
+      relations: {
+        category: true,
+      },
       order: { createdAt: 'DESC' },
     });
   }

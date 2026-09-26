@@ -621,7 +621,7 @@ describe('ServicesService', () => {
       expect(repo.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { providerId: 'p1' },
-          relations: ['category'],
+          relations: { category: true },
           order: { createdAt: 'DESC' },
         }),
       );

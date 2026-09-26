@@ -66,10 +66,12 @@ describe('UsersService', () => {
       // tiene por qué salir de la base de datos ni para eso.
       await servicio.findAll();
 
-      const opciones = repo.find.mock.calls[0][0] as { select: string[] };
-      expect(opciones.select).toContain('email');
-      expect(opciones.select).not.toContain('password');
-      expect(opciones.select).not.toContain('location');
+      const opciones = repo.find.mock.calls[0][0] as {
+        select: Record<string, boolean>;
+      };
+      expect(opciones.select.email).toBe(true);
+      expect(opciones.select).not.toHaveProperty('password');
+      expect(opciones.select).not.toHaveProperty('location');
     });
   });
 

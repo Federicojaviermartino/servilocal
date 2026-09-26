@@ -20,18 +20,18 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     return this.userRepository.find({
-      select: [
-        'id',
-        'firstName',
-        'lastName',
-        'email',
-        'role',
-        'phone',
-        'bio',
-        'city',
-        'isActive',
-        'createdAt',
-      ],
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+        phone: true,
+        bio: true,
+        city: true,
+        isActive: true,
+        createdAt: true,
+      },
     });
   }
 

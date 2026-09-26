@@ -22,6 +22,10 @@ the project, and carry that commit's date.
   and that peer is overridden. Checked with two API instances sharing one Valkey: the
   sign-in limit counts across both, the cache lives in Valkey, and a message sent through
   one reaches a socket open on the other.
+- TypeORM 1.1. Find options move to the object syntax, and a `where` with a `null` or
+  `undefined` value now throws instead of being dropped, which used to turn
+  `findOne({ where: { id: undefined } })` into "the first row". That default is kept:
+  every query was checked, and none relies on a value being ignored.
 
 ## [2.1.1] — 2026-09-25
 
