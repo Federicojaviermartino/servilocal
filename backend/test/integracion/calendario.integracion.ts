@@ -1,7 +1,8 @@
 import { ConflictException } from '@nestjs/common';
-import { DataSource, QueryFailedError } from 'typeorm';
+import { DataSource, QueryFailedError, QueryRunner } from 'typeorm';
 import { Booking, BookingStatus, Service, User } from '../../src/entities';
 import { BookingsService } from '../../src/bookings/bookings.service';
+import { RestriccionDeSolapes1790700000000 } from '../../src/database/migrations/1790700000000-RestriccionDeSolapes';
 import { crearFuente } from './base';
 
 /**
@@ -221,6 +222,89 @@ describe('Agenda sin solapes', () => {
       creadas.push(creada.id);
 
       expect(creada.status).toBe(BookingStatus.PENDING);
+    });
+  });
+
+  describe('la migración que completa la restricción', () => {
+    // En producción, CalendarioReservas no pudo crearla por tres reservas
+    // que se solapaban. Todo aquí ocurre en una transacción que se deshace:
+    // quitar la restricción de la base compartida, aunque fuera un momento,
+    // dejaría sin ella a las pruebas que corren a la vez.
+    async function enTransaccion(
+      ejecutar: (consulta: QueryRunner) => Promise<void>,
+    ): Promise<void> {
+      const consulta = fuente.createQueryRunner();
+      await consulta.startTransaction();
+      try {
+        await ejecutar(consulta);
+      } finally {
+        await consulta.rollbackTransaction();
+        await consulta.release();
+      }
+    }
+
+    const existe = async (consulta: QueryRunner) =>
+      (
+        await consulta.query(
+          `SELECT 1 FROM pg_constraint WHERE conname = 'EXCL_bookings_sin_solape'`,
+        )
+      ).length === 1;
+
+    const quitarla = (consulta: QueryRunner) =>
+      consulta.query(
+        `ALTER TABLE "bookings" DROP CONSTRAINT "EXCL_bookings_sin_solape"`,
+      );
+
+    it('donde falta y ya no hay solapes, la crea', async () => {
+      await enTransaccion(async (consulta) => {
+        await quitarla(consulta);
+
+        await new RestriccionDeSolapes1790700000000().up(consulta);
+
+        expect(await existe(consulta)).toBe(true);
+      });
+    });
+
+    it('si todavía quedan solapes, no la crea y dice cuáles', async () => {
+      await enTransaccion(async (consulta) => {
+        await quitarla(consulta);
+        const [una, otra] = await consulta.query(
+          `INSERT INTO bookings
+             ("clientId", "providerId", "serviceId", "scheduledDate",
+              "totalPrice", status)
+           VALUES ($1, $2, $3, $4, $5, 'confirmed'),
+                  ($1, $2, $3, $6, $5, 'confirmed')
+           RETURNING id`,
+          [
+            clienteId,
+            servicio.providerId,
+            servicio.id,
+            A_LAS(10),
+            servicio.priceMin,
+            A_LAS(10, 30),
+          ],
+        );
+        const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+        try {
+          await new RestriccionDeSolapes1790700000000().up(consulta);
+
+          expect(await existe(consulta)).toBe(false);
+          expect(aviso).toHaveBeenCalledWith(
+            expect.stringContaining([una.id, otra.id].sort().join(' con ')),
+          );
+        } finally {
+          aviso.mockRestore();
+        }
+      });
+    });
+
+    it('donde CalendarioReservas ya la creó, no hace nada', async () => {
+      await enTransaccion(async (consulta) => {
+        await new RestriccionDeSolapes1790700000000().up(consulta);
+
+        expect(await existe(consulta)).toBe(true);
+      });
     });
   });
 });
