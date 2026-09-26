@@ -10,7 +10,7 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
-## [Unreleased]
+## [2.1.2] — 2026-09-26
 
 ### Changed
 
@@ -35,6 +35,13 @@ the project, and carry that commit's date.
   scrubbed in `beforeSendSpan`, and the streamed lifecycle is fixed in code so an
   environment variable cannot switch the scrubbing off. Either safeguard alone keeps the
   credentials out; the test that sends through the real SDK fails without both.
+
+### Fixed
+
+- The post-deploy smoke test waited for a version that never came when several commits
+  were pushed at once: Render deploys the last commit of the push to every service whose
+  folder changed, not the last commit that touched that folder. It now accepts that
+  commit or any later one.
 
 ## [2.1.1] — 2026-09-25
 
@@ -248,7 +255,7 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
-[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.1...HEAD
+[2.1.2]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/Federicojaviermartino/servilocal/compare/v1.4.0...v2.0.0

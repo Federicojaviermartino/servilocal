@@ -3,7 +3,7 @@
 # ServiLocal
 
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
-![Version](https://img.shields.io/badge/VERSION-2.1.1-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/VERSION-2.1.2-2563eb?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-12-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
