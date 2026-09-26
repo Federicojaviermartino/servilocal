@@ -6,6 +6,8 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
+  Check,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Booking } from './booking.entity';
@@ -19,7 +21,17 @@ export enum PaymentStatus {
   FAILED = 'failed',
 }
 
+/**
+ * Índices y restricciones con el mismo nombre que en las migraciones:
+ * TypeORM los compara por nombre, y la prueba de deriva del esquema falla si
+ * no coinciden. Ver IntegridadDeLosDatos.
+ */
 @Entity('payments')
+@Index('IDX_payments_reserva', ['bookingId'])
+@Index('IDX_payments_cliente', ['clientId'])
+// El webhook busca cada pago por su intención de Stripe.
+@Index('IDX_payments_intencion', ['stripePaymentIntentId'])
+@Check('CHK_payments_importe', '"amount" >= 0.5')
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -27,14 +39,14 @@ export class Payment {
   @Column()
   bookingId: string;
 
-  @ManyToOne(() => Booking, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Booking, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'bookingId' })
   booking: Booking;
 
   @Column()
   clientId: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'clientId' })
   client: User;
 

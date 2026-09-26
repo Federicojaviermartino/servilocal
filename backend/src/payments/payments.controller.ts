@@ -59,18 +59,32 @@ export class PaymentsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiOperation({
-    summary: 'Capturar pago retenido al completar servicio (admin)',
+    summary: 'Cobrar el pago retenido de una reserva completada (admin)',
   })
-  async capture(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
-    return this.paymentsService.capturePayment(bookingId);
+  async capture(
+    @Request() req: PeticionAutenticada,
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+  ) {
+    return this.paymentsService.capturePayment(bookingId, {
+      id: req.user.id,
+      email: req.user.email,
+    });
   }
 
   @Post('refund/:bookingId')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Reembolsar pago (admin)' })
-  async refund(@Param('bookingId', ParseUUIDPipe) bookingId: string) {
-    return this.paymentsService.refundPayment(bookingId);
+  @ApiOperation({
+    summary: 'Reembolsar el pago de una reserva ya cerrada (admin)',
+  })
+  async refund(
+    @Request() req: PeticionAutenticada,
+    @Param('bookingId', ParseUUIDPipe) bookingId: string,
+  ) {
+    return this.paymentsService.refundPayment(bookingId, {
+      id: req.user.id,
+      email: req.user.email,
+    });
   }
 
   @Get('my')

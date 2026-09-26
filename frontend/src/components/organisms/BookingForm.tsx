@@ -4,10 +4,19 @@
  */
 'use client';
 import { useState, FormEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Service } from '@/types';
+import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
 import Button from '../atoms/Button';
 import Input from '../atoms/Input';
+
+/** La fecha de hoy más unos días, como la pide un campo de fecha: local. */
+function diaLocal(dentroDe: number): string {
+  const dia = new Date();
+  dia.setDate(dia.getDate() + dentroDe);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${dia.getFullYear()}-${dos(dia.getMonth() + 1)}-${dos(dia.getDate())}`;
+}
 
 interface BookingFormProps {
   service: Service;
@@ -25,9 +34,12 @@ export default function BookingForm({
   isSubmitting = false,
 }: BookingFormProps) {
   const t = useTranslations('reserva');
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + 1);
-  const minDateStr = minDate.toISOString().split('T')[0];
+  const idioma = useLocale();
+  // En la fecha local, no en la UTC: pasada la medianoche en España, la UTC
+  // todavía es ayer, y «mañana» salía hoy. Hasta un año vista, que es lo
+  // que admite la API.
+  const minDateStr = diaLocal(1);
+  const maxDateStr = diaLocal(365);
 
   const [date, setDate] = useState(minDateStr);
   const [time, setTime] = useState('10:00');
@@ -38,6 +50,9 @@ export default function BookingForm({
   const validate = () => {
     const errs: Record<string, string> = {};
     if (!date) errs.date = t('fechaObligatoria');
+    else if (date < minDateStr || date > maxDateStr) {
+      errs.date = t('fechaFueraDeRango');
+    }
     if (!time) errs.time = t('horaObligatoria');
     if (price < service.priceMin) {
       errs.price = t('precioMinimo', { min: service.priceMin });
@@ -77,6 +92,7 @@ export default function BookingForm({
           type="date"
           label={t('fecha')}
           min={minDateStr}
+          max={maxDateStr}
           value={date}
           onChange={(e) => setDate(e.target.value)}
           error={errors.date}
@@ -140,6 +156,14 @@ export default function BookingForm({
         </p>
         <p className="text-secundario">
           {t('resumenFecha', { fecha: date, hora: time })}
+        </p>
+        <p className="text-secundario">
+          {t('resumenDuracion', {
+            duracion: formatearDuracion(
+              service.durationMinutes ?? DURACION_POR_DEFECTO,
+              idioma,
+            ),
+          })}
         </p>
         <p className="text-principal font-semibold mt-2">
           {t('resumenTotal', { precio: price })}

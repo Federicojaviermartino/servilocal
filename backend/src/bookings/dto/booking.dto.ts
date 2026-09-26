@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -8,6 +10,8 @@ import {
   IsDateString,
   Min,
 } from 'class-validator';
+import { BookingStatus } from '../../entities';
+import { PRECIO_MINIMO } from '../../common/calendario';
 
 export class CreateBookingDto {
   // Con @IsString, un identificador mal formado llegaba a la base de datos
@@ -35,15 +39,24 @@ export class CreateBookingDto {
   // comprueba que cae dentro del rango de ESE servicio antes de guardarlo.
   @ApiProperty({ example: 45.0 })
   @IsNumber()
-  @Min(0)
+  @Min(PRECIO_MINIMO)
   totalPrice: number;
 }
 
 export class UpdateBookingStatusDto {
   @ApiProperty({ enum: ['confirmed', 'completed', 'cancelled', 'rejected'] })
-  @IsString()
-  @IsNotEmpty()
-  status: string;
+  @IsEnum(BookingStatus)
+  status: BookingStatus;
+
+  /**
+   * Completar aunque no haya pago retenido. Sin esto, completar una reserva
+   * sin retención responde 409 para que el profesional decida: esperar a que
+   * el cliente pague, o darla por hecha sin cobro, y que pague después.
+   */
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  sinCobro?: boolean;
 
   @ApiPropertyOptional({ example: 'No puedo asistir por motivos personales' })
   @IsOptional()

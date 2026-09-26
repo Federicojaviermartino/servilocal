@@ -1,9 +1,23 @@
+import { ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import Stripe from 'stripe';
-import { Booking, Payment, PaymentStatus } from '../../src/entities';
+import {
+  Booking,
+  BookingStatus,
+  Payment,
+  PaymentStatus,
+  RegistroAuditoria,
+  Service,
+  User,
+} from '../../src/entities';
+import { AuditoriaService } from '../../src/auditoria/auditoria.service';
+import { BookingsService } from '../../src/bookings/bookings.service';
 import { NotificationsService } from '../../src/notifications/notifications.service';
-import { PaymentsService } from '../../src/payments/payments.service';
+import {
+  CODIGO_SIN_PAGO_RETENIDO,
+  PaymentsService,
+} from '../../src/payments/payments.service';
 import { crearFuente } from './base';
 
 const STRIPE_MOCK = process.env.STRIPE_MOCK_URL ?? 'http://localhost:12111';
@@ -26,6 +40,7 @@ const STRIPE_MOCK = process.env.STRIPE_MOCK_URL ?? 'http://localhost:12111';
 describe('Pagos contra la API de Stripe', () => {
   let fuente: DataSource;
   let servicio: PaymentsService;
+  let reservas: BookingsService;
   let reserva: Booking;
 
   beforeAll(async () => {
@@ -37,6 +52,16 @@ describe('Pagos contra la API de Stripe', () => {
       fuente,
       { getOrThrow: () => 'sk_test_integracion' } as unknown as ConfigService,
       { crear: vi.fn(async () => null) } as unknown as NotificationsService,
+      new AuditoriaService(fuente.getRepository(RegistroAuditoria)),
+    );
+
+    reservas = new BookingsService(
+      fuente.getRepository(Booking),
+      fuente.getRepository(Service),
+      fuente.getRepository(User),
+      { crear: vi.fn(async () => null) } as unknown as NotificationsService,
+      servicio,
+      fuente,
     );
 
     // El cliente apunta al emulador en vez de a Stripe.
@@ -194,13 +219,157 @@ describe('Pagos contra la API de Stripe', () => {
     }
   });
 
-  it('una reserva sin pago se completa sin llamar a Stripe', async () => {
+  it('una reserva sin pago no se completa sin preguntar', async () => {
     const bookingId = await reservaNueva();
 
     try {
-      expect(await servicio.cobrarAlCompletar(bookingId)).toBeNull();
+      const error = await servicio
+        .cobrarAlCompletar(bookingId)
+        .catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ConflictException);
+      expect((error as ConflictException).getResponse()).toMatchObject({
+        codigo: CODIGO_SIN_PAGO_RETENIDO,
+      });
+
+      // Con «sin cobro», sí, y sin llamar a Stripe.
+      expect(
+        await servicio.cobrarAlCompletar(bookingId, { sinCobro: true }),
+      ).toBeNull();
       expect(await servicio.liberarRetencion(bookingId)).toBeNull();
     } finally {
+      await limpiar(bookingId);
+    }
+  });
+
+  it('completar y cancelar a la vez: gana uno, y el dinero va con él', async () => {
+    // Las dos validaban la transición contra el mismo estado: una cobraba y
+    // la otra dejaba la reserva cancelada con el dinero cobrado. Con la
+    // reserva bloqueada, la segunda espera y ya no encuentra una confirmada.
+    const bookingId = await reservaNueva();
+
+    try {
+      await servicio.createPaymentIntent(reserva.clientId, bookingId);
+      await fuente.query(
+        `UPDATE payments SET status = 'held' WHERE "bookingId" = $1`,
+        [bookingId],
+      );
+      // De ayer: completar exige que haya llegado la fecha, y con una futura
+      // la carrera no se jugaría, porque completar fallaría siempre.
+      await fuente.query(
+        `UPDATE bookings
+         SET status = 'confirmed', "scheduledDate" = now() - interval '1 day'
+         WHERE id = $1`,
+        [bookingId],
+      );
+
+      const resultados = await Promise.allSettled([
+        reservas.updateStatus(bookingId, reserva.providerId, 'provider', {
+          status: BookingStatus.COMPLETED,
+        }),
+        reservas.updateStatus(bookingId, reserva.clientId, 'client', {
+          status: BookingStatus.CANCELLED,
+        }),
+      ]);
+
+      expect(resultados.filter((r) => r.status === 'fulfilled')).toHaveLength(
+        1,
+      );
+
+      const [final] = await fuente.query(
+        `SELECT b.status AS reserva, p.status AS pago
+         FROM bookings b JOIN payments p ON p."bookingId" = b.id
+         WHERE b.id = $1`,
+        [bookingId],
+      );
+      expect([
+        { reserva: 'completed', pago: 'completed' },
+        { reserva: 'cancelled', pago: 'refunded' },
+      ]).toContainEqual(final);
+    } finally {
+      await limpiar(bookingId);
+    }
+  });
+
+  it('una retención que llega con la reserva cancelada se suelta', async () => {
+    // El cliente termina de pagar desde la pestaña que dejó abierta, y la
+    // reserva ya no existe: el dinero no puede quedarse retenido.
+    const bookingId = await reservaNueva();
+
+    try {
+      const intencion = await servicio.createPaymentIntent(
+        reserva.clientId,
+        bookingId,
+      );
+      await fuente.query(
+        `UPDATE bookings SET status = 'cancelled' WHERE id = $1`,
+        [bookingId],
+      );
+
+      await servicio.handleWebhookEvent({
+        type: 'payment_intent.amount_capturable_updated',
+        data: { object: { id: intencion.paymentIntentId } },
+      } as unknown as Stripe.Event);
+
+      const [pago] = await fuente.query(
+        `SELECT status FROM payments WHERE "bookingId" = $1`,
+        [bookingId],
+      );
+      expect(pago.status).toBe(PaymentStatus.REFUNDED);
+    } finally {
+      await limpiar(bookingId);
+    }
+  });
+
+  it('una completada sin cobro abre un cobro en el acto', async () => {
+    const bookingId = await reservaNueva();
+    await fuente.query(
+      `UPDATE bookings SET status = 'completed' WHERE id = $1`,
+      [bookingId],
+    );
+
+    try {
+      const intencion = await servicio.createPaymentIntent(
+        reserva.clientId,
+        bookingId,
+      );
+
+      expect(intencion.paymentIntentId).toMatch(/^pi_/);
+    } finally {
+      await limpiar(bookingId);
+    }
+  });
+
+  it('el cobro de la administración queda en el historial', async () => {
+    // Y con él, que la migración añadió la acción al enumerado de la base.
+    const bookingId = await reservaNueva();
+    const admin = { id: reserva.providerId, email: 'admin@servilocal.com' };
+
+    try {
+      await servicio.createPaymentIntent(reserva.clientId, bookingId);
+      await fuente.query(
+        `UPDATE payments SET status = 'held' WHERE "bookingId" = $1`,
+        [bookingId],
+      );
+      await fuente.query(
+        `UPDATE bookings SET status = 'completed' WHERE id = $1`,
+        [bookingId],
+      );
+
+      const cobrado = await servicio.capturePayment(bookingId, admin);
+
+      const anotadas = await fuente.query(
+        `SELECT accion, contexto FROM audit_logs WHERE "entidadId" = $1`,
+        [cobrado.id],
+      );
+      expect(anotadas).toEqual([
+        { accion: 'pago_cobrado', contexto: { reserva: bookingId } },
+      ]);
+    } finally {
+      await fuente.query(
+        `DELETE FROM audit_logs WHERE "entidadId" IN
+           (SELECT id FROM payments WHERE "bookingId" = $1)`,
+        [bookingId],
+      );
       await limpiar(bookingId);
     }
   });

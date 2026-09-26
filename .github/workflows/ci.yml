@@ -383,7 +383,15 @@ jobs:
       PORT: 3001
       # La suite inicia sesión muchas veces desde la misma IP. El límite
       # real se comprueba aparte; aquí solo estorbaría a los tests de flujo.
+      # Lo mismo con crear reservas y enviar mensajes: cuatro navegadores
+      # seguidos crean decenas en pocos minutos. Y con el límite general:
+      # sin PROXY_SECRETO, todo lo que pasa por el frontend cuenta como un
+      # solo visitante, y la campana de avisos de cuatro navegadores llega a
+      # las 120 peticiones por minuto de una ruta. Medido: la 121 es un 429.
+      THROTTLE_LIMIT: '1000'
       THROTTLE_AUTH_LIMIT: '100'
+      THROTTLE_RESERVAS_LIMIT: '100'
+      THROTTLE_MENSAJES_LIMIT: '100'
       NEXT_PUBLIC_API_URL: http://localhost:3001/api
 
     steps:

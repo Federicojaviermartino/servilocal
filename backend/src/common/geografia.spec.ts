@@ -67,3 +67,28 @@ describe('coordenadas en lo que llega a la API', () => {
     ).toEqual(['latitude']);
   });
 });
+
+describe('la duración de un servicio', () => {
+  // Sin límites, una duración de cero no ocupaba la agenda, y una de mil
+  // horas la bloqueaba entera.
+  describe.each([
+    ['el alta', CreateServiceDto],
+    ['la edición', UpdateServiceDto],
+  ] as [string, new () => object][])('en %s', (_nombre, clase) => {
+    it.each([0, 14, 481, 60.5])('rechaza %s minutos', async (minutos) => {
+      expect(await rechazadas(clase, { durationMinutes: minutos })).toContain(
+        'durationMinutes',
+      );
+    });
+
+    it.each([15, 60, 480])('acepta %s minutos', async (minutos) => {
+      expect(
+        await rechazadas(clase, { durationMinutes: minutos }),
+      ).not.toContain('durationMinutes');
+    });
+
+    it('y puede no decirla: se quedan los 60 de la base', async () => {
+      expect(await rechazadas(clase, {})).not.toContain('durationMinutes');
+    });
+  });
+});

@@ -13,7 +13,11 @@ import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { referenciaDe, type EstadoCarga as Estado } from '@/lib/carga';
 import type { AxiosError } from 'axios';
 import toast from 'react-hot-toast';
-import { CODIGO_DEMOSTRACION, codigoDeError } from '@/lib/errores-api';
+import {
+  CODIGO_DEMOSTRACION,
+  codigoDeError,
+  textoDeError,
+} from '@/lib/errores-api';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -26,6 +30,7 @@ export default function ConversationPage() {
 function Conversacion({ partnerId }: { partnerId: string }) {
   const t = useTranslations('mensajesPanel');
   const tComun = useTranslations('comun');
+  const tErrores = useTranslations('erroresApi');
   const idioma = useLocale();
   const { user } = useAuthStore();
 
@@ -140,7 +145,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
       toast.error(
         codigoDeError(error) === CODIGO_DEMOSTRACION
           ? tComun('demostracionAislada')
-          : t('errorEnviar'),
+          : textoDeError(error, tErrores, t('errorEnviar')),
       );
     } finally {
       setIsSending(false);

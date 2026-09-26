@@ -35,6 +35,14 @@ function pintar(servicio: Service = SERVICIO) {
 const enviar = () =>
   userEvent.click(screen.getByRole('button', { name: es.reserva.continuar }));
 
+/** Un día contado desde hoy, en la fecha local, como la pide el campo. */
+function diaLocal(dentroDe: number): string {
+  const dia = new Date();
+  dia.setDate(dia.getDate() + dentroDe);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${dia.getFullYear()}-${dos(dia.getMonth() + 1)}-${dos(dia.getDate())}`;
+}
+
 /**
  * Enviar saltándose la validación del navegador.
  *
@@ -191,16 +199,48 @@ describe('BookingForm', () => {
 
   it('no deja elegir una fecha anterior a mañana', async () => {
     // Reservar para ayer no significa nada, y el calendario del navegador lo
-    // impide de raíz si se le dice el mínimo.
+    // impide de raíz si se le dice el mínimo. En la fecha local: con la UTC,
+    // pasada la medianoche en España, «mañana» salía hoy.
     pintar();
-
-    const manana = new Date();
-    manana.setDate(manana.getDate() + 1);
 
     expect(screen.getByLabelText(es.reserva.fecha)).toHaveAttribute(
       'min',
-      manana.toISOString().split('T')[0],
+      diaLocal(1),
     );
+  });
+
+  it('ni una a más de un año vista, que la API no admite', async () => {
+    pintar();
+
+    expect(screen.getByLabelText(es.reserva.fecha)).toHaveAttribute(
+      'max',
+      diaLocal(365),
+    );
+  });
+
+  it('una fecha fuera de ese margen escrita a mano se avisa al lado', async () => {
+    const alEnviar = pintar();
+    fireEvent.change(screen.getByLabelText(es.reserva.fecha), {
+      target: { value: diaLocal(-1) },
+    });
+    await describir('Gotea el grifo de la cocina desde ayer.');
+
+    enviarSaltandoAlNavegador();
+
+    expect(screen.getByText(es.reserva.fechaFueraDeRango)).toBeInTheDocument();
+    expect(alEnviar).not.toHaveBeenCalled();
+  });
+
+  it('el resumen dice cuánto ocupa la reserva', async () => {
+    pintar({ ...SERVICIO, durationMinutes: 90 } as Service);
+
+    expect(screen.getByText('Duración: 1,5 h')).toBeInTheDocument();
+  });
+
+  it('y un servicio que no lo dice ocupa una hora, como en la base', async () => {
+    pintar();
+
+    expect(screen.getByText('Duración: 1 h')).toBeInTheDocument();
   });
 
   it('el importe que viaja es el que se eligió', async () => {

@@ -121,6 +121,54 @@ describe('CampanaAvisos', () => {
     );
   });
 
+  it('una completada sin cobro se lo cuenta al cliente', async () => {
+    listar.mockResolvedValue({
+      data: [
+        aviso({
+          type: 'booking_completed',
+          content: '{"estado":"completed","sinCobro":"si"}',
+        }),
+      ],
+    });
+
+    pintar();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeVisible(),
+    );
+    screen.getByRole('button', { name: /1 sin leer/ }).click();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'El profesional ha dado tu reserva por completada sin cobrarla: puedes pagarla desde la reserva.',
+        ),
+      ).toBeVisible(),
+    );
+  });
+
+  it('un aviso guardado antes de que existiera esa variable se sigue leyendo', async () => {
+    // Los avisos se guardan con los datos de su momento. Sin un valor
+    // neutro, el texto entero se cambiaba por la clave en crudo.
+    listar.mockResolvedValue({
+      data: [
+        aviso({ type: 'booking_completed', content: '{"estado":"completed"}' }),
+      ],
+    });
+
+    pintar();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /1 sin leer/ })).toBeVisible(),
+    );
+    screen.getByRole('button', { name: /1 sin leer/ }).click();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText('Tu reserva se ha marcado como completada.'),
+      ).toBeVisible(),
+    );
+    expect(screen.queryByText(/avisos\.booking_completed/)).toBeNull();
+  });
+
   it('un tipo desconocido se lee, no enseña la clave', async () => {
     listar.mockResolvedValue({ data: [aviso({ type: 'cosa_que_no_existe' })] });
 

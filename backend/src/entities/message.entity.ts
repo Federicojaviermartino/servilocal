@@ -7,10 +7,14 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 
+/** Las conversaciones de alguien se buscan por cualquiera de los dos lados. */
 @Entity('conversations')
+@Index('IDX_conversations_participante_uno', ['participantOneId'])
+@Index('IDX_conversations_participante_dos', ['participantTwoId'])
 export class Conversation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -45,7 +49,9 @@ export class Conversation {
   updatedAt: Date;
 }
 
+/** Un hilo se lee en orden. */
 @Entity('messages')
+@Index('IDX_messages_conversacion', ['conversationId', 'createdAt'])
 export class Message {
   @PrimaryGeneratedColumn('uuid')
   id: string;

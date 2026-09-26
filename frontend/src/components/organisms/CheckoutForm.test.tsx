@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../messages/es.json';
+import { BookingStatus } from '@/types';
 import CheckoutForm from './CheckoutForm';
 
 /**
@@ -43,13 +44,17 @@ vi.mock('@/lib/api', () => ({
   paymentsApi: { confirm: (id: string) => confirmar(id) },
 }));
 
-function pintar(alCaducar?: () => Promise<void>) {
+function pintar(
+  alCaducar?: () => Promise<void>,
+  estadoReserva?: BookingStatus,
+) {
   render(
     <NextIntlClientProvider locale="es" messages={es as never}>
       <CheckoutForm
         bookingId="b1"
         paymentIntentId="pi_123"
         amount={65}
+        estadoReserva={estadoReserva}
         onIntentExpired={alCaducar}
       />
     </NextIntlClientProvider>,
@@ -79,6 +84,38 @@ describe('CheckoutForm', () => {
     await waitFor(() => expect(confirmar).toHaveBeenCalledWith('pi_123'));
     expect(avisoExito).toHaveBeenCalledWith(es.pago.completado);
     expect(empujar).toHaveBeenCalledWith('/dashboard/bookings?confirmed=b1');
+  });
+
+  it('al volver a autorizar una confirmada, no dice que falta aceptarla', async () => {
+    // Decía siempre que el profesional tenía que aceptar la reserva, y esta
+    // ya la había aceptado.
+    confirmPayment.mockResolvedValue({
+      paymentIntent: { status: 'requires_capture' },
+    });
+    pintar(undefined, BookingStatus.CONFIRMED);
+
+    await pagar();
+
+    await waitFor(() =>
+      expect(avisoExito).toHaveBeenCalledWith(es.pago.retenidoConfirmada),
+    );
+  });
+
+  it('una completada se paga, no se retiene, y lo dice', async () => {
+    confirmPayment.mockResolvedValue({
+      paymentIntent: { status: 'succeeded' },
+    });
+    pintar(undefined, BookingStatus.COMPLETED);
+
+    expect(screen.queryByRole('button', { name: /Retener/ })).toBeNull();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Pagar 65.00 euros' }),
+    );
+
+    await waitFor(() =>
+      expect(avisoExito).toHaveBeenCalledWith(es.pago.cobrado),
+    );
+    expect(confirmar).toHaveBeenCalledWith('pi_123');
   });
 
   it('y un cobro inmediato también', async () => {

@@ -16,6 +16,9 @@ import { IndicesDeBusquedaTexto1790000000000 } from '../../src/database/migratio
 import { SesionesRevocadas1790100000000 } from '../../src/database/migrations/1790100000000-SesionesRevocadas';
 import { RenovacionRetenciones1790200000000 } from '../../src/database/migrations/1790200000000-RenovacionRetenciones';
 import { CuentasDemostracion1790300000000 } from '../../src/database/migrations/1790300000000-CuentasDemostracion';
+import { CobrosAuditados1790400000000 } from '../../src/database/migrations/1790400000000-CobrosAuditados';
+import { CalendarioReservas1790500000000 } from '../../src/database/migrations/1790500000000-CalendarioReservas';
+import { IntegridadDeLosDatos1790600000000 } from '../../src/database/migrations/1790600000000-IntegridadDeLosDatos';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -47,6 +50,9 @@ const MIGRACIONES = [
   SesionesRevocadas1790100000000,
   RenovacionRetenciones1790200000000,
   CuentasDemostracion1790300000000,
+  CobrosAuditados1790400000000,
+  CalendarioReservas1790500000000,
+  IntegridadDeLosDatos1790600000000,
 ];
 
 /**

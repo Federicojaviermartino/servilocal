@@ -1,5 +1,5 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
-import { entrarComo } from './ayudas';
+import { entrarComo, huecoLibre } from './ayudas';
 
 const API = 'http://localhost:3001/api';
 
@@ -33,6 +33,7 @@ async function reservaPendiente(
   peticion: APIRequestContext,
   cliente: { token: string },
   profesional: { id: string },
+  fecha = huecoLibre(),
 ) {
   const busqueda = await peticion.get(`${API}/services/search?limit=50`);
   const { data } = await busqueda.json();
@@ -48,12 +49,17 @@ async function reservaPendiente(
     headers: { Authorization: `Bearer ${cliente.token}` },
     data: {
       serviceId: servicio.id,
-      scheduledDate: '2027-01-15T10:00:00.000Z',
+      scheduledDate: fecha,
       description: 'Reserva de la comprobación del circuito.',
       totalPrice: servicio.priceMin,
     },
   });
-  expect(creada.ok(), 'la reserva se crea').toBeTruthy();
+  // Con la respuesta en el mensaje: un «false» a secas no dice si fue un
+  // choque de agenda, un límite de peticiones o una sesión que no llegó.
+  expect(
+    creada.ok(),
+    `la reserva se crea (${creada.status()}: ${await creada.text()})`,
+  ).toBeTruthy();
   return creada.json();
 }
 
@@ -102,7 +108,19 @@ test.describe('Quién decide sobre una reserva', () => {
   test('aceptada y completada, con sus fechas', async ({ request }) => {
     const cliente = await entrar(request, 'laura@ejemplo.com');
     const profesional = await entrar(request, 'carlos@ejemplo.com');
-    const reserva = await reservaPendiente(request, cliente, profesional);
+    // Crearla exige una fecha por venir y completarla, que haya llegado: se
+    // reserva para dentro de unos segundos.
+    const reserva = await reservaPendiente(
+      request,
+      cliente,
+      profesional,
+      new Date(Date.now() + 5000).toISOString(),
+    );
+    const completar = (datos: Record<string, unknown> = {}) =>
+      request.patch(`${API}/bookings/${reserva.id}/status`, {
+        headers: { Authorization: `Bearer ${profesional.token}` },
+        data: { status: 'completed', ...datos },
+      });
 
     const aceptada = await request.patch(
       `${API}/bookings/${reserva.id}/status`,
@@ -113,13 +131,25 @@ test.describe('Quién decide sobre una reserva', () => {
     );
     expect((await aceptada.json()).confirmedAt).toBeTruthy();
 
-    const completada = await request.patch(
-      `${API}/bookings/${reserva.id}/status`,
-      {
-        headers: { Authorization: `Bearer ${profesional.token}` },
-        data: { status: 'completed' },
-      },
-    );
+    // Antes de su hora no se completa: sería cobrar un trabajo por hacer.
+    const pronto = await completar();
+    expect(pronto.status()).toBe(400);
+    expect((await pronto.json()).codigo).toBe('antes-de-la-fecha');
+
+    // Llegada la hora, y sin nada retenido, no se completa en silencio: la
+    // API pregunta, con un código que la interfaz reconoce en cualquier
+    // idioma.
+    await expect
+      .poll(async () => (await completar()).status(), {
+        timeout: 20000,
+        intervals: [1000],
+      })
+      .toBe(409);
+    const sinPago = await completar();
+    expect((await sinPago.json()).codigo).toBe('sin-pago-retenido');
+
+    // Y si el profesional decide completarla sin cobro, se completa.
+    const completada = await completar({ sinCobro: true });
     const final = await completada.json();
     expect(final.status).toBe('completed');
     expect(final.completedAt).toBeTruthy();

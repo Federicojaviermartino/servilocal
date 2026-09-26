@@ -286,6 +286,22 @@ describe('rutas del cliente HTTP', () => {
     ]);
   });
 
+  it('completar sin cobro lo dice en el cuerpo, y sin eso solo va el estado', async () => {
+    const conDecision = (await api.bookingsApi.updateStatus('b1', 'completed', {
+      sinCobro: true,
+    })) as unknown as { opciones: unknown[] };
+    const sinDecision = (await api.bookingsApi.updateStatus(
+      'b1',
+      'completed',
+    )) as unknown as { opciones: unknown[] };
+
+    expect(conDecision.opciones[0]).toEqual({
+      status: 'completed',
+      sinCobro: true,
+    });
+    expect(sinDecision.opciones[0]).toEqual({ status: 'completed' });
+  });
+
   it('la página del historial viaja como parámetro, no pegada a la ruta', async () => {
     // Pegarla daría /admin/auditoria/2, que el servidor no publica.
     llamadas.length = 0;

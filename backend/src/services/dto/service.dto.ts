@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsNumber,
+  IsInt,
   IsArray,
   Min,
   Max,
@@ -11,6 +12,11 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  DURACION_MAXIMA,
+  DURACION_MINIMA,
+  PRECIO_MINIMO,
+} from '../../common/calendario';
 
 export class CreateServiceDto {
   @ApiProperty({ example: 'Fontanería de urgencia 24h' })
@@ -31,20 +37,32 @@ export class CreateServiceDto {
   @IsUUID()
   categoryId: string;
 
+  // Stripe no cobra menos de 50 céntimos en euros: un servicio más barato
+  // se publicaba y después no había forma de pagarlo.
   @ApiProperty({ example: 25.0 })
   @IsNumber()
-  @Min(0)
+  @Min(PRECIO_MINIMO)
   priceMin: number;
 
   @ApiPropertyOptional({ example: 60.0 })
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @Min(PRECIO_MINIMO)
   priceMax?: number;
 
   @ApiProperty({ example: 'hour', enum: ['hour', 'service', 'project'] })
   @IsString()
   priceUnit: string;
+
+  @ApiPropertyOptional({
+    example: 60,
+    description: 'Cuánto ocupa cada reserva en la agenda, en minutos',
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(DURACION_MINIMA)
+  @Max(DURACION_MAXIMA)
+  durationMinutes?: number;
 
   // Opcionales: sin ellas, el servicio se sitúa en su ciudad. Ver
   // common/ciudades.ts.
@@ -114,19 +132,26 @@ export class UpdateServiceDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @Min(PRECIO_MINIMO)
   priceMin?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @Min(PRECIO_MINIMO)
   priceMax?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   priceUnit?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(DURACION_MINIMA)
+  @Max(DURACION_MAXIMA)
+  durationMinutes?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

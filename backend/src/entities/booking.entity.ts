@@ -6,6 +6,9 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Check,
+  Exclusion,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Service } from './service.entity';
@@ -19,7 +22,25 @@ export enum BookingStatus {
   REJECTED = 'rejected',
 }
 
+/**
+ * Índices y restricciones con el mismo nombre que en las migraciones
+ * CalendarioReservas e IntegridadDeLosDatos: TypeORM los compara por
+ * nombre, y la prueba de deriva del esquema falla si no coinciden.
+ *
+ * Borrar una cuenta o un servicio ya no se lleva sus reservas por delante:
+ * con ellas se iban los pagos y las valoraciones, que son el historial de
+ * la otra parte. La base lo impide, y el servicio se retira en su lugar.
+ */
 @Entity('bookings')
+@Index('IDX_bookings_cliente', ['clientId'])
+@Index('IDX_bookings_profesional', ['providerId'])
+@Index('IDX_bookings_servicio', ['serviceId'])
+@Check('CHK_bookings_importe', '"totalPrice" >= 0.5')
+@Check('CHK_bookings_duracion', '"durationMinutes" BETWEEN 15 AND 480')
+@Exclusion(
+  'EXCL_bookings_sin_solape',
+  `USING gist ("providerId" WITH =, tsrange("scheduledDate", "scheduledDate" + "durationMinutes" * interval '1 minute') WITH &&) WHERE (status = 'confirmed')`,
+)
 export class Booking {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -27,21 +48,21 @@ export class Booking {
   @Column()
   clientId: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'clientId' })
   client: User;
 
   @Column()
   serviceId: string;
 
-  @ManyToOne(() => Service, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Service, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'serviceId' })
   service: Service;
 
   @Column()
   providerId: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'providerId' })
   provider: User;
 
@@ -54,6 +75,10 @@ export class Booking {
 
   @Column({ type: 'timestamp' })
   scheduledDate: Date;
+
+  /** Copiada del servicio al reservar: si después cambia, esta no. */
+  @Column({ type: 'int', default: 60 })
+  durationMinutes: number;
 
   @Column({ type: 'text', nullable: true })
   description: string;

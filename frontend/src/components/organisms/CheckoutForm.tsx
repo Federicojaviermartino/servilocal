@@ -13,12 +13,15 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { paymentsApi } from '@/lib/api';
+import { BookingStatus } from '@/types';
 import Button from '../atoms/Button';
 
 interface CheckoutFormProps {
   bookingId: string;
   paymentIntentId: string;
   amount: number;
+  /** Una completada se cobra en el acto; las demás se retienen. */
+  estadoReserva?: BookingStatus;
   onIntentExpired?: () => Promise<void>;
 }
 
@@ -38,9 +41,18 @@ export default function CheckoutForm({
   bookingId,
   paymentIntentId,
   amount,
+  estadoReserva = BookingStatus.PENDING,
   onIntentExpired,
 }: CheckoutFormProps) {
   const t = useTranslations('pago');
+  const cobroInmediato = estadoReserva === BookingStatus.COMPLETED;
+  // Decía siempre que el profesional tenía que aceptar la reserva, también
+  // al volver a autorizar una que ya había aceptado.
+  const avisoAlPagar = cobroInmediato
+    ? 'cobrado'
+    : estadoReserva === BookingStatus.CONFIRMED
+      ? 'retenidoConfirmada'
+      : 'completado';
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -91,7 +103,7 @@ export default function CheckoutForm({
     ) {
       try {
         await paymentsApi.confirm(paymentIntentId);
-        toast.success(t('completado'));
+        toast.success(t(avisoAlPagar));
         router.push(`/dashboard/bookings?confirmed=${bookingId}`);
       } catch {
         toast.error(t('noConfirmado'));
@@ -116,7 +128,9 @@ export default function CheckoutForm({
         disabled={!stripe || !elements || isProcessing}
         isLoading={isProcessing}
       >
-        {t('pagar', { importe: amount.toFixed(2) })}
+        {t(cobroInmediato ? 'pagarAhora' : 'pagar', {
+          importe: amount.toFixed(2),
+        })}
       </Button>
       <p className="text-xs text-tenue text-center">{t('avisoStripe')}</p>
     </form>

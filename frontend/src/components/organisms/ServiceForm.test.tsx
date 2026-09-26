@@ -166,6 +166,57 @@ describe('ServiceForm', () => {
     );
   });
 
+  it('la duración se elige de una lista y viaja con el servicio', async () => {
+    // Es lo que ocupa cada reserva en la agenda: sin ella, dos reservas a la
+    // misma hora no se pisaban.
+    const { alEnviar } = pintar(COMPLETO);
+    const duracion = screen.getByLabelText(es.formularioServicio.duracion);
+
+    expect(duracion).toHaveValue('60');
+    await userEvent.selectOptions(duracion, '90');
+    enviarSaltandoAlNavegador();
+
+    expect(alEnviar).toHaveBeenCalledWith(
+      expect.objectContaining({ durationMinutes: 90 }),
+    );
+    expect(screen.getByRole('option', { name: '1,5 h' })).toBeInTheDocument();
+  });
+
+  it('y explica para qué sirve', async () => {
+    pintar(COMPLETO);
+
+    expect(
+      screen.getByLabelText(es.formularioServicio.duracion),
+    ).toHaveAccessibleDescription(es.formularioServicio.duracionPista);
+  });
+
+  it('al editar, conserva una duración que no está en la lista', async () => {
+    // La API admite cualquiera entre 15 minutos y 8 horas; si no estuviera
+    // entre las opciones, guardar la cambiaría sin avisar.
+    pintar({ ...COMPLETO, durationMinutes: 45 });
+
+    expect(screen.getByLabelText(es.formularioServicio.duracion)).toHaveValue(
+      '45',
+    );
+    expect(screen.getByRole('option', { name: '45 min' })).toBeInTheDocument();
+  });
+
+  it('el precio no baja de lo que Stripe puede cobrar', async () => {
+    // Por debajo de 50 céntimos, el servicio se publicaba y después nadie
+    // podía pagarlo.
+    const { alEnviar } = pintar({ ...COMPLETO, priceMin: 0.3, priceMax: 0 });
+
+    expect(
+      screen.getByLabelText(es.formularioServicio.precioMinimo),
+    ).toHaveAttribute('min', '0.5');
+    enviarSaltandoAlNavegador();
+
+    expect(
+      screen.getByText(es.formularioServicio.precioMinimoStripe),
+    ).toBeInTheDocument();
+    expect(alEnviar).not.toHaveBeenCalled();
+  });
+
   it('el radio de cobertura no admite cualquier número', async () => {
     pintar(COMPLETO);
     const radio = screen.getByLabelText(es.formularioServicio.radio);

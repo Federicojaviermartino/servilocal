@@ -5,13 +5,20 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Booking, BookingStatus, Service, User } from '../entities';
 import { CreateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { reservaVisible } from './partes-visibles';
 import { comprobarMismoMundo } from '../common/demostracion';
+import {
+  comprobarFechaNueva,
+  comprobarQueHaLlegado,
+  comprobarQueNoHaPasado,
+  errorDeSolape,
+  esSolape,
+} from '../common/calendario';
 import { NotificationType } from '../entities';
 
 /**
@@ -101,12 +108,16 @@ export class BookingsService {
     private userRepository: Repository<User>,
     private readonly avisos: NotificationsService,
     private readonly pagos: PaymentsService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
     clientId: string,
     createDto: CreateBookingDto,
   ): Promise<Booking> {
+    const scheduledDate = new Date(createDto.scheduledDate);
+    comprobarFechaNueva(scheduledDate);
+
     const service = await this.serviceRepository.findOne({
       where: { id: createDto.serviceId, isActive: true },
     });
@@ -137,17 +148,67 @@ export class BookingsService {
     // así que es el servicio quien dice si la cifra vale.
     const totalPrice = comprobarPrecio(service, createDto.totalPrice);
 
+    // Pedir un hueco que el profesional ya tiene comprometido es pedir algo
+    // que nunca va a poder aceptar: se dice ahora, no cuando lo intente.
+    if (
+      await this.horarioOcupado(
+        service.providerId,
+        scheduledDate,
+        service.durationMinutes,
+      )
+    ) {
+      throw errorDeSolape();
+    }
+
     const booking = this.bookingRepository.create({
       clientId,
       serviceId: createDto.serviceId,
       providerId: service.providerId,
-      scheduledDate: new Date(createDto.scheduledDate),
+      scheduledDate,
+      durationMinutes: service.durationMinutes,
       description: createDto.description,
       totalPrice,
       status: BookingStatus.PENDING,
     });
 
-    return this.bookingRepository.save(booking);
+    const guardada = await this.bookingRepository.save(booking);
+
+    // El profesional se enteraba de las solicitudes nuevas recargando su
+    // bandeja: el aviso existía en el catálogo y nadie lo enviaba.
+    await this.avisos.crear({
+      usuarioId: service.providerId,
+      tipo: NotificationType.BOOKING_REQUEST,
+      enlace: `/dashboard/bookings/${guardada.id}`,
+    });
+
+    return guardada;
+  }
+
+  /**
+   * Si el profesional ya tiene una reserva confirmada que se pisa con esta.
+   *
+   * Al pedir una reserva, orienta; al confirmarla, rechaza. Pero la que
+   * decide es la restricción de la base, la única que ve dos confirmaciones
+   * simultáneas: cada una bloquea solo su fila y ninguna ve a la otra.
+   */
+  private async horarioOcupado(
+    providerId: string,
+    inicio: Date,
+    minutos: number,
+    reservas: Repository<Booking> = this.bookingRepository,
+  ): Promise<boolean> {
+    const fin = new Date(inicio.getTime() + minutos * 60_000);
+    return reservas
+      .createQueryBuilder('reserva')
+      .where('reserva.providerId = :providerId', { providerId })
+      .andWhere('reserva.status = :confirmada', {
+        confirmada: BookingStatus.CONFIRMED,
+      })
+      .andWhere(
+        `tsrange(reserva.scheduledDate, reserva.scheduledDate + reserva.durationMinutes * interval '1 minute') && tsrange(CAST(:inicio AS timestamp), CAST(:fin AS timestamp))`,
+        { inicio, fin },
+      )
+      .getExists();
   }
 
   /**
@@ -193,41 +254,84 @@ export class BookingsService {
     userRole: string,
     updateDto: UpdateBookingStatusDto,
   ): Promise<Booking> {
-    const booking = await this.findById(id);
-    const newStatus = updateDto.status as BookingStatus;
+    const newStatus = updateDto.status;
+    const sinCobro = updateDto.sinCobro === true;
 
-    this.validateStatusTransition(booking, newStatus, userId, userRole);
+    // Todo en una transacción, con la fila de la reserva bloqueada.
+    //
+    // Antes se leía la reserva, se movía el dinero y se guardaba después,
+    // sin bloqueo. Si el profesional completaba mientras el cliente
+    // cancelaba, las dos validaban la transición contra el mismo estado:
+    // una cobraba y la otra dejaba la reserva cancelada con el dinero
+    // cobrado. Con el bloqueo, la segunda espera y vuelve a validar contra
+    // lo que dejó la primera.
+    await this.dataSource.transaction(async (gestor) => {
+      const booking = await gestor.findOne(Booking, {
+        where: { id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!booking) {
+        throw new NotFoundException('Reserva no encontrada');
+      }
 
-    // El dinero se mueve ANTES de dar por bueno el estado. Si el cobro
-    // falla, la reserva no se marca completada: un trabajo cerrado sin
-    // cobrar no lo vuelve a mirar nadie. Liberar, en cambio, nunca bloquea
-    // —quien cancela tiene derecho a cancelar— y eso lo decide el servicio
-    // de pagos, no esta línea.
-    if (newStatus === BookingStatus.COMPLETED) {
-      await this.pagos.cobrarAlCompletar(booking.id);
-    } else if (
-      newStatus === BookingStatus.CANCELLED ||
-      newStatus === BookingStatus.REJECTED
-    ) {
-      await this.pagos.liberarRetencion(booking.id);
-    }
+      this.validateStatusTransition(booking, newStatus, userId, userRole);
 
-    booking.status = newStatus;
+      // La restricción de la base es la que ve dos confirmaciones a la vez;
+      // esto da el mismo rechazo sin depender de ella, que una base sin
+      // btree_gist no tiene (ver CalendarioReservas).
+      if (
+        newStatus === BookingStatus.CONFIRMED &&
+        (await this.horarioOcupado(
+          booking.providerId,
+          booking.scheduledDate,
+          booking.durationMinutes,
+          gestor.getRepository(Booking),
+        ))
+      ) {
+        throw errorDeSolape();
+      }
 
-    if (newStatus === BookingStatus.CONFIRMED) {
-      booking.confirmedAt = new Date();
-    } else if (newStatus === BookingStatus.COMPLETED) {
-      booking.completedAt = new Date();
-    } else if (
-      newStatus === BookingStatus.CANCELLED ||
-      newStatus === BookingStatus.REJECTED
-    ) {
-      booking.cancelledAt = new Date();
-      booking.cancellationReason = updateDto.cancellationReason || null;
-    }
+      // El dinero se mueve ANTES de dar por bueno el estado. Si el cobro
+      // falla, la reserva no se marca completada: un trabajo cerrado sin
+      // cobrar no lo vuelve a mirar nadie. Liberar, en cambio, nunca
+      // bloquea —quien cancela tiene derecho a cancelar— y eso lo decide el
+      // servicio de pagos, no esta línea.
+      if (newStatus === BookingStatus.COMPLETED) {
+        await this.pagos.cobrarAlCompletar(booking.id, { gestor, sinCobro });
+      } else if (
+        newStatus === BookingStatus.CANCELLED ||
+        newStatus === BookingStatus.REJECTED
+      ) {
+        await this.pagos.liberarRetencion(booking.id, gestor);
+      }
 
-    const guardada = await this.bookingRepository.save(booking);
-    await this.avisar(guardada, newStatus);
+      booking.status = newStatus;
+
+      if (newStatus === BookingStatus.CONFIRMED) {
+        booking.confirmedAt = new Date();
+      } else if (newStatus === BookingStatus.COMPLETED) {
+        booking.completedAt = new Date();
+      } else if (
+        newStatus === BookingStatus.CANCELLED ||
+        newStatus === BookingStatus.REJECTED
+      ) {
+        booking.cancelledAt = new Date();
+        booking.cancellationReason = updateDto.cancellationReason || null;
+      }
+
+      try {
+        await gestor.save(booking);
+      } catch (error) {
+        // Otra reserva confirmada del mismo profesional ocupa ese horario.
+        if (esSolape(error)) throw errorDeSolape();
+        throw error;
+      }
+    });
+
+    // Con sus relaciones, que la fila bloqueada no podía traer: PostgreSQL
+    // no bloquea el lado opcional de una unión externa.
+    const guardada = await this.findById(id);
+    await this.avisar(guardada, newStatus, userId, sinCobro);
     return reservaVisible(guardada);
   }
 
@@ -238,17 +342,31 @@ export class BookingsService {
    * enteraba recargando la página. El aviso no puede hacer fallar el cambio
    * de estado, así que el servicio de avisos no lanza nunca.
    */
-  private async avisar(reserva: Booking, estado: BookingStatus): Promise<void> {
+  private async avisar(
+    reserva: Booking,
+    estado: BookingStatus,
+    actorId: string,
+    sinCobro = false,
+  ): Promise<void> {
     const aviso = AVISO_POR_ESTADO[estado];
     if (!aviso) return;
 
-    await this.avisos.crear({
-      usuarioId:
-        aviso.destino === 'cliente' ? reserva.clientId : reserva.providerId,
-      tipo: aviso.tipo,
-      datos: { estado },
-      enlace: `/dashboard/bookings/${reserva.id}`,
-    });
+    // Cancelar pueden las dos partes, y el aviso iba siempre al profesional:
+    // si cancelaba él, se avisaba a sí mismo y el cliente se presentaba sin
+    // saberlo. Va a la otra parte, y a las dos si cancela la moderación.
+    const destinos =
+      estado === BookingStatus.CANCELLED
+        ? [reserva.clientId, reserva.providerId].filter((id) => id !== actorId)
+        : [aviso.destino === 'cliente' ? reserva.clientId : reserva.providerId];
+
+    for (const usuarioId of destinos) {
+      await this.avisos.crear({
+        usuarioId,
+        tipo: aviso.tipo,
+        datos: sinCobro ? { estado, sinCobro: 'si' } : { estado },
+        enlace: `/dashboard/bookings/${reserva.id}`,
+      });
+    }
   }
 
   async findByClient(clientId: string): Promise<Booking[]> {
@@ -334,6 +452,16 @@ export class BookingsService {
           'No tienes permisos para cancelar esta reserva',
         );
       }
+    }
+
+    // Las fechas, después de los permisos: a quien no puede tocar la
+    // reserva no se le cuenta nada de ella.
+    if (newStatus === BookingStatus.CONFIRMED) {
+      comprobarQueNoHaPasado(booking.scheduledDate);
+    } else if (newStatus === BookingStatus.COMPLETED) {
+      // Antes se podía completar, y con ello cobrar, un trabajo de la
+      // semana que viene.
+      comprobarQueHaLlegado(booking.scheduledDate);
     }
   }
 }

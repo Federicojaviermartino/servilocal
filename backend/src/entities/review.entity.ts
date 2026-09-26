@@ -7,13 +7,23 @@ import {
   ManyToOne,
   JoinColumn,
   Unique,
+  Index,
+  Check,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Booking } from './booking.entity';
 import { Service } from './service.entity';
 
+/**
+ * Índices y restricciones con el mismo nombre que en las migraciones:
+ * TypeORM los compara por nombre, y la prueba de deriva del esquema falla si
+ * no coinciden. Ver IntegridadDeLosDatos.
+ */
 @Entity('reviews')
 @Unique(['bookingId'])
+@Index('IDX_reviews_servicio', ['serviceId'])
+@Index('IDX_reviews_cliente', ['clientId'])
+@Check('CHK_reviews_nota', '"rating" BETWEEN 1 AND 5')
 export class Review {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,21 +31,21 @@ export class Review {
   @Column()
   bookingId: string;
 
-  @ManyToOne(() => Booking, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Booking, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'bookingId' })
   booking: Booking;
 
   @Column()
   clientId: string;
 
-  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'clientId' })
   client: User;
 
   @Column()
   serviceId: string;
 
-  @ManyToOne(() => Service, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Service, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'serviceId' })
   service: Service;
 

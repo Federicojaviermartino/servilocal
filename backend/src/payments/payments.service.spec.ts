@@ -7,9 +7,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import Stripe from 'stripe';
 import {
+  AccionAuditada,
   Booking,
   BookingStatus,
   NotificationType,
@@ -17,11 +18,18 @@ import {
   PaymentStatus,
   User,
 } from '../entities';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { PaymentsService } from './payments.service';
+import { CODIGO_SIN_PAGO_RETENIDO, PaymentsService } from './payments.service';
 
 const INTENCION = 'pi_prueba_123';
 const NUEVA = 'pi_nueva_456';
+
+/** Quien cobra o reembolsa desde la administración. */
+const ADMIN = { id: 'a1', email: 'admin@servilocal.com' };
+
+/** La clave con la que se captura un pago: la misma en cada reintento. */
+const CLAVE_CAPTURA = { idempotencyKey: `captura:p1:${INTENCION}` };
 
 function stripeFalso() {
   return {
@@ -120,6 +128,7 @@ async function construir(
   };
 
   const avisos = { crear: vi.fn(async () => null) };
+  const auditoria = { anotar: vi.fn(async () => undefined) };
 
   const dataSource = {
     transaction: vi.fn(
@@ -136,6 +145,7 @@ async function construir(
       { provide: DataSource, useValue: dataSource },
       { provide: ConfigService, useValue: { getOrThrow: () => 'sk_test_x' } },
       { provide: NotificationsService, useValue: avisos },
+      { provide: AuditoriaService, useValue: auditoria },
     ],
   }).compile();
 
@@ -145,7 +155,33 @@ async function construir(
   // no llamar a la pasarela de verdad desde una batería de tests.
   (servicio as unknown as { stripe: unknown }).stripe = stripe;
 
-  return { servicio, pagos, reservas, stripe, gestor, dataSource, avisos };
+  return {
+    servicio,
+    pagos,
+    reservas,
+    stripe,
+    gestor,
+    dataSource,
+    avisos,
+    auditoria,
+  };
+}
+
+/** Lo que Stripe contesta al preguntarle por la intención. */
+const enStripe = (stripe: ReturnType<typeof stripeFalso>, estado: string) =>
+  stripe.paymentIntents.retrieve.mockResolvedValueOnce({
+    id: INTENCION,
+    client_secret: 'cs',
+    status: estado as Stripe.PaymentIntent.Status,
+  });
+
+/** El 409 con su código, que es lo que la interfaz reconoce. */
+async function esperarSinPagoRetenido(promesa: Promise<unknown>) {
+  const error = await promesa.catch((e: unknown) => e);
+  expect(error).toBeInstanceOf(ConflictException);
+  expect((error as ConflictException).getResponse()).toMatchObject({
+    codigo: CODIGO_SIN_PAGO_RETENIDO,
+  });
 }
 
 /** Evento de Stripe con lo justo que el servicio mira. */
@@ -153,42 +189,129 @@ const evento = (type: string, pi: Record<string, unknown>) =>
   ({ type, data: { object: pi } }) as unknown as Stripe.Event;
 
 describe('PaymentsService', () => {
-  describe('cobrar lo retenido', () => {
+  describe('cobrar lo retenido desde la administración', () => {
+    const RETENIDO = () => ({
+      id: 'p1',
+      bookingId: 'b1',
+      status: PaymentStatus.HELD,
+      stripePaymentIntentId: INTENCION,
+    });
+    const RESERVA = (status = BookingStatus.COMPLETED) => ({
+      id: 'b1',
+      status,
+    });
+
     it('captura en Stripe y lo marca completado', async () => {
-      const { servicio, stripe, pagos } = await construir({
-        id: 'p1',
-        bookingId: 'b1',
-        status: PaymentStatus.HELD,
-        stripePaymentIntentId: INTENCION,
-      });
+      const { servicio, stripe, pagos } = await construir(
+        RETENIDO(),
+        RESERVA(),
+      );
 
-      const resultado = await servicio.capturePayment('b1');
+      const resultado = await servicio.capturePayment('b1', ADMIN);
 
-      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(INTENCION);
+      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(
+        INTENCION,
+        {},
+        CLAVE_CAPTURA,
+      );
       expect(resultado.status).toBe(PaymentStatus.COMPLETED);
       expect(pagos.save).toHaveBeenCalled();
     });
 
-    it('avisa si no hay nada retenido para esa reserva', async () => {
-      const { servicio, stripe } = await construir(null);
+    it('y queda anotado en el historial', async () => {
+      // Movía dinero sin dejar rastro de quién lo había hecho.
+      const { servicio, auditoria } = await construir(RETENIDO(), RESERVA());
 
-      await expect(servicio.capturePayment('b1')).rejects.toThrow(
+      await servicio.capturePayment('b1', ADMIN);
+
+      expect(auditoria.anotar).toHaveBeenCalledWith({
+        actor: ADMIN,
+        accion: AccionAuditada.PAGO_COBRADO,
+        entidad: 'pago',
+        entidadId: 'p1',
+        contexto: { reserva: 'b1' },
+      });
+    });
+
+    it.each([
+      BookingStatus.PENDING,
+      BookingStatus.CONFIRMED,
+      BookingStatus.CANCELLED,
+      BookingStatus.REJECTED,
+    ])('no cobra una reserva %s', async (estado) => {
+      // Cobrar una pendiente y que después el profesional la rechazara
+      // dejaba cobrada una reserva rechazada.
+      const { servicio, stripe, auditoria } = await construir(
+        RETENIDO(),
+        RESERVA(estado),
+      );
+
+      await expect(servicio.capturePayment('b1', ADMIN)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+      expect(auditoria.anotar).not.toHaveBeenCalled();
+    });
+
+    it('ni cobra dos veces', async () => {
+      const { servicio, stripe, auditoria } = await construir(
+        { ...RETENIDO(), status: PaymentStatus.COMPLETED },
+        RESERVA(),
+      );
+
+      await expect(servicio.capturePayment('b1', ADMIN)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+      expect(auditoria.anotar).not.toHaveBeenCalled();
+    });
+
+    it('avisa si no hay nada retenido para esa reserva', async () => {
+      const { servicio, stripe, auditoria } = await construir(null, RESERVA());
+
+      await expect(servicio.capturePayment('b1', ADMIN)).rejects.toThrow(
         NotFoundException,
       );
       expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+      expect(auditoria.anotar).not.toHaveBeenCalled();
+    });
+
+    it('ni si la reserva no existe', async () => {
+      const { servicio } = await construir(RETENIDO(), null);
+
+      await expect(servicio.capturePayment('b1', ADMIN)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('con la reserva bloqueada, antes que el pago', async () => {
+      const { servicio, gestor } = await construir(RETENIDO(), RESERVA());
+
+      await servicio.capturePayment('b1', ADMIN);
+
+      expect(gestor.findOne).toHaveBeenNthCalledWith(1, Booking, {
+        where: { id: 'b1' },
+        lock: { mode: 'pessimistic_write' },
+      });
     });
   });
 
   describe('devolver el dinero', () => {
-    it('un pago retenido se cancela, porque aún no se ha cobrado', async () => {
-      const { servicio, stripe } = await construir({
-        id: 'p1',
-        bookingId: 'b1',
-        status: PaymentStatus.HELD,
-        stripePaymentIntentId: INTENCION,
-      });
+    // La reserva ya cerrada: con ella abierta, el reembolso no se permite.
+    const CERRADA = { id: 'b1', status: BookingStatus.CANCELLED };
 
-      const resultado = await servicio.refundPayment('b1');
+    it('un pago retenido se cancela, porque aún no se ha cobrado', async () => {
+      const { servicio, stripe } = await construir(
+        {
+          id: 'p1',
+          bookingId: 'b1',
+          status: PaymentStatus.HELD,
+          stripePaymentIntentId: INTENCION,
+        },
+        CERRADA,
+      );
+
+      const resultado = await servicio.refundPayment('b1', ADMIN);
 
       // Con el motivo, para que el aviso que devuelve Stripe se reconozca
       // como propio y no pida volver a pagar.
@@ -203,31 +326,85 @@ describe('PaymentsService', () => {
       // Son dos operaciones distintas en Stripe y no son intercambiables: un
       // intento capturado está en «succeeded» y cancelarlo es un error de la
       // pasarela, así que el cliente se queda sin su dinero y con un fallo.
-      const { servicio, stripe } = await construir({
-        id: 'p1',
-        bookingId: 'b1',
-        status: PaymentStatus.COMPLETED,
-        stripePaymentIntentId: INTENCION,
-      });
+      const { servicio, stripe } = await construir(
+        {
+          id: 'p1',
+          bookingId: 'b1',
+          status: PaymentStatus.COMPLETED,
+          stripePaymentIntentId: INTENCION,
+        },
+        { id: 'b1', status: BookingStatus.COMPLETED },
+      );
 
-      const resultado = await servicio.refundPayment('b1');
+      const resultado = await servicio.refundPayment('b1', ADMIN);
 
-      expect(stripe.refunds.create).toHaveBeenCalledWith({
-        payment_intent: INTENCION,
-      });
+      // Con clave, para que un reintento tras un corte no devuelva dos veces.
+      expect(stripe.refunds.create).toHaveBeenCalledWith(
+        { payment_intent: INTENCION },
+        { idempotencyKey: `reembolso:p1:${INTENCION}` },
+      );
       expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
       expect(resultado.status).toBe(PaymentStatus.REFUNDED);
     });
 
-    it('no se devuelve un pago que nunca llegó a retenerse', async () => {
-      const { servicio, stripe } = await construir({
-        id: 'p1',
-        bookingId: 'b1',
-        status: PaymentStatus.PENDING,
-        stripePaymentIntentId: INTENCION,
-      });
+    it('y queda anotado en el historial', async () => {
+      const { servicio, auditoria } = await construir(
+        {
+          id: 'p1',
+          bookingId: 'b1',
+          status: PaymentStatus.COMPLETED,
+          stripePaymentIntentId: INTENCION,
+        },
+        { id: 'b1', status: BookingStatus.COMPLETED },
+      );
 
-      await expect(servicio.refundPayment('b1')).rejects.toThrow(
+      await servicio.refundPayment('b1', ADMIN);
+
+      expect(auditoria.anotar).toHaveBeenCalledWith({
+        actor: ADMIN,
+        accion: AccionAuditada.PAGO_REEMBOLSADO,
+        entidad: 'pago',
+        entidadId: 'p1',
+        contexto: { reserva: 'b1' },
+      });
+    });
+
+    it.each([BookingStatus.PENDING, BookingStatus.CONFIRMED])(
+      'no con la reserva %s: sigue abierta',
+      async (estado) => {
+        // Devolver el dinero la dejaba viva y sin garantía, y después se
+        // completaba sin cobrar. Para soltar la retención, se cancela.
+        const { servicio, stripe, auditoria } = await construir(
+          {
+            id: 'p1',
+            bookingId: 'b1',
+            status: PaymentStatus.HELD,
+            stripePaymentIntentId: INTENCION,
+          },
+          { id: 'b1', status: estado },
+        );
+
+        await expect(servicio.refundPayment('b1', ADMIN)).rejects.toThrow(
+          ConflictException,
+        );
+        expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+        expect(stripe.refunds.create).not.toHaveBeenCalled();
+        expect(auditoria.anotar).not.toHaveBeenCalled();
+      },
+    );
+
+    it('no se devuelve un pago que nunca llegó a retenerse', async () => {
+      const { servicio, stripe } = await construir(
+        {
+          id: 'p1',
+          bookingId: 'b1',
+          status: PaymentStatus.PENDING,
+          stripePaymentIntentId: INTENCION,
+        },
+        CERRADA,
+      );
+
+      await expect(servicio.refundPayment('b1', ADMIN)).rejects.toThrow(
         BadRequestException,
       );
       expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
@@ -235,45 +412,52 @@ describe('PaymentsService', () => {
     });
 
     it('no se devuelve dos veces', async () => {
-      const { servicio } = await construir({
-        id: 'p1',
-        bookingId: 'b1',
-        status: PaymentStatus.REFUNDED,
-        stripePaymentIntentId: INTENCION,
-      });
+      const { servicio, auditoria } = await construir(
+        {
+          id: 'p1',
+          bookingId: 'b1',
+          status: PaymentStatus.REFUNDED,
+          stripePaymentIntentId: INTENCION,
+        },
+        CERRADA,
+      );
 
-      await expect(servicio.refundPayment('b1')).rejects.toThrow(
+      await expect(servicio.refundPayment('b1', ADMIN)).rejects.toThrow(
         BadRequestException,
       );
+      expect(auditoria.anotar).not.toHaveBeenCalled();
     });
 
     it('avisa si el pago no existe', async () => {
-      const { servicio } = await construir(null);
+      const { servicio } = await construir(null, CERRADA);
 
-      await expect(servicio.refundPayment('b1')).rejects.toThrow(
+      await expect(servicio.refundPayment('b1', ADMIN)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('ni si la reserva no existe', async () => {
+      const { servicio } = await construir(null, null);
+
+      await expect(servicio.refundPayment('b1', ADMIN)).rejects.toThrow(
         NotFoundException,
       );
     });
   });
 
   describe('confirmar la retención', () => {
-    const PENDIENTE = {
+    // Función y no constante: el servicio escribe sobre el objeto.
+    const PENDIENTE = (status = PaymentStatus.PENDING) => ({
       id: 'p1',
+      bookingId: 'b1',
       clientId: 'c1',
-      status: PaymentStatus.PENDING,
+      status,
       stripePaymentIntentId: INTENCION,
-    };
-
-    /** Lo que Stripe contesta al preguntarle por la intención. */
-    const enStripe = (stripe: ReturnType<typeof stripeFalso>, estado: string) =>
-      stripe.paymentIntents.retrieve.mockResolvedValueOnce({
-        id: INTENCION,
-        client_secret: 'cs',
-        status: estado as Stripe.PaymentIntent.Status,
-      });
+    });
+    const RESERVA = (status = BookingStatus.PENDING) => ({ id: 'b1', status });
 
     it('marca la fecha de pago al pasar a retenido', async () => {
-      const { servicio, stripe } = await construir(PENDIENTE);
+      const { servicio, stripe } = await construir(PENDIENTE(), RESERVA());
       enStripe(stripe, 'requires_capture');
 
       const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
@@ -285,7 +469,7 @@ describe('PaymentsService', () => {
     it('pregunta a Stripe en vez de creerse al navegador', async () => {
       // Esta ruta existe para adelantarse al webhook. Sin preguntar, era
       // una forma de marcar como pagado algo que nadie había pagado.
-      const { servicio, stripe } = await construir(PENDIENTE);
+      const { servicio, stripe } = await construir(PENDIENTE(), RESERVA());
       enStripe(stripe, 'requires_payment_method');
 
       await expect(
@@ -294,7 +478,7 @@ describe('PaymentsService', () => {
     });
 
     it('un pago ya cobrado queda completado, no retenido', async () => {
-      const { servicio, stripe } = await construir(PENDIENTE);
+      const { servicio, stripe } = await construir(PENDIENTE(), RESERVA());
       enStripe(stripe, 'succeeded');
 
       const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
@@ -302,9 +486,102 @@ describe('PaymentsService', () => {
       expect(resultado.status).toBe(PaymentStatus.COMPLETED);
     });
 
+    it('con la fila del pago bloqueada', async () => {
+      // El webhook puede estar anotando lo mismo a la vez.
+      const { servicio, stripe, gestor } = await construir(
+        PENDIENTE(),
+        RESERVA(),
+      );
+      enStripe(stripe, 'requires_capture');
+
+      await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(gestor.findOne).toHaveBeenCalledWith(Payment, {
+        where: { stripePaymentIntentId: INTENCION },
+        lock: { mode: 'pessimistic_write' },
+      });
+    });
+
+    it('no reescribe lo que ya contó el webhook', async () => {
+      // Un pago reembolsado volvía a figurar como cobrado si el navegador
+      // llegaba tarde con su confirmación.
+      const { servicio, stripe, pagos } = await construir(
+        PENDIENTE(PaymentStatus.REFUNDED),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+      enStripe(stripe, 'succeeded');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(resultado.status).toBe(PaymentStatus.REFUNDED);
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
+    it('si la reserva se canceló mientras pagaba, suelta la retención', async () => {
+      const { servicio, stripe } = await construir(
+        PENDIENTE(),
+        RESERVA(BookingStatus.CANCELLED),
+      );
+      enStripe(stripe, 'requires_capture');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+        cancellation_reason: 'abandoned',
+      });
+      expect(resultado.status).toBe(PaymentStatus.REFUNDED);
+    });
+
+    it('si se completó sin cobro, cobra en el acto', async () => {
+      const { servicio, stripe } = await construir(
+        PENDIENTE(),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+      enStripe(stripe, 'requires_capture');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(
+        INTENCION,
+        {},
+        CLAVE_CAPTURA,
+      );
+      expect(resultado.status).toBe(PaymentStatus.COMPLETED);
+    });
+
+    it('si ese cobro falla, el cliente no ve un error: ya ha pagado', async () => {
+      // El webhook repetirá el intento; aquí basta con que conste retenido.
+      const { servicio, stripe } = await construir(
+        PENDIENTE(),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+      enStripe(stripe, 'requires_capture');
+      stripe.paymentIntents.capture.mockRejectedValueOnce(
+        new Error('Stripe no responde'),
+      );
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(resultado.status).toBe(PaymentStatus.HELD);
+    });
+
+    it('con la reserva abierta, la retención se queda como está', async () => {
+      const { servicio, stripe } = await construir(
+        PENDIENTE(),
+        RESERVA(BookingStatus.CONFIRMED),
+      );
+      enStripe(stripe, 'requires_capture');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(resultado.status).toBe(PaymentStatus.HELD);
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+    });
+
     it('no se confirma el pago de otra persona', async () => {
       // Antes bastaba con conocer el identificador de la intención.
-      const { servicio, stripe } = await construir(PENDIENTE);
+      const { servicio, stripe } = await construir(PENDIENTE(), RESERVA());
 
       await expect(
         servicio.confirmPaymentHold(INTENCION, 'otro'),
@@ -557,21 +834,61 @@ describe('PaymentsService', () => {
       );
     });
 
-    it.each([
-      BookingStatus.CANCELLED,
-      BookingStatus.REJECTED,
-      BookingStatus.COMPLETED,
-    ])('no se paga una reserva %s', async (estado) => {
+    it('una completada sin cobro se paga, y se cobra en el acto', async () => {
+      // Es lo que elige el profesional al completarla sin pago retenido: que
+      // el cliente pague después. El trabajo ya está hecho, así que no se
+      // retiene: se cobra.
       const { servicio, stripe } = await construir(null, {
         ...RESERVA,
-        status: estado,
+        status: BookingStatus.COMPLETED,
       });
 
-      await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
-        BadRequestException,
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      const [parametros, opciones] = stripe.paymentIntents.create.mock.calls[0];
+      expect(parametros.capture_method).toBe('automatic');
+      expect(parametros.setup_future_usage).toBeUndefined();
+      // Otra clave: con la de retener, Stripe rechazaría unos parámetros
+      // distintos.
+      expect(opciones?.idempotencyKey).toBe(
+        'reserva:b1:1999:cobro:tras:ninguna',
       );
-      expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
     });
+
+    it.each([PaymentStatus.COMPLETED, PaymentStatus.REFUNDED])(
+      'pero no si su pago está %s',
+      async (estado) => {
+        const { servicio, stripe } = await construir(
+          {
+            id: 'p1',
+            bookingId: 'b1',
+            status: estado,
+            stripePaymentIntentId: INTENCION,
+          },
+          { ...RESERVA, status: BookingStatus.COMPLETED },
+        );
+
+        await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
+          ConflictException,
+        );
+        expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each([BookingStatus.CANCELLED, BookingStatus.REJECTED])(
+      'no se paga una reserva %s',
+      async (estado) => {
+        const { servicio, stripe } = await construir(null, {
+          ...RESERVA,
+          status: estado,
+        });
+
+        await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+      },
+    );
 
     it('reaprovecha la intención que sigue siendo pagable', async () => {
       // Volver a la pantalla de pago no debe abrir un cobro nuevo: serían dos
@@ -796,6 +1113,111 @@ describe('PaymentsService', () => {
 
     it('ni si lo cancelado no llegó a retener nada', async () => {
       const { servicio, avisos } = await construir(PAGO(), RESERVA());
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.canceled', {
+          id: INTENCION,
+          cancellation_reason: 'automatic',
+        }),
+      );
+
+      expect(avisos.crear).not.toHaveBeenCalled();
+    });
+
+    it('el pago se lee con la fila bloqueada', async () => {
+      // El cambio de estado de la reserva puede estar moviendo este mismo
+      // dinero; sin bloqueo, uno pisaba lo del otro.
+      const { servicio, gestor } = await construir(PAGO(), RESERVA());
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+      );
+
+      expect(gestor.findOne).toHaveBeenCalledWith(Payment, {
+        where: { stripePaymentIntentId: INTENCION },
+        lock: { mode: 'pessimistic_write' },
+      });
+    });
+
+    it.each([BookingStatus.CANCELLED, BookingStatus.REJECTED])(
+      'una retención que llega con la reserva %s se suelta en el acto',
+      async (estado) => {
+        // Se quedaba retenida hasta que Stripe la soltaba a los siete días,
+        // y entonces se pedía a las dos partes que volvieran a pagar.
+        const { servicio, stripe, pagos } = await construir(
+          PAGO(),
+          RESERVA(estado),
+        );
+
+        await servicio.handleWebhookEvent(
+          evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+        );
+
+        expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+          cancellation_reason: 'abandoned',
+        });
+        expect(pagos.save).toHaveBeenLastCalledWith(
+          expect.objectContaining({ status: PaymentStatus.REFUNDED }),
+        );
+      },
+    );
+
+    it('y con la reserva completada sin cobro, se cobra', async () => {
+      const { servicio, stripe, pagos } = await construir(
+        PAGO(),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+      );
+
+      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(
+        INTENCION,
+        {},
+        CLAVE_CAPTURA,
+      );
+      expect(pagos.save).toHaveBeenLastCalledWith(
+        expect.objectContaining({ status: PaymentStatus.COMPLETED }),
+      );
+    });
+
+    it('si ese cobro falla, el aviso falla, para que Stripe lo repita', async () => {
+      const { servicio, stripe } = await construir(
+        PAGO(),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+      stripe.paymentIntents.capture.mockRejectedValueOnce(
+        new Error('Stripe no responde'),
+      );
+
+      await expect(
+        servicio.handleWebhookEvent(
+          evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+        ),
+      ).rejects.toThrow('Stripe no responde');
+    });
+
+    it('y el aviso repetido lo vuelve a intentar', async () => {
+      // El pago ya consta retenido, así que no hay nada que anotar; pero la
+      // reserva sigue completada y sin cobrar.
+      const { servicio, stripe } = await construir(
+        PAGO(PaymentStatus.HELD),
+        RESERVA(BookingStatus.COMPLETED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.amount_capturable_updated', { id: INTENCION }),
+      );
+
+      expect(stripe.paymentIntents.capture).toHaveBeenCalled();
+    });
+
+    it('si caduca con la reserva ya cerrada, no pide volver a pagar', async () => {
+      const { servicio, avisos } = await construir(
+        { ...PAGO(PaymentStatus.HELD), clientId: 'c1' },
+        { ...RESERVA(BookingStatus.CANCELLED), providerId: 'pr1' },
+      );
 
       await servicio.handleWebhookEvent(
         evento('payment_intent.canceled', {
@@ -1040,9 +1462,66 @@ describe('PaymentsService', () => {
 
       const r = await servicio.cobrarAlCompletar('b1');
 
-      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(INTENCION);
+      // Con clave: si se repite tras un corte, Stripe no cobra dos veces.
+      expect(stripe.paymentIntents.capture).toHaveBeenCalledWith(
+        INTENCION,
+        {},
+        CLAVE_CAPTURA,
+      );
       expect(r?.status).toBe(PaymentStatus.COMPLETED);
+      expect(r?.paidAt).toBeInstanceOf(Date);
       expect(pagos.save).toHaveBeenCalled();
+    });
+
+    it('con el gestor de la transacción, bloquea el pago y guarda con él', async () => {
+      // Es lo que decide juntos el dinero y el estado de la reserva.
+      const { servicio, gestor } = await construir(RETENIDO());
+
+      await servicio.cobrarAlCompletar('b1', {
+        gestor: gestor as unknown as EntityManager,
+      });
+
+      expect(gestor.findOne).toHaveBeenCalledWith(Payment, {
+        where: { bookingId: 'b1' },
+        lock: { mode: 'pessimistic_write' },
+      });
+      expect(gestor.save).toHaveBeenCalled();
+    });
+
+    it('pendiente aquí pero retenido en Stripe: se cobra igual', async () => {
+      // El aviso de Stripe puede no haber llegado todavía.
+      const { servicio, stripe } = await construir(
+        RETENIDO(PaymentStatus.PENDING),
+      );
+      enStripe(stripe, 'requires_capture');
+
+      const r = await servicio.cobrarAlCompletar('b1');
+
+      expect(stripe.paymentIntents.capture).toHaveBeenCalled();
+      expect(r?.status).toBe(PaymentStatus.COMPLETED);
+    });
+
+    it('pendiente aquí y ya cobrado en Stripe: se anota sin cobrar otra vez', async () => {
+      const { servicio, stripe } = await construir(
+        RETENIDO(PaymentStatus.PENDING),
+      );
+      enStripe(stripe, 'succeeded');
+
+      const r = await servicio.cobrarAlCompletar('b1');
+
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+      expect(r?.status).toBe(PaymentStatus.COMPLETED);
+    });
+
+    it('lo ya cobrado no se vuelve a cobrar', async () => {
+      const { servicio, stripe } = await construir(
+        RETENIDO(PaymentStatus.COMPLETED),
+      );
+
+      const r = await servicio.cobrarAlCompletar('b1');
+
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+      expect(r?.status).toBe(PaymentStatus.COMPLETED);
     });
 
     it('si Stripe rechaza el cobro, se propaga', async () => {
@@ -1060,11 +1539,30 @@ describe('PaymentsService', () => {
       expect(pagos.save).not.toHaveBeenCalled();
     });
 
-    it('una reserva sin pago se completa sin cobrar nada', async () => {
-      // Reservar no obliga a pagar, así que hay reservas sin pago asociado.
+    it('sin pago, responde 409 con su código para que decida el profesional', async () => {
+      // Se completaba en silencio y sin cobrar, y después ya no había forma
+      // de pagarla.
       const { servicio, stripe } = await construir(null);
 
-      expect(await servicio.cobrarAlCompletar('b1')).toBeNull();
+      await esperarSinPagoRetenido(servicio.cobrarAlCompletar('b1'));
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+    });
+
+    it('y si elige completarla sin cobro, no se cobra nada', async () => {
+      const { servicio, stripe } = await construir(null);
+
+      expect(
+        await servicio.cobrarAlCompletar('b1', { sinCobro: true }),
+      ).toBeNull();
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+    });
+
+    it('un pago fallido tampoco es una retención', async () => {
+      const { servicio, stripe } = await construir(
+        RETENIDO(PaymentStatus.FAILED),
+      );
+
+      await esperarSinPagoRetenido(servicio.cobrarAlCompletar('b1'));
       expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
     });
 
@@ -1102,12 +1600,58 @@ describe('PaymentsService', () => {
       expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
     });
 
+    it('cancelar antes de pagar cancela también la intención', async () => {
+      // Solo se miraba la retenida: el cliente podía terminar de pagar desde
+      // la pestaña que dejó abierta una reserva que ya no iba a ocurrir.
+      const { servicio, stripe } = await construir(
+        RETENIDO(PaymentStatus.PENDING),
+      );
+
+      const r = await servicio.liberarRetencion('b1');
+
+      expect(stripe.paymentIntents.cancel).toHaveBeenCalledWith(INTENCION, {
+        cancellation_reason: 'abandoned',
+      });
+      expect(r?.status).toBe(PaymentStatus.FAILED);
+      expect(r?.failureReason).toBe('La reserva se canceló antes de pagarla.');
+    });
+
+    it('y si Stripe no responde, se queda pendiente, no fallido', async () => {
+      // Pendiente, la retención que llegue después se suelta al ver la
+      // reserva cancelada. Fallido, ya no la tocaría nadie.
+      const { servicio, stripe, pagos } = await construir(
+        RETENIDO(PaymentStatus.PENDING),
+      );
+      stripe.paymentIntents.cancel.mockRejectedValueOnce(
+        new Error('Stripe no responde'),
+      );
+
+      expect(await servicio.liberarRetencion('b1')).toBeNull();
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
+    it('un pago ya fallido no se toca', async () => {
+      const { servicio, stripe } = await construir(
+        RETENIDO(PaymentStatus.FAILED),
+      );
+
+      expect(await servicio.liberarRetencion('b1')).toBeNull();
+      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+    });
+
+    it('sin pago, no hay nada que soltar', async () => {
+      const { servicio, stripe } = await construir(null);
+
+      expect(await servicio.liberarRetencion('b1')).toBeNull();
+      expect(stripe.paymentIntents.cancel).not.toHaveBeenCalled();
+    });
+
     it('ni se cobra lo que no está retenido', async () => {
       const { servicio, stripe } = await construir(
         RETENIDO(PaymentStatus.PENDING),
       );
 
-      expect(await servicio.cobrarAlCompletar('b1')).toBeNull();
+      await esperarSinPagoRetenido(servicio.cobrarAlCompletar('b1'));
       expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
     });
   });

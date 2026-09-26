@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from './user.entity';
 
@@ -23,7 +24,9 @@ export enum NotificationType {
   SYSTEM = 'system',
 }
 
+/** Los avisos se listan por persona, los más recientes primero. */
 @Entity('notifications')
+@Index('IDX_notifications_usuario', ['userId', 'createdAt'])
 export class Notification {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -5,17 +5,22 @@ import toast from 'react-hot-toast';
 import { Booking, BookingStatus } from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
 import { bookingsApi } from '@/lib/api';
+import { cambiarEstadoReserva } from '@/lib/cambiar-estado';
+import { textoDeError } from '@/lib/errores-api';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
+import { useAhora } from '@/lib/ahora';
 
 export default function BookingsReceivedPage() {
   const t = useTranslations('reservasPanel');
   const tEstados = useTranslations('estados');
+  const tErrores = useTranslations('erroresApi');
   const idioma = useLocale();
   const [filter, setFilter] = useState<'all' | BookingStatus>('all');
+  const ahora = useAhora();
 
   // Antes un fallo dejaba la lista vacía, y el profesional leía «no tienes
   // reservas» cuando lo que pasaba era que no se había podido preguntar.
@@ -27,11 +32,17 @@ export default function BookingsReceivedPage() {
 
   const handleStatusChange = async (id: string, status: BookingStatus) => {
     try {
-      await bookingsApi.updateStatus(id, status);
+      const hecho = await cambiarEstadoReserva(id, status, () =>
+        window.confirm(t('completarSinCobro')),
+      );
+      if (!hecho) {
+        toast(t('esperandoPago'));
+        return;
+      }
       toast.success(t('actualizada'));
       reintentar();
-    } catch {
-      toast.error(t('errorActualizar'));
+    } catch (error) {
+      toast.error(textoDeError(error, tErrores, t('errorActualizar')));
     }
   };
 
@@ -99,15 +110,18 @@ export default function BookingsReceivedPage() {
                         {b.service.title}
                       </h3>
                       <p className="text-sm text-secundario mt-1">
-                        {date.toLocaleDateString(idioma, {
-                          day: '2-digit',
-                          month: 'long',
-                          year: 'numeric',
-                        })}{' '}
-                        a las{' '}
-                        {date.toLocaleTimeString(idioma, {
-                          hour: '2-digit',
-                          minute: '2-digit',
+                        {/* «a las» estaba escrito aquí en castellano, y en
+                            cualquier otro idioma salía mezclado. */}
+                        {t('fechaYHora', {
+                          fecha: date.toLocaleDateString(idioma, {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          }),
+                          hora: date.toLocaleTimeString(idioma, {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          }),
                         })}
                       </p>
                       {b.description && (
@@ -153,15 +167,23 @@ export default function BookingsReceivedPage() {
                   )}
                   {b.status === BookingStatus.CONFIRMED && (
                     <div className="mt-4 pt-4 border-t border-borde flex justify-end">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          handleStatusChange(b.id, BookingStatus.COMPLETED)
-                        }
-                      >
-                        {t('completar')}
-                      </Button>
+                      {/* Completar es cobrar: antes de la fecha, no se
+                          ofrece. */}
+                      {new Date(b.scheduledDate).getTime() <= ahora ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            handleStatusChange(b.id, BookingStatus.COMPLETED)
+                          }
+                        >
+                          {t('completar')}
+                        </Button>
+                      ) : (
+                        <p className="text-sm text-secundario">
+                          {t('completarDesde')}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

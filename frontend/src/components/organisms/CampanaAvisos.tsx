@@ -15,6 +15,15 @@ import { avisosApi } from '@/lib/api';
 import { useAvisosEnVivo, type Aviso } from '@/lib/socket-mensajes';
 import { Link } from '@/i18n/navigation';
 
+/**
+ * Lo que vale una variable del catálogo cuando el aviso no la trae.
+ *
+ * Los avisos se guardan con los datos de su momento, y uno guardado antes
+ * de que su texto usara una variable nueva no la tiene: sin esto, el texto
+ * entero se cambiaba por la clave en crudo.
+ */
+const VALORES_NEUTROS: Record<string, string> = { sinCobro: 'no' };
+
 /** Lee los datos que el servidor guardó como texto, sin reventar si no valen. */
 function datosDe(aviso: Aviso): Record<string, string> {
   try {
@@ -62,7 +71,9 @@ export default function CampanaAvisos() {
     // Un tipo que el catálogo no conozca se enseña con un texto genérico en
     // el idioma del visitante, nunca con la clave en crudo.
     const clave = aviso.type as never;
-    return t.has(clave) ? t(clave, datosDe(aviso) as never) : t('generico');
+    return t.has(clave)
+      ? t(clave, { ...VALORES_NEUTROS, ...datosDe(aviso) } as never)
+      : t('generico');
   };
 
   // Los avisos que ya están en pantalla, para saber si uno que llega es

@@ -7,13 +7,26 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Check,
   type Point,
 } from 'typeorm';
 import { User } from './user.entity';
 import { Category } from './category.entity';
 import { ColumnNumericTransformer } from '../common/transformers/column-numeric.transformer';
 
+/**
+ * Índices y restricciones con el mismo nombre que en las migraciones:
+ * TypeORM los compara por nombre, y la prueba de deriva del esquema falla si
+ * no coinciden. Ver IntegridadDeLosDatos.
+ */
 @Entity('services')
+@Index('IDX_services_profesional', ['providerId'])
+@Index('IDX_services_categoria', ['categoryId'])
+@Check('CHK_services_duracion', '"durationMinutes" BETWEEN 15 AND 480')
+@Check('CHK_services_precio_minimo', '"priceMin" >= 0.5')
+@Check('CHK_services_precio_maximo', '"priceMax" IS NULL OR "priceMax" >= 0.5')
+@Check('CHK_services_radio', '"coverageRadiusKm" BETWEEN 1 AND 100')
+@Check('CHK_services_valoracion', '"averageRating" BETWEEN 0 AND 5')
 export class Service {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -58,6 +71,13 @@ export class Service {
   @Column({ length: 20, default: 'hour' })
   priceUnit: string;
 
+  /**
+   * Cuánto ocupa una reserva en la agenda del profesional. Sin ella, cada
+   * reserva era un instante, y dos a la misma hora no se pisaban.
+   */
+  @Column({ type: 'int', default: 60 })
+  durationMinutes: number;
+
   @Column({
     type: 'geometry',
     spatialFeatureType: 'Point',
@@ -93,6 +113,14 @@ export class Service {
 
   @Column({ default: true })
   isActive: boolean;
+
+  /**
+   * Cuándo lo retiró su profesional. Un servicio con reservas no se borra:
+   * con él se irían los pagos y las valoraciones de otras personas. Se
+   * retira, y deja de verse y de poder reservarse.
+   */
+  @Column({ type: 'timestamp', nullable: true })
+  withdrawnAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;

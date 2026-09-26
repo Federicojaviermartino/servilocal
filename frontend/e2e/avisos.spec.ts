@@ -1,5 +1,5 @@
 import { test, expect, APIRequestContext, Page } from '@playwright/test';
-import { entrarComo } from './ayudas';
+import { entrarComo, huecoLibre } from './ayudas';
 
 const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const CLAVE = 'Password123!';
@@ -34,6 +34,25 @@ async function servicioDe(peticion: APIRequestContext, providerId: string) {
   return suyo;
 }
 
+/**
+ * Las reservas que confirman estas pruebas, para cancelarlas al acabar.
+ *
+ * Una confirmada ocupa la agenda del profesional, y dos confirmadas no
+ * pueden solaparse: si se quedaran, cada ejecución dejaría más huecos
+ * ocupados y, antes o después, una reserva nueva caería en uno y fallaría
+ * por algo que no tiene que ver con lo que se prueba.
+ */
+const confirmadas: Array<{ id: string; token: string }> = [];
+
+test.afterEach(async ({ request }) => {
+  for (const { id, token } of confirmadas.splice(0)) {
+    await request.patch(`${API}/bookings/${id}/status`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { status: 'cancelled' },
+    });
+  }
+});
+
 /** Crea una reserva y la acepta, comprobando que ambas cosas funcionan. */
 async function reservaAceptada(
   peticion: APIRequestContext,
@@ -52,8 +71,14 @@ async function reservaAceptada(
       totalPrice: servicio.priceMin,
     },
   });
-  expect(creada.ok(), 'la reserva se crea').toBeTruthy();
+  // Con la respuesta en el mensaje: un «false» a secas no dice si fue un
+  // choque de agenda, un límite de peticiones o una sesión que no llegó.
+  expect(
+    creada.ok(),
+    `la reserva se crea (${creada.status()}: ${await creada.text()})`,
+  ).toBeTruthy();
   const reserva = await creada.json();
+  confirmadas.push({ id: reserva.id, token: cliente.token });
 
   const aceptada = await peticion.patch(
     `${API}/bookings/${reserva.id}/status`,
@@ -84,13 +109,17 @@ test.describe('Avisos', () => {
       headers: { Authorization: `Bearer ${cliente.token}` },
       data: {
         serviceId: servicio.id,
-        scheduledDate: '2026-11-05T10:00:00.000Z',
+        scheduledDate: huecoLibre(),
         description: 'Reserva creada por la comprobación automática de avisos.',
         totalPrice: servicio.priceMin,
       },
     });
-    expect(creada.ok(), 'la reserva se crea').toBeTruthy();
+    expect(
+      creada.ok(),
+      `la reserva se crea (${creada.status()}: ${await creada.text()})`,
+    ).toBeTruthy();
     const reserva = await creada.json();
+    confirmadas.push({ id: reserva.id, token: cliente.token });
 
     // El cliente mira la pantalla antes de que ocurra nada.
     await entrarComo(page, 'cliente');
@@ -129,12 +158,7 @@ test.describe('Avisos', () => {
     // «Tu reserva ha sido confirmada» se quedaría en castellano para siempre.
     const cliente = await entrar(request, 'laura@ejemplo.com');
     const profesional = await entrar(request, 'carlos@ejemplo.com');
-    await reservaAceptada(
-      request,
-      cliente,
-      profesional,
-      '2026-11-06T10:00:00.000Z',
-    );
+    await reservaAceptada(request, cliente, profesional, huecoLibre());
 
     await entrarComo(page, 'cliente');
     await page.goto('/de/dashboard');

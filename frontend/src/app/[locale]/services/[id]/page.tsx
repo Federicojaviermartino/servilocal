@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
-import { MapPin, Euro, Calendar, MessageSquare } from 'lucide-react';
+import { MapPin, Euro, Calendar, MessageSquare, Clock } from 'lucide-react';
 import { Service, Review } from '@/types';
 import { servicesApi, reviewsApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -15,10 +15,12 @@ import RatingStars from '@/components/molecules/RatingStars';
 import ServiceImage from '@/components/molecules/ServiceImage';
 import { useNombreCategoria } from '@/lib/categorias';
 import { useNombreUnidad } from '@/lib/unidades';
+import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
 import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
 
 export default function ServiceDetailPage() {
   const t = useTranslations('detalle');
+  const idioma = useLocale();
   const nombreCategoria = useNombreCategoria();
   const nombreUnidad = useNombreUnidad();
   const tTarjeta = useTranslations('tarjeta');
@@ -265,6 +267,15 @@ export default function ServiceDetailPage() {
                   {priceLabel}
                 </span>
               </div>
+              <p className="-mt-2 mb-4 flex items-center gap-1 text-sm text-secundario">
+                <Clock size={14} aria-hidden="true" />
+                {t('duracion', {
+                  duracion: formatearDuracion(
+                    service.durationMinutes ?? DURACION_POR_DEFECTO,
+                    idioma,
+                  ),
+                })}
+              </p>
               <Button onClick={handleBook} fullWidth size="lg">
                 <Calendar size={18} className="inline me-2" />
                 {t('reservar')}

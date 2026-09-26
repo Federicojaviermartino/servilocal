@@ -1,12 +1,13 @@
 import {
   Injectable,
   BadRequestException,
+  ConflictException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
-import { Category, Service } from '../entities';
+import { In, IsNull, Repository, SelectQueryBuilder } from 'typeorm';
+import { Booking, BookingStatus, Category, Service } from '../entities';
 import { puntoGeografico } from '../common/geografia';
 import { coordenadasDeCiudad, mismaCiudad } from '../common/ciudades';
 import {
@@ -15,6 +16,9 @@ import {
   SearchServicesDto,
 } from './dto/service.dto';
 import { ampliarBusqueda, escaparLike } from './sinonimos';
+
+/** Eliminar un servicio con reservas abiertas: se resuelven antes. */
+export const CODIGO_RESERVAS_ABIERTAS = 'reservas-abiertas';
 
 /**
  * Columnas del proveedor que pueden salir por una ruta pública.
@@ -113,6 +117,8 @@ export class ServicesService {
   constructor(
     @InjectRepository(Service)
     private serviceRepository: Repository<Service>,
+    @InjectRepository(Booking)
+    private bookingRepository: Repository<Booking>,
   ) {}
 
   async create(
@@ -137,6 +143,9 @@ export class ServicesService {
       .addSelect(COLUMNAS_PUBLICAS_PROVEEDOR)
       .leftJoinAndSelect('service.category', 'category')
       .where('service.id = :id', { id })
+      // Uno retirado ya no existe para nadie: ni su ficha, ni editarlo.
+      // Sus reservas siguen viéndolo, porque lo cargan por su relación.
+      .andWhere('service.withdrawnAt IS NULL')
       .getOne();
 
     if (!service) {
@@ -180,6 +189,35 @@ export class ServicesService {
       throw new ForbiddenException(
         'No tienes permisos para eliminar este servicio',
       );
+    }
+
+    // Con reservas abiertas, retirarlo dejaría a sus clientes con una cita
+    // para algo que ya no existe, y el dinero retenido sin nadie que lo
+    // mueva. Se resuelven antes, cancelando o completando, que es lo que
+    // lleva el dinero adonde tiene que ir.
+    const abiertas = await this.bookingRepository.count({
+      where: {
+        serviceId: id,
+        status: In([BookingStatus.PENDING, BookingStatus.CONFIRMED]),
+      },
+    });
+    if (abiertas > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        codigo: CODIGO_RESERVAS_ABIERTAS,
+        message:
+          'Este servicio tiene reservas pendientes o confirmadas: resuélvelas antes de eliminarlo.',
+      });
+    }
+
+    // Con historial, se retira en vez de borrarse: sus reservas, pagos y
+    // valoraciones son de otras personas. Antes se borraban en cascada.
+    if (await this.bookingRepository.exists({ where: { serviceId: id } })) {
+      await this.serviceRepository.update(id, {
+        isActive: false,
+        withdrawnAt: new Date(),
+      });
+      return;
     }
 
     await this.serviceRepository.remove(service);
@@ -410,7 +448,7 @@ export class ServicesService {
 
   async findByProvider(providerId: string): Promise<Service[]> {
     return this.serviceRepository.find({
-      where: { providerId },
+      where: { providerId, withdrawnAt: IsNull() },
       relations: {
         category: true,
       },

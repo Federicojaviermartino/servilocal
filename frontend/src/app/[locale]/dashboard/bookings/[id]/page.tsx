@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
-import { Calendar, MapPin, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, MapPin, ArrowLeft } from 'lucide-react';
 import {
   Booking,
   BookingStatus,
@@ -15,12 +15,16 @@ import {
 } from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
 import { bookingsApi, paymentsApi } from '@/lib/api';
+import { cambiarEstadoReserva } from '@/lib/cambiar-estado';
+import { textoDeError } from '@/lib/errores-api';
+import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
 import { useAuthStore } from '@/lib/auth-store';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
 import Button from '@/components/atoms/Button';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
+import { useAhora } from '@/lib/ahora';
 
 /** Un pago en estos estados no retiene nada: se puede volver a pagar. */
 const SIN_RETENER = [PaymentStatus.PENDING, PaymentStatus.FAILED];
@@ -29,6 +33,7 @@ export default function BookingDetailPage() {
   const t = useTranslations('reservasPanel');
   const tComun = useTranslations('comun');
   const tEstados = useTranslations('estados');
+  const tErrores = useTranslations('erroresApi');
   const idioma = useLocale();
   const params = useParams();
   const router = useRouter();
@@ -36,6 +41,7 @@ export default function BookingDetailPage() {
   const { user } = useAuthStore();
 
   const [isUpdating, setIsUpdating] = useState(false);
+  const ahora = useAhora();
 
   // Un fallo aquí se veía como «reserva no encontrada», que es una respuesta
   // distinta y lleva a cerrar la pantalla en vez de volver a intentarlo.
@@ -57,11 +63,17 @@ export default function BookingDetailPage() {
   const changeStatus = async (status: BookingStatus) => {
     setIsUpdating(true);
     try {
-      await bookingsApi.updateStatus(bookingId, status);
-      toast.success(t('actualizada'));
-      load();
-    } catch {
-      toast.error(t('errorActualizar'));
+      const hecho = await cambiarEstadoReserva(bookingId, status, () =>
+        window.confirm(t('completarSinCobro')),
+      );
+      if (hecho) {
+        toast.success(t('actualizada'));
+        load();
+      } else {
+        toast(t('esperandoPago'));
+      }
+    } catch (error) {
+      toast.error(textoDeError(error, tErrores, t('errorActualizar')));
     } finally {
       setIsUpdating(false);
     }
@@ -88,16 +100,24 @@ export default function BookingDetailPage() {
   const abierta =
     booking.status === BookingStatus.PENDING ||
     booking.status === BookingStatus.CONFIRMED;
+  const completada = booking.status === BookingStatus.COMPLETED;
   // Sin saber del pago, lo de antes: solo mientras está pendiente.
   const faltaPagar =
     estadoPago === 'listo'
       ? !pago || SIN_RETENER.includes(pago.status)
       : booking.status === BookingStatus.PENDING;
-  const canClientPay = isClient && abierta && faltaPagar;
+  // Una completada sin cobro también se paga: es lo que eligió el
+  // profesional al completarla sin nada retenido.
+  const canClientPay = isClient && (abierta || completada) && faltaPagar;
+  const completadaSinPago = completada && estadoPago === 'listo' && faltaPagar;
   const canProviderDecide =
     isProvider && booking.status === BookingStatus.PENDING;
+  // Completar es cobrar: antes de la fecha, no se ofrece.
+  const haLlegado = date.getTime() <= ahora;
   const canProviderComplete =
-    isProvider && booking.status === BookingStatus.CONFIRMED;
+    isProvider && booking.status === BookingStatus.CONFIRMED && haLlegado;
+  const completaMasTarde =
+    isProvider && booking.status === BookingStatus.CONFIRMED && !haLlegado;
   const canCancel =
     abierta && (booking.clientId === user.id || booking.providerId === user.id);
 
@@ -137,6 +157,17 @@ export default function BookingDetailPage() {
                   hour: '2-digit',
                   minute: '2-digit',
                 }),
+              })}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock size={16} aria-hidden="true" />
+            <span>
+              {t('duracion', {
+                duracion: formatearDuracion(
+                  booking.durationMinutes ?? DURACION_POR_DEFECTO,
+                  idioma,
+                ),
               })}
             </span>
           </div>
@@ -183,6 +214,16 @@ export default function BookingDetailPage() {
             {t('importeEnEuros', { importe: booking.totalPrice })}
           </span>
         </div>
+
+        {completaMasTarde && (
+          <p className="mb-4 text-sm text-secundario">{t('completarDesde')}</p>
+        )}
+
+        {completadaSinPago && (isClient || isProvider) && (
+          <p className="mb-4 text-sm text-secundario">
+            {isClient ? t('pagoPendiente') : t('completadaSinCobro')}
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2 justify-end">
           {canClientPay && (

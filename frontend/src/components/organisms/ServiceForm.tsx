@@ -4,7 +4,7 @@
  */
 'use client';
 import { useState, useEffect, FormEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Category, Service } from '@/types';
 import { categoriesApi } from '@/lib/api';
 import { CIUDADES } from '@/lib/ciudades';
@@ -12,6 +12,14 @@ import Input from '../atoms/Input';
 import Button from '../atoms/Button';
 import { useNombreCategoria } from '@/lib/categorias';
 import { useNombreUnidad } from '@/lib/unidades';
+import {
+  DURACIONES,
+  DURACION_POR_DEFECTO,
+  formatearDuracion,
+} from '@/lib/duracion';
+
+/** Lo mínimo que Stripe cobra en euros, como en la API. */
+const PRECIO_MINIMO = 0.5;
 
 interface ServiceFormProps {
   initial?: Partial<Service>;
@@ -28,6 +36,7 @@ export default function ServiceForm({
 }: ServiceFormProps) {
   const t = useTranslations('formularioServicio');
   const tComun = useTranslations('comun');
+  const idioma = useLocale();
   const nombreUnidad = useNombreUnidad();
   const nombreCategoria = useNombreCategoria();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -41,6 +50,7 @@ export default function ServiceForm({
     address: initial?.address || '',
     city: initial?.city || '',
     coverageRadiusKm: initial?.coverageRadiusKm || 10,
+    durationMinutes: initial?.durationMinutes || DURACION_POR_DEFECTO,
   });
   const [errorPrecio, setErrorPrecio] = useState('');
 
@@ -58,6 +68,11 @@ export default function ServiceForm({
       ? [...CIUDADES, form.city]
       : CIUDADES;
 
+  // Lo mismo con una duración puesta desde la API que no esté en la lista.
+  const duracionesDisponibles = DURACIONES.includes(form.durationMinutes)
+    ? DURACIONES
+    : [...DURACIONES, form.durationMinutes].sort((a, b) => a - b);
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
@@ -68,6 +83,13 @@ export default function ServiceForm({
     // arregle, que es lo que de verdad quería decir quien lo escribió.
     if (form.priceMax && form.priceMax < form.priceMin) {
       setErrorPrecio(t('rangoInvertido'));
+      return;
+    }
+
+    // Lo mínimo que Stripe cobra: por debajo, el servicio se publicaba y
+    // después nadie podía pagarlo.
+    if (form.priceMin < PRECIO_MINIMO) {
+      setErrorPrecio(t('precioMinimoStripe'));
       return;
     }
 
@@ -129,8 +151,8 @@ export default function ServiceForm({
         <Input
           label={t('precioMinimo')}
           type="number"
-          min={0}
-          step={5}
+          min={PRECIO_MINIMO}
+          step={PRECIO_MINIMO}
           value={form.priceMin}
           onChange={(e) =>
             setForm({ ...form, priceMin: Number(e.target.value) })
@@ -140,8 +162,8 @@ export default function ServiceForm({
         <Input
           label={t('precioMaximo')}
           type="number"
-          min={0}
-          step={5}
+          min={PRECIO_MINIMO}
+          step={PRECIO_MINIMO}
           value={form.priceMax || ''}
           onChange={(e) =>
             setForm({ ...form, priceMax: Number(e.target.value) })
@@ -167,6 +189,32 @@ export default function ServiceForm({
             <option value="por visita">{nombreUnidad('por visita')}</option>
           </select>
         </div>
+      </div>
+      <div>
+        <label
+          htmlFor="servicio-duracion"
+          className="block text-sm font-medium text-secundario mb-1"
+        >
+          {t('duracion')}
+        </label>
+        <select
+          id="servicio-duracion"
+          value={form.durationMinutes}
+          onChange={(e) =>
+            setForm({ ...form, durationMinutes: Number(e.target.value) })
+          }
+          aria-describedby="servicio-duracion-pista"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+        >
+          {duracionesDisponibles.map((minutos) => (
+            <option key={minutos} value={minutos}>
+              {formatearDuracion(minutos, idioma)}
+            </option>
+          ))}
+        </select>
+        <p id="servicio-duracion-pista" className="mt-1 text-sm text-tenue">
+          {t('duracionPista')}
+        </p>
       </div>
       <Input
         label={t('direccion')}

@@ -129,6 +129,14 @@ describe('Conversación', () => {
       expect(toastError).toHaveBeenCalledWith(es.mensajesPanel.errorEnviar);
     });
 
+    it('si se envían demasiados seguidos, lo dice', async () => {
+      await enviar({ response: { status: 429, data: {} } });
+
+      expect(toastError).toHaveBeenCalledWith(
+        es.erroresApi['demasiadas-peticiones'],
+      );
+    });
+
     it('y si es entre una cuenta de demostración y una real, explica por qué', async () => {
       await enviar({
         response: { status: 403, data: { codigo: 'demostracion' } },

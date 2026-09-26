@@ -16,6 +16,8 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
+import { LIMITE_RESERVAS } from '../common/limites';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { BookingsService } from './bookings.service';
@@ -30,6 +32,7 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @Throttle(LIMITE_RESERVAS)
   @UseGuards(RolesGuard)
   @Roles(UserRole.CLIENT)
   @ApiOperation({ summary: 'Crear reserva (solo cliente)' })

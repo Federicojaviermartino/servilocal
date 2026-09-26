@@ -11,6 +11,7 @@ import { DataSource, EntityManager, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import {
+  AccionAuditada,
   Payment,
   PaymentStatus,
   Booking,
@@ -19,6 +20,14 @@ import {
   User,
 } from '../entities';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
+
+/**
+ * Completar sin pago retenido ya no ocurre en silencio: la API responde 409
+ * con este código para que la interfaz pregunte al profesional si espera a
+ * que el cliente pague o la da por hecha sin cobro.
+ */
+export const CODIGO_SIN_PAGO_RETENIDO = 'sin-pago-retenido';
 
 /**
  * Desde dónde puede llegar un pago a cada estado.
@@ -86,10 +95,21 @@ export class PaymentsService {
     private readonly dataSource: DataSource,
     private configService: ConfigService,
     private readonly avisos: NotificationsService,
+    private readonly auditoria: AuditoriaService,
   ) {
     this.stripe = new Stripe(
       this.configService.getOrThrow<string>('STRIPE_SECRET_KEY'),
-      { apiVersion: '2023-10-16' },
+      {
+        apiVersion: '2023-10-16',
+        // Por defecto espera 80 segundos, y varias llamadas ocurren con la
+        // fila de la reserva bloqueada: una pasarela lenta dejaba colgadas
+        // las peticiones que esperaban esa fila. Con diez segundos y dos
+        // reintentos, un fallo pasajero se absorbe y uno de verdad se ve
+        // enseguida. Los reintentos llevan clave de idempotencia: la
+        // librería la pone si la llamada no trae la suya.
+        timeout: 10_000,
+        maxNetworkRetries: 2,
+      },
     );
   }
 
@@ -130,9 +150,14 @@ export class PaymentsService {
         throw new BadRequestException('Esta reserva no te pertenece');
       }
 
+      // Una reserva completada sin cobro se puede pagar después: es lo que
+      // elige el profesional al completarla sin pago retenido. Se cobra en el
+      // acto, sin retención, porque el trabajo ya está hecho.
+      const completada = booking.status === BookingStatus.COMPLETED;
       if (
         booking.status !== BookingStatus.PENDING &&
-        booking.status !== BookingStatus.CONFIRMED
+        booking.status !== BookingStatus.CONFIRMED &&
+        !completada
       ) {
         throw new BadRequestException(
           'La reserva no puede pagarse en su estado actual',
@@ -143,6 +168,14 @@ export class PaymentsService {
         where: { bookingId },
         order: { createdAt: 'DESC' },
       });
+
+      if (
+        completada &&
+        (existingPayment?.status === PaymentStatus.COMPLETED ||
+          existingPayment?.status === PaymentStatus.REFUNDED)
+      ) {
+        throw new ConflictException('Esta reserva ya no tiene nada que pagar');
+      }
 
       // Reutilizar PI existente si su estado en Stripe sigue siendo pagable
       if (existingPayment?.stripePaymentIntentId) {
@@ -200,6 +233,9 @@ export class PaymentsService {
         'reserva',
         booking.id,
         amountInCents,
+        // Otra clave para cobrar en el acto: con la misma, Stripe rechazaría
+        // la petición por llevar parámetros distintos a la de retener.
+        ...(completada ? ['cobro'] : []),
         'tras',
         existingPayment?.stripePaymentIntentId ?? 'ninguna',
       ].join(':');
@@ -210,13 +246,13 @@ export class PaymentsService {
         {
           amount: amountInCents,
           currency: 'eur',
-          capture_method: 'manual',
+          capture_method: completada ? 'automatic' : 'manual',
+          customer: cliente,
           // La tarjeta se guarda en su ficha de cliente para poder renovar la
           // retención sin que tenga que estar delante: Stripe la suelta a los
           // siete días, y una reserva puede ser para dentro de un mes. Ver
-          // revisarRetenciones.
-          customer: cliente,
-          setup_future_usage: 'off_session',
+          // revisarRetenciones. Un cobro en el acto no se renueva.
+          ...(completada ? {} : { setup_future_usage: 'off_session' as const }),
           metadata: {
             bookingId: booking.id,
             clientId,
@@ -271,85 +307,186 @@ export class PaymentsService {
     paymentIntentId: string,
     clientId: string,
   ): Promise<Payment> {
-    const payment = await this.paymentRepository.findOne({
-      where: { stripePaymentIntentId: paymentIntentId },
-    });
+    // Con la fila bloqueada, porque el webhook puede estar anotando lo mismo
+    // a la vez; y respetando las transiciones, porque lo que ya contó no se
+    // reescribe: un pago reembolsado no vuelve a figurar como cobrado.
+    const pago = await this.dataSource.transaction(async (gestor) => {
+      const payment = await gestor.findOne(Payment, {
+        where: { stripePaymentIntentId: paymentIntentId },
+        lock: { mode: 'pessimistic_write' },
+      });
 
-    if (!payment) {
-      throw new NotFoundException('Pago no encontrado');
-    }
-
-    if (payment.clientId !== clientId) {
-      throw new ForbiddenException('Este pago no es tuyo');
-    }
-
-    // La verdad la tiene Stripe, no el navegador que nos llama.
-    const intencion =
-      await this.stripe.paymentIntents.retrieve(paymentIntentId);
-
-    if (intencion.status === 'requires_capture') {
-      payment.status = PaymentStatus.HELD;
-      payment.paidAt = new Date();
-    } else if (intencion.status === 'succeeded') {
-      payment.status = PaymentStatus.COMPLETED;
-      payment.paidAt = payment.paidAt ?? new Date();
-    } else {
-      throw new BadRequestException(
-        'Stripe no ha retenido el importe de este pago',
-      );
-    }
-
-    return this.paymentRepository.save(payment);
-  }
-
-  async capturePayment(bookingId: string): Promise<Payment> {
-    const payment = await this.paymentRepository.findOne({
-      where: { bookingId, status: PaymentStatus.HELD },
-    });
-
-    if (!payment) {
-      throw new NotFoundException('No hay pago retenido para esta reserva');
-    }
-
-    await this.stripe.paymentIntents.capture(payment.stripePaymentIntentId);
-
-    payment.status = PaymentStatus.COMPLETED;
-    return this.paymentRepository.save(payment);
-  }
-
-  async refundPayment(bookingId: string): Promise<Payment> {
-    const payment = await this.paymentRepository.findOne({
-      where: { bookingId },
-    });
-
-    if (!payment) {
-      throw new NotFoundException('Pago no encontrado');
-    }
-
-    if (
-      payment.status !== PaymentStatus.HELD &&
-      payment.status !== PaymentStatus.COMPLETED
-    ) {
-      throw new BadRequestException('Este pago no se puede reembolsar');
-    }
-
-    if (payment.stripePaymentIntentId) {
-      if (payment.status === PaymentStatus.HELD) {
-        // Retenido y sin cobrar: se suelta la retención.
-        await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
-          cancellation_reason: 'requested_by_customer',
-        });
-      } else {
-        // Ya cobrado: hay que devolver el dinero de verdad.
-        await this.stripe.refunds.create({
-          payment_intent: payment.stripePaymentIntentId,
-        });
+      if (!payment) {
+        throw new NotFoundException('Pago no encontrado');
       }
-    }
 
-    payment.status = PaymentStatus.REFUNDED;
-    payment.refundedAt = new Date();
-    return this.paymentRepository.save(payment);
+      if (payment.clientId !== clientId) {
+        throw new ForbiddenException('Este pago no es tuyo');
+      }
+
+      // La verdad la tiene Stripe, no el navegador que nos llama.
+      const intencion =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
+
+      let estado: PaymentStatus;
+      if (intencion.status === 'requires_capture') {
+        estado = PaymentStatus.HELD;
+      } else if (intencion.status === 'succeeded') {
+        estado = PaymentStatus.COMPLETED;
+      } else {
+        throw new BadRequestException(
+          'Stripe no ha retenido el importe de este pago',
+        );
+      }
+
+      if (!puedePasarA(payment.status, estado)) return payment;
+
+      payment.status = estado;
+      if (estado === PaymentStatus.HELD) {
+        payment.paidAt = new Date();
+      } else {
+        payment.paidAt = payment.paidAt ?? new Date();
+      }
+      return gestor.save(payment);
+    });
+
+    if (pago.status !== PaymentStatus.HELD) return pago;
+
+    // El cliente ha pagado y eso ya consta. Si al resolver la retención
+    // falla Stripe, no es un error suyo: el webhook repetirá el intento.
+    try {
+      return (await this.resolverRetencionTardia(pago.bookingId)) ?? pago;
+    } catch (error) {
+      this.logger.warn(
+        `Retención sin resolver en la reserva ${pago.bookingId}: ${
+          error instanceof Error ? error.message : 'causa desconocida'
+        }. Se reintentará con el aviso de Stripe.`,
+      );
+      return pago;
+    }
+  }
+
+  /**
+   * Cobro manual desde la administración.
+   *
+   * Cobraba sin mirar la reserva: cobrar una pendiente y que después el
+   * profesional la rechazara dejaba cobrada una reserva rechazada, y nada
+   * quedaba en el historial. Ahora solo sobre una reserva completada, y
+   * anotado.
+   */
+  async capturePayment(bookingId: string, actor: Actor): Promise<Payment> {
+    // La reserva y después el pago, en el mismo orden que el cambio de
+    // estado: dos operaciones que se cruzan esperan en vez de bloquearse.
+    const payment = await this.dataSource.transaction(async (gestor) => {
+      const reserva = await gestor.findOne(Booking, {
+        where: { id: bookingId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!reserva) {
+        throw new NotFoundException('Reserva no encontrada');
+      }
+      if (reserva.status !== BookingStatus.COMPLETED) {
+        throw new ConflictException(
+          'Solo se cobra una reserva completada: complétala antes.',
+        );
+      }
+
+      const actual = await gestor.findOne(Payment, { where: { bookingId } });
+      if (actual?.status === PaymentStatus.COMPLETED) {
+        throw new ConflictException('Este pago ya está cobrado');
+      }
+
+      const cobrado = await this.cobrarAlCompletar(bookingId, {
+        gestor,
+        sinCobro: true,
+      });
+      if (!cobrado) {
+        throw new NotFoundException('No hay pago retenido para esta reserva');
+      }
+      return cobrado;
+    });
+
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.PAGO_COBRADO,
+      entidad: 'pago',
+      entidadId: payment.id,
+      contexto: { reserva: bookingId },
+    });
+    return payment;
+  }
+
+  /**
+   * Reembolso manual desde la administración.
+   *
+   * Con la reserva abierta, devolver el dinero la dejaba viva y sin
+   * garantía, y después se completaba sin cobro. Para soltar la retención
+   * de una reserva que no va a ocurrir, se cancela la reserva; esto es para
+   * lo que ya está cerrado. Y queda anotado.
+   */
+  async refundPayment(bookingId: string, actor: Actor): Promise<Payment> {
+    const guardado = await this.dataSource.transaction(async (gestor) => {
+      const reserva = await gestor.findOne(Booking, {
+        where: { id: bookingId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!reserva) {
+        throw new NotFoundException('Reserva no encontrada');
+      }
+      if (RESERVAS_ABIERTAS.includes(reserva.status)) {
+        throw new ConflictException(
+          'La reserva sigue abierta: cancélala para soltar la retención.',
+        );
+      }
+
+      const payment = await gestor.findOne(Payment, {
+        where: { bookingId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!payment) {
+        throw new NotFoundException('Pago no encontrado');
+      }
+
+      if (
+        payment.status !== PaymentStatus.HELD &&
+        payment.status !== PaymentStatus.COMPLETED
+      ) {
+        throw new BadRequestException('Este pago no se puede reembolsar');
+      }
+
+      if (payment.stripePaymentIntentId) {
+        if (payment.status === PaymentStatus.HELD) {
+          // Retenido y sin cobrar: se suelta la retención.
+          await this.stripe.paymentIntents.cancel(
+            payment.stripePaymentIntentId,
+            { cancellation_reason: 'requested_by_customer' },
+          );
+        } else {
+          // Ya cobrado: hay que devolver el dinero de verdad. Con clave, para
+          // que un reintento tras un corte no devuelva dos veces.
+          await this.stripe.refunds.create(
+            { payment_intent: payment.stripePaymentIntentId },
+            {
+              idempotencyKey: `reembolso:${payment.id}:${payment.stripePaymentIntentId}`,
+            },
+          );
+        }
+      }
+
+      payment.status = PaymentStatus.REFUNDED;
+      payment.refundedAt = new Date();
+      return gestor.save(payment);
+    });
+
+    await this.auditoria.anotar({
+      actor,
+      accion: AccionAuditada.PAGO_REEMBOLSADO,
+      entidad: 'pago',
+      entidadId: guardado.id,
+      contexto: { reserva: bookingId },
+    });
+    return guardado;
   }
 
   /**
@@ -363,19 +500,73 @@ export class PaymentsService {
    * podido cobrarlo deja la reserva cerrada y el dinero sin mover, y nadie
    * volvería a mirarlo: es mejor que el profesional vea el error y repita.
    *
-   * Una reserva sin pago —las hay, porque pagar no es obligatorio para
-   * reservar— se completa sin más.
+   * Sin pago retenido ya no se completa en silencio: la reserva quedaba
+   * cerrada sin cobrar, sin que el profesional lo supiera, y ya no había
+   * forma de pagarla. Ahora responde 409 para que decida: esperar a que el
+   * cliente pague, o completarla sin cobro —sinCobro— y que el cliente pague
+   * después.
+   *
+   * Con el gestor de una transacción, la fila del pago se bloquea: lo que
+   * pase con el dinero y con la reserva se decide junto.
    */
-  async cobrarAlCompletar(bookingId: string): Promise<Payment | null> {
-    const payment = await this.paymentRepository.findOne({
-      where: { bookingId, status: PaymentStatus.HELD },
-    });
-    if (!payment) return null;
+  async cobrarAlCompletar(
+    bookingId: string,
+    opciones: { gestor?: EntityManager; sinCobro?: boolean } = {},
+  ): Promise<Payment | null> {
+    const { gestor, sinCobro = false } = opciones;
+    const payment = gestor
+      ? await gestor.findOne(Payment, {
+          where: { bookingId },
+          lock: { mode: 'pessimistic_write' },
+        })
+      : await this.paymentRepository.findOne({ where: { bookingId } });
+    const guardar = (pago: Payment) =>
+      gestor ? gestor.save(pago) : this.paymentRepository.save(pago);
 
-    await this.stripe.paymentIntents.capture(payment.stripePaymentIntentId);
+    if (payment?.status === PaymentStatus.COMPLETED) return payment;
 
-    payment.status = PaymentStatus.COMPLETED;
-    return this.paymentRepository.save(payment);
+    // Pendiente en la base puede estar ya retenido en Stripe, si su aviso
+    // no ha llegado todavía: se pregunta antes de dar por hecho que no hay
+    // nada que cobrar.
+    let retenido = payment?.status === PaymentStatus.HELD;
+    if (
+      payment?.status === PaymentStatus.PENDING &&
+      payment.stripePaymentIntentId
+    ) {
+      const actual = await this.stripe.paymentIntents.retrieve(
+        payment.stripePaymentIntentId,
+      );
+      if (actual.status === 'succeeded') {
+        payment.status = PaymentStatus.COMPLETED;
+        payment.paidAt = payment.paidAt ?? new Date();
+        return guardar(payment);
+      }
+      retenido = actual.status === 'requires_capture';
+    }
+
+    if (payment && retenido) {
+      await this.stripe.paymentIntents.capture(
+        payment.stripePaymentIntentId,
+        {},
+        // Si se repite tras un corte, Stripe no cobra dos veces.
+        {
+          idempotencyKey: `captura:${payment.id}:${payment.stripePaymentIntentId}`,
+        },
+      );
+      payment.status = PaymentStatus.COMPLETED;
+      payment.paidAt = payment.paidAt ?? new Date();
+      return guardar(payment);
+    }
+
+    if (!sinCobro) {
+      throw new ConflictException({
+        statusCode: 409,
+        codigo: CODIGO_SIN_PAGO_RETENIDO,
+        message:
+          'No hay pago retenido para esta reserva: espera a que el cliente pague, o complétala sin cobro y podrá pagar después.',
+      });
+    }
+    return null;
   }
 
   /**
@@ -386,28 +577,65 @@ export class PaymentsService {
    * caduca sola en siete días: el remedio de bloquear la operación sería
    * peor que el fallo. Se deja constancia en el registro.
    */
-  async liberarRetencion(bookingId: string): Promise<Payment | null> {
-    const payment = await this.paymentRepository.findOne({
-      where: { bookingId, status: PaymentStatus.HELD },
-    });
-    if (!payment) return null;
+  async liberarRetencion(
+    bookingId: string,
+    gestor?: EntityManager,
+  ): Promise<Payment | null> {
+    const payment = gestor
+      ? await gestor.findOne(Payment, {
+          where: { bookingId },
+          lock: { mode: 'pessimistic_write' },
+        })
+      : await this.paymentRepository.findOne({ where: { bookingId } });
+    if (!payment?.stripePaymentIntentId) return null;
+    const guardar = (pago: Payment) =>
+      gestor ? gestor.save(pago) : this.paymentRepository.save(pago);
 
-    try {
-      await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
-        cancellation_reason: 'abandoned',
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Retención sin liberar en la reserva ${bookingId}: ${
-          error instanceof Error ? error.message : 'causa desconocida'
-        }. Caducará sola en siete días.`,
-      );
-      return null;
+    if (payment.status === PaymentStatus.HELD) {
+      try {
+        await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
+          cancellation_reason: 'abandoned',
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Retención sin liberar en la reserva ${bookingId}: ${
+            error instanceof Error ? error.message : 'causa desconocida'
+          }. Caducará sola en siete días.`,
+        );
+        return null;
+      }
+
+      payment.status = PaymentStatus.REFUNDED;
+      payment.refundedAt = new Date();
+      return guardar(payment);
     }
 
-    payment.status = PaymentStatus.REFUNDED;
-    payment.refundedAt = new Date();
-    return this.paymentRepository.save(payment);
+    // Sin retener todavía, también se cancela la intención. Solo se miraba
+    // la retenida, así que el cliente podía terminar de pagar desde la
+    // pestaña que dejó abierta una reserva que ya no iba a ocurrir, y ese
+    // dinero se quedaba retenido sin nada que lo soltara.
+    if (payment.status === PaymentStatus.PENDING) {
+      try {
+        await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
+          cancellation_reason: 'abandoned',
+        });
+      } catch (error) {
+        // Se queda pendiente, no fallido: si el cliente termina de pagar,
+        // esa retención llega por el webhook y se suelta al ver la reserva
+        // cancelada. Marcada como fallida, ya no se tocaría.
+        this.logger.warn(
+          `Intención sin cancelar en la reserva ${bookingId}: ${
+            error instanceof Error ? error.message : 'causa desconocida'
+          }. Si llega a retenerse, se soltará entonces.`,
+        );
+        return null;
+      }
+      payment.status = PaymentStatus.FAILED;
+      payment.failureReason = 'La reserva se canceló antes de pagarla.';
+      return guardar(payment);
+    }
+
+    return null;
   }
 
   async findByClient(clientId: string): Promise<Payment[]> {
@@ -502,18 +730,65 @@ export class PaymentsService {
     paymentIntentId: string,
     estado: PaymentStatus,
   ): Promise<void> {
-    const payment = await this.paymentRepository.findOne({
-      where: { stripePaymentIntentId: paymentIntentId },
+    // Con la fila bloqueada: el cambio de estado de la reserva puede estar
+    // moviendo este mismo dinero, y sin bloqueo uno pisaba lo del otro.
+    const pago = await this.dataSource.transaction(async (gestor) => {
+      const payment = await gestor.findOne(Payment, {
+        where: { stripePaymentIntentId: paymentIntentId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!payment) return null;
+
+      if (puedePasarA(payment.status, estado)) {
+        payment.status = estado;
+        if (estado === PaymentStatus.HELD) {
+          payment.paidAt = new Date();
+        }
+        await gestor.save(payment);
+      }
+      return payment;
     });
-    if (!payment) return;
 
-    if (!puedePasarA(payment.status, estado)) return;
-
-    payment.status = estado;
-    if (estado === PaymentStatus.HELD) {
-      payment.paidAt = new Date();
+    // También si ya constaba retenido: si el intento anterior de resolverla
+    // falló, Stripe repite el aviso, y esta es la ocasión de volver a probar.
+    // Por eso un fallo aquí se propaga: sin respuesta 2xx, Stripe reintenta.
+    if (estado === PaymentStatus.HELD && pago?.status === PaymentStatus.HELD) {
+      await this.resolverRetencionTardia(pago.bookingId);
     }
-    await this.paymentRepository.save(payment);
+  }
+
+  /**
+   * Una retención que llega cuando la reserva ya no está abierta.
+   *
+   * Si se canceló o se rechazó mientras el cliente pagaba, se suelta en el
+   * acto: antes se quedaba retenida hasta que Stripe la soltaba a los siete
+   * días, y entonces se avisaba a las dos partes de que había que volver a
+   * pagar una reserva cancelada. Si se completó sin cobro, se cobra.
+   */
+  private async resolverRetencionTardia(
+    bookingId: string,
+  ): Promise<Payment | null> {
+    // Con la reserva bloqueada, y antes que el pago: el mismo orden que el
+    // cambio de estado. Si se está cancelando o completando ahora mismo, se
+    // espera a que termine y se decide sobre lo que haya quedado.
+    return this.dataSource.transaction(async (gestor) => {
+      const reserva = await gestor.findOne(Booking, {
+        where: { id: bookingId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!reserva) return null;
+
+      if (
+        reserva.status === BookingStatus.CANCELLED ||
+        reserva.status === BookingStatus.REJECTED
+      ) {
+        return this.liberarRetencion(bookingId, gestor);
+      }
+      if (reserva.status === BookingStatus.COMPLETED) {
+        return this.cobrarAlCompletar(bookingId, { gestor, sinCobro: true });
+      }
+      return null;
+    });
   }
 
   /** Devuelve el pago y de dónde venía, o null si no ha cambiado nada. */
@@ -521,18 +796,21 @@ export class PaymentsService {
     paymentIntentId: string,
     reason?: string,
   ): Promise<{ pago: Payment; estadoAnterior: PaymentStatus } | null> {
-    const payment = await this.paymentRepository.findOne({
-      where: { stripePaymentIntentId: paymentIntentId },
+    return this.dataSource.transaction(async (gestor) => {
+      const payment = await gestor.findOne(Payment, {
+        where: { stripePaymentIntentId: paymentIntentId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!payment) return null;
+
+      if (!puedePasarA(payment.status, PaymentStatus.FAILED)) return null;
+
+      const estadoAnterior = payment.status;
+      payment.status = PaymentStatus.FAILED;
+      if (reason) payment.failureReason = reason;
+      await gestor.save(payment);
+      return { pago: payment, estadoAnterior };
     });
-    if (!payment) return null;
-
-    if (!puedePasarA(payment.status, PaymentStatus.FAILED)) return null;
-
-    const estadoAnterior = payment.status;
-    payment.status = PaymentStatus.FAILED;
-    if (reason) payment.failureReason = reason;
-    await this.paymentRepository.save(payment);
-    return { pago: payment, estadoAnterior };
   }
 
   /**
@@ -760,19 +1038,21 @@ export class PaymentsService {
         where: { id: pago.bookingId },
       }));
 
+    // Solo con la reserva abierta: sobre una cancelada o completada, pedir
+    // que se vuelva a pagar sería un aviso falso.
+    if (!reserva || !RESERVAS_ABIERTAS.includes(reserva.status)) return;
+
     await this.avisos.crear({
       usuarioId: pago.clientId,
       tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
       datos: { rol: 'cliente' },
       enlace: `/bookings/${pago.bookingId}/payment`,
     });
-    if (reserva) {
-      await this.avisos.crear({
-        usuarioId: reserva.providerId,
-        tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
-        datos: { rol: 'profesional' },
-        enlace: `/dashboard/bookings/${pago.bookingId}`,
-      });
-    }
+    await this.avisos.crear({
+      usuarioId: reserva.providerId,
+      tipo: NotificationType.PAYMENT_REAUTHORIZATION_REQUIRED,
+      datos: { rol: 'profesional' },
+      enlace: `/dashboard/bookings/${pago.bookingId}`,
+    });
   }
 }

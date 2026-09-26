@@ -137,8 +137,12 @@ export const bookingsApi = {
   getMyBookings: () => api.get('/bookings/my'),
   getReceived: () => api.get('/bookings/received'),
   getById: (id: string) => api.get(`/bookings/${id}`),
-  updateStatus: (id: string, status: string) =>
-    api.patch(`/bookings/${id}/status`, { status }),
+  // sinCobro: completar aunque no haya pago retenido. Ver cambiar-estado.ts.
+  updateStatus: (
+    id: string,
+    status: string,
+    opciones: { sinCobro?: boolean } = {},
+  ) => api.patch(`/bookings/${id}/status`, { status, ...opciones }),
 };
 
 export const reviewsApi = {

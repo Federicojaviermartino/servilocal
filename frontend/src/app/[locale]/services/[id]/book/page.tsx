@@ -9,11 +9,16 @@ import { servicesApi, bookingsApi } from '@/lib/api';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import BookingForm from '@/components/organisms/BookingForm';
 import Spinner from '@/components/atoms/Spinner';
-import { CODIGO_DEMOSTRACION, codigoDeError } from '@/lib/errores-api';
+import {
+  CODIGO_DEMOSTRACION,
+  codigoDeError,
+  textoDeError,
+} from '@/lib/errores-api';
 
 export default function BookingPage() {
   const t = useTranslations('reserva');
   const tComun = useTranslations('comun');
+  const tErrores = useTranslations('erroresApi');
   const params = useParams();
   const router = useRouter();
   const serviceId = params.id as string;
@@ -59,7 +64,7 @@ export default function BookingPage() {
       toast.error(
         codigoDeError(error) === CODIGO_DEMOSTRACION
           ? tComun('demostracionAislada')
-          : t('errorCrear'),
+          : textoDeError(error, tErrores, t('errorCrear')),
       );
       setIsSubmitting(false);
     }

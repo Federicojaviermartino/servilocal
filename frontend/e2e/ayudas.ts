@@ -27,3 +27,21 @@ export async function entrarComo(page: Page, papel: PapelDemo): Promise<void> {
     .click();
   await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
 }
+
+/**
+ * Un hueco en la agenda que no choque con otro.
+ *
+ * Dos reservas confirmadas del mismo profesional no pueden solaparse, y las
+ * pruebas confirman muchas de Carlos: con una fecha fija, la del segundo
+ * navegador chocaba con la del primero, y con las de ejecuciones anteriores
+ * en una base que no se vacía. Una fecha fija, además, acaba siendo pasada,
+ * y la API no deja reservar para ayer. Así que se elige al azar, entre uno y
+ * once meses vista, en cuartos de hora.
+ */
+export function huecoLibre(): string {
+  const CUARTOS_DE_HORA = 300 * 24 * 4;
+  const inicio = new Date(Date.now() + 30 * 86_400_000);
+  inicio.setUTCMinutes(0, 0, 0);
+  const salto = Math.floor(Math.random() * CUARTOS_DE_HORA) * 15 * 60_000;
+  return new Date(inicio.getTime() + salto).toISOString();
+}

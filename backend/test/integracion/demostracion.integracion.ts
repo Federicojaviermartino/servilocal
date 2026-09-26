@@ -23,6 +23,7 @@ describe('Cuentas de demostración', () => {
       fuente.getRepository(User),
       { crear: async () => null } as never,
       {} as never,
+      fuente,
     );
   });
 

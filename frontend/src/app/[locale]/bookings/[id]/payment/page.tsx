@@ -7,7 +7,7 @@ import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { Link } from '@/i18n/navigation';
 import { Elements } from '@stripe/react-stripe-js';
-import { Booking, PaymentIntent } from '@/types';
+import { Booking, BookingStatus, PaymentIntent } from '@/types';
 import { bookingsApi, paymentsApi } from '@/lib/api';
 import { getStripe } from '@/lib/stripe';
 import { useTemaOscuro } from '@/lib/tema';
@@ -84,6 +84,10 @@ export default function PaymentPage() {
     );
   }
 
+  // Una completada sin cobro no se retiene: el trabajo ya está hecho, así
+  // que se cobra en el acto y no hay nada que liberar si se cancela.
+  const cobroInmediato = booking.status === BookingStatus.COMPLETED;
+
   return (
     <main className="bg-fondo min-h-screen py-8">
       <div className="max-w-2xl mx-auto px-4">
@@ -103,14 +107,18 @@ export default function PaymentPage() {
         <div className="mb-4 rounded-lg border border-primary-200 bg-primary-50 p-4 dark:border-primary-800 dark:bg-primary-900/20">
           <p className="flex items-center gap-2 text-sm font-medium text-principal">
             <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {t('retencionTitulo')}
+            {t(cobroInmediato ? 'cobroTitulo' : 'retencionTitulo')}
           </p>
           <p className="mt-1 text-sm text-secundario">
-            {t('retencionTexto', { importe: booking.totalPrice })}
+            {t(cobroInmediato ? 'cobroTexto' : 'retencionTexto', {
+              importe: booking.totalPrice,
+            })}
           </p>
-          <p className="mt-1 text-sm text-secundario">
-            {t('retencionCancelar')}
-          </p>
+          {!cobroInmediato && (
+            <p className="mt-1 text-sm text-secundario">
+              {t('retencionCancelar')}
+            </p>
+          )}
         </div>
 
         <div className="bg-superficie rounded-lg shadow-card p-6">
@@ -131,6 +139,7 @@ export default function PaymentPage() {
               bookingId={bookingId}
               paymentIntentId={intent.paymentIntentId}
               amount={booking.totalPrice}
+              estadoReserva={booking.status}
               onIntentExpired={refreshIntent}
             />
           </Elements>

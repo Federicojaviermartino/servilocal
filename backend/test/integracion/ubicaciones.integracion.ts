@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Service, User } from '../../src/entities';
+import { Booking, Service, User } from '../../src/entities';
 import { ServicesService } from '../../src/services/services.service';
 import { UsersService } from '../../src/users/users.service';
 import { crearFuente } from './base';
@@ -20,7 +20,10 @@ describe('Ubicaciones en PostGIS', () => {
 
   beforeAll(async () => {
     fuente = await crearFuente().initialize();
-    servicios = new ServicesService(fuente.getRepository(Service));
+    servicios = new ServicesService(
+      fuente.getRepository(Service),
+      fuente.getRepository(Booking),
+    );
     // El perfil no anota nada en el historial: basta con un hueco.
     usuarios = new UsersService(fuente.getRepository(User), {} as never);
   });

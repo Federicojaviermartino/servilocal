@@ -56,6 +56,8 @@ export interface Service {
   priceMin: number;
   priceMax?: number;
   priceUnit: string;
+  /** Lo que ocupa cada reserva en la agenda, en minutos. */
+  durationMinutes?: number;
   address: string;
   city: string;
   latitude?: number;
@@ -109,6 +111,8 @@ export interface Booking {
   provider: User;
   status: BookingStatus;
   scheduledDate: string;
+  /** Copiada del servicio al reservar. */
+  durationMinutes?: number;
   description?: string;
   totalPrice: number;
   createdAt: string;

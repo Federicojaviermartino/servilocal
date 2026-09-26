@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Service } from '@/types';
 import { servicesApi } from '@/lib/api';
+import { textoDeError } from '@/lib/errores-api';
 import { useAuthStore } from '@/lib/auth-store';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
@@ -18,6 +19,7 @@ export default function ProviderServicesPage() {
   const tEstados = useTranslations('estados');
   const tComun = useTranslations('comun');
   const tTarjeta = useTranslations('tarjeta');
+  const tErrores = useTranslations('erroresApi');
   const nombreUnidad = useNombreUnidad();
   const formato = useFormatter();
   const { user } = useAuthStore();
@@ -71,8 +73,9 @@ export default function ProviderServicesPage() {
       await servicesApi.remove(id);
       toast.success(t('eliminado'));
       reintentar();
-    } catch {
-      toast.error(t('errorEliminar'));
+    } catch (error) {
+      // Con reservas abiertas no se elimina: se dice por qué.
+      toast.error(textoDeError(error, tErrores, t('errorEliminar')));
     }
   };
 

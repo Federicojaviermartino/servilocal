@@ -1,12 +1,14 @@
 import type { Mock } from 'vitest';
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Service } from '../entities';
+import { IsNull } from 'typeorm';
+import { Booking, BookingStatus, Service } from '../entities';
 import { ServicesService } from './services.service';
 
 /** Lo que nunca puede salir de un proveedor en una respuesta pública. */
@@ -103,16 +105,24 @@ async function construir(
     find: vi.fn(async () => [] as unknown[]),
   };
 
+  // Sin reservas, salvo que la prueba diga otra cosa.
+  const reservas = {
+    count: vi.fn(async () => 0),
+    exists: vi.fn(async () => false),
+  };
+
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       ServicesService,
       { provide: getRepositoryToken(Service), useValue: repo },
+      { provide: getRepositoryToken(Booking), useValue: reservas },
     ],
   }).compile();
 
   return {
     servicio: module.get(ServicesService),
     repo,
+    reservas,
     qb,
     categorias,
     conteo,
@@ -239,6 +249,77 @@ describe('ServicesService', () => {
       await servicio.remove('s1', OTRO, 'admin');
 
       expect(repo.remove).toHaveBeenCalled();
+    });
+  });
+
+  describe('eliminar un servicio con historial', () => {
+    async function conServicio() {
+      const qb = constructorFalso();
+      qb.getOne = vi.fn(async () => ({ id: 's1', providerId: 'p1' }));
+      const partes = await construir(qb);
+      (partes.repo as unknown as { update: Mock }).update = vi.fn(async () => ({
+        affected: 1,
+      }));
+      return { ...partes, qb };
+    }
+
+    it('con reservas abiertas no se elimina: se resuelven antes', async () => {
+      // Sus clientes se quedarían con una cita para algo que ya no existe,
+      // y el dinero retenido sin nadie que lo moviera.
+      const { servicio, repo, reservas } = await conServicio();
+      reservas.count.mockResolvedValue(2);
+
+      const error = await servicio
+        .remove('s1', 'p1', 'provider')
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      expect((error as ConflictException).getResponse()).toMatchObject({
+        codigo: 'reservas-abiertas',
+      });
+      expect(reservas.count).toHaveBeenCalledWith({
+        where: {
+          serviceId: 's1',
+          status: expect.objectContaining({
+            value: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+          }),
+        },
+      });
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    it('con reservas cerradas se retira, no se borra', async () => {
+      // Borrarlo se llevaba en cascada las reservas, y con ellas los pagos
+      // y las valoraciones de otras personas.
+      const { servicio, repo, reservas } = await conServicio();
+      reservas.exists.mockResolvedValue(true);
+
+      await servicio.remove('s1', 'p1', 'provider');
+
+      expect(repo.remove).not.toHaveBeenCalled();
+      expect((repo as unknown as { update: Mock }).update).toHaveBeenCalledWith(
+        's1',
+        {
+          isActive: false,
+          withdrawnAt: expect.any(Date),
+        },
+      );
+    });
+
+    it('sin reservas se borra de verdad', async () => {
+      const { servicio, repo } = await conServicio();
+
+      await servicio.remove('s1', 'p1', 'provider');
+
+      expect(repo.remove).toHaveBeenCalled();
+    });
+
+    it('uno retirado ya no se encuentra: ni su ficha, ni para editarlo', async () => {
+      const { servicio, qb } = await conServicio();
+
+      await servicio.findById('s1');
+
+      expect(qb.andWhere).toHaveBeenCalledWith('service.withdrawnAt IS NULL');
     });
   });
   describe('búsqueda por cercanía', () => {
@@ -623,6 +704,18 @@ describe('ServicesService', () => {
         });
       });
 
+      it('la duración que elige el profesional llega al servicio', async () => {
+        // Es lo que ocupa cada reserva en su agenda.
+        const { servicio, repo } = await construir(constructorFalso());
+
+        await servicio.create('p1', { ...alta, durationMinutes: 90 } as never);
+
+        expect(
+          (repo.create.mock.calls[0][0] as { durationMinutes: number })
+            .durationMinutes,
+        ).toBe(90);
+      });
+
       it('la ciudad se reconoce sin acentos ni mayúsculas', async () => {
         // Hay servicios antiguos guardados como «Malaga».
         const { servicio, repo } = await construir(constructorFalso());
@@ -708,7 +801,8 @@ describe('ServicesService', () => {
 
       expect(repo.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { providerId: 'p1' },
+          // Sin los retirados: el profesional los eliminó.
+          where: { providerId: 'p1', withdrawnAt: IsNull() },
           relations: { category: true },
           order: { createdAt: 'DESC' },
         }),

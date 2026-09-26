@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
+import { LIMITE_MENSAJES } from '../common/limites';
 import { MessagesService } from './messages.service';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
 import type { PeticionAutenticada } from '../auth/peticion-autenticada';
@@ -22,6 +24,7 @@ export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @Post()
+  @Throttle(LIMITE_MENSAJES)
   @ApiOperation({
     summary: 'Enviar mensaje a otro usuario (crea conversación si no existe)',
   })
@@ -30,6 +33,7 @@ export class MessagesController {
   }
 
   @Post('conversation/:conversationId')
+  @Throttle(LIMITE_MENSAJES)
   @ApiOperation({ summary: 'Responder en una conversación existente' })
   async reply(
     @Request() req: PeticionAutenticada,

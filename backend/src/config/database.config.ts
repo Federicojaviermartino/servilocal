@@ -26,6 +26,16 @@ export const getDatabaseConfig = (
     synchronize: false,
     migrationsRun: true,
     logging: nodeEnv === 'development',
+    // Sin tiempos, una base que no contesta dejaba cada petición esperando
+    // indefinidamente, y una transacción olvidada abierta retenía sus
+    // bloqueos. Quince segundos para conectar dan margen a que Neon
+    // despierte; treinta por sentencia, a cualquier consulta de la
+    // aplicación; y una transacción parada un minuto se cierra.
+    extra: {
+      connectionTimeoutMillis: 15_000,
+      statement_timeout: 30_000,
+      idle_in_transaction_session_timeout: 60_000,
+    },
   };
 
   if (databaseUrl) {

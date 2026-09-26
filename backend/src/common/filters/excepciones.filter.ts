@@ -56,6 +56,13 @@ const ERRORES_DE_LA_PETICION: Record<
     mensaje: 'La operación choca con otros datos que dependen de estos.',
   },
   // check_violation
+  // Dos reservas confirmadas del mismo profesional que se pisan. El
+  // servicio de reservas lo traduce con su código; esto es la red por si
+  // llega por otro camino.
+  '23P01': {
+    codigo: HttpStatus.CONFLICT,
+    mensaje: 'La operación choca con otra reserva confirmada.',
+  },
   '23514': {
     codigo: HttpStatus.BAD_REQUEST,
     mensaje: 'Algún dato no cumple las reglas.',

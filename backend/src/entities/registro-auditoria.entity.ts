@@ -15,6 +15,8 @@ export enum AccionAuditada {
   CATEGORIA_CREADA = 'categoria_creada',
   CATEGORIA_EDITADA = 'categoria_editada',
   CATEGORIA_ELIMINADA = 'categoria_eliminada',
+  PAGO_COBRADO = 'pago_cobrado',
+  PAGO_REEMBOLSADO = 'pago_reembolsado',
 }
 
 /**
