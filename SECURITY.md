@@ -15,8 +15,9 @@ fix before disclosing publicly.
 The live demo at `servilocal-web.onrender.com` and its API at
 `servilocal-api.onrender.com` are in scope, along with this repository.
 
-The demo holds seeded data only — no real users, no real payments. Stripe runs
-in test mode throughout. Please do not run automated scanners or load tests
+The demo is seeded, and registration is open, so real accounts can exist
+next to the demo ones. There are no real payments: Stripe runs in test mode
+throughout. Please do not run automated scanners or load tests
 against it: it is a single free-tier instance and that just takes the demo
 down for everyone else. The load test in `scripts/carga/` is there to be run
 against your own local copy.
@@ -71,6 +72,16 @@ dependencies of either the API or the front end.
 - Administrative actions are written to an append-only audit log with no
   foreign key to users, so the record survives the deletion of the account
   that produced it.
+- The demo accounts, whose passwords are on the sign-in page, are kept apart
+  from real ones. They can book and message each other, but not a real
+  account, and a real account cannot book or message them. The read-only demo
+  administrator sees every screen of the panel, with surnames shortened and
+  email addresses, phone numbers, postal addresses and locations masked.
+- A booking shows each party only the other's name, avatar and city until it
+  is accepted; phone, email and address follow once it is confirmed. Home
+  coordinates never leave the API.
+- The seed script empties the database before filling it, so it refuses any
+  host that is not local unless the database is named in `SEMILLA_CONFIRMAR`.
 
 ## Known gaps
 

@@ -10,6 +10,35 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.2.0] — 2026-09-26
+
+### Fixed
+
+- Providers could not publish a service. The form sends no coordinates and the API
+  required them, so every attempt ended in a 400 shown as "the service could not be
+  created"; no test covered it. A service without coordinates is now placed in its
+  city, and an end-to-end test publishes one from the dashboard.
+- Public search answered 500 to a malformed category id, and malformed ids or
+  duplicates did the same elsewhere. Identifiers are validated as UUIDs, and database
+  errors that are the request's fault answer 400 or 409.
+- A rejected message was not reported: the text stayed in the box and nothing said it
+  had not been sent.
+
+### Security
+
+- The read-only demo administrator, whose password is public, could read every
+  user's email, phone, address and home location, and the emails in the moderation
+  log. Its responses now mask them.
+- The demo accounts are isolated from real ones: they can book and message each
+  other, but not a real account, and the other way round. The rejection carries a
+  stable code, so the interface explains it in every language.
+- A booking returned the other party's whole profile from the start. Now each side
+  sees only name, avatar and city until it is confirmed, then the contact details;
+  home coordinates never.
+- A message needs a recipient that exists, is active and is someone else.
+- The seed refuses a non-local database unless it is named in `SEMILLA_CONFIRMAR`,
+  checks its settings before deleting anything, and runs in one transaction.
+
 ## [2.1.2] — 2026-09-26
 
 ### Changed
@@ -255,6 +284,7 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[2.2.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.2...v2.2.0
 [2.1.2]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.0.0...v2.1.0
