@@ -194,7 +194,9 @@ Constraints worth naming:
   The API also checks at confirmation, so a database without `btree_gist`, or with
   overlapping bookings from before the constraint existed, still refuses new overlaps;
   the migration then skips the constraint and says why in the log instead of stopping
-  the deploy.
+  the deploy. A later migration adds it wherever it is still missing, once those
+  bookings have been resolved: that is how production got it, after three demo bookings
+  created by an automated test had blocked it.
 - **History does not cascade.** Bookings, payments and reviews restrict the deletion of
   the users, services and bookings they point to. A service with bookings is withdrawn
   (`withdrawnAt`) instead of deleted, and one with open bookings cannot be removed until

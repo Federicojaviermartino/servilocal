@@ -10,6 +10,17 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.3.1] — 2026-09-26
+
+### Fixed
+
+- The overlap constraint from 2.3.0 was missing in production. Three demo bookings,
+  created by an automated test and confirmed on top of one another, stopped its
+  migration from adding it; the migration logged them and carried on, as designed, and
+  the API kept refusing new overlaps at confirmation. A new migration adds the
+  constraint wherever it is still missing, once no overlapping bookings are left, and
+  says so in the log; while some remain, it names them instead.
+
 ## [2.3.0] — 2026-09-26
 
 ### Added
