@@ -265,7 +265,7 @@ optional takes anything else down.**
 | Piece | Present | Absent |
 |-------|---------|--------|
 | Redis / Valkey | Throttler counters survive deploys, sockets span instances, category reads are cached | Throttler counts in memory, sockets stay on one instance, reads go to the database |
-| Sentry | Errors and sampled traces reported, with the session cookie, bearer tokens and the proxy secret stripped from both | Reporting off, a log line says so |
+| Sentry | Errors and sampled traces reported, with the session cookie, bearer tokens and the proxy secret stripped from both, and no request bodies, cookies, local variables or assistant conversations collected at all | Reporting off, a log line says so |
 | Anthropic key | Assistant active under a hard monthly ceiling checked *before* each call | A null provider fails immediately with a typed cause and the caller takes its deterministic path |
 
 Redis connections are split by purpose: queries fail fast (`enableOfflineQueue: false`),

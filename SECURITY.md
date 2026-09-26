@@ -64,8 +64,10 @@ dependencies of either the API or the front end.
   by the two services.
 - Credentials — the session cookie, bearer tokens and the proxy secret — are
   stripped from everything sent to Sentry, errors and performance traces
-  alike. A test sends them through the real SDK and fails if any of them
-  comes out.
+  alike, and the SDK is told not to collect request bodies, cookies, local
+  variables or conversations with the assistant in the first place. A test
+  sends a sign-in, password included, through the real SDK and fails if any
+  of it comes out.
 - Administrative actions are written to an append-only audit log with no
   foreign key to users, so the record survives the deletion of the account
   that produced it.

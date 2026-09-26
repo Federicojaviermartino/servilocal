@@ -26,6 +26,15 @@ the project, and carry that commit's date.
   `undefined` value now throws instead of being dropped, which used to turn
   `findOne({ where: { id: undefined } })` into "the first row". That default is kept:
   every query was checked, and none relies on a value being ignored.
+- Sentry 11, which streams spans instead of sending transactions, so
+  `beforeSendTransaction` no longer runs, and which collects far more by default:
+  cookies, request bodies, what people write to the assistant and what it answers, query
+  data and local variables. Upgraded as it came, it would have put the session cookie
+  back into every sampled trace; the test caught it before it shipped. Collection is now
+  switched off explicitly for all of that, spans are
+  scrubbed in `beforeSendSpan`, and the streamed lifecycle is fixed in code so an
+  environment variable cannot switch the scrubbing off. Either safeguard alone keeps the
+  credentials out; the test that sends through the real SDK fails without both.
 
 ## [2.1.1] — 2026-09-25
 
