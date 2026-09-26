@@ -40,7 +40,9 @@ dependencies of either the API or the front end.
 - Card details never reach this server. Stripe Elements collects them in the
   browser and the API only ever handles payment intent identifiers.
 - Payments are authorised and captured separately, so an amount is only taken
-  once the work is marked complete.
+  once the work is marked complete, and a booking cannot be completed before
+  its date. The administration's manual capture and refund act only on a
+  booking in a state that allows them.
 - The browser session is a JWT in an `HttpOnly`, `Secure`, `SameSite=Lax`
   cookie, so a script running on the page cannot read it or send it
   elsewhere. The browser reaches the API through the front end's own origin,
@@ -60,7 +62,9 @@ dependencies of either the API or the front end.
   one-minute ticket signed for a different audience; the API refuses it as a
   session, and the socket refuses a session token.
 - Rate limiting per visitor, `helmet` for response headers, and a Content
-  Security Policy on the front end. Requests relayed by the front end carry
+  Security Policy on the front end. Creating bookings and sending messages
+  have their own, tighter limits, so nobody can flood an inbox with fake
+  requests. Requests relayed by the front end carry
   the visitor's address, which the API only trusts alongside a secret shared
   by the two services.
 - Credentials — the session cookie, bearer tokens and the proxy secret — are
@@ -69,9 +73,11 @@ dependencies of either the API or the front end.
   variables or conversations with the assistant in the first place. A test
   sends a sign-in, password included, through the real SDK and fails if any
   of it comes out.
-- Administrative actions are written to an append-only audit log with no
-  foreign key to users, so the record survives the deletion of the account
-  that produced it.
+- Administrative actions, manual captures and refunds included, are written
+  to an append-only audit log with no foreign key to users, so the record
+  survives the deletion of the account that produced it.
+- Bookings, payments and reviews cannot be deleted by cascade: a service with
+  bookings is withdrawn, not deleted, so the other party's history stays.
 - The demo accounts, whose passwords are on the sign-in page, are kept apart
   from real ones. They can book and message each other, but not a real
   account, and a real account cannot book or message them. The read-only demo

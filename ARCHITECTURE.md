@@ -186,6 +186,24 @@ Constraints worth naming:
 - **`UsoIa` accumulates with `ON CONFLICT DO UPDATE`** in PostgreSQL, never in process
   memory: on a free tier the instance sleeps several times a day, and a ceiling built on
   an in-memory counter only looks like a ceiling.
+- **A provider's confirmed bookings cannot overlap.** An exclusion constraint, GiST over
+  `providerId` and a `tsrange` from `scheduledDate` to `scheduledDate + durationMinutes`
+  and limited to `confirmed`, rejects the second of two overlapping confirmations even
+  when both arrive at once and neither transaction can see the other. The API turns the
+  error into a 409 with a code. Intervals are half-open, so back-to-back bookings fit.
+  The API also checks at confirmation, so a database without `btree_gist`, or with
+  overlapping bookings from before the constraint existed, still refuses new overlaps;
+  the migration then skips the constraint and says why in the log instead of stopping
+  the deploy.
+- **History does not cascade.** Bookings, payments and reviews restrict the deletion of
+  the users, services and bookings they point to. A service with bookings is withdrawn
+  (`withdrawnAt`) instead of deleted, and one with open bookings cannot be removed until
+  they are resolved.
+- **What the API validates, the database checks too**: prices of at least 0.50 euros,
+  the least Stripe charges, ratings from 1 to 5, the coverage radius and the duration.
+  The constraints are added `NOT VALID` and then validated, so a legacy row can leave one
+  unvalidated, with a warning in the log, but cannot stop a deploy. The foreign keys
+  that listings filter on are indexed.
 
 Schema changes are migrations, never `synchronize`. `backend/src/database/migrations`
 holds them in order; each one is reversible.
@@ -309,7 +327,19 @@ was written for that branch.
 The booking state machine moves the money. Completing a booking captures the hold,
 cancelling or rejecting it releases the hold, and the money moves *before* the state does:
 if the capture fails, the booking is not marked complete, because a job closed without
-being charged is one nobody looks at again.
+being charged is one nobody looks at again. Nor does a booking close uncharged without
+anyone deciding it: with nothing held, completing answers 409 with a code, and the
+provider either waits for the client to pay or completes it without charge. The client
+can still pay afterwards, and that payment is captured at once instead of held.
+
+Every status change runs in one transaction with the booking row locked, and every write
+to a payment — the status change, the webhook, the browser's confirmation, the admin
+routes — locks the payment row, always booking first and payment second, so two of them
+never wait on each other crosswise. A hold that arrives after the booking closed is
+resolved on arrival: released if it was cancelled or rejected, captured if it was
+completed. Captures and refunds carry idempotency keys, and Stripe calls time out after
+ten seconds with two retries, which bounds how long a row stays locked while Stripe
+answers.
 
 A hold does not outlive seven days, and a booking can be weeks away, so holds are
 renewed. Paying saves the card to a Stripe customer (`setup_future_usage: off_session`),

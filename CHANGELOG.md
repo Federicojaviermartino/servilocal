@@ -10,6 +10,64 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.3.0] — 2026-09-26
+
+### Added
+
+- Services state how long each booking takes, from 15 minutes to 8 hours and one hour by
+  default. The booking keeps its own copy, and the service page, the booking form and
+  the booking show it.
+- Completing a booking with nothing held no longer happens silently. The API answers 409
+  with a code, and the provider chooses: wait for the client to pay, or complete it
+  without charge. A booking completed without charge can still be paid by the client,
+  and is charged at once rather than held; the client is told so.
+- The provider is notified of every new booking request. The notification was in the
+  catalogue; nothing sent it.
+
+### Changed
+
+- A service with bookings is withdrawn instead of deleted: it leaves search, the
+  provider's list and its public page, and its bookings, payments and reviews stay. With
+  pending or confirmed bookings it cannot be removed until they are resolved.
+- The admin capture and refund routes act only on a booking in a state that allows it —
+  capture on a completed booking, refund on a closed one — and both go to the audit log.
+- Prices below 0.50 euros, the least Stripe charges, are rejected when publishing a
+  service or booking one.
+- Calls to Stripe time out after 10 seconds with two retries, and database connections,
+  statements and idle transactions have time limits, so a slow dependency no longer
+  leaves requests hanging with rows locked.
+- Rules the API already enforced — prices, ratings, coverage radius, durations — are also
+  database constraints, and the foreign keys that listings filter on are indexed.
+
+### Fixed
+
+- A booking could be made for a past date and completed, and so charged, before its
+  date, and two confirmed bookings of the same provider could overlap. Past dates and
+  dates more than a year ahead are rejected, completing waits for the date, and an
+  exclusion constraint keeps a provider's confirmed bookings apart even when two are
+  confirmed at the same moment.
+- Status changes and payment events raced each other: a provider completing while the
+  client cancelled could both succeed, leaving a cancelled booking with the money
+  charged. Each status change now runs in one transaction with the booking locked, and
+  every write to a payment locks it too.
+- A hold that arrived after the booking was cancelled stayed on the card until Stripe
+  dropped it a week later, and then both parties were asked to pay again for a booking
+  that no longer existed. It is released on arrival; one that arrives after completion
+  is captured.
+- Cancelling before paying left the payment open, so the client could still finish
+  paying from a tab left open. The payment is cancelled with the booking.
+- A cancellation was always notified to the provider, even when the provider cancelled.
+  The other party is notified now, and both when an admin cancels.
+- Deleting a service cascaded to its bookings, and with them to payments and reviews.
+  Those foreign keys now restrict the deletion.
+- Paying again for a confirmed booking whose hold was lost said the provider still had
+  to accept it, and the received-bookings page had "a las" hard-coded in Spanish.
+
+### Security
+
+- Creating bookings and sending messages have their own limits per visitor, 10 and 30 a
+  minute, so a provider's inbox cannot be flooded with fake requests.
+
 ## [2.2.0] — 2026-09-26
 
 ### Fixed

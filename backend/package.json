@@ -1,6 +1,6 @@
 {
   "name": "servilocal-backend",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "ServiLocal - API REST para marketplace de servicios locales",
   "author": "Federico Javier Martino",
   "license": "MIT",
