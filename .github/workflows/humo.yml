@@ -39,8 +39,8 @@ jobs:
       # patrón que CodeQL marca, con razón, como checkout no confiable.
       - uses: actions/checkout@v7
         with:
-          # Hace falta la historia: la versión de cada servicio es el último
-          # commit que tocó su carpeta.
+          # Hace falta la historia: cada servicio puede servir desde el último
+          # commit que tocó su carpeta en adelante.
           fetch-depth: 0
 
       - name: Configurar Node.js
@@ -49,15 +49,23 @@ jobs:
           node-version: '22'
 
       # Cada servicio de Render tiene su carpeta raíz y solo se redespliega
-      # cuando cambia algo dentro. Un commit que toca solo la documentación
-      # no despliega nada, y uno que toca solo el frontend deja la API como
-      # estaba: la versión que tiene que estar sirviendo cada uno es el último
-      # commit que tocó su carpeta, no el último de main.
-      - name: Qué versión tiene que estar sirviendo cada servicio
+      # cuando cambia algo dentro: un commit que toca solo la documentación no
+      # despliega nada, y uno que toca solo el frontend deja la API como
+      # estaba. Pero cuando se empujan varios commits de golpe, Render
+      # despliega el último de main en cada servicio cuya carpeta cambió en el
+      # tramo, aunque ese último no la toque. Así que cada uno puede servir el
+      # último commit que tocó su carpeta o cualquiera posterior, y ninguno
+      # anterior. Posterior hasta lo último de main, no hasta este commit: si
+      # mientras tanto se ha empujado otro, Render ya estará sirviendo aquel.
+      - name: Qué versiones puede estar sirviendo cada servicio
         id: versiones
         run: |
-          echo "api=$(git log -1 --format=%H -- backend)" >> "$GITHUB_OUTPUT"
-          echo "web=$(git log -1 --format=%H -- frontend)" >> "$GITHUB_OUTPUT"
+          git fetch --quiet origin main
+          aceptables() {
+            git rev-list --reverse origin/main --not "$(git log -1 --format=%H -- "$1")^" | tr '\n' ' '
+          }
+          echo "api=$(aceptables backend)" >> "$GITHUB_OUTPUT"
+          echo "web=$(aceptables frontend)" >> "$GITHUB_OUTPUT"
 
       - name: Esperar al despliegue y comprobar producción
         env:

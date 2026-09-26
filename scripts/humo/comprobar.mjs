@@ -14,8 +14,10 @@
  *
  * Variables:
  *   HUMO_WEB, HUMO_API       direcciones; por defecto, las de producción
- *   HUMO_VERSION_WEB/_API    commit que tiene que estar sirviendo cada uno;
- *                            sin ellas no se espera a ninguna versión
+ *   HUMO_VERSION_WEB/_API    commits que puede estar sirviendo cada uno,
+ *                            separados por espacios: el último que tocó su
+ *                            carpeta y los que vinieron detrás. Sin ellas no
+ *                            se espera a ninguna versión
  *   HUMO_ESPERA_MS           cuánto esperar al despliegue (20 minutos)
  *
  * La cuenta es la de demostración, que se publica en la pantalla de acceso.
@@ -46,34 +48,44 @@ async function pedir(url, opciones = {}) {
 }
 
 /**
- * Espera a que el servicio sirva el commit esperado. Las instancias gratuitas
- * duermen y tardan en despertar, y el despliegue tarda lo suyo: se pregunta
- * cada quince segundos hasta el tope.
+ * Espera a que el servicio sirva una versión que ya lleve su último cambio.
+ * Las instancias gratuitas duermen y tardan en despertar, y el despliegue
+ * tarda lo suyo: se pregunta cada quince segundos hasta el tope.
+ *
+ * No basta con esperar el último commit que tocó su carpeta. Cuando se
+ * empujan varios de golpe, Render despliega el último de main en cada
+ * servicio cuya carpeta cambió en el tramo, aunque ese último no la toque:
+ * la prueba esperaba entonces una versión que nunca iba a llegar. Vale
+ * cualquiera desde el último cambio de la carpeta en adelante, que es la
+ * lista que le pasa el flujo, y ninguna anterior.
  */
-async function esperarVersion(nombre, url, esperada) {
+async function esperarVersion(nombre, url, aceptables) {
+  const lista = (aceptables ?? '').split(/\s+/).filter(Boolean);
   const hasta = Date.now() + ESPERA_MS;
   let ultima = null;
   while (Date.now() < hasta) {
     const respuesta = await pedir(url);
     if (respuesta.ok) {
       ultima = (await respuesta.json()).version ?? null;
-      if (!esperada) return comprobar(`${nombre} responde`, true);
+      if (!lista.length) return comprobar(`${nombre} responde`, true);
       if (ultima === null) {
         console.log(
           `::warning::${nombre} no dice qué versión sirve; se prueba lo que haya.`,
         );
         return comprobar(`${nombre} responde`, true, 'sin versión');
       }
-      if (esperada.startsWith(ultima)) {
+      if (lista.some((commit) => commit.startsWith(ultima))) {
         return comprobar(`${nombre} sirve ${ultima}`, true);
       }
     }
     await dormir(15_000);
   }
   comprobar(
-    esperada ? `${nombre} sirve ${esperada.slice(0, 7)}` : `${nombre} responde`,
+    lista.length
+      ? `${nombre} sirve ${lista[0].slice(0, 7)} o posterior`
+      : `${nombre} responde`,
     false,
-    esperada
+    lista.length
       ? `al acabar la espera seguía en ${ultima ?? 'nada'}`
       : 'no ha contestado',
   );
