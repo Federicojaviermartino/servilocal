@@ -5,11 +5,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Booking, BookingStatus, Service } from '../entities';
+import { In, Repository } from 'typeorm';
+import { Booking, BookingStatus, Service, User } from '../entities';
 import { CreateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { reservaVisible } from './partes-visibles';
+import { comprobarMismoMundo } from '../common/demostracion';
 import { NotificationType } from '../entities';
 
 /**
@@ -95,6 +97,8 @@ export class BookingsService {
     private bookingRepository: Repository<Booking>,
     @InjectRepository(Service)
     private serviceRepository: Repository<Service>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly avisos: NotificationsService,
     private readonly pagos: PaymentsService,
   ) {}
@@ -114,6 +118,17 @@ export class BookingsService {
     if (service.providerId === clientId) {
       throw new BadRequestException('No puedes reservar tu propio servicio');
     }
+
+    const partes = await this.userRepository.find({
+      where: { id: In([clientId, service.providerId]) },
+      select: { id: true, esDemostracion: true },
+    });
+    const cliente = partes.find((parte) => parte.id === clientId);
+    const profesional = partes.find((parte) => parte.id === service.providerId);
+    if (!cliente || !profesional) {
+      throw new NotFoundException('Servicio no encontrado o no disponible');
+    }
+    comprobarMismoMundo(cliente, profesional);
 
     // El importe llegaba con un @Min(0) por toda comprobación, y ese número
     // era el que acababa cobrándose en Stripe: un servicio de 500 euros se
@@ -167,6 +182,11 @@ export class BookingsService {
     return booking;
   }
 
+  /** Lo que devuelve la API al pedir una reserva: ver partes-visibles.ts. */
+  async verReserva(id: string, quien: Solicitante): Promise<Booking> {
+    return reservaVisible(await this.findById(id, quien));
+  }
+
   async updateStatus(
     id: string,
     userId: string,
@@ -208,7 +228,7 @@ export class BookingsService {
 
     const guardada = await this.bookingRepository.save(booking);
     await this.avisar(guardada, newStatus);
-    return guardada;
+    return reservaVisible(guardada);
   }
 
   /**
@@ -232,7 +252,7 @@ export class BookingsService {
   }
 
   async findByClient(clientId: string): Promise<Booking[]> {
-    return this.bookingRepository.find({
+    const reservas = await this.bookingRepository.find({
       where: { clientId },
       relations: {
         service: {
@@ -243,10 +263,11 @@ export class BookingsService {
       },
       order: { createdAt: 'DESC' },
     });
+    return reservas.map(reservaVisible);
   }
 
   async findByProvider(providerId: string): Promise<Booking[]> {
-    return this.bookingRepository.find({
+    const reservas = await this.bookingRepository.find({
       where: { providerId },
       relations: {
         service: {
@@ -257,6 +278,7 @@ export class BookingsService {
       },
       order: { createdAt: 'DESC' },
     });
+    return reservas.map(reservaVisible);
   }
 
   private validateStatusTransition(

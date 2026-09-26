@@ -255,6 +255,7 @@
     "cargando": "Chargement",
     "ciudad": "Ville",
     "cliente": "Client",
+    "demostracionAislada": "Les comptes de démonstration ne peuvent réserver et écrire qu’à d’autres comptes de démonstration, et les comptes réels, qu’à d’autres comptes réels.",
     "descripcionSitio": "Place de marché de services à domicile qui met en relation les clients et les professionnels de leur région.",
     "editar": "Modifier",
     "eliminar": "Supprimer",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Envoyer",
+    "errorEnviar": "Le message n’a pas pu être envoyé. Réessayez.",
     "escribePlaceholder": "Écrivez un message...",
     "sinConversaciones": "Vous n'avez aucune conversation.",
     "sinConversacionesPista": "Les conversations se créent lorsque vous contactez un professionnel depuis un service ou une réservation.",

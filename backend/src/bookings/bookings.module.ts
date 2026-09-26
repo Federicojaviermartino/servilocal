@@ -4,11 +4,11 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
-import { Booking, Service } from '../entities';
+import { Booking, Service, User } from '../entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, Service]),
+    TypeOrmModule.forFeature([Booking, Service, User]),
     NotificationsModule,
     PaymentsModule,
   ],

@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { QueryFailedError } from 'typeorm';
 import { Sentry } from '../observabilidad/sentry';
 import { idPeticionActual } from '../observabilidad/peticion';
 
@@ -20,6 +21,53 @@ import { idPeticionActual } from '../observabilidad/peticion';
  * Los errores esperados (404, 403, validaciones) no se reportan: son parte del
  * funcionamiento normal y solo añadirían ruido.
  */
+/**
+ * Errores de la base que son culpa de la petición, no del servidor.
+ *
+ * Un identificador mal formado o un duplicado llegaban como 500: un fallo
+ * del servidor que no lo era, con su aviso a Sentry, y que cualquiera podía
+ * provocar desde la búsqueda pública con un categoryId cualquiera. Los DTO
+ * ya validan los identificadores; esto cubre lo que se les escape, y las
+ * carreras que solo la base ve, como dos valoraciones de la misma reserva
+ * enviadas a la vez. Los códigos son los de PostgreSQL.
+ */
+const ERRORES_DE_LA_PETICION: Record<
+  string,
+  { codigo: HttpStatus; mensaje: string }
+> = {
+  // invalid_text_representation: un UUID que no lo es, por ejemplo.
+  '22P02': {
+    codigo: HttpStatus.BAD_REQUEST,
+    mensaje: 'Algún dato no tiene el formato esperado.',
+  },
+  // numeric_value_out_of_range
+  '22003': {
+    codigo: HttpStatus.BAD_REQUEST,
+    mensaje: 'Algún número está fuera del rango admitido.',
+  },
+  // unique_violation
+  '23505': {
+    codigo: HttpStatus.CONFLICT,
+    mensaje: 'Ya existe un registro con esos datos.',
+  },
+  // foreign_key_violation
+  '23503': {
+    codigo: HttpStatus.CONFLICT,
+    mensaje: 'La operación choca con otros datos que dependen de estos.',
+  },
+  // check_violation
+  '23514': {
+    codigo: HttpStatus.BAD_REQUEST,
+    mensaje: 'Algún dato no cumple las reglas.',
+  },
+};
+
+function errorDeLaPeticion(excepcion: unknown) {
+  if (!(excepcion instanceof QueryFailedError)) return null;
+  const codigo = (excepcion.driverError as { code?: string } | undefined)?.code;
+  return codigo ? (ERRORES_DE_LA_PETICION[codigo] ?? null) : null;
+}
+
 @Catch()
 export class FiltroDeExcepciones implements ExceptionFilter {
   private readonly logger = new Logger('Excepcion');
@@ -30,13 +78,17 @@ export class FiltroDeExcepciones implements ExceptionFilter {
     const peticion = contexto.getRequest<Request & { user?: { id: string } }>();
 
     const esHttp = excepcion instanceof HttpException;
+    const deLaPeticion = esHttp ? null : errorDeLaPeticion(excepcion);
     const codigo = esHttp
       ? excepcion.getStatus()
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+      : (deLaPeticion?.codigo ?? HttpStatus.INTERNAL_SERVER_ERROR);
 
     const cuerpo = esHttp
       ? excepcion.getResponse()
-      : { statusCode: codigo, message: 'Error interno del servidor' };
+      : {
+          statusCode: codigo,
+          message: deLaPeticion?.mensaje ?? 'Error interno del servidor',
+        };
 
     if (codigo >= HttpStatus.INTERNAL_SERVER_ERROR) {
       const detalle =

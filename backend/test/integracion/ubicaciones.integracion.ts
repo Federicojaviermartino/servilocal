@@ -104,6 +104,33 @@ describe('Ubicaciones en PostGIS', () => {
     }
   });
 
+  it('sin coordenadas, el servicio queda en el centro de su ciudad', async () => {
+    // Es lo que envía el formulario de alta, que no pide coordenadas: la API
+    // las exigía y publicar un servicio desde la aplicación daba un 400.
+    const [{ providerId, categoryId }] = await fuente.query(
+      `SELECT "providerId", "categoryId" FROM services LIMIT 1`,
+    );
+    const creado = await servicios.create(providerId, {
+      categoryId,
+      title: 'Servicio sin coordenadas',
+      description: 'Creado por la integración como lo crea el formulario.',
+      priceMin: 10,
+      priceUnit: 'por hora',
+      address: 'Calle Mayor 1',
+      city: 'Sevilla',
+    } as never);
+
+    try {
+      expect(await leerPunto('services', creado.id)).toEqual({
+        longitud: -5.9845,
+        latitud: 37.3891,
+        srid: 4326,
+      });
+    } finally {
+      await fuente.query(`DELETE FROM services WHERE id = $1`, [creado.id]);
+    }
+  });
+
   it('editar las coordenadas mueve el servicio, y editar otra cosa no', async () => {
     const [{ providerId, categoryId }] = await fuente.query(
       `SELECT "providerId", "categoryId" FROM services LIMIT 1`,

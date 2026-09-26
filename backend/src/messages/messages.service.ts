@@ -1,11 +1,13 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Conversation, Message } from '../entities';
+import { In, Repository } from 'typeorm';
+import { Conversation, Message, User } from '../entities';
+import { comprobarMismoMundo } from '../common/demostracion';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 
@@ -32,8 +34,38 @@ export class MessagesService {
     private conversationRepository: Repository<Conversation>,
     @InjectRepository(Message)
     private messageRepository: Repository<Message>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
     private readonly gateway: TiempoRealGateway,
   ) {}
+
+  /**
+   * Las dos personas de una conversación, comprobadas.
+   *
+   * Se aceptaba cualquier destinatario: un identificador que no existía daba
+   * un 500, se podía escribir a uno mismo y a una cuenta desactivada. Y las
+   * cuentas de demostración escribían a las reales: ver
+   * common/demostracion.ts.
+   */
+  private async comprobarPareja(
+    remitenteId: string,
+    destinatarioId: string,
+  ): Promise<void> {
+    if (remitenteId === destinatarioId) {
+      throw new BadRequestException('No puedes escribirte a ti mismo');
+    }
+
+    const personas = await this.userRepository.find({
+      where: { id: In([remitenteId, destinatarioId]) },
+      select: { id: true, isActive: true, esDemostracion: true },
+    });
+    const remitente = personas.find((p) => p.id === remitenteId);
+    const destinatario = personas.find((p) => p.id === destinatarioId);
+    if (!remitente || !destinatario?.isActive) {
+      throw new NotFoundException('Destinatario no encontrado');
+    }
+    comprobarMismoMundo(remitente, destinatario);
+  }
 
   /**
    * Avisa por socket a quien esté mirando.
@@ -53,6 +85,8 @@ export class MessagesService {
   }
 
   async sendMessage(senderId: string, dto: SendMessageDto): Promise<Message> {
+    await this.comprobarPareja(senderId, dto.receiverId);
+
     const conversation = await this.findOrCreateConversation(
       senderId,
       dto.receiverId,
@@ -97,6 +131,15 @@ export class MessagesService {
     ) {
       throw new ForbiddenException('No perteneces a esta conversación');
     }
+
+    // También al responder: una conversación entre una cuenta de
+    // demostración y una real que existiera de antes no debe seguir viva.
+    await this.comprobarPareja(
+      senderId,
+      conversation.participantOneId === senderId
+        ? conversation.participantTwoId
+        : conversation.participantOneId,
+    );
 
     const message = this.messageRepository.create({
       conversationId,

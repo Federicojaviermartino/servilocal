@@ -7,6 +7,8 @@ import { User, UserRole } from '../../entities/user.entity';
 import { Category } from '../../entities/category.entity';
 import { Service } from '../../entities/service.entity';
 import { puntoGeografico } from '../../common/geografia';
+import { COORDENADAS_CIUDAD } from '../../common/ciudades';
+import { comprobarDestino, destinoDe } from './barrera';
 import { Booking, BookingStatus } from '../../entities/booking.entity';
 import { Review } from '../../entities/review.entity';
 
@@ -21,21 +23,6 @@ import { Review } from '../../entities/review.entity';
  * queda el marcador de posición con el icono de la categoría, que es lo que
  * mostrará la mayoría de servicios publicados por profesionales reales.
  */
-
-// Coordenadas del centro de cada ciudad. Los nombres coinciden exactamente con
-// los valores del selector de ciudad del panel de filtros.
-const CIUDADES: Record<string, { lat: number; lng: number }> = {
-  Madrid: { lat: 40.4168, lng: -3.7038 },
-  Barcelona: { lat: 41.3874, lng: 2.1686 },
-  Valencia: { lat: 39.4699, lng: -0.3763 },
-  Sevilla: { lat: 37.3891, lng: -5.9845 },
-  Zaragoza: { lat: 41.6488, lng: -0.8891 },
-  Málaga: { lat: 36.7213, lng: -4.4214 },
-  Bilbao: { lat: 43.263, lng: -2.935 },
-  Murcia: { lat: 37.9922, lng: -1.1307 },
-  Palma: { lat: 39.5696, lng: 2.6502 },
-  'Las Palmas de Gran Canaria': { lat: 28.1235, lng: -15.4363 },
-};
 
 // Fotografías de Unsplash. Cada una se ha comprobado individualmente para que
 // muestre el oficio que le corresponde. El recorte 16:9 se pide al propio
@@ -164,6 +151,31 @@ const RESPUESTAS = [
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
 async function runSeed() {
+  // Antes de conectar, y antes de borrar nada: ver barrera.ts.
+  comprobarDestino(destinoDe(process.env), process.env.SEMILLA_CONFIRMAR);
+
+  /**
+   * El administrador con permisos reales, solo si hay una contraseña propia.
+   *
+   * Antes se creaba siempre con la misma contraseña que las cuentas de
+   * demostración, que se publica en la pantalla de acceso. El correo está en
+   * este archivo, que es público, así que cualquiera entraba con permisos
+   * completos: desactivar cuentas, borrar servicios —y en cascada sus
+   * reservas, pagos y reseñas— y lanzar capturas y reembolsos contra Stripe.
+   * La cuenta de solo lectura no protegía nada mientras esta existiera.
+   *
+   * Ahora hace falta ADMIN_PASSWORD. Sin ella la siembra deja únicamente el
+   * administrador de demostración, que es el que tiene que quedar en un
+   * despliegue público.
+   */
+  const passwordAdmin = process.env.ADMIN_PASSWORD?.trim();
+
+  if (passwordAdmin && passwordAdmin === 'Password123!') {
+    throw new Error(
+      'ADMIN_PASSWORD no puede ser la contraseña de demostración: es pública.',
+    );
+  }
+
   const databaseUrl = process.env.DATABASE_URL;
 
   const opcionesComunes = {
@@ -210,11 +222,19 @@ async function runSeed() {
   await dataSource.initialize();
   console.log('Conexión a base de datos establecida');
 
-  const userRepo = dataSource.getRepository(User);
-  const categoryRepo = dataSource.getRepository(Category);
-  const serviceRepo = dataSource.getRepository(Service);
-  const bookingRepo = dataSource.getRepository(Booking);
-  const reviewRepo = dataSource.getRepository(Review);
+  // Todo en una transacción: si algo falla a medias, la base se queda como
+  // estaba y no medio vacía. Si el proceso termina sin confirmarla, al
+  // cerrarse la conexión PostgreSQL la deshace sola.
+  const transaccion = dataSource.createQueryRunner();
+  await transaccion.connect();
+  await transaccion.startTransaction();
+  const gestor = transaccion.manager;
+
+  const userRepo = gestor.getRepository(User);
+  const categoryRepo = gestor.getRepository(Category);
+  const serviceRepo = gestor.getRepository(Service);
+  const bookingRepo = gestor.getRepository(Booking);
+  const reviewRepo = gestor.getRepository(Review);
 
   // Limpiar datos existentes respetando el orden de dependencias
   const tablasAVaciar = [
@@ -232,40 +252,22 @@ async function runSeed() {
   // vacía con un script de conveniencia no prueba nada. Las entradas
   // sobreviven a la resiembra porque guardan copiado el correo de quien
   // actuó, no una clave ajena a una fila que acaba de desaparecer.
+  // Sin atrapar errores: las tablas las crean las migraciones, que van antes,
+  // y un fallo aquí tiene que parar la siembra, no dejarla seguir a medias.
   for (const tabla of tablasAVaciar) {
-    try {
-      await dataSource.query('DELETE FROM ' + tabla);
-    } catch {
-      // La tabla puede no existir todavía; se ignora.
-    }
+    await gestor.query('DELETE FROM ' + tabla);
   }
   console.log('Datos anteriores eliminados');
 
   const salt = await bcrypt.genSalt(10);
   const passwordCifrada = await bcrypt.hash('Password123!', salt);
-  const base = { password: passwordCifrada, isEmailVerified: true };
-
-  /**
-   * El administrador con permisos reales, solo si hay una contraseña propia.
-   *
-   * Antes se creaba siempre con la misma contraseña que las cuentas de
-   * demostración, que se publica en la pantalla de acceso. El correo está en
-   * este archivo, que es público, así que cualquiera entraba con permisos
-   * completos: desactivar cuentas, borrar servicios —y en cascada sus
-   * reservas, pagos y reseñas— y lanzar capturas y reembolsos contra Stripe.
-   * La cuenta de solo lectura no protegía nada mientras esta existiera.
-   *
-   * Ahora hace falta ADMIN_PASSWORD. Sin ella la siembra deja únicamente el
-   * administrador de demostración, que es el que tiene que quedar en un
-   * despliegue público.
-   */
-  const passwordAdmin = process.env.ADMIN_PASSWORD?.trim();
-
-  if (passwordAdmin && passwordAdmin === 'Password123!') {
-    throw new Error(
-      'ADMIN_PASSWORD no puede ser la contraseña de demostración: es pública.',
-    );
-  }
+  // Todas las cuentas sembradas son de demostración, salvo el administrador
+  // real, que no usa esta base: ver common/demostracion.ts.
+  const base = {
+    password: passwordCifrada,
+    isEmailVerified: true,
+    esDemostracion: true,
+  };
 
   const admin = passwordAdmin
     ? userRepo.create({
@@ -902,7 +904,7 @@ async function runSeed() {
 
   const serviciosGuardados: Service[] = [];
   for (const def of definicionServicios) {
-    const { lat, lng } = CIUDADES[def.city];
+    const { lat, lng } = COORDENADAS_CIUDAD[def.city];
     // Se dispersan ligeramente las coordenadas para que los marcadores del
     // mapa no queden apilados en el centro exacto de cada ciudad.
     const dispersion = (serviciosGuardados.length % 7) * 0.004 - 0.012;
@@ -1095,6 +1097,8 @@ async function runSeed() {
       : 'Todas las cuentas usan la contraseña Password123!',
   );
 
+  await transaccion.commitTransaction();
+  await transaccion.release();
   await dataSource.destroy();
   console.log('\nSeed completado.');
 }

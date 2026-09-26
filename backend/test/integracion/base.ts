@@ -15,6 +15,7 @@ import { IndiceGeografico1789900000000 } from '../../src/database/migrations/178
 import { IndicesDeBusquedaTexto1790000000000 } from '../../src/database/migrations/1790000000000-IndicesDeBusquedaTexto';
 import { SesionesRevocadas1790100000000 } from '../../src/database/migrations/1790100000000-SesionesRevocadas';
 import { RenovacionRetenciones1790200000000 } from '../../src/database/migrations/1790200000000-RenovacionRetenciones';
+import { CuentasDemostracion1790300000000 } from '../../src/database/migrations/1790300000000-CuentasDemostracion';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -45,6 +46,7 @@ const MIGRACIONES = [
   IndicesDeBusquedaTexto1790000000000,
   SesionesRevocadas1790100000000,
   RenovacionRetenciones1790200000000,
+  CuentasDemostracion1790300000000,
 ];
 
 /**

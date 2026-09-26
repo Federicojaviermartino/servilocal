@@ -12,6 +12,8 @@ import Button from '@/components/atoms/Button';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { referenciaDe, type EstadoCarga as Estado } from '@/lib/carga';
 import type { AxiosError } from 'axios';
+import toast from 'react-hot-toast';
+import { CODIGO_DEMOSTRACION, codigoDeError } from '@/lib/errores-api';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -23,6 +25,7 @@ export default function ConversationPage() {
 
 function Conversacion({ partnerId }: { partnerId: string }) {
   const t = useTranslations('mensajesPanel');
+  const tComun = useTranslations('comun');
   const idioma = useLocale();
   const { user } = useAuthStore();
 
@@ -131,6 +134,14 @@ function Conversacion({ partnerId }: { partnerId: string }) {
       // Con socket, el propio mensaje vuelve por él. Sin socket hay que
       // pedirlo, o quien escribe no vería lo que acaba de enviar.
       if (!conectado) recargar();
+    } catch (error) {
+      // Sin esto, un envío rechazado no se veía: el texto se quedaba en la
+      // caja y nada decía que no había salido.
+      toast.error(
+        codigoDeError(error) === CODIGO_DEMOSTRACION
+          ? tComun('demostracionAislada')
+          : t('errorEnviar'),
+      );
     } finally {
       setIsSending(false);
     }

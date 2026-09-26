@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsNumber,
   MaxLength,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateCategoryDto {
@@ -36,7 +37,7 @@ export class CreateCategoryDto {
 
   @ApiProperty({ required: false, description: 'ID de la categoría padre' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   parentId?: string;
 
   @ApiProperty({ required: false, default: 0 })

@@ -255,6 +255,7 @@
     "cargando": "Loading",
     "ciudad": "City",
     "cliente": "Client",
+    "demostracionAislada": "Demo accounts can only book and message other demo accounts, and real accounts only other real ones.",
     "descripcionSitio": "A home services marketplace connecting customers with professionals in their area.",
     "editar": "Edit",
     "eliminar": "Delete",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Send",
+    "errorEnviar": "The message could not be sent. Please try again.",
     "escribePlaceholder": "Write a message...",
     "sinConversaciones": "You have no conversations.",
     "sinConversacionesPista": "Conversations start when you contact a professional from a service or a booking.",

@@ -1,8 +1,12 @@
 import type { Mock } from 'vitest';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Conversation, Message } from '../entities';
+import { Conversation, Message, User } from '../entities';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 import { MessagesService } from './messages.service';
 
@@ -56,6 +60,10 @@ interface Opciones {
   hiloEncontrado?: unknown;
   /** Total del contador de pendientes. */
   cuenta?: number;
+  /** Cuentas de demostración, desactivadas o que no existen. */
+  demostracion?: string[];
+  desactivadas?: string[];
+  inexistentes?: string[];
 }
 
 async function construir(
@@ -84,12 +92,26 @@ async function construir(
     createQueryBuilder: vi.fn(() => qbMensajes),
   };
   const gateway = { notificarMensaje: vi.fn() };
+  // Responde a `where: { id: In([...]) }` con cuentas activas y reales,
+  // salvo lo que se le pida.
+  const usuarios = {
+    find: vi.fn(async (consulta: { where: { id: { value: string[] } } }) =>
+      consulta.where.id.value
+        .filter((id) => !(opciones.inexistentes ?? []).includes(id))
+        .map((id) => ({
+          id,
+          isActive: !(opciones.desactivadas ?? []).includes(id),
+          esDemostracion: (opciones.demostracion ?? []).includes(id),
+        })),
+    ),
+  };
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       MessagesService,
       { provide: getRepositoryToken(Conversation), useValue: conversaciones },
       { provide: getRepositoryToken(Message), useValue: mensajes },
+      { provide: getRepositoryToken(User), useValue: usuarios },
       { provide: TiempoRealGateway, useValue: gateway },
     ],
   }).compile();
@@ -246,6 +268,86 @@ describe('MessagesService', () => {
         expect.stringContaining('participantOneId = :b'),
         expect.objectContaining({ a: YO, b: OTRO }),
       );
+    });
+  });
+
+  describe('a quién se puede escribir', () => {
+    // Se aceptaba cualquier identificador: uno que no existía daba un 500,
+    // y se podía escribir a uno mismo y a una cuenta desactivada.
+    it('no a uno mismo', async () => {
+      const { servicio } = await construir(null);
+
+      await expect(
+        servicio.sendMessage(YO, { receiverId: YO, content: 'Hola' } as never),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it.each([
+      ['que no existe', { inexistentes: [OTRO] }],
+      ['desactivada', { desactivadas: [OTRO] }],
+    ])('no a una cuenta %s', async (_caso, opciones) => {
+      const { servicio, mensajes } = await construir(null, opciones);
+
+      await expect(
+        servicio.sendMessage(YO, {
+          receiverId: OTRO,
+          content: 'Hola',
+        } as never),
+      ).rejects.toThrow(NotFoundException);
+      expect(mensajes.save).not.toHaveBeenCalled();
+    });
+
+    it('una cuenta de demostración no escribe a una real', async () => {
+      // Ver common/demostracion.ts.
+      const { servicio, mensajes } = await construir(null, {
+        demostracion: [YO],
+      });
+
+      await expect(
+        servicio.sendMessage(YO, {
+          receiverId: OTRO,
+          content: 'Hola',
+        } as never),
+      ).rejects.toMatchObject({
+        status: 403,
+        response: expect.objectContaining({ codigo: 'demostracion' }),
+      });
+      expect(mensajes.save).not.toHaveBeenCalled();
+    });
+
+    it('ni una real a una de demostración', async () => {
+      const { servicio } = await construir(null, { demostracion: [OTRO] });
+
+      await expect(
+        servicio.sendMessage(YO, {
+          receiverId: OTRO,
+          content: 'Hola',
+        } as never),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('entre cuentas de demostración, sí', async () => {
+      const { servicio, mensajes } = await construir(null, {
+        demostracion: [YO, OTRO],
+      });
+
+      await servicio.sendMessage(YO, {
+        receiverId: OTRO,
+        content: 'Hola',
+      } as never);
+
+      expect(mensajes.save).toHaveBeenCalled();
+    });
+
+    it('tampoco se sigue una conversación mixta que existiera de antes', async () => {
+      const { servicio, mensajes } = await construir(conversacion(), {
+        demostracion: [OTRO],
+      });
+
+      await expect(
+        servicio.replyToConversation(YO, HILO, { content: 'Hola' } as never),
+      ).rejects.toThrow(ForbiddenException);
+      expect(mensajes.save).not.toHaveBeenCalled();
     });
   });
 

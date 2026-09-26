@@ -7,12 +7,12 @@ import {
   Min,
   Max,
   MaxLength,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateReviewDto {
   @ApiProperty({ example: 'uuid-booking' })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   bookingId: string;
 
   @ApiProperty({ example: 5, minimum: 1, maximum: 5 })

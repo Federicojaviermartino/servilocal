@@ -1,5 +1,9 @@
 import type { Mock } from 'vitest';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Service } from '../entities';
@@ -599,6 +603,90 @@ describe('ServicesService', () => {
       };
       expect(guardado.location).toBe('punto-original');
       expect(guardado.title).toBe('Después');
+    });
+
+    describe('sin coordenadas', () => {
+      // El formulario de alta no envía coordenadas y la API las exigía:
+      // publicar un servicio desde la aplicación daba siempre un 400.
+      const alta = { title: 'Reparaciones', city: 'Málaga' };
+      const puntoDe = (repo: { create: Mock }) =>
+        (repo.create.mock.calls[0][0] as { location: unknown }).location;
+
+      it('el servicio se sitúa en su ciudad', async () => {
+        const { servicio, repo } = await construir(constructorFalso());
+
+        await servicio.create('p1', alta as never);
+
+        expect(puntoDe(repo)).toEqual({
+          type: 'Point',
+          coordinates: [-4.4214, 36.7213],
+        });
+      });
+
+      it('la ciudad se reconoce sin acentos ni mayúsculas', async () => {
+        // Hay servicios antiguos guardados como «Malaga».
+        const { servicio, repo } = await construir(constructorFalso());
+
+        await servicio.create('p1', { ...alta, city: ' MALAGA ' } as never);
+
+        expect(puntoDe(repo)).toEqual({
+          type: 'Point',
+          coordinates: [-4.4214, 36.7213],
+        });
+      });
+
+      it('una ciudad que no conocemos pide las coordenadas, con un 400 que lo dice', async () => {
+        const { servicio, repo } = await construir(constructorFalso());
+
+        await expect(
+          servicio.create('p1', { ...alta, city: 'Ourense' } as never),
+        ).rejects.toThrow(/Ourense/);
+        expect(repo.save).not.toHaveBeenCalled();
+      });
+
+      it('una coordenada sola no vale: van juntas', async () => {
+        const { servicio } = await construir(constructorFalso());
+
+        await expect(
+          servicio.create('p1', { ...alta, latitude: 40.4 } as never),
+        ).rejects.toThrow(BadRequestException);
+      });
+
+      it('cambiar de ciudad lleva el servicio a la nueva', async () => {
+        // Si no, el mapa lo seguiría pintando en la vieja.
+        const qb = constructorFalso();
+        qb.getOne = vi.fn(async () => ({
+          id: 's1',
+          providerId: 'p1',
+          city: 'Madrid',
+          location: 'punto-original',
+        }));
+        const { servicio, repo } = await construir(qb);
+
+        await servicio.update('s1', 'p1', { city: 'Sevilla' } as never);
+
+        const guardado = repo.save.mock.calls[0][0] as { location: unknown };
+        expect(guardado.location).toEqual({
+          type: 'Point',
+          coordinates: [-5.9845, 37.3891],
+        });
+      });
+
+      it('la misma ciudad escrita de otra forma no lo mueve', async () => {
+        const qb = constructorFalso();
+        qb.getOne = vi.fn(async () => ({
+          id: 's1',
+          providerId: 'p1',
+          city: 'Málaga',
+          location: 'punto-original',
+        }));
+        const { servicio, repo } = await construir(qb);
+
+        await servicio.update('s1', 'p1', { city: 'malaga' } as never);
+
+        const guardado = repo.save.mock.calls[0][0] as { location: unknown };
+        expect(guardado.location).toBe('punto-original');
+      });
     });
 
     it('no deja editar el servicio de otro', async () => {

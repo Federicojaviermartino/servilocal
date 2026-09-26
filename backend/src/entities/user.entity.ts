@@ -80,6 +80,14 @@ export class User {
   soloLectura: boolean;
 
   /**
+   * Cuenta de la semilla, con contraseña publicada. Puede hacerlo todo con
+   * otras cuentas de demostración y nada con las reales, ni al revés: ver
+   * common/demostracion.ts.
+   */
+  @Column({ default: false })
+  esDemostracion: boolean;
+
+  /**
    * Su ficha de cliente en Stripe, donde queda guardada la tarjeta con la que
    * pagó. Hace falta para renovar una retención sin que tenga que estar
    * delante: Stripe solo deja cobrar de nuevo una tarjeta guardada en un

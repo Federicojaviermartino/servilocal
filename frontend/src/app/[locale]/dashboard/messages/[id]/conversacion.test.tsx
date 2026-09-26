@@ -5,16 +5,22 @@ import es from '../../../../../../messages/es.json';
 import ConversationPage from './page';
 
 const getConversation = vi.fn();
+const send = vi.fn();
+const toastError = vi.fn();
 
 vi.mock('@/lib/api', () => ({
   messagesApi: {
     getConversation: (id: string) => getConversation(id),
     getConversations: async () => ({ data: [] }),
-    send: vi.fn(),
+    send: (datos: unknown) => send(datos),
   },
 }));
 
 vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'u2' }) }));
+
+vi.mock('react-hot-toast', () => ({
+  default: { error: (texto: string) => toastError(texto), success: vi.fn() },
+}));
 
 vi.mock('@/lib/auth-store', () => ({
   useAuthStore: () => ({ user: { id: 'u1' } }),
@@ -57,6 +63,8 @@ const esperar = (ms = 0) =>
 beforeEach(() => {
   vi.useFakeTimers();
   getConversation.mockReset();
+  send.mockReset();
+  toastError.mockReset();
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -94,6 +102,40 @@ describe('Conversación', () => {
     await esperar();
 
     expect(screen.getByText(mensaje.content)).toBeInTheDocument();
+  });
+
+  describe('si el envío se rechaza', () => {
+    // Sin avisar, el texto se quedaba en la caja y nada decía que no había
+    // salido.
+    async function enviar(rechazo: unknown) {
+      getConversation.mockResolvedValue({ data: [mensaje] });
+      send.mockRejectedValueOnce(rechazo);
+      pintar();
+      await esperar();
+
+      fireEvent.change(
+        screen.getByPlaceholderText(es.mensajesPanel.escribePlaceholder),
+        { target: { value: 'Hola' } },
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: es.mensajesPanel.enviar }),
+      );
+      await esperar();
+    }
+
+    it('lo dice', async () => {
+      await enviar({ response: { status: 500, data: {} } });
+
+      expect(toastError).toHaveBeenCalledWith(es.mensajesPanel.errorEnviar);
+    });
+
+    it('y si es entre una cuenta de demostración y una real, explica por qué', async () => {
+      await enviar({
+        response: { status: 403, data: { codigo: 'demostracion' } },
+      });
+
+      expect(toastError).toHaveBeenCalledWith(es.comun.demostracionAislada);
+    });
   });
 
   it('una sesión caducada se cuenta como tal', async () => {

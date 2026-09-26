@@ -255,6 +255,7 @@
     "cargando": "Wird geladen",
     "ciudad": "Stadt",
     "cliente": "Kunde",
+    "demostracionAislada": "Demokonten können nur mit anderen Demokonten buchen und schreiben, echte Konten nur mit anderen echten.",
     "descripcionSitio": "Marktplatz für Haushaltsdienstleistungen, der Kunden mit Fachleuten aus ihrer Umgebung verbindet.",
     "editar": "Bearbeiten",
     "eliminar": "Löschen",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Senden",
+    "errorEnviar": "Die Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
     "escribePlaceholder": "Nachricht schreiben...",
     "sinConversaciones": "Sie haben keine Unterhaltungen.",
     "sinConversacionesPista": "Unterhaltungen entstehen, wenn Sie eine Fachkraft über eine Dienstleistung oder eine Buchung kontaktieren.",

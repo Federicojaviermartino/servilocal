@@ -255,6 +255,7 @@
     "cargando": "Kargatzen",
     "ciudad": "Hiria",
     "cliente": "Bezeroa",
+    "demostracionAislada": "Demostrazio-kontuek beste demostrazio-kontu batzuekin bakarrik egin ditzakete erreserbak eta mezuak, eta benetakoek, beste benetako batzuekin.",
     "descripcionSitio": "Etxeko zerbitzuen merkatua, bezeroak eta inguruko profesionalak lotzen dituena.",
     "editar": "Editatu",
     "eliminar": "Ezabatu",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Bidali",
+    "errorEnviar": "Ezin izan da mezua bidali. Saiatu berriro.",
     "escribePlaceholder": "Idatzi mezu bat...",
     "sinConversaciones": "Ez duzu elkarrizketarik.",
     "sinConversacionesPista": "Elkarrizketak profesional batekin harremanetan jartzean sortzen dira, zerbitzu edo erreserba batetik.",

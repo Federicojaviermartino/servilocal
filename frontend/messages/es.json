@@ -255,6 +255,7 @@
     "cargando": "Cargando",
     "ciudad": "Ciudad",
     "cliente": "Cliente",
+    "demostracionAislada": "Las cuentas de demostración solo pueden reservar y escribir a otras cuentas de demostración, y las reales, a otras reales.",
     "descripcionSitio": "Marketplace de servicios del hogar que conecta clientes con profesionales de su zona.",
     "editar": "Editar",
     "eliminar": "Eliminar",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Enviar",
+    "errorEnviar": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
     "escribePlaceholder": "Escribe un mensaje...",
     "sinConversaciones": "No tienes conversaciones.",
     "sinConversacionesPista": "Las conversaciones se crean al contactar con un profesional desde un servicio o reserva.",

@@ -255,6 +255,7 @@
     "cargando": "Cargando",
     "ciudad": "Cidade",
     "cliente": "Cliente",
+    "demostracionAislada": "As contas de demostración só poden reservar e escribir a outras contas de demostración, e as reais, a outras reais.",
     "descripcionSitio": "Marketplace de servizos do fogar que conecta clientes con profesionais da súa zona.",
     "editar": "Editar",
     "eliminar": "Eliminar",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Enviar",
+    "errorEnviar": "Non se puido enviar a mensaxe. Téntao de novo.",
     "escribePlaceholder": "Escribe unha mensaxe...",
     "sinConversaciones": "Non tes conversas.",
     "sinConversacionesPista": "As conversas créanse ao contactar cun profesional desde un servizo ou unha reserva.",

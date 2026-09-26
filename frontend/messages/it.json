@@ -255,6 +255,7 @@
     "cargando": "Caricamento",
     "ciudad": "Città",
     "cliente": "Cliente",
+    "demostracionAislada": "Gli account demo possono prenotare e scrivere solo ad altri account demo, e quelli reali solo ad altri reali.",
     "descripcionSitio": "Marketplace di servizi per la casa che mette in contatto i clienti con i professionisti della loro zona.",
     "editar": "Modifica",
     "eliminar": "Elimina",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Invia",
+    "errorEnviar": "Non è stato possibile inviare il messaggio. Riprova.",
     "escribePlaceholder": "Scrivi un messaggio...",
     "sinConversaciones": "Non hai conversazioni.",
     "sinConversacionesPista": "Le conversazioni nascono quando contatti un professionista da un servizio o da una prenotazione.",

@@ -38,6 +38,11 @@ test.describe('Panel de administración', () => {
     for (let i = 0; i < total; i++) {
       await expect(botonesEstado.nth(i)).toBeDisabled();
     }
+
+    // Y sin datos personales: la cuenta es pública, y el correo de cada
+    // persona registrada quedaba a la vista de cualquier visitante.
+    await expect(page.getByText('l•••@e•••').first()).toBeVisible();
+    await expect(page.getByText('laura@ejemplo.com')).toHaveCount(0);
   });
 
   test('las gráficas se pintan con los datos del servidor', async ({

@@ -6,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
 import { FiltroDeExcepciones } from './excepciones.filter';
 
 /**
@@ -83,6 +84,48 @@ describe('FiltroDeExcepciones', () => {
     const cuerpo = json.mock.calls[0][0] as { message: string };
     expect(cuerpo.message).toBe('Error interno del servidor');
     expect(cuerpo.message).not.toContain('10.0.0.4');
+  });
+
+  /** Un error de la base con su código de PostgreSQL, como lo da el driver. */
+  const errorDeBase = (code: string) =>
+    new QueryFailedError(
+      'SELECT … WHERE id = $1',
+      ['x'],
+      Object.assign(new Error('mensaje interno del driver'), { code }),
+    );
+
+  it.each([
+    ['22P02', HttpStatus.BAD_REQUEST, 'un identificador mal formado'],
+    ['23505', HttpStatus.CONFLICT, 'un duplicado'],
+    ['23503', HttpStatus.CONFLICT, 'una clave ajena rota'],
+    ['23514', HttpStatus.BAD_REQUEST, 'una restricción incumplida'],
+  ])(
+    'un error %s de la base es culpa de la petición: %i, no 500 (%s)',
+    (code, esperado) => {
+      // La búsqueda pública con ?categoryId=x daba un 500 que cualquiera
+      // podía provocar, con su aviso a Sentry.
+      const { filtro, host, status, json } = construir();
+
+      filtro.catch(errorDeBase(code), host);
+
+      expect(status).toHaveBeenCalledWith(esperado);
+      const cuerpo = json.mock.calls[0][0] as { message: string };
+      expect(cuerpo.message).not.toContain('driver');
+      expect(cuerpo.message).not.toContain('SELECT');
+      // Y no cuenta como fallo del servidor.
+      expect(Logger.prototype.error).not.toHaveBeenCalled();
+    },
+  );
+
+  it('un error de la base sin código conocido sigue siendo un 500', () => {
+    const { filtro, host, status, json } = construir();
+
+    filtro.catch(errorDeBase('08006'), host);
+
+    expect(status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Error interno del servidor' }),
+    );
   });
 
   it('lo que se lanza sin ser un Error tampoco se filtra', () => {

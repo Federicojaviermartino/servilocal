@@ -255,6 +255,7 @@
     "cargando": "Carregant",
     "ciudad": "Ciutat",
     "cliente": "Client",
+    "demostracionAislada": "Els comptes de demostració només poden reservar i escriure a altres comptes de demostració, i els reals, a altres de reals.",
     "descripcionSitio": "Marketplace de serveis per a la llar que connecta clients amb professionals de la seva zona.",
     "editar": "Edita",
     "eliminar": "Elimina",
@@ -358,6 +359,7 @@
   },
   "mensajesPanel": {
     "enviar": "Envia",
+    "errorEnviar": "No s'ha pogut enviar el missatge. Torna-ho a provar.",
     "escribePlaceholder": "Escriu un missatge...",
     "sinConversaciones": "No tens converses.",
     "sinConversacionesPista": "Les converses es creen en contactar amb un professional des d'un servei o una reserva.",

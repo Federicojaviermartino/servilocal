@@ -62,7 +62,7 @@ export class BookingsController {
     @Request() req: PeticionAutenticada,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.bookingsService.findById(id, {
+    return this.bookingsService.verReserva(id, {
       id: req.user.id,
       role: req.user.role,
     });

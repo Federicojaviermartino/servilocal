@@ -8,7 +8,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
-import { Booking, BookingStatus, Service } from '../entities';
+import { Booking, BookingStatus, Service, User } from '../entities';
 
 const mockBookingRepository = {
   create: vi.fn(),
@@ -19,6 +19,23 @@ const mockBookingRepository = {
 
 const mockServiceRepository = {
   findOne: vi.fn(),
+};
+
+/** Las cuentas que el doble de usuarios da como de demostración. */
+const DEMOSTRACION = new Set<string>();
+
+/**
+ * Responde a la consulta de las dos partes, `where: { id: In([...]) }`, con
+ * cuentas activas y reales salvo las marcadas como de demostración.
+ */
+const mockUserRepository = {
+  find: vi.fn(async (opciones: { where: { id: { value: string[] } } }) =>
+    opciones.where.id.value.map((id) => ({
+      id,
+      isActive: true,
+      esDemostracion: DEMOSTRACION.has(id),
+    })),
+  ),
 };
 
 const avisos = { crear: vi.fn(async () => null) };
@@ -43,6 +60,10 @@ describe('BookingsService', () => {
           provide: getRepositoryToken(Service),
           useValue: mockServiceRepository,
         },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepository,
+        },
         { provide: NotificationsService, useValue: avisos },
         { provide: PaymentsService, useValue: pagos },
       ],
@@ -50,6 +71,7 @@ describe('BookingsService', () => {
 
     service = module.get<BookingsService>(BookingsService);
     vi.clearAllMocks();
+    DEMOSTRACION.clear();
   });
 
   it('debería estar definido', () => {
@@ -109,6 +131,52 @@ describe('BookingsService', () => {
       await expect(service.create('same-user', createDto)).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    describe('cuentas de demostración', () => {
+      // Las cuentas de la semilla se publican con su contraseña. Una cuenta
+      // real que reservara con ellas quedaba a la vista de cualquiera que
+      // entrase como ese profesional: ver common/demostracion.ts.
+      beforeEach(() => {
+        mockServiceRepository.findOne.mockResolvedValue({
+          id: 'service-uuid',
+          providerId: 'provider-uuid',
+          isActive: true,
+          priceMin: 10,
+          priceMax: null,
+        });
+        mockBookingRepository.create.mockImplementation((r: unknown) => r);
+        mockBookingRepository.save.mockImplementation(async (r: unknown) => r);
+      });
+
+      it('una cuenta real no reserva el servicio de una de demostración', async () => {
+        DEMOSTRACION.add('provider-uuid');
+
+        await expect(
+          service.create('client-uuid', createDto),
+        ).rejects.toMatchObject({
+          status: 403,
+          response: expect.objectContaining({ codigo: 'demostracion' }),
+        });
+        expect(mockBookingRepository.save).not.toHaveBeenCalled();
+      });
+
+      it('ni una de demostración el de una real', async () => {
+        DEMOSTRACION.add('client-uuid');
+
+        await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+          ForbiddenException,
+        );
+      });
+
+      it('entre cuentas de demostración se reserva como siempre', async () => {
+        DEMOSTRACION.add('client-uuid');
+        DEMOSTRACION.add('provider-uuid');
+
+        const reserva = await service.create('client-uuid', createDto);
+
+        expect(reserva.status).toBe(BookingStatus.PENDING);
+      });
     });
   });
 

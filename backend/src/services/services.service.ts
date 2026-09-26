@@ -1,5 +1,6 @@
 import {
   Injectable,
+  BadRequestException,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -7,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Category, Service } from '../entities';
 import { puntoGeografico } from '../common/geografia';
+import { coordenadasDeCiudad, mismaCiudad } from '../common/ciudades';
 import {
   CreateServiceDto,
   UpdateServiceDto,
@@ -76,6 +78,36 @@ function normalizar(texto: string): string {
   return salida;
 }
 
+/**
+ * El punto de un servicio: sus coordenadas si llegan, o las de su ciudad.
+ *
+ * Las dos coordenadas van juntas o no van: una sola dejaría el servicio en
+ * el ecuador o en el meridiano cero. Y comparando con undefined, no por
+ * verdad, porque 0 es una coordenada válida: el meridiano de Greenwich pasa
+ * por Castellón.
+ */
+function ubicar(
+  ciudad: string,
+  latitud: number | undefined,
+  longitud: number | undefined,
+) {
+  if (latitud !== undefined && longitud !== undefined) {
+    return puntoGeografico(latitud, longitud);
+  }
+  if (latitud !== undefined || longitud !== undefined) {
+    throw new BadRequestException(
+      'La latitud y la longitud van juntas: faltaba una de las dos.',
+    );
+  }
+  const punto = coordenadasDeCiudad(ciudad);
+  if (!punto) {
+    throw new BadRequestException(
+      `No sabemos dónde está «${ciudad}»: indica la latitud y la longitud del servicio.`,
+    );
+  }
+  return puntoGeografico(punto.lat, punto.lng);
+}
+
 @Injectable()
 export class ServicesService {
   constructor(
@@ -92,7 +124,7 @@ export class ServicesService {
     const service = this.serviceRepository.create({
       ...rest,
       providerId,
-      location: puntoGeografico(latitude, longitude),
+      location: ubicar(rest.city, latitude, longitude),
     });
 
     return this.serviceRepository.save(service);
@@ -129,10 +161,12 @@ export class ServicesService {
 
     const { latitude, longitude, ...rest } = updateDto;
 
-    // Comparando con undefined y no por verdad: 0 es una coordenada válida,
-    // y el meridiano de Greenwich pasa por Castellón.
-    if (latitude !== undefined && longitude !== undefined) {
-      service.location = puntoGeografico(latitude, longitude);
+    // Con coordenadas, van ellas. Sin ellas, cambiar de ciudad lleva el
+    // servicio a la nueva: si no, el mapa lo seguiría pintando en la vieja.
+    const cambiaDeCiudad =
+      rest.city !== undefined && !mismaCiudad(rest.city, service.city);
+    if (latitude !== undefined || longitude !== undefined || cambiaDeCiudad) {
+      service.location = ubicar(rest.city ?? service.city, latitude, longitude);
     }
 
     Object.assign(service, rest);

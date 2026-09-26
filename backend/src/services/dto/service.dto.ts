@@ -8,6 +8,7 @@ import {
   Min,
   Max,
   MaxLength,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -27,8 +28,7 @@ export class CreateServiceDto {
   description: string;
 
   @ApiProperty({ example: 'uuid-category' })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   categoryId: string;
 
   @ApiProperty({ example: 25.0 })
@@ -46,23 +46,29 @@ export class CreateServiceDto {
   @IsString()
   priceUnit: string;
 
-  @ApiProperty({
+  // Opcionales: sin ellas, el servicio se sitúa en su ciudad. Ver
+  // common/ciudades.ts.
+  @ApiPropertyOptional({
     example: 40.4168,
-    description: 'Latitud de la ubicación del servicio',
+    description:
+      'Latitud de la ubicación del servicio. Sin ella, la de su ciudad.',
   })
+  @IsOptional()
   @IsNumber()
   @Min(-90)
   @Max(90)
-  latitude: number;
+  latitude?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: -3.7038,
-    description: 'Longitud de la ubicación del servicio',
+    description:
+      'Longitud de la ubicación del servicio. Sin ella, la de su ciudad.',
   })
+  @IsOptional()
   @IsNumber()
   @Min(-180)
   @Max(180)
-  longitude: number;
+  longitude?: number;
 
   @ApiProperty({ example: 'Calle Gran Vía 1, Madrid' })
   @IsString()
@@ -102,7 +108,7 @@ export class UpdateServiceDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUUID()
   categoryId?: string;
 
   @ApiPropertyOptional()
@@ -167,7 +173,7 @@ export class SearchServicesDto {
 
   @ApiPropertyOptional({ example: 'uuid-category' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
   categoryId?: string;
 
   @ApiPropertyOptional({ example: 'Madrid' })

@@ -1,10 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class CreatePaymentIntentDto {
   @ApiProperty({ example: 'uuid-booking' })
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   bookingId: string;
 }
 
