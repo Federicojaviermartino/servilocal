@@ -55,11 +55,21 @@ const COLOR_ESTADO: Record<string, string> = {
   rejected: '#737373',
 };
 
+/**
+ * Una gráfica, con sus datos también en una tabla.
+ *
+ * Con lector de pantalla, los valores solo se podían leer en el emergente,
+ * que sale al pasar el ratón. La tabla no se ve, pero se lee. El dibujo no
+ * se oculta: Recharts lo deja recorrer con las flechas, y esconder algo que
+ * recibe el foco dejaría a quien usa el teclado en un sitio sin nombre.
+ */
 function Caja({
   titulo,
+  tabla,
   children,
 }: {
   titulo: string;
+  tabla: { cabeceras: [string, string]; filas: [string, number][] };
   children: React.ReactNode;
 }) {
   return (
@@ -70,6 +80,23 @@ function Caja({
           {children as React.ReactElement}
         </ResponsiveContainer>
       </div>
+      <table className="sr-only">
+        <caption>{titulo}</caption>
+        <thead>
+          <tr>
+            <th scope="col">{tabla.cabeceras[0]}</th>
+            <th scope="col">{tabla.cabeceras[1]}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tabla.filas.map(([etiqueta, valor]) => (
+            <tr key={etiqueta}>
+              <th scope="row">{etiqueta}</th>
+              <td>{valor}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -125,7 +152,13 @@ export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {
   return (
     <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div className="lg:col-span-2">
-        <Caja titulo={t('graficaReservasSemana')}>
+        <Caja
+          titulo={t('graficaReservasSemana')}
+          tabla={{
+            cabeceras: [t('tablaSemana'), t('graficaReservas')],
+            filas: semanas.map((s) => [s.etiqueta, s.reservas]),
+          }}
+        >
           <AreaChart data={semanas} margin={{ left: -20, right: 8, top: 4 }}>
             <defs>
               <linearGradient
@@ -154,7 +187,13 @@ export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {
         </Caja>
       </div>
 
-      <Caja titulo={t('graficaPorNota')}>
+      <Caja
+        titulo={t('graficaPorNota')}
+        tabla={{
+          cabeceras: [t('tablaNota'), t('graficaValoraciones')],
+          filas: notas.map((n) => [n.clave, n.total]),
+        }}
+      >
         <BarChart data={notas} margin={{ left: -20, right: 8, top: 4 }}>
           <XAxis dataKey="clave" {...ejeComun} />
           <YAxis allowDecimals={false} {...ejeComun} />
@@ -175,7 +214,13 @@ export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {
         </BarChart>
       </Caja>
 
-      <Caja titulo={t('graficaPorEstado')}>
+      <Caja
+        titulo={t('graficaPorEstado')}
+        tabla={{
+          cabeceras: [t('estado'), t('graficaReservas')],
+          filas: datos.porEstado.map((e) => [nombreEstado(e.clave), e.total]),
+        }}
+      >
         <PieChart>
           <Tooltip {...emergente} />
           {/* Sin leyenda, los segmentos solo se distinguían por el color y
@@ -212,7 +257,13 @@ export default function GraficasPanel({ datos }: { datos: DatosGraficas }) {
       </Caja>
 
       <div className="lg:col-span-2">
-        <Caja titulo={t('graficaPorCategoria')}>
+        <Caja
+          titulo={t('graficaPorCategoria')}
+          tabla={{
+            cabeceras: [t('tablaCategoria'), t('graficaServicios')],
+            filas: categorias.map((c) => [c.clave, c.total]),
+          }}
+        >
           <BarChart
             data={categorias}
             layout="vertical"

@@ -126,4 +126,40 @@ test.describe('Búsqueda de servicios', () => {
     ).toBeVisible();
     await expect(page.getByText('Sobre el profesional')).toBeVisible();
   });
+
+  test('la ficha llega ya con su contenido en el HTML', async ({
+    page,
+    request,
+  }) => {
+    // Se pedía desde el navegador: el HTML solo traía esqueletos, y un
+    // buscador o una vista previa en una red social no veían ni el título.
+    await page.goto('/services/search');
+    const tarjeta = page.locator(TARJETA).first();
+    const titulo = (await tarjeta.locator('h3').textContent())?.trim();
+    const enlace = await tarjeta.getAttribute('href');
+
+    const html = await (await request.get(enlace!)).text();
+
+    expect(html).toMatch(/<h1[^>]*>[^<]*<\/h1>/);
+    expect(html).toContain(titulo!);
+    expect(html).toContain('Sobre el profesional');
+  });
+
+  test('los precios llevan la moneda, y la vista activa se anuncia', async ({
+    page,
+  }) => {
+    await page.goto('/services/search');
+
+    // La tarjeta decía «30 por hora», sin euros.
+    await expect(page.locator(TARJETA).first()).toContainText(/\d\s?€/);
+    // Solo se distinguía por el color.
+    await expect(page.getByRole('button', { name: 'Lista' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await expect(page.getByRole('button', { name: 'Mapa' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
 });

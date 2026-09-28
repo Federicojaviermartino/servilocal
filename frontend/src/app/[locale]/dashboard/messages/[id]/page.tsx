@@ -12,12 +12,9 @@ import Button from '@/components/atoms/Button';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { referenciaDe, type EstadoCarga as Estado } from '@/lib/carga';
 import type { AxiosError } from 'axios';
-import toast from 'react-hot-toast';
-import {
-  CODIGO_DEMOSTRACION,
-  codigoDeError,
-  textoDeError,
-} from '@/lib/errores-api';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
+import { useBorrador } from '@/lib/borrador';
+import { desplazamiento } from '@/lib/movimiento';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -29,8 +26,7 @@ export default function ConversationPage() {
 
 function Conversacion({ partnerId }: { partnerId: string }) {
   const t = useTranslations('mensajesPanel');
-  const tComun = useTranslations('comun');
-  const tErrores = useTranslations('erroresApi');
+  const avisarFallo = useAvisoDeFallo();
   const idioma = useLocale();
   const { user } = useAuthStore();
 
@@ -38,7 +34,9 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   const [interlocutor, setInterlocutor] = useState<Conversation['partner']>();
   const [estado, setEstado] = useState<Estado>('cargando');
   const [referencia, setReferencia] = useState<string>();
-  const [content, setContent] = useState('');
+  // Lo que se estaba escribiendo si la sesión caducó al enviarlo.
+  const borrador = useBorrador<string>(`mensaje:${partnerId}`);
+  const [content, setContent] = useState(borrador.recuperado ?? '');
   const [isSending, setIsSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -123,7 +121,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   }, [conectado, recargar]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    endRef.current?.scrollIntoView({ behavior: desplazamiento() });
   }, [messages]);
 
   const handleSend = async (e: FormEvent) => {
@@ -142,11 +140,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
     } catch (error) {
       // Sin esto, un envío rechazado no se veía: el texto se quedaba en la
       // caja y nada decía que no había salido.
-      toast.error(
-        codigoDeError(error) === CODIGO_DEMOSTRACION
-          ? tComun('demostracionAislada')
-          : textoDeError(error, tErrores, t('errorEnviar')),
-      );
+      avisarFallo(error, t('errorEnviar'), () => borrador.guardar(content));
     } finally {
       setIsSending(false);
     }
@@ -229,7 +223,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
             disabled={!content.trim() || isSending}
             aria-label={t('enviar')}
           >
-            <Send size={18} aria-hidden="true" />
+            <Send size={18} aria-hidden="true" className="rtl:-scale-x-100" />
           </Button>
         </form>
       </div>

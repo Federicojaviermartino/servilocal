@@ -109,7 +109,7 @@ describe('CheckoutForm', () => {
 
     expect(screen.queryByRole('button', { name: /Retener/ })).toBeNull();
     await userEvent.click(
-      screen.getByRole('button', { name: 'Pagar 65.00 euros' }),
+      screen.getByRole('button', { name: /Pagar 65,00\s€/ }),
     );
 
     await waitFor(() =>
@@ -289,14 +289,21 @@ describe('CheckoutForm', () => {
     await waitFor(() => expect(confirmar).toHaveBeenCalledTimes(1));
   });
 
-  it('el importe se enseña con sus dos decimales', async () => {
+  it('el importe se enseña con sus dos decimales, como se escribe en el idioma', async () => {
     // 65 euros escrito «65» al lado de un botón de pago se lee como un
-    // borrador.
+    // borrador. Y con coma: era «65.00 euros» también en castellano.
     pintar();
 
     expect(
-      screen.getByRole('button', { name: 'Retener 65.00 euros' }),
+      screen.getByRole('button', { name: /Retener 65,00\s€/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText('65.00 euros')).toBeInTheDocument();
+    expect(screen.getByText('65,00 €')).toBeInTheDocument();
+  });
+
+  it('lo que se retiene no se llama «total a pagar»', () => {
+    pintar();
+
+    expect(screen.getByText(es.pago.totalRetener)).toBeInTheDocument();
+    expect(screen.queryByText(es.pago.totalPagar)).toBeNull();
   });
 });

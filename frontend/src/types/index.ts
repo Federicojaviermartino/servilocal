@@ -115,6 +115,8 @@ export interface Booking {
   durationMinutes?: number;
   description?: string;
   totalPrice: number;
+  /** Lo que escribió quien la canceló o la rechazó, si escribió algo. */
+  cancellationReason?: string | null;
   createdAt: string;
 }
 

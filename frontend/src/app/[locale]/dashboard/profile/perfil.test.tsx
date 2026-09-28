@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../../../messages/es.json';
 import ProfilePage from './page';
 
@@ -10,6 +10,7 @@ const getById = vi.fn();
 const cambiarContrasena = vi.fn();
 const exportarDatos = vi.fn();
 const eliminarCuenta = vi.fn();
+const actualizar = vi.fn();
 const salir = vi.fn(async () => undefined);
 const empujar = vi.fn();
 const avisoExito = vi.fn();
@@ -19,7 +20,7 @@ vi.mock('@/lib/api', () => ({
   usersApi: {
     getMe: () => getMe(),
     getById: (id: string) => getById(id),
-    updateProfile: vi.fn(),
+    updateProfile: (datos: unknown) => actualizar(datos),
     exportarDatos: () => exportarDatos(),
     eliminarCuenta: (contrasena: string) => eliminarCuenta(contrasena),
   },
@@ -36,7 +37,11 @@ vi.mock('@/lib/auth-store', () => ({
   }),
 }));
 
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: empujar }) }));
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: empujar }),
+  usePathname: () => '/dashboard/profile',
+  Link: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 vi.mock('react-hot-toast', () => ({
   default: Object.assign(vi.fn(), {
@@ -57,12 +62,13 @@ const PERFIL = {
 
 async function pintar(perfil: object = PERFIL) {
   getMe.mockResolvedValue({ data: perfil });
-  render(
+  const pintado = render(
     <NextIntlClientProvider locale="es" messages={es as never}>
       <ProfilePage />
     </NextIntlClientProvider>,
   );
   await screen.findByDisplayValue('Ana');
+  return pintado;
 }
 
 describe('Mi perfil', () => {
@@ -234,5 +240,30 @@ describe('Mi perfil', () => {
     expect(
       screen.getByRole('button', { name: es.perfilPanel.descargarDatos }),
     ).toBeVisible();
+  });
+
+  describe('con la sesión caducada al guardar', () => {
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('guarda lo escrito, y al volver el formulario nace con ello', async () => {
+      // Para volver a entrar había que salir de la página y se perdía.
+      actualizar.mockRejectedValueOnce({ response: { status: 401, data: {} } });
+      const { unmount } = await pintar();
+      const ciudad = screen.getByLabelText(es.comun.ciudad);
+      await userEvent.clear(ciudad);
+      await userEvent.type(ciudad, 'Cádiz');
+      await userEvent.click(
+        screen.getByRole('button', { name: es.perfilPanel.guardar }),
+      );
+      await waitFor(() => expect(avisoError).toHaveBeenCalled());
+      unmount();
+
+      await pintar();
+
+      expect(screen.getByLabelText(es.comun.ciudad)).toHaveValue('Cádiz');
+      expect(screen.getByText(es.comun.borradorRecuperado)).toBeInTheDocument();
+    });
   });
 });

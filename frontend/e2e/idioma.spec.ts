@@ -159,4 +159,39 @@ test.describe('Idioma', () => {
       /Preis:|Verfügbar in/,
     );
   });
+
+  test('términos, privacidad y acerca de tienen su propia canónica y su título', async ({
+    page,
+  }) => {
+    // Heredaban la de la portada: un buscador las tomaba por duplicados de
+    // ella y no las indexaba, aunque el sitemap las publicara.
+    for (const [ruta, titulo] of [
+      ['/de/terms', 'Nutzungsbedingungen | ServiLocal'],
+      ['/de/privacy', 'Datenschutzerklärung | ServiLocal'],
+      ['/de/about', /ServiLocal/],
+    ] as const) {
+      await page.goto(ruta);
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        'href',
+        new RegExp(`${ruta}$`),
+      );
+      await expect(page).toHaveTitle(titulo);
+    }
+  });
+
+  test('cada página privada tiene su título, y no se indexa', async ({
+    page,
+  }) => {
+    // Todas se llamaban como la portada: el lector de pantalla no anunciaba
+    // nada al cambiar de sección, y las pestañas no se distinguían.
+    await page.goto('/auth/login');
+    await expect(page).toHaveTitle('Iniciar sesión | ServiLocal');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      /noindex/,
+    );
+
+    await page.goto('/de/auth/register');
+    await expect(page).toHaveTitle(/^Konto erstellen \| ServiLocal$/);
+  });
 });

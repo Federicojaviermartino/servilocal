@@ -12,12 +12,15 @@ import { ForbiddenException } from '@nestjs/common';
  * al registrarse: la fecha de su última actualización. Si cambian, cambia
  * esto, y queda constancia de a qué texto dio conformidad cada cuenta.
  */
-export const VERSION_TERMINOS = '2026-09-26';
+export const VERSION_TERMINOS = '2026-09-28';
 
 export const CODIGO_CUENTA_DEMOSTRACION = 'cuenta-de-demostracion';
 export const CODIGO_CONTRASENA_INCORRECTA = 'contrasena-incorrecta';
 export const CODIGO_ENLACE_NO_VALIDO = 'enlace-no-valido';
 export const CODIGO_CUENTA_CON_RESERVAS = 'cuenta-con-reservas-abiertas';
+export const CODIGO_CORREO_EN_USO = 'correo-en-uso';
+export const CODIGO_CREDENCIALES = 'credenciales-no-validas';
+export const CODIGO_CUENTA_DESACTIVADA = 'cuenta-desactivada';
 
 /**
  * El correo tal como se guarda y se busca: sin espacios y en minúsculas.

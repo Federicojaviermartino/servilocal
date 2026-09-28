@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { paymentsApi } from '@/lib/api';
+import { useImporte } from '@/lib/importes';
 import { BookingStatus } from '@/types';
 import Button from '../atoms/Button';
 
@@ -45,6 +46,7 @@ export default function CheckoutForm({
   onIntentExpired,
 }: CheckoutFormProps) {
   const t = useTranslations('pago');
+  const importe = useImporte();
   const cobroInmediato = estadoReserva === BookingStatus.COMPLETED;
   // Decía siempre que el profesional tenía que aceptar la reserva, también
   // al volver a autorizar una que ya había aceptado.
@@ -116,9 +118,12 @@ export default function CheckoutForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       <PaymentElement />
       <div className="bg-fondo rounded-md p-4 flex justify-between items-center">
-        <span className="text-secundario">{t('totalPagar')}</span>
+        {/* «Total a pagar» cuando no se cobra nada: se retiene. */}
+        <span className="text-secundario">
+          {t(cobroInmediato ? 'totalPagar' : 'totalRetener')}
+        </span>
         <span className="text-xl font-bold text-principal">
-          {t('importe', { importe: amount.toFixed(2) })}
+          {importe(amount, true)}
         </span>
       </div>
       <Button
@@ -129,7 +134,7 @@ export default function CheckoutForm({
         isLoading={isProcessing}
       >
         {t(cobroInmediato ? 'pagarAhora' : 'pagar', {
-          importe: amount.toFixed(2),
+          importe: importe(amount, true),
         })}
       </Button>
       <p className="text-xs text-tenue text-center">{t('avisoStripe')}</p>

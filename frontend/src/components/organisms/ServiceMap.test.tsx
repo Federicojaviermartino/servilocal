@@ -167,7 +167,7 @@ describe('ServiceMap', () => {
     expect(marcador).not.toHaveTextContent('por hora');
     expect(marcador).toHaveTextContent(
       de.mapa.desde
-        .replace('{precio}', '30')
+        .replace('{precio}', '30\ €')
         .replace('{unidad}', de.unidades['por-hora']),
     );
   });

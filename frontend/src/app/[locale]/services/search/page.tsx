@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslations } from 'next-intl';
@@ -14,6 +14,7 @@ import ResultsList from '@/components/organisms/ResultsList';
 import Pagination from '@/components/molecules/Pagination';
 import ServiceCardSkeleton from '@/components/molecules/ServiceCardSkeleton';
 import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
+import { desplazamiento } from '@/lib/movimiento';
 
 type Vista = 'list' | 'map';
 
@@ -71,6 +72,7 @@ function SearchPageContent({
   claveUrl: string;
 }) {
   const t = useTranslations('resultados');
+  const titulo = useRef<HTMLHeadingElement>(null);
   const tComun = useTranslations('comun');
   const router = useRouter();
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
@@ -178,7 +180,11 @@ function SearchPageContent({
   const cambiarPagina = (nuevaPagina: number) => {
     setConsulta((c) => ({ ...c, pagina: nuevaPagina }));
     // Al saltar de página el usuario espera empezar por el primer resultado.
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Sin animación si ha pedido menos movimiento, y con el foco en el
+    // título: con teclado o lector de pantalla se quedaba en el botón de la
+    // paginación, al pie, sin enterarse de que la lista había cambiado.
+    window.scrollTo({ top: 0, behavior: desplazamiento() });
+    titulo.current?.focus({ preventScroll: true });
   };
 
   const handleApplyFilters = (newFilters: ServiceSearchParams) => {
@@ -193,7 +199,7 @@ function SearchPageContent({
     setConsulta((c) => ({ ...c, intento: c.intento + 1 }));
 
   return (
-    <main className="bg-fondo min-h-screen">
+    <div className="bg-fondo min-h-screen">
       <div className="bg-superficie border-b border-borde py-4 px-4">
         <div className="max-w-6xl mx-auto">
           <SearchBar initialValue={filters.query} onSearch={handleSearch} />
@@ -236,13 +242,21 @@ function SearchPageContent({
 
           <div className="lg:col-span-3">
             <div className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-semibold text-principal">
+              <h1
+                ref={titulo}
+                tabIndex={-1}
+                className="text-xl font-semibold text-principal focus:outline-none"
+              >
                 {t('titulo')}
               </h1>
+              {/* aria-pressed: la vista activa solo se distinguía por el
+                  color. Esquinas lógicas, que en árabe van al revés. */}
               <div className="flex bg-superficie rounded-md shadow-card">
                 <button
+                  type="button"
+                  aria-pressed={view === 'list'}
                   onClick={() => cambiarVista('list')}
-                  className={`px-4 py-2 text-sm rounded-l-md ${
+                  className={`px-4 py-2 text-sm rounded-s-md ${
                     view === 'list'
                       ? 'bg-primary-600 text-white'
                       : 'text-secundario hover:bg-fondo'
@@ -251,8 +265,10 @@ function SearchPageContent({
                   {t('vistaLista')}
                 </button>
                 <button
+                  type="button"
+                  aria-pressed={view === 'map'}
                   onClick={() => cambiarVista('map')}
-                  className={`px-4 py-2 text-sm rounded-r-md ${
+                  className={`px-4 py-2 text-sm rounded-e-md ${
                     view === 'map'
                       ? 'bg-primary-600 text-white'
                       : 'text-secundario hover:bg-fondo'
@@ -320,7 +336,7 @@ function SearchPageContent({
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }
 

@@ -7,6 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { useForm } from 'react-hook-form';
 import { useAuthStore } from '@/lib/auth-store';
+import { textoDeError } from '@/lib/errores-api';
+import { rutaInterna } from '@/lib/ruta-interna';
 import { MapPin, Eye, EyeOff } from 'lucide-react';
 
 interface LoginForm {
@@ -30,9 +32,10 @@ const CUENTAS_DEMO = [
 function LoginPageContent() {
   const t = useTranslations('acceso');
   const tValidacion = useTranslations('validacion');
+  const tErrores = useTranslations('erroresApi');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = rutaInterna(searchParams.get('redirect'));
   const { login, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -49,14 +52,13 @@ function LoginPageContent() {
       await login(email, password);
       router.replace(redirectTo);
     } catch (err: any) {
-      const status = err?.response?.status;
-      if (status === 401 || status === 403) {
-        setError(t('errorCredenciales'));
-      } else if (!err?.response) {
-        setError(t('errorRed'));
-      } else {
-        setError(err?.response?.data?.message || t('errorServicio'));
-      }
+      // Nunca el mensaje de la API: está en castellano, sea cual sea el
+      // idioma de quien entra. El código dice qué pasó.
+      setError(
+        err?.response
+          ? textoDeError(err, tErrores, t('errorServicio'))
+          : t('errorRed'),
+      );
     }
   };
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { alternativas } from '@/lib/seo';
 import { MapPin, Shield, Star, Search } from 'lucide-react';
 
 export async function generateMetadata({
@@ -11,7 +12,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'acercaDe' });
-  return { title: t('metaTitulo'), description: t('metaDescripcion') };
+  // Con su canónica: heredaba la de la portada.
+  return {
+    title: t('metaTitulo'),
+    description: t('metaDescripcion'),
+    alternates: alternativas(locale, '/about'),
+  };
 }
 
 const ICONOS = [Search, MapPin, Shield, Star] as const;

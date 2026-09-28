@@ -118,4 +118,70 @@ describe('Reservas recibidas', () => {
       expect(avisoError).toHaveBeenCalledWith(es.erroresApi.solape),
     );
   });
+
+  describe('rechazar una solicitud', () => {
+    const rechazar = () =>
+      userEvent.click(
+        screen.getByRole('button', { name: es.reservasPanel.rechazar }),
+      );
+
+    it('pregunta antes, y deja escribir el motivo, que ve el cliente', async () => {
+      updateStatus.mockResolvedValue({ data: {} });
+      const preguntar = vi
+        .spyOn(window, 'prompt')
+        .mockReturnValue('Ese día no trabajo');
+      await pintar([reserva(BookingStatus.PENDING)]);
+
+      await rechazar();
+
+      expect(preguntar).toHaveBeenCalledWith(
+        es.reservasPanel.motivoRechazar,
+        '',
+      );
+      await waitFor(() =>
+        expect(updateStatus).toHaveBeenCalledWith(
+          'b1',
+          BookingStatus.REJECTED,
+          { cancellationReason: 'Ese día no trabajo' },
+        ),
+      );
+      preguntar.mockRestore();
+    });
+
+    it('si se echa atrás, la solicitud se queda como estaba', async () => {
+      const preguntar = vi.spyOn(window, 'prompt').mockReturnValue(null);
+      await pintar([reserva(BookingStatus.PENDING)]);
+
+      await rechazar();
+
+      expect(updateStatus).not.toHaveBeenCalled();
+      preguntar.mockRestore();
+    });
+
+    it('aceptar no pregunta nada', async () => {
+      updateStatus.mockResolvedValue({ data: {} });
+      const preguntar = vi.spyOn(window, 'prompt');
+      await pintar([reserva(BookingStatus.PENDING)]);
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.reservasPanel.aceptar }),
+      );
+
+      await waitFor(() =>
+        expect(updateStatus).toHaveBeenCalledWith(
+          'b1',
+          BookingStatus.CONFIRMED,
+        ),
+      );
+      expect(preguntar).not.toHaveBeenCalled();
+      preguntar.mockRestore();
+    });
+  });
+
+  it('el importe sale como se escribe en el idioma', async () => {
+    // Era «45 euros» en los diez.
+    await pintar([reserva(BookingStatus.PENDING)], 'en');
+
+    expect(screen.getByText('€45.00')).toBeInTheDocument();
+  });
 });

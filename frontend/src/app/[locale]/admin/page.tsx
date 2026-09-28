@@ -6,7 +6,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import clsx from 'clsx';
@@ -25,7 +25,8 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
-import GraficasPanel from '@/components/organisms/GraficasPanel';
+import nextDynamic from 'next/dynamic';
+import { formatearImporte } from '@/lib/importes';
 import {
   adminApi,
   usersApi,
@@ -40,6 +41,16 @@ import Badge from '@/components/atoms/Badge';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 import Pagination from '@/components/molecules/Pagination';
+
+// Recharts son unos 430 KB, y se cargaban con el panel aunque nadie abriera
+// las métricas. Aparte, como el mapa en el buscador.
+const GraficasPanel = nextDynamic(
+  () => import('@/components/organisms/GraficasPanel'),
+  {
+    ssr: false,
+    loading: () => <div className="mb-6 h-56" aria-hidden="true" />,
+  },
+);
 
 type Tab = (typeof TABS)[number]['key'];
 
@@ -150,9 +161,12 @@ function PanelAdmin({ soloLectura }: { soloLectura: boolean }) {
     evento: React.KeyboardEvent<HTMLButtonElement>,
     indice: number,
   ) => {
+    // En árabe las pestañas se leen de derecha a izquierda, y la flecha
+    // izquierda lleva a la siguiente.
+    const rtl = document.documentElement.dir === 'rtl';
     const saltos: Record<string, number> = {
-      ArrowRight: indice + 1,
-      ArrowLeft: indice - 1,
+      [rtl ? 'ArrowLeft' : 'ArrowRight']: indice + 1,
+      [rtl ? 'ArrowRight' : 'ArrowLeft']: indice - 1,
       Home: 0,
       End: TABS.length - 1,
     };
@@ -638,9 +652,8 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
 
   const handleDelete = async (c: Category) => {
     if (
-      !window.confirm(
-        `¿Eliminar la categoría "${c.name}"? Esta acción no se puede deshacer.`,
-      )
+      // Estaba escrita a mano en castellano, en los diez idiomas.
+      !window.confirm(t('confirmarEliminarCategoria', { nombre: c.name }))
     ) {
       return;
     }
@@ -736,7 +749,9 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
                 <tr key={c.id} className="border-t border-borde">
                   <td className="px-3 py-2 font-medium">
                     {c.parentId ? (
-                      <span className="text-tenue mr-1">↳</span>
+                      <span className="text-tenue me-1 inline-block rtl:-scale-x-100">
+                        ↳
+                      </span>
                     ) : null}
                     {editing ? (
                       <input
@@ -1000,6 +1015,7 @@ interface Reputacion {
 function ReputacionSection() {
   const t = useTranslations('administracion');
   const tComun = useTranslations('comun');
+  const formato = useFormatter();
 
   const { datos, estado, reintentar, referencia } = useCarga<Reputacion[]>(
     () => adminApi.reputacion(),
@@ -1073,7 +1089,10 @@ function ReputacionSection() {
                         className="fill-warning-500 text-warning-500"
                         aria-hidden="true"
                       />
-                      {p.media.toFixed(2)}
+                      {formato.number(p.media, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </span>
                   )}
                 </td>
@@ -1129,6 +1148,7 @@ async function pedirIa(): Promise<{
 
 function IaSection() {
   const t = useTranslations('administracion');
+  const idioma = useLocale();
   const {
     datos,
     estado: carga,
@@ -1151,7 +1171,9 @@ function IaSection() {
 
   if (!consumo) return null;
 
-  const euros = (centimos: number) => (centimos / 100).toFixed(2);
+  // Con céntimos siempre: aquí los importes son de unos pocos euros.
+  const euros = (centimos: number) =>
+    formatearImporte(centimos / 100, idioma, true);
 
   // El tope es un techo, no una previsión: pasado el 100 % la capa deja de
   // llamar al modelo, así que la barra se recorta ahí en lugar de desbordarse.
@@ -1269,7 +1291,7 @@ function IaSection() {
                     {f.fallos}
                   </td>
                   <td className="px-3 py-2 text-end text-secundario">
-                    {euros(f.costeCentimos)} €
+                    {euros(f.costeCentimos)}
                   </td>
                 </tr>
               ))}

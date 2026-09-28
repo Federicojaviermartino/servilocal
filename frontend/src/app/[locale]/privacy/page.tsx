@@ -1,13 +1,27 @@
 import type { Metadata } from 'next';
 import { useLocale, useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import { alternativas } from '@/lib/seo';
 import { direccionDe, type Idioma } from '@/i18n/routing';
 import { Link } from '@/i18n/navigation';
 
-export const metadata: Metadata = {
-  title: 'Política de privacidad',
-  description:
-    'Qué datos personales trata ServiLocal, con qué finalidad y cómo puedes ejercer tus derechos.',
-};
+// Heredaba la canónica de la portada, así que un buscador la tomaba por
+// un duplicado de ella y no la indexaba, aunque el sitemap la publicara.
+// El texto legal está en castellano, pero el título y la descripción van
+// en el idioma de la página.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  return {
+    title: t('privacidadTitulo'),
+    description: t('privacidadDescripcion'),
+    alternates: alternativas(locale, '/privacy'),
+  };
+}
 
 const datos = [
   {
@@ -83,7 +97,7 @@ export default function PrivacyPage() {
         Política de privacidad
       </h1>
       <p className="mt-2 text-sm text-tenue">
-        Última actualización: 26 de septiembre de 2026
+        Última actualización: 28 de septiembre de 2026
       </p>
       {idiomaActual !== 'es' && (
         <p
@@ -168,6 +182,13 @@ export default function PrivacyPage() {
           personales ni los cedemos con fines publicitarios.
         </p>
         <p className="mt-3 text-secundario">
+          Además, las visitas a la aplicación pasan por Cloudflare, que Render
+          usa para entregarlas y protegerlas, y al abrir el mapa del buscador tu
+          navegador descarga las imágenes del mapa directamente de
+          OpenStreetMap. Los dos reciben tu dirección IP, como cualquier sitio
+          del que tu navegador descarga algo.
+        </p>
+        <p className="mt-3 text-secundario">
           Al asistente de búsqueda solo viaja el texto que escribes, junto con
           nuestra lista de categorías y ciudades. No se envía tu nombre, tu
           correo ni ningún identificador de tu cuenta, y el proveedor no decide
@@ -181,11 +202,13 @@ export default function PrivacyPage() {
           Transferencias internacionales
         </h2>
         <p className="mt-3 text-secundario">
-          Anthropic y Sentry pueden tratar datos fuera del Espacio Económico
-          Europeo, y Neon también, según la región en que se aloje la base de
-          datos. Esas transferencias se amparan en las cláusulas contractuales
-          tipo aprobadas por la Comisión Europea. Puedes evitar por completo la
-          de Anthropic sin perder el servicio: el buscador con filtros no usa el
+          Anthropic, Sentry y Cloudflare pueden tratar datos fuera del Espacio
+          Económico Europeo, y Neon también, según la región en que se aloje la
+          base de datos. OpenStreetMap está en el Reino Unido, que la Comisión
+          Europea reconoce con un nivel de protección adecuado. Esas
+          transferencias se amparan en las cláusulas contractuales tipo
+          aprobadas por la Comisión Europea. Puedes evitar por completo la de
+          Anthropic sin perder el servicio: el buscador con filtros no usa el
           asistente.
         </p>
       </section>

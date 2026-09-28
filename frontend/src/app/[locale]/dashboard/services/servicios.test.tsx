@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../../../messages/es.json';
 import ServicesPage from './page';
 
@@ -89,5 +89,57 @@ describe('Mis servicios', () => {
     await waitFor(() =>
       expect(toastError).toHaveBeenCalledWith(es.serviciosPanel.errorEliminar),
     );
+  });
+
+  describe('con la sesión caducada al publicar', () => {
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('al volver, el formulario se abre con lo que se había escrito', async () => {
+      sessionStorage.setItem(
+        'borrador:servicio',
+        JSON.stringify({
+          servicio: null,
+          datos: { title: 'Pintura de interiores' },
+        }),
+      );
+      getByProvider.mockResolvedValue({ data: [] });
+
+      render(
+        <NextIntlClientProvider locale="es" messages={es as never}>
+          <ServicesPage />
+        </NextIntlClientProvider>,
+      );
+
+      expect(
+        await screen.findByDisplayValue('Pintura de interiores'),
+      ).toBeInTheDocument();
+      expect(screen.getByText(es.comun.borradorRecuperado)).toBeInTheDocument();
+    });
+
+    it('y si se editaba uno, vuelve a ese, con los cambios', async () => {
+      sessionStorage.setItem(
+        'borrador:servicio',
+        JSON.stringify({
+          servicio: SERVICIO,
+          datos: { title: 'Grifos y cisternas' },
+        }),
+      );
+      getByProvider.mockResolvedValue({ data: [SERVICIO] });
+
+      render(
+        <NextIntlClientProvider locale="es" messages={es as never}>
+          <ServicesPage />
+        </NextIntlClientProvider>,
+      );
+
+      expect(
+        await screen.findByDisplayValue('Grifos y cisternas'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: es.serviciosPanel.editar }),
+      ).toBeInTheDocument();
+    });
   });
 });

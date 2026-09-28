@@ -1,13 +1,27 @@
 import type { Metadata } from 'next';
 import { useLocale, useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+import { alternativas } from '@/lib/seo';
 import { direccionDe, type Idioma } from '@/i18n/routing';
 import { Link } from '@/i18n/navigation';
 
-export const metadata: Metadata = {
-  title: 'Términos de uso',
-  description:
-    'Condiciones que regulan el uso de ServiLocal por parte de clientes y profesionales.',
-};
+// Heredaba la canónica de la portada, así que un buscador la tomaba por
+// un duplicado de ella y no la indexaba, aunque el sitemap la publicara.
+// El texto legal está en castellano, pero el título y la descripción van
+// en el idioma de la página.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  return {
+    title: t('terminosTitulo'),
+    description: t('terminosDescripcion'),
+    alternates: alternativas(locale, '/terms'),
+  };
+}
 
 const secciones = [
   {

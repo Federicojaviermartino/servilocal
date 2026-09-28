@@ -128,7 +128,7 @@ describe('BookingForm', () => {
 
     expect(alEnviar).not.toHaveBeenCalled();
     expect(
-      screen.getByText(es.reserva.precioMinimo.replace('{min}', '40')),
+      screen.getByText(es.reserva.precioMinimo.replace('{min}', '40\ €')),
     ).toBeInTheDocument();
   });
 
@@ -143,7 +143,7 @@ describe('BookingForm', () => {
 
     expect(alEnviar).not.toHaveBeenCalled();
     expect(
-      screen.getByText(es.reserva.precioMaximo.replace('{max}', '90')),
+      screen.getByText(es.reserva.precioMaximo.replace('{max}', '90\ €')),
     ).toBeInTheDocument();
   });
 
@@ -266,7 +266,42 @@ describe('BookingForm', () => {
     await userEvent.type(precio, '65');
 
     expect(
-      screen.getByText(es.reserva.resumenTotal.replace('{precio}', '65')),
+      screen.getByText(es.reserva.resumenTotal.replace('{precio}', '65\ €')),
     ).toBeInTheDocument();
+  });
+
+  it('con un borrador, nace con lo que se estaba escribiendo', () => {
+    // Si la sesión caducó al enviar, al volver se recupera lo escrito.
+    const fecha = new Date(`${diaLocal(3)}T16:45:00`).toISOString();
+    render(
+      <NextIntlClientProvider locale="es" messages={es as never}>
+        <BookingForm
+          service={SERVICIO}
+          onSubmit={vi.fn()}
+          inicial={{
+            scheduledDate: fecha,
+            description: 'Gotea el grifo del baño',
+            totalPrice: 55,
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getByLabelText(es.reserva.fecha)).toHaveValue(diaLocal(3));
+    expect(screen.getByLabelText(es.reserva.hora)).toHaveValue('16:45');
+    expect(screen.getByLabelText(es.reserva.descripcionTrabajo)).toHaveValue(
+      'Gotea el grifo del baño',
+    );
+    expect(screen.getByRole('spinbutton')).toHaveValue(55);
+  });
+
+  it('el error de la descripción está asociado al campo', async () => {
+    pintar();
+
+    enviarSaltandoAlNavegador();
+
+    expect(
+      screen.getByLabelText(es.reserva.descripcionTrabajo),
+    ).toHaveAccessibleDescription(es.reserva.descripcionCorta);
   });
 });

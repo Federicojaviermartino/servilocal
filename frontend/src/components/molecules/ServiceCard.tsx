@@ -5,13 +5,13 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import { MapPin, Euro } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { Service } from '@/types';
 import Badge from '../atoms/Badge';
 import RatingStars from './RatingStars';
 import ServiceImage from './ServiceImage';
 import { useNombreCategoria } from '../../lib/categorias';
-import { useNombreUnidad } from '../../lib/unidades';
+import { usePrecioServicio } from '../../lib/importes';
 
 interface ServiceCardProps {
   service: Service;
@@ -20,21 +20,11 @@ interface ServiceCardProps {
 export default function ServiceCard({ service }: ServiceCardProps) {
   const t = useTranslations('tarjeta');
   const nombreCategoria = useNombreCategoria();
-  const nombreUnidad = useNombreUnidad();
+  const precio = usePrecioServicio();
 
   // La unidad se guarda en castellano y se traduce al pintarla; el valor
   // guardado no se toca, que es el contrato con la API.
-  const priceLabel =
-    service.priceMax && service.priceMax !== service.priceMin
-      ? t('precioRango', {
-          min: service.priceMin,
-          max: service.priceMax,
-          unidad: nombreUnidad(service.priceUnit),
-        })
-      : t('precioUnico', {
-          min: service.priceMin,
-          unidad: nombreUnidad(service.priceUnit),
-        });
+  const priceLabel = precio(service);
 
   return (
     <Link
@@ -66,10 +56,7 @@ export default function ServiceCard({ service }: ServiceCardProps) {
             <MapPin size={14} />
             <span>{service.city}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Euro size={14} />
-            <span>{priceLabel}</span>
-          </div>
+          <span>{priceLabel}</span>
         </div>
         <div className="mt-3">
           <RatingStars

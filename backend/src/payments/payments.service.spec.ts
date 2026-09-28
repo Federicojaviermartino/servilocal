@@ -868,9 +868,12 @@ describe('PaymentsService', () => {
           { ...RESERVA, status: BookingStatus.COMPLETED },
         );
 
-        await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
-          ConflictException,
-        );
+        const error = await servicio
+          .createPaymentIntent('c1', 'b1')
+          .catch((e) => e);
+
+        expect(error).toBeInstanceOf(ConflictException);
+        expect(error.getResponse().codigo).toBe('nada-que-pagar');
         expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
       },
     );
@@ -883,9 +886,12 @@ describe('PaymentsService', () => {
           status: estado,
         });
 
-        await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
-          BadRequestException,
-        );
+        const error = await servicio
+          .createPaymentIntent('c1', 'b1')
+          .catch((e) => e);
+
+        expect(error).toBeInstanceOf(BadRequestException);
+        expect(error.getResponse().codigo).toBe('reserva-no-pagable');
         expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
       },
     );
@@ -918,9 +924,13 @@ describe('PaymentsService', () => {
           status: estado as Stripe.PaymentIntent.Status,
         });
 
-        await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
-          ConflictException,
-        );
+        const error = await servicio
+          .createPaymentIntent('c1', 'b1')
+          .catch((e) => e);
+
+        expect(error).toBeInstanceOf(ConflictException);
+        // Con código: la pantalla de pago lo explica en cada idioma.
+        expect(error.getResponse().codigo).toBe('pago-en-curso');
         expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
       },
     );

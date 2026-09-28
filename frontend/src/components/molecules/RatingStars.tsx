@@ -3,7 +3,7 @@
  * Componente: RatingStars (visualizacion de valoracion)
  */
 'use client';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Star } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -27,6 +27,7 @@ export default function RatingStars({
   onChange,
 }: RatingStarsProps) {
   const t = useTranslations('valoracion');
+  const formato = useFormatter();
   const stars = [1, 2, 3, 4, 5];
   return (
     <div className="inline-flex items-center gap-1">
@@ -56,7 +57,10 @@ export default function RatingStars({
       </div>
       {showNumber && (
         <span className="text-sm font-medium text-secundario">
-          {rating.toFixed(1)}
+          {formato.number(rating, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1,
+          })}
           {total !== undefined && (
             <span className="text-tenue font-normal"> ({total})</span>
           )}

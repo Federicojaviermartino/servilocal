@@ -17,6 +17,13 @@ import { AUDIENCIA_API, AUDIENCIA_SOCKET } from './sesion';
 import { CorreoService } from '../correo/correo.service';
 import { VERSION_TERMINOS } from '../common/cuenta';
 
+// La comparación de verdad, pero observable: hace falta saber con qué huella
+// se compara cuando el correo no existe.
+vi.mock('bcrypt', async (original) => {
+  const real = await original<typeof import('bcrypt')>();
+  return { ...real, compare: vi.fn(real.compare) };
+});
+
 /**
  * La cuenta se busca por lower(email) con una consulta; su doble devuelve
  * lo mismo que el findOne de siempre, que es lo que preparan las pruebas.
@@ -149,9 +156,11 @@ describe('AuthService', () => {
     it('debería lanzar ConflictException si el email ya existe', async () => {
       mockUserRepository.findOne.mockResolvedValue({ id: 'existing-user' });
 
-      await expect(service.register(registerDto)).rejects.toThrow(
-        ConflictException,
-      );
+      const error = await service.register(registerDto).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      // Con código: la interfaz lo explica en el idioma de quien se registra.
+      expect(error.getResponse().codigo).toBe('correo-en-uso');
     });
   });
 
@@ -220,9 +229,17 @@ describe('AuthService', () => {
 
     it('debería lanzar UnauthorizedException si el usuario no existe', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
+      vi.mocked(bcrypt.compare).mockClear();
 
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
+      const error = await service.login(loginDto).catch((e) => e);
+
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect(error.getResponse().codigo).toBe('credenciales-no-validas');
+      // Se compara igual, con una huella de relleno y del mismo coste: si
+      // no, la respuesta llega antes y el tiempo dice qué correos existen.
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        loginDto.password,
+        expect.stringMatching(/^\$2[aby]\$10\$/),
       );
     });
 
@@ -234,9 +251,10 @@ describe('AuthService', () => {
         isActive: true,
       });
 
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      const error = await service.login(loginDto).catch((e) => e);
+
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect(error.getResponse().codigo).toBe('credenciales-no-validas');
     });
 
     it('debería lanzar UnauthorizedException si la cuenta está desactivada', async () => {
@@ -247,9 +265,25 @@ describe('AuthService', () => {
         isActive: false,
       });
 
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      const error = await service.login(loginDto).catch((e) => e);
+
+      expect(error).toBeInstanceOf(UnauthorizedException);
+      expect(error.getResponse().codigo).toBe('cuenta-desactivada');
+    });
+
+    it('una cuenta desactivada con la contraseña equivocada no dice que existe', async () => {
+      // Antes se miraba si estaba activa sin comprobar la contraseña, y la
+      // respuesta confirmaba el correo a cualquiera.
+      mockUserRepository.findOne.mockResolvedValue({
+        id: 'uuid-123',
+        email: loginDto.email,
+        password: await bcrypt.hash('OtraPassword', 10),
+        isActive: false,
+      });
+
+      const error = await service.login(loginDto).catch((e) => e);
+
+      expect(error.getResponse().codigo).toBe('credenciales-no-validas');
     });
   });
 

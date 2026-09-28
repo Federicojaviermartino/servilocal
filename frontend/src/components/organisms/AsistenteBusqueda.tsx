@@ -5,7 +5,7 @@
  * Guarda el estado y habla con la API; la ventana la pinta PanelAsistente.
  */
 'use client';
-import { FormEvent, useCallback, useState } from 'react';
+import { FormEvent, useCallback, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sparkles } from 'lucide-react';
 import { iaApi } from '@/lib/api';
@@ -19,7 +19,20 @@ export default function AsistenteBusqueda() {
   const [error, setError] = useState(false);
   const [respuesta, setRespuesta] = useState<RespuestaAsistente | null>(null);
 
-  const cerrar = useCallback(() => setAbierto(false), []);
+  // Al cerrar, el botón flotante vuelve a montarse y el foco caía en el
+  // <body>: con teclado, el siguiente Tab llevaba al principio de la
+  // página. Se le devuelve al botón que abrió el panel.
+  const devolverFoco = useRef(false);
+  const cerrar = useCallback(() => {
+    devolverFoco.current = true;
+    setAbierto(false);
+  }, []);
+  const alMontarBoton = useCallback((boton: HTMLButtonElement | null) => {
+    if (boton && devolverFoco.current) {
+      devolverFoco.current = false;
+      boton.focus();
+    }
+  }, []);
 
   const enviar = async (evento: FormEvent) => {
     evento.preventDefault();
@@ -44,6 +57,7 @@ export default function AsistenteBusqueda() {
   if (!abierto) {
     return (
       <button
+        ref={alMontarBoton}
         type="button"
         onClick={() => setAbierto(true)}
         aria-label={t('abrir')}

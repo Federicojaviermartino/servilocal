@@ -85,7 +85,7 @@ describe('Página de pago', () => {
     expect(screen.getByText(es.pago.cobroTitulo)).toBeVisible();
     expect(
       screen.getByText(
-        'Se cobran 45 euros en tu tarjeta ahora mismo: el profesional dio el trabajo por terminado antes de que pagaras.',
+        'Se cobran 45,00 € en tu tarjeta ahora mismo: el profesional dio el trabajo por terminado antes de que pagaras.',
       ),
     ).toBeVisible();
     expect(screen.queryByText(es.pago.retencionTitulo)).toBeNull();

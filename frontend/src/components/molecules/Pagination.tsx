@@ -71,7 +71,12 @@ export default function Pagination({
         aria-label={t('anterior')}
         className={clsx(claseBoton, 'text-secundario hover:bg-superficie-alt')}
       >
-        <ChevronLeft size={18} aria-hidden="true" />
+        {/* En árabe, «anterior» queda a la derecha: la flecha se invierte. */}
+        <ChevronLeft
+          size={18}
+          aria-hidden="true"
+          className="rtl:-scale-x-100"
+        />
       </button>
 
       {paginas.map((elemento, indice) =>
@@ -109,7 +114,11 @@ export default function Pagination({
         aria-label={t('siguiente')}
         className={clsx(claseBoton, 'text-secundario hover:bg-superficie-alt')}
       >
-        <ChevronRight size={18} aria-hidden="true" />
+        <ChevronRight
+          size={18}
+          aria-hidden="true"
+          className="rtl:-scale-x-100"
+        />
       </button>
     </nav>
   );

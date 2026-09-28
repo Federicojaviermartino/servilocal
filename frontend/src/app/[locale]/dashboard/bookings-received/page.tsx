@@ -5,8 +5,9 @@ import toast from 'react-hot-toast';
 import { Booking, BookingStatus } from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
 import { bookingsApi } from '@/lib/api';
-import { cambiarEstadoReserva } from '@/lib/cambiar-estado';
-import { textoDeError } from '@/lib/errores-api';
+import { cambiarEstadoReserva, preguntarMotivo } from '@/lib/cambiar-estado';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
+import { useImporte } from '@/lib/importes';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
@@ -17,7 +18,8 @@ import { useAhora } from '@/lib/ahora';
 export default function BookingsReceivedPage() {
   const t = useTranslations('reservasPanel');
   const tEstados = useTranslations('estados');
-  const tErrores = useTranslations('erroresApi');
+  const avisarFallo = useAvisoDeFallo();
+  const importe = useImporte();
   const idioma = useLocale();
   const [filter, setFilter] = useState<'all' | BookingStatus>('all');
   const ahora = useAhora();
@@ -31,9 +33,17 @@ export default function BookingsReceivedPage() {
   const bookings = datos ?? [];
 
   const handleStatusChange = async (id: string, status: BookingStatus) => {
+    const motivo =
+      status === BookingStatus.REJECTED
+        ? preguntarMotivo(t('motivoRechazar'))
+        : '';
+    if (motivo === null) return;
     try {
-      const hecho = await cambiarEstadoReserva(id, status, () =>
-        window.confirm(t('completarSinCobro')),
+      const hecho = await cambiarEstadoReserva(
+        id,
+        status,
+        () => window.confirm(t('completarSinCobro')),
+        motivo,
       );
       if (!hecho) {
         toast(t('esperandoPago'));
@@ -42,7 +52,7 @@ export default function BookingsReceivedPage() {
       toast.success(t('actualizada'));
       reintentar();
     } catch (error) {
-      toast.error(textoDeError(error, tErrores, t('errorActualizar')));
+      avisarFallo(error, t('errorActualizar'));
     }
   };
 
@@ -140,7 +150,7 @@ export default function BookingsReceivedPage() {
                       </div>
                     </div>
                     <p className="text-lg font-bold text-principal whitespace-nowrap">
-                      {t('importeEnEuros', { importe: b.totalPrice })}
+                      {importe(b.totalPrice, true)}
                     </p>
                   </div>
 

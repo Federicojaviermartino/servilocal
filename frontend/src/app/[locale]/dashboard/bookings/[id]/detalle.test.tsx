@@ -28,7 +28,7 @@ vi.mock('@/lib/api', () => ({
 
 vi.mock('react-hot-toast', () => {
   const toast = Object.assign((m: string) => aviso(m), {
-    error: (m: string) => avisoError(m),
+    error: (...argumentos: unknown[]) => avisoError(...argumentos),
     success: (m: string) => avisoExito(m),
   });
   return { default: toast };
@@ -47,6 +47,7 @@ vi.mock('@/i18n/navigation', async () => {
     Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
       React.createElement('a', { href }, children),
     useRouter: () => ({ push: vi.fn() }),
+    usePathname: () => '/dashboard/bookings/b1',
   };
 });
 
@@ -340,9 +341,95 @@ describe('Detalle de una reserva', () => {
     await pintada('en');
 
     expect(screen.getByText('Amount')).toBeInTheDocument();
-    expect(screen.getByText('45 euros')).toBeInTheDocument();
+    // Y el importe, como se escribe en inglés: era «45 euros» en todos.
+    expect(screen.getByText('€45.00')).toBeInTheDocument();
     expect(screen.getByText('No description.')).toBeInTheDocument();
     expect(screen.getByText(/ at /)).toBeInTheDocument();
     expect(screen.queryByText(/a las|Importe|Sin descripción/)).toBeNull();
+  });
+
+  describe('cancelar', () => {
+    const cancelar = () =>
+      userEvent.click(
+        screen.getByRole('button', { name: es.reservasPanel.cancelar }),
+      );
+
+    it('pregunta antes, y si se echa atrás no cancela nada', async () => {
+      // Un clic bastaba para cancelarla, sin confirmar.
+      getById.mockResolvedValue({ data: reserva(BookingStatus.CONFIRMED) });
+      getByBooking.mockResolvedValue({ data: '' });
+      const preguntar = vi.spyOn(window, 'prompt').mockReturnValue(null);
+      await pintada();
+
+      await cancelar();
+
+      expect(preguntar).toHaveBeenCalledWith(
+        es.reservasPanel.motivoCancelar,
+        '',
+      );
+      expect(updateStatus).not.toHaveBeenCalled();
+      preguntar.mockRestore();
+    });
+
+    it('el motivo que se escribe viaja con la cancelación', async () => {
+      getById.mockResolvedValue({ data: reserva(BookingStatus.CONFIRMED) });
+      getByBooking.mockResolvedValue({ data: '' });
+      updateStatus.mockResolvedValue({ data: {} });
+      const preguntar = vi
+        .spyOn(window, 'prompt')
+        .mockReturnValue('Me ha surgido un viaje');
+      await pintada();
+
+      await cancelar();
+
+      await waitFor(() =>
+        expect(updateStatus).toHaveBeenCalledWith(
+          'b1',
+          BookingStatus.CANCELLED,
+          { cancellationReason: 'Me ha surgido un viaje' },
+        ),
+      );
+      preguntar.mockRestore();
+    });
+  });
+
+  it('una reserva cancelada enseña el motivo, si lo hay', async () => {
+    // La API lo guardaba y la interfaz no lo enseñaba en ningún sitio.
+    getById.mockResolvedValue({
+      data: reserva(BookingStatus.CANCELLED, {
+        cancellationReason: 'Me ha surgido un viaje',
+      }),
+    });
+    getByBooking.mockResolvedValue({ data: '' });
+
+    await pintada();
+
+    expect(screen.getByText(es.reservasPanel.motivo)).toBeInTheDocument();
+    expect(screen.getByText('Me ha surgido un viaje')).toBeInTheDocument();
+  });
+
+  it('con la sesión caducada, lo dice y ofrece volver a entrar', async () => {
+    rol = UserRole.PROVIDER;
+    getById.mockResolvedValue({
+      data: reserva(BookingStatus.PENDING, {
+        clientId: 'u9',
+        providerId: 'u1',
+      }),
+    });
+    getByBooking.mockResolvedValue({ data: '' });
+    updateStatus.mockRejectedValue({ response: { status: 401, data: {} } });
+    await pintada();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: es.reservasPanel.confirmar }),
+    );
+
+    // El aviso lleva un enlace: se pinta con una función, no con un texto.
+    await waitFor(() =>
+      expect(avisoError).toHaveBeenCalledWith(
+        expect.any(Function),
+        expect.objectContaining({ id: 'sesion-caducada' }),
+      ),
+    );
   });
 });

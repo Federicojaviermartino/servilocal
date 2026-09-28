@@ -7,21 +7,19 @@ import toast from 'react-hot-toast';
 import { Service } from '@/types';
 import { servicesApi, bookingsApi } from '@/lib/api';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
-import BookingForm from '@/components/organisms/BookingForm';
+import BookingForm, { DatosReserva } from '@/components/organisms/BookingForm';
 import Spinner from '@/components/atoms/Spinner';
-import {
-  CODIGO_DEMOSTRACION,
-  codigoDeError,
-  textoDeError,
-} from '@/lib/errores-api';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
+import { useBorrador } from '@/lib/borrador';
 
 export default function BookingPage() {
   const t = useTranslations('reserva');
   const tComun = useTranslations('comun');
-  const tErrores = useTranslations('erroresApi');
+  const avisarFallo = useAvisoDeFallo();
   const params = useParams();
   const router = useRouter();
   const serviceId = params.id as string;
+  const borrador = useBorrador<DatosReserva>(`reserva:${serviceId}`);
   const { isAuthenticated, loadFromStorage } = useAuthStore();
 
   const [service, setService] = useState<Service | null>(null);
@@ -46,11 +44,7 @@ export default function BookingPage() {
       .finally(() => setIsLoading(false));
   }, [serviceId, isAuthenticated, router]);
 
-  const handleSubmit = async (data: {
-    scheduledDate: string;
-    description: string;
-    totalPrice: number;
-  }) => {
+  const handleSubmit = async (data: DatosReserva) => {
     if (!service) return;
     setIsSubmitting(true);
     try {
@@ -61,11 +55,8 @@ export default function BookingPage() {
       toast.success(t('creada'));
       router.push(`/bookings/${booking.id}/payment`);
     } catch (error) {
-      toast.error(
-        codigoDeError(error) === CODIGO_DEMOSTRACION
-          ? tComun('demostracionAislada')
-          : textoDeError(error, tErrores, t('errorCrear')),
-      );
+      // Con la sesión caducada, lo escrito se guarda para después de entrar.
+      avisarFallo(error, t('errorCrear'), () => borrador.guardar(data));
       setIsSubmitting(false);
     }
   };
@@ -89,19 +80,25 @@ export default function BookingPage() {
   }
 
   return (
-    <main className="bg-fondo min-h-screen py-8">
+    <div className="bg-fondo min-h-screen py-8">
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-principal mb-6">
           {t('titulo', { servicio: service.title })}
         </h1>
+        {borrador.recuperado && (
+          <p role="status" className="mb-4 text-sm text-secundario">
+            {tComun('borradorRecuperado')}
+          </p>
+        )}
         <div className="bg-superficie rounded-lg shadow-card p-6">
           <BookingForm
             service={service}
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
+            inicial={borrador.recuperado ?? undefined}
           />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

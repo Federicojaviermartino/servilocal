@@ -8,6 +8,7 @@ import {
   IsUUID,
   IsNumber,
   IsDateString,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { BookingStatus } from '../../entities';
@@ -61,5 +62,6 @@ export class UpdateBookingStatusDto {
   @ApiPropertyOptional({ example: 'No puedo asistir por motivos personales' })
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   cancellationReason?: string;
 }

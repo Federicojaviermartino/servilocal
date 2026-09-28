@@ -36,6 +36,7 @@ vi.mock('@/i18n/navigation', async () => {
   return {
     Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
       React.createElement('a', { href }, children),
+    usePathname: () => '/dashboard/messages/p1',
   };
 });
 
@@ -155,5 +156,34 @@ describe('Conversación', () => {
       'href',
       '/auth/login',
     );
+  });
+
+  describe('con la sesión caducada al enviar', () => {
+    afterEach(() => {
+      sessionStorage.clear();
+    });
+
+    it('guarda lo escrito, y al volver lo recupera', async () => {
+      getConversation.mockResolvedValue({ data: [mensaje] });
+      send.mockRejectedValueOnce({ response: { status: 401, data: {} } });
+      const { unmount } = pintar();
+      await esperar();
+      fireEvent.change(
+        screen.getByPlaceholderText(es.mensajesPanel.escribePlaceholder),
+        { target: { value: 'Mañana a las diez me va bien' } },
+      );
+      fireEvent.click(
+        screen.getByRole('button', { name: es.mensajesPanel.enviar }),
+      );
+      await esperar();
+      unmount();
+
+      pintar();
+      await esperar();
+
+      expect(
+        screen.getByPlaceholderText(es.mensajesPanel.escribePlaceholder),
+      ).toHaveValue('Mañana a las diez me va bien');
+    });
   });
 });

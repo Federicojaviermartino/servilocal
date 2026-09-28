@@ -129,11 +129,14 @@ export default async function RootLayout({
             {children}
           </main>
           <Footer />
+          {/* Dentro del proveedor: algunos avisos llevan un enlace, y el
+              enlace necesita saber el idioma. En el lado del final de la
+              línea, que en árabe es la izquierda. */}
+          <Toaster
+            position={direccionDe(locale) === 'rtl' ? 'top-left' : 'top-right'}
+            toastOptions={{ duration: 4000, style: { fontSize: '0.875rem' } }}
+          />
         </NextIntlClientProvider>
-        <Toaster
-          position="top-right"
-          toastOptions={{ duration: 4000, style: { fontSize: '0.875rem' } }}
-        />
       </body>
     </html>
   );

@@ -156,7 +156,7 @@ export const bookingsApi = {
   updateStatus: (
     id: string,
     status: string,
-    opciones: { sinCobro?: boolean } = {},
+    opciones: { sinCobro?: boolean; cancellationReason?: string } = {},
   ) => api.patch(`/bookings/${id}/status`, { status, ...opciones }),
 };
 

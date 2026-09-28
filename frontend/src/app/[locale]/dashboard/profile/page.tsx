@@ -5,6 +5,8 @@ import toast from 'react-hot-toast';
 import { authApi, usersApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { textoDeError } from '@/lib/errores-api';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
+import { useBorrador } from '@/lib/borrador';
 import { useRouter } from '@/i18n/navigation';
 import Input from '@/components/atoms/Input';
 import Button from '@/components/atoms/Button';
@@ -12,7 +14,7 @@ import Avatar from '@/components/atoms/Avatar';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 
-interface Perfil {
+interface DatosPerfil {
   firstName: string;
   lastName: string;
   phone: string | null;
@@ -20,6 +22,9 @@ interface Perfil {
   address: string | null;
   city: string | null;
   postalCode: string | null;
+}
+
+interface Perfil extends DatosPerfil {
   esDemostracion?: boolean;
   soloLectura?: boolean;
 }
@@ -90,16 +95,22 @@ function FormularioPerfil({
   const t = useTranslations('perfilPanel');
   const tAcceso = useTranslations('acceso');
   const tComun = useTranslations('comun');
+  const avisarFallo = useAvisoDeFallo();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [form, setForm] = useState(() => ({
-    firstName: perfil.firstName || '',
-    lastName: perfil.lastName || '',
-    phone: perfil.phone || '',
-    bio: perfil.bio || '',
-    address: perfil.address || '',
-    city: perfil.city || '',
-    postalCode: perfil.postalCode || '',
-  }));
+  // Si la sesión caducó al guardar, vuelve lo que se había escrito.
+  const borrador = useBorrador<Record<keyof DatosPerfil, string>>('perfil');
+  const [form, setForm] = useState(
+    () =>
+      borrador.recuperado ?? {
+        firstName: perfil.firstName || '',
+        lastName: perfil.lastName || '',
+        phone: perfil.phone || '',
+        bio: perfil.bio || '',
+        address: perfil.address || '',
+        city: perfil.city || '',
+        postalCode: perfil.postalCode || '',
+      },
+  );
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -107,8 +118,8 @@ function FormularioPerfil({
     try {
       await usersApi.updateProfile(form);
       toast.success(t('actualizado'));
-    } catch {
-      toast.error(t('errorActualizar'));
+    } catch (error) {
+      avisarFallo(error, t('errorActualizar'), () => borrador.guardar(form));
     } finally {
       setIsSubmitting(false);
     }
@@ -125,6 +136,12 @@ function FormularioPerfil({
           <p className="text-sm text-secundario">{email}</p>
         </div>
       </div>
+
+      {borrador.recuperado && (
+        <p role="status" className="mb-4 text-sm text-secundario">
+          {tComun('borradorRecuperado')}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -295,6 +312,7 @@ function CambiarContrasena() {
 /** Todo lo suyo en un fichero: el derecho de acceso y el de portabilidad. */
 function DescargarDatos() {
   const t = useTranslations('perfilPanel');
+  const avisarFallo = useAvisoDeFallo();
   const [descargando, setDescargando] = useState(false);
 
   const descargar = async () => {
@@ -306,8 +324,8 @@ function DescargarDatos() {
       enlace.download = `servilocal-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
       enlace.click();
       URL.revokeObjectURL(enlace.href);
-    } catch {
-      toast.error(t('errorDescargar'));
+    } catch (error) {
+      avisarFallo(error, t('errorDescargar'));
     } finally {
       setDescargando(false);
     }

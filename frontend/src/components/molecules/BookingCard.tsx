@@ -8,6 +8,7 @@ import { Link } from '@/i18n/navigation';
 import { Calendar, MapPin } from 'lucide-react';
 import { Booking } from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
+import { useImporte } from '@/lib/importes';
 import Badge from '../atoms/Badge';
 import Avatar from '../atoms/Avatar';
 
@@ -18,7 +19,7 @@ interface BookingCardProps {
 
 export default function BookingCard({ booking, viewAs }: BookingCardProps) {
   const t = useTranslations('estados');
-  const tReservas = useTranslations('reservasPanel');
+  const importe = useImporte();
   const idioma = useLocale();
   const counterpart = viewAs === 'client' ? booking.provider : booking.client;
   const date = new Date(booking.scheduledDate);
@@ -75,7 +76,7 @@ export default function BookingCard({ booking, viewAs }: BookingCardProps) {
         </div>
         <div className="text-end">
           <p className="text-lg font-bold text-principal">
-            {tReservas('importeEnEuros', { importe: booking.totalPrice })}
+            {importe(booking.totalPrice, true)}
           </p>
         </div>
       </div>

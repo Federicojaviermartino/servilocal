@@ -30,6 +30,26 @@ describe('codigoDeError', () => {
     );
   });
 
+  it('un 401 sin código es una sesión que ya no vale', () => {
+    // El guardia de la sesión no pone código. Sin esto, un envío con la
+    // sesión caducada decía «no se ha podido guardar» y reintentar fallaba
+    // igual.
+    expect(codigoDeError({ response: { status: 401, data: {} } })).toBe(
+      'sesion-caducada',
+    );
+  });
+
+  it('pero el de una contraseña equivocada trae el suyo', () => {
+    expect(
+      codigoDeError({
+        response: {
+          status: 401,
+          data: { codigo: 'credenciales-no-validas' },
+        },
+      }),
+    ).toBe('credenciales-no-validas');
+  });
+
   it('pero si el 429 trae su propio código, manda ese', () => {
     expect(
       codigoDeError({ response: { status: 429, data: { codigo: 'otro' } } }),

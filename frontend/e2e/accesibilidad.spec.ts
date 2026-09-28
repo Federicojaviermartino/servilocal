@@ -16,6 +16,17 @@ import { entrarComo } from './ayudas';
  */
 const NORMAS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
+/**
+ * Las regiones no son WCAG sino buenas prácticas, y por eso no se miraban:
+ * cuatro pantallas llevaban un <main> dentro del <main> del diseño, y el
+ * lector anunciaba dos regiones principales sin que nada fallara.
+ */
+const REGIONES = [
+  'landmark-one-main',
+  'landmark-no-duplicate-main',
+  'landmark-main-is-top-level',
+];
+
 const RUTAS = [
   ['portada', '/'],
   ['buscador', '/services/search'],
@@ -25,7 +36,12 @@ const RUTAS = [
 ];
 
 async function analizar(page: Page) {
-  return new AxeBuilder({ page }).withTags(NORMAS).analyze();
+  const normas = await new AxeBuilder({ page }).withTags(NORMAS).analyze();
+  const regiones = await new AxeBuilder({ page }).withRules(REGIONES).analyze();
+  return {
+    ...normas,
+    violations: [...normas.violations, ...regiones.violations],
+  };
 }
 
 /** Lo justo para poder arreglarlo: qué regla, dónde y cuántas veces. */

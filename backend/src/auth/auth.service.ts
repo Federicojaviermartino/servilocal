@@ -14,6 +14,9 @@ import { RestablecimientoContrasena, User } from '../entities';
 import { RegisterDto, LoginDto, AuthResponseDto } from './dto/auth.dto';
 import {
   CODIGO_CONTRASENA_INCORRECTA,
+  CODIGO_CORREO_EN_USO,
+  CODIGO_CREDENCIALES,
+  CODIGO_CUENTA_DESACTIVADA,
   CODIGO_ENLACE_NO_VALIDO,
   VERSION_TERMINOS,
   comprobarQueNoEsDeDemostracion,
@@ -44,6 +47,15 @@ const huellaDe = (token: string): string =>
 
 const cifrar = async (contrasena: string): Promise<string> =>
   bcrypt.hash(contrasena, await bcrypt.genSalt(10));
+
+/**
+ * Una huella con la que comparar cuando el correo no existe. Sin ella, esa
+ * respuesta llegaba antes que la de una contraseña equivocada, y lo que
+ * tardaba decía qué correos están registrados.
+ */
+let huellaDeRelleno: Promise<string> | undefined;
+const rellenoParaComparar = (): Promise<string> =>
+  (huellaDeRelleno ??= cifrar(randomBytes(16).toString('hex')));
 
 /** El token y cuándo deja de valer, que es cuando tiene que caducar la cookie. */
 export interface SesionEmitida extends AuthResponseDto {
@@ -85,7 +97,11 @@ export class AuthService {
     const existingUser = await this.buscarPorCorreo(registerDto.email);
 
     if (existingUser) {
-      throw new ConflictException('Ya existe un usuario con este email');
+      throw new ConflictException({
+        statusCode: 409,
+        codigo: CODIGO_CORREO_EN_USO,
+        message: 'Ya existe un usuario con este email',
+      });
     }
 
     const { aceptaTerminos: _aceptados, ...datos } = registerDto;
@@ -105,21 +121,26 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<SesionEmitida> {
     const user = await this.buscarPorCorreo(loginDto.email, true);
 
-    if (!user) {
-      throw new UnauthorizedException('Credenciales incorrectas');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('Cuenta desactivada');
-    }
-
-    const isPasswordValid = await bcrypt.compare(
+    const valida = await bcrypt.compare(
       loginDto.password,
-      user.password,
+      user?.password ?? (await rellenoParaComparar()),
     );
+    if (!user || !valida) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        codigo: CODIGO_CREDENCIALES,
+        message: 'Credenciales incorrectas',
+      });
+    }
 
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciales incorrectas');
+    // Después de la contraseña: antes se respondía primero, y confirmaba a
+    // cualquiera que ese correo estaba registrado aunque no supiera la clave.
+    if (!user.isActive) {
+      throw new UnauthorizedException({
+        statusCode: 401,
+        codigo: CODIGO_CUENTA_DESACTIVADA,
+        message: 'Cuenta desactivada',
+      });
     }
 
     return this.generateAuthResponse(user);

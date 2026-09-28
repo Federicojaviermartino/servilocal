@@ -5,27 +5,46 @@ import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Service } from '@/types';
 import { servicesApi } from '@/lib/api';
-import { textoDeError } from '@/lib/errores-api';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
+import { useBorrador } from '@/lib/borrador';
 import { useAuthStore } from '@/lib/auth-store';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
-import { useNombreUnidad } from '@/lib/unidades';
+import { usePrecioServicio } from '@/lib/importes';
 import ServiceForm from '@/components/organisms/ServiceForm';
+
+/** Lo que se estaba escribiendo, y de qué servicio si se editaba uno. */
+interface BorradorServicio {
+  servicio: Service | null;
+  datos: Partial<Service>;
+}
 
 export default function ProviderServicesPage() {
   const t = useTranslations('serviciosPanel');
   const tEstados = useTranslations('estados');
   const tComun = useTranslations('comun');
-  const tTarjeta = useTranslations('tarjeta');
-  const tErrores = useTranslations('erroresApi');
-  const nombreUnidad = useNombreUnidad();
+  const avisarFallo = useAvisoDeFallo();
+  const precio = usePrecioServicio();
   const formato = useFormatter();
   const { user } = useAuthStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editing, setEditing] = useState<Service | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  // Si la sesión caducó a mitad, se vuelve al mismo formulario con lo que
+  // se había escrito.
+  const borrador = useBorrador<BorradorServicio>('servicio');
+  const recuperado = borrador.recuperado;
+  const [editing, setEditing] = useState<Service | null>(() =>
+    recuperado?.servicio
+      ? ({ ...recuperado.servicio, ...recuperado.datos } as Service)
+      : null,
+  );
+  const [isCreating, setIsCreating] = useState(
+    () => !!recuperado && !recuperado.servicio,
+  );
+  const [inicialNuevo, setInicialNuevo] = useState<
+    Partial<Service> | undefined
+  >(() => (recuperado && !recuperado.servicio ? recuperado.datos : undefined));
 
   // El panel no se pinta sin usuario, pero se comprueba igual: sin él, pedir
   // los servicios fallaría dentro del efecto en lugar de en la promesa.
@@ -44,9 +63,12 @@ export default function ProviderServicesPage() {
       await servicesApi.create(data);
       toast.success(t('creado'));
       setIsCreating(false);
+      setInicialNuevo(undefined);
       reintentar();
-    } catch {
-      toast.error(t('errorCrear'));
+    } catch (error) {
+      avisarFallo(error, t('errorCrear'), () =>
+        borrador.guardar({ servicio: null, datos: data as Partial<Service> }),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -60,8 +82,13 @@ export default function ProviderServicesPage() {
       toast.success(t('actualizado'));
       setEditing(null);
       reintentar();
-    } catch {
-      toast.error(t('errorActualizar'));
+    } catch (error) {
+      avisarFallo(error, t('errorActualizar'), () =>
+        borrador.guardar({
+          servicio: editing,
+          datos: data as Partial<Service>,
+        }),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -75,7 +102,7 @@ export default function ProviderServicesPage() {
       reintentar();
     } catch (error) {
       // Con reservas abiertas no se elimina: se dice por qué.
-      toast.error(textoDeError(error, tErrores, t('errorEliminar')));
+      avisarFallo(error, t('errorEliminar'));
     }
   };
 
@@ -83,10 +110,19 @@ export default function ProviderServicesPage() {
     return (
       <div>
         <h1 className="text-2xl font-bold text-principal mb-6">{t('nuevo')}</h1>
+        {inicialNuevo && (
+          <p role="status" className="mb-4 text-sm text-secundario">
+            {tComun('borradorRecuperado')}
+          </p>
+        )}
         <div className="bg-superficie rounded-lg shadow-card p-6">
           <ServiceForm
+            initial={inicialNuevo}
             onSubmit={handleCreate}
-            onCancel={() => setIsCreating(false)}
+            onCancel={() => {
+              setIsCreating(false);
+              setInicialNuevo(undefined);
+            }}
             isSubmitting={isSubmitting}
           />
         </div>
@@ -100,6 +136,11 @@ export default function ProviderServicesPage() {
         <h1 className="text-2xl font-bold text-principal mb-6">
           {t('editar')}
         </h1>
+        {recuperado?.servicio?.id === editing.id && (
+          <p role="status" className="mb-4 text-sm text-secundario">
+            {tComun('borradorRecuperado')}
+          </p>
+        )}
         <div className="bg-superficie rounded-lg shadow-card p-6">
           <ServiceForm
             initial={editing}
@@ -156,18 +197,7 @@ export default function ProviderServicesPage() {
                     {/* Estaban escritos a mano en castellano: en los otros
                         nueve idiomas el profesional veía «Desde 35 euros».
                         El precio sale igual que en la tarjeta pública. */}
-                    <span>
-                      {s.priceMax && s.priceMax !== s.priceMin
-                        ? tTarjeta('precioRango', {
-                            min: s.priceMin,
-                            max: s.priceMax,
-                            unidad: nombreUnidad(s.priceUnit),
-                          })
-                        : tTarjeta('precioUnico', {
-                            min: s.priceMin,
-                            unidad: nombreUnidad(s.priceUnit),
-                          })}
-                    </span>
+                    <span>{precio(s)}</span>
                     <span>
                       {t('resumenValoraciones', { total: s.totalReviews })}
                       {s.totalReviews > 0 &&

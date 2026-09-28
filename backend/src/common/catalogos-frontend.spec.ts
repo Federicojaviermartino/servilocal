@@ -10,11 +10,19 @@ import {
 import { CODIGO_RESERVAS_ABIERTAS } from '../services/services.service';
 import {
   CODIGO_CONTRASENA_INCORRECTA,
+  CODIGO_CORREO_EN_USO,
+  CODIGO_CREDENCIALES,
   CODIGO_CUENTA_CON_RESERVAS,
   CODIGO_CUENTA_DEMOSTRACION,
+  CODIGO_CUENTA_DESACTIVADA,
   CODIGO_ENLACE_NO_VALIDO,
 } from './cuenta';
 import { CODIGO_CORREO_NO_DISPONIBLE } from '../correo/correo.service';
+import {
+  CODIGO_NADA_QUE_PAGAR,
+  CODIGO_PAGO_EN_CURSO,
+  CODIGO_RESERVA_NO_PAGABLE,
+} from '../payments/payments.service';
 
 /**
  * Lo que la API nombra y el frontend tiene que saber decir.
@@ -57,6 +65,12 @@ describe('Lo que la API nombra tiene texto en el frontend', () => {
     CODIGO_CUENTA_DEMOSTRACION,
     CODIGO_ENLACE_NO_VALIDO,
     CODIGO_CORREO_NO_DISPONIBLE,
+    CODIGO_CORREO_EN_USO,
+    CODIGO_CREDENCIALES,
+    CODIGO_CUENTA_DESACTIVADA,
+    CODIGO_RESERVA_NO_PAGABLE,
+    CODIGO_NADA_QUE_PAGAR,
+    CODIGO_PAGO_EN_CURSO,
   ])('el rechazo «%s»', (codigo) => {
     expect(catalogo.erroresApi).toHaveProperty([codigo]);
   });

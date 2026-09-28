@@ -125,4 +125,24 @@ describe('AsistenteBusqueda', () => {
       screen.getByRole('button', { name: es.asistente.abrir }),
     ).toBeInTheDocument();
   });
+
+  it('al cerrarse, el foco vuelve al botón que lo abrió', async () => {
+    // Caía en el <body>: con teclado, el siguiente Tab llevaba al principio
+    // de la página.
+    await abrir();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(
+      screen.getByRole('button', { name: es.asistente.abrir }),
+    ).toHaveFocus();
+  });
+
+  it('pero al pintarse la primera vez no se roba el foco', () => {
+    pintar();
+
+    expect(
+      screen.getByRole('button', { name: es.asistente.abrir }),
+    ).not.toHaveFocus();
+  });
 });

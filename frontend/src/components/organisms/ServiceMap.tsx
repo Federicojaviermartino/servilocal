@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { Service } from '@/types';
 import { useNombreUnidad } from '@/lib/unidades';
+import { useImporte } from '@/lib/importes';
 
 // Workaround para los iconos de Leaflet en bundlers
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
@@ -68,6 +69,7 @@ export default function ServiceMap({
   height = '500px',
 }: ServiceMapProps) {
   const t = useTranslations('mapa');
+  const importe = useImporte();
   const nombreUnidad = useNombreUnidad();
 
   // La API entrega la posición como GeoJSON (coordinates es [lng, lat]); los
@@ -113,14 +115,21 @@ export default function ServiceMap({
         />
         <Encuadrar posiciones={marcadores.map((m) => m.posicion)} />
         {marcadores.map(({ service, posicion }) => (
-          <Marker key={service.id} position={posicion}>
+          // Sin nombre, Leaflet pone «Marker» a todos: con lector de
+          // pantalla se oía «Marker» hasta cincuenta veces.
+          <Marker
+            key={service.id}
+            position={posicion}
+            title={service.title}
+            alt={service.title}
+          >
             <Popup>
               <div className="text-sm">
                 <p className="font-semibold">{service.title}</p>
                 <p className="text-secundario">{service.city}</p>
                 <p className="text-secundario">
                   {t('desde', {
-                    precio: service.priceMin,
+                    precio: importe(service.priceMin),
                     // La unidad se guarda en castellano: sin traducirla, el
                     // mapa en alemán decía «Ab 30 por hora».
                     unidad: nombreUnidad(service.priceUnit),

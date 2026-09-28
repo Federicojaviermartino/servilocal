@@ -7,6 +7,7 @@ import { useState, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Service } from '@/types';
 import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
+import { useImporte } from '@/lib/importes';
 import Button from '../atoms/Button';
 import Input from '../atoms/Input';
 
@@ -18,33 +19,53 @@ function diaLocal(dentroDe: number): string {
   return `${dia.getFullYear()}-${dos(dia.getMonth() + 1)}-${dos(dia.getDate())}`;
 }
 
+/** La hora local de una fecha ISO, como la piden los campos. */
+function partesLocales(iso: string): { fecha: string; hora: string } {
+  const dia = new Date(iso);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return {
+    fecha: `${dia.getFullYear()}-${dos(dia.getMonth() + 1)}-${dos(dia.getDate())}`,
+    hora: `${dos(dia.getHours())}:${dos(dia.getMinutes())}`,
+  };
+}
+
+export interface DatosReserva {
+  scheduledDate: string;
+  description: string;
+  totalPrice: number;
+}
+
 interface BookingFormProps {
   service: Service;
-  onSubmit: (data: {
-    scheduledDate: string;
-    description: string;
-    totalPrice: number;
-  }) => void;
+  onSubmit: (data: DatosReserva) => void;
   isSubmitting?: boolean;
+  /** Lo que se estaba escribiendo cuando caducó la sesión. */
+  inicial?: DatosReserva;
 }
 
 export default function BookingForm({
   service,
   onSubmit,
   isSubmitting = false,
+  inicial,
 }: BookingFormProps) {
   const t = useTranslations('reserva');
   const idioma = useLocale();
+  const importe = useImporte();
   // En la fecha local, no en la UTC: pasada la medianoche en España, la UTC
   // todavía es ayer, y «mañana» salía hoy. Hasta un año vista, que es lo
   // que admite la API.
   const minDateStr = diaLocal(1);
   const maxDateStr = diaLocal(365);
 
-  const [date, setDate] = useState(minDateStr);
-  const [time, setTime] = useState('10:00');
-  const [description, setDescription] = useState('');
-  const [price, setPrice] = useState(service.priceMin);
+  const [date, setDate] = useState(() =>
+    inicial ? partesLocales(inicial.scheduledDate).fecha : minDateStr,
+  );
+  const [time, setTime] = useState(() =>
+    inicial ? partesLocales(inicial.scheduledDate).hora : '10:00',
+  );
+  const [description, setDescription] = useState(inicial?.description ?? '');
+  const [price, setPrice] = useState(inicial?.totalPrice ?? service.priceMin);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -55,7 +76,7 @@ export default function BookingForm({
     }
     if (!time) errs.time = t('horaObligatoria');
     if (price < service.priceMin) {
-      errs.price = t('precioMinimo', { min: service.priceMin });
+      errs.price = t('precioMinimo', { min: importe(service.priceMin) });
     }
     // El máximo solo manda si está por encima del mínimo. Si no, el servicio
     // se publicó con la horquilla al revés y aplicarlo dejaría la reserva sin
@@ -66,7 +87,7 @@ export default function BookingForm({
       service.priceMax > service.priceMin &&
       price > service.priceMax
     ) {
-      errs.price = t('precioMaximo', { max: service.priceMax });
+      errs.price = t('precioMaximo', { max: importe(service.priceMax) });
     }
     if (!description || description.length < 10) {
       errs.description = t('descripcionCorta');
@@ -123,9 +144,18 @@ export default function BookingForm({
           placeholder={t('descripcionPlaceholder')}
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           required
+          aria-invalid={!!errors.description}
+          aria-describedby={
+            errors.description ? 'reserva-descripcion-error' : undefined
+          }
         />
         {errors.description && (
-          <p className="mt-1 text-sm text-danger-600">{errors.description}</p>
+          <p
+            id="reserva-descripcion-error"
+            className="mt-1 text-sm text-danger-600"
+          >
+            {errors.description}
+          </p>
         )}
       </div>
 
@@ -134,10 +164,10 @@ export default function BookingForm({
         label={
           service.priceMax
             ? t('precioRango', {
-                min: service.priceMin,
-                max: service.priceMax,
+                min: importe(service.priceMin),
+                max: importe(service.priceMax),
               })
-            : t('precioMinimoEtiqueta', { min: service.priceMin })
+            : t('precioMinimoEtiqueta', { min: importe(service.priceMin) })
         }
         min={service.priceMin}
         max={service.priceMax}
@@ -166,7 +196,7 @@ export default function BookingForm({
           })}
         </p>
         <p className="text-principal font-semibold mt-2">
-          {t('resumenTotal', { precio: price })}
+          {t('resumenTotal', { precio: importe(price) })}
         </p>
       </div>
 

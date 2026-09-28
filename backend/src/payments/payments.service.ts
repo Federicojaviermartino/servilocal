@@ -29,6 +29,15 @@ import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
  */
 export const CODIGO_SIN_PAGO_RETENIDO = 'sin-pago-retenido';
 
+/** Cancelada, rechazada o cerrada: ya no hay nada que pagar en ella. */
+export const CODIGO_RESERVA_NO_PAGABLE = 'reserva-no-pagable';
+
+/** Completada y ya cobrada o reembolsada. */
+export const CODIGO_NADA_QUE_PAGAR = 'nada-que-pagar';
+
+/** Ya tiene la tarjeta retenida o cobrada: pagar otra vez cobraría dos. */
+export const CODIGO_PAGO_EN_CURSO = 'pago-en-curso';
+
 /**
  * Desde dónde puede llegar un pago a cada estado.
  *
@@ -159,9 +168,11 @@ export class PaymentsService {
         booking.status !== BookingStatus.CONFIRMED &&
         !completada
       ) {
-        throw new BadRequestException(
-          'La reserva no puede pagarse en su estado actual',
-        );
+        throw new BadRequestException({
+          statusCode: 400,
+          codigo: CODIGO_RESERVA_NO_PAGABLE,
+          message: 'La reserva no puede pagarse en su estado actual',
+        });
       }
 
       const existingPayment = await gestor.findOne(Payment, {
@@ -174,7 +185,11 @@ export class PaymentsService {
         (existingPayment?.status === PaymentStatus.COMPLETED ||
           existingPayment?.status === PaymentStatus.REFUNDED)
       ) {
-        throw new ConflictException('Esta reserva ya no tiene nada que pagar');
+        throw new ConflictException({
+          statusCode: 409,
+          codigo: CODIGO_NADA_QUE_PAGAR,
+          message: 'Esta reserva ya no tiene nada que pagar',
+        });
       }
 
       // Reutilizar PI existente si su estado en Stripe sigue siendo pagable
@@ -208,9 +223,11 @@ export class PaymentsService {
         }
 
         if (alreadyPaid.includes(stripePi.status)) {
-          throw new ConflictException(
-            'Esta reserva ya tiene un pago en curso o completado',
-          );
+          throw new ConflictException({
+            statusCode: 409,
+            codigo: CODIGO_PAGO_EN_CURSO,
+            message: 'Esta reserva ya tiene un pago en curso o completado',
+          });
         }
         // Si el PI esta canceled o en otro estado no reutilizable, se crea uno nuevo abajo.
       }

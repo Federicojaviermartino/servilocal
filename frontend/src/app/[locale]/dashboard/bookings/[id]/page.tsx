@@ -15,9 +15,10 @@ import {
 } from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
 import { bookingsApi, paymentsApi } from '@/lib/api';
-import { cambiarEstadoReserva } from '@/lib/cambiar-estado';
-import { textoDeError } from '@/lib/errores-api';
+import { cambiarEstadoReserva, preguntarMotivo } from '@/lib/cambiar-estado';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
 import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
+import { formatearImporte } from '@/lib/importes';
 import { useAuthStore } from '@/lib/auth-store';
 import Badge from '@/components/atoms/Badge';
 import Avatar from '@/components/atoms/Avatar';
@@ -33,7 +34,7 @@ export default function BookingDetailPage() {
   const t = useTranslations('reservasPanel');
   const tComun = useTranslations('comun');
   const tEstados = useTranslations('estados');
-  const tErrores = useTranslations('erroresApi');
+  const avisarFallo = useAvisoDeFallo();
   const idioma = useLocale();
   const params = useParams();
   const router = useRouter();
@@ -61,10 +62,21 @@ export default function BookingDetailPage() {
   );
 
   const changeStatus = async (status: BookingStatus) => {
+    let motivo: string | null = '';
+    if (status === BookingStatus.CANCELLED) {
+      motivo = preguntarMotivo(t('motivoCancelar'));
+    } else if (status === BookingStatus.REJECTED) {
+      motivo = preguntarMotivo(t('motivoRechazar'));
+    }
+    if (motivo === null) return;
+
     setIsUpdating(true);
     try {
-      const hecho = await cambiarEstadoReserva(bookingId, status, () =>
-        window.confirm(t('completarSinCobro')),
+      const hecho = await cambiarEstadoReserva(
+        bookingId,
+        status,
+        () => window.confirm(t('completarSinCobro')),
+        motivo,
       );
       if (hecho) {
         toast.success(t('actualizada'));
@@ -73,7 +85,7 @@ export default function BookingDetailPage() {
         toast(t('esperandoPago'));
       }
     } catch (error) {
-      toast.error(textoDeError(error, tErrores, t('errorActualizar')));
+      avisarFallo(error, t('errorActualizar'));
     } finally {
       setIsUpdating(false);
     }
@@ -127,7 +139,7 @@ export default function BookingDetailPage() {
         href={backHref}
         className="inline-flex items-center gap-1 text-sm text-secundario hover:text-acento mb-4"
       >
-        <ArrowLeft size={16} />
+        <ArrowLeft size={16} aria-hidden="true" className="rtl:-scale-x-100" />
         {tComun('volver')}
       </Link>
 
@@ -188,6 +200,19 @@ export default function BookingDetailPage() {
           </p>
         </div>
 
+        {(booking.status === BookingStatus.CANCELLED ||
+          booking.status === BookingStatus.REJECTED) &&
+          booking.cancellationReason && (
+            <div className="mb-6">
+              <h2 className="text-sm font-semibold text-principal mb-2">
+                {t('motivo')}
+              </h2>
+              <p className="text-secundario whitespace-pre-line">
+                {booking.cancellationReason}
+              </p>
+            </div>
+          )}
+
         <div className="bg-fondo rounded-md p-4 mb-6">
           <h2 className="text-sm font-semibold text-principal mb-3">
             {isProvider ? tComun('cliente') : tComun('profesional')}
@@ -211,7 +236,7 @@ export default function BookingDetailPage() {
         <div className="flex items-center justify-between border-t border-borde pt-4 mb-6">
           <span className="text-secundario">{t('importe')}</span>
           <span className="text-2xl font-bold text-principal">
-            {t('importeEnEuros', { importe: booking.totalPrice })}
+            {formatearImporte(booking.totalPrice, idioma, true)}
           </span>
         </div>
 

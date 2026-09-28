@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 import es from '../../../messages/es.json';
@@ -186,12 +186,31 @@ describe('GraficasPanel', () => {
     // Sin leyenda los segmentos solo se distinguían por el color.
     pintar(datos());
 
-    render(<>{leyenda.formatear!('completed')}</>);
-    render(<>{leyenda.formatear!('inventado')}</>);
+    const { container: enPalabras } = render(
+      <>{leyenda.formatear!('completed')}</>,
+    );
+    const { container: enCrudo } = render(
+      <>{leyenda.formatear!('inventado')}</>,
+    );
 
-    expect(screen.getByText(es.estados.completada)).toBeInTheDocument();
+    expect(enPalabras).toHaveTextContent(es.estados.completada);
     // Un estado que el catálogo no conoce sale tal cual, no en blanco.
-    expect(screen.getByText('inventado')).toBeInTheDocument();
+    expect(enCrudo).toHaveTextContent('inventado');
+  });
+
+  it('los datos de cada gráfica también están en una tabla', () => {
+    // Con lector de pantalla, los valores solo se podían leer en el
+    // emergente, que sale al pasar el ratón.
+    pintar(datos());
+
+    const tabla = screen.getByRole('table', {
+      name: es.administracion.graficaPorEstado,
+    });
+    const fila = within(tabla).getByRole('row', {
+      name: new RegExp(es.estados.completada),
+    });
+    expect(fila).toHaveTextContent(/\d/);
+    expect(screen.getAllByRole('table')).toHaveLength(4);
   });
 
   it('solo las ocho primeras categorías, que la API manda ya ordenadas', () => {

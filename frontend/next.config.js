@@ -57,6 +57,17 @@ const securityHeaders = [
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(self), payment=(self)',
   },
+  // La API ya la mandaba, con helmet, y la web no: en la primera visita
+  // desde una red hostil, alguien podía quedarse con el formulario de acceso
+  // antes de que el navegador subiera a https. En local no, que es http.
+  ...(enLocal
+    ? []
+    : [
+        {
+          key: 'Strict-Transport-Security',
+          value: 'max-age=31536000; includeSubDomains',
+        },
+      ]),
 ];
 
 /** @type {import('next').NextConfig} */

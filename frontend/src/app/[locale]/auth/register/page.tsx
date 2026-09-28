@@ -6,7 +6,12 @@ import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { useAuthStore } from '@/lib/auth-store';
+import { textoDeError } from '@/lib/errores-api';
 import { MapPin, Eye, EyeOff, User, Briefcase } from 'lucide-react';
+
+/** Lo que admite la API: bcrypt ignora lo que pase de 72. */
+const MAXIMO_CONTRASENA = 72;
+const MAXIMO_NOMBRE = 100;
 
 interface RegisterForm {
   firstName: string;
@@ -21,6 +26,7 @@ interface RegisterForm {
 export default function RegisterPage() {
   const t = useTranslations('acceso');
   const tValidacion = useTranslations('validacion');
+  const tErrores = useTranslations('erroresApi');
   const router = useRouter();
   const { register: registerUser, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
@@ -45,9 +51,10 @@ export default function RegisterPage() {
       const { confirmPassword, ...registerData } = data;
       await registerUser(registerData);
       router.push('/');
-    } catch (err: any) {
-      const msg = err.response?.data?.message;
-      setError(Array.isArray(msg) ? msg.join('. ') : msg || t('errorCrear'));
+    } catch (err) {
+      // Antes se pegaban los mensajes de la API, en castellano o en inglés
+      // según de dónde vinieran, fuera cual fuera el idioma de la página.
+      setError(textoDeError(err, tErrores, t('errorCrear')));
     }
   };
 
@@ -134,13 +141,23 @@ export default function RegisterPage() {
                   autoComplete="given-name"
                   className="input-field"
                   aria-invalid={!!errors.firstName}
+                  aria-describedby={
+                    errors.firstName ? 'firstName-error' : undefined
+                  }
                   {...register('firstName', {
                     required: tValidacion('obligatorio'),
-                    maxLength: 100,
+                    maxLength: {
+                      value: MAXIMO_NOMBRE,
+                      message: tValidacion('maximoCaracteres', {
+                        max: MAXIMO_NOMBRE,
+                      }),
+                    },
                   })}
                 />
                 {errors.firstName && (
-                  <p className="error-text">{errors.firstName.message}</p>
+                  <p id="firstName-error" className="error-text">
+                    {errors.firstName.message}
+                  </p>
                 )}
               </div>
               <div>
@@ -153,13 +170,23 @@ export default function RegisterPage() {
                   autoComplete="family-name"
                   className="input-field"
                   aria-invalid={!!errors.lastName}
+                  aria-describedby={
+                    errors.lastName ? 'lastName-error' : undefined
+                  }
                   {...register('lastName', {
                     required: tValidacion('obligatorio'),
-                    maxLength: 100,
+                    maxLength: {
+                      value: MAXIMO_NOMBRE,
+                      message: tValidacion('maximoCaracteres', {
+                        max: MAXIMO_NOMBRE,
+                      }),
+                    },
                   })}
                 />
                 {errors.lastName && (
-                  <p className="error-text">{errors.lastName.message}</p>
+                  <p id="lastName-error" className="error-text">
+                    {errors.lastName.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -175,16 +202,21 @@ export default function RegisterPage() {
                 className="input-field"
                 placeholder={t('emailPlaceholder')}
                 aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'reg-email-error' : undefined}
                 {...register('email', {
                   required: tValidacion('emailObligatorio'),
+                  // Con al menos dos letras tras el último punto, como pide
+                  // la API: «ana@correo.c» pasaba aquí y allí no.
                   pattern: {
-                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@.]{2,}$/,
                     message: tValidacion('emailInvalido'),
                   },
                 })}
               />
               {errors.email && (
-                <p className="error-text">{errors.email.message}</p>
+                <p id="reg-email-error" className="error-text">
+                  {errors.email.message}
+                </p>
               )}
             </div>
 
@@ -200,11 +232,20 @@ export default function RegisterPage() {
                   className="input-field pe-10"
                   placeholder={t('passwordMinimo')}
                   aria-invalid={!!errors.password}
+                  aria-describedby={
+                    errors.password ? 'reg-password-error' : undefined
+                  }
                   {...register('password', {
                     required: tValidacion('passwordObligatoria'),
                     minLength: {
                       value: 8,
                       message: tValidacion('minimoCaracteres'),
+                    },
+                    maxLength: {
+                      value: MAXIMO_CONTRASENA,
+                      message: tValidacion('maximoCaracteres', {
+                        max: MAXIMO_CONTRASENA,
+                      }),
                     },
                   })}
                 />
@@ -224,7 +265,9 @@ export default function RegisterPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="error-text">{errors.password.message}</p>
+                <p id="reg-password-error" className="error-text">
+                  {errors.password.message}
+                </p>
               )}
             </div>
 
@@ -238,6 +281,9 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 className="input-field"
                 aria-invalid={!!errors.confirmPassword}
+                aria-describedby={
+                  errors.confirmPassword ? 'confirmPassword-error' : undefined
+                }
                 {...register('confirmPassword', {
                   required: tValidacion('confirmaPassword'),
                   validate: (value) =>
@@ -245,7 +291,9 @@ export default function RegisterPage() {
                 })}
               />
               {errors.confirmPassword && (
-                <p className="error-text">{errors.confirmPassword.message}</p>
+                <p id="confirmPassword-error" className="error-text">
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 

@@ -8,6 +8,8 @@ import Button from '@/components/atoms/Button';
 import RatingStars from '@/components/molecules/RatingStars';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
+import { useBorrador } from '@/lib/borrador';
 
 interface PendingReviewFormProps {
   booking: Booking;
@@ -16,8 +18,13 @@ interface PendingReviewFormProps {
 
 function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
   const t = useTranslations('valoracionesPanel');
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
+  const tComun = useTranslations('comun');
+  const avisarFallo = useAvisoDeFallo();
+  const borrador = useBorrador<{ rating: number; comment: string }>(
+    `valoracion:${booking.id}`,
+  );
+  const [rating, setRating] = useState(borrador.recuperado?.rating ?? 5);
+  const [comment, setComment] = useState(borrador.recuperado?.comment ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -35,8 +42,10 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
       });
       toast.success(t('enviada'));
       onSubmit();
-    } catch {
-      toast.error(t('errorEnviar'));
+    } catch (error) {
+      avisarFallo(error, t('errorEnviar'), () =>
+        borrador.guardar({ rating, comment }),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -61,10 +70,18 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
           onChange={setRating}
         />
       </div>
+      {borrador.recuperado && (
+        <p role="status" className="mt-3 text-sm text-secundario">
+          {tComun('borradorRecuperado')}
+        </p>
+      )}
+      {/* Solo tenía el texto de ejemplo, que desaparece al escribir y no
+          todos los lectores anuncian: sin nombre accesible. */}
       <textarea
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         rows={3}
+        aria-label={t('comentarioPlaceholder')}
         placeholder={t('comentarioPlaceholder')}
         className="mt-3 w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
       />

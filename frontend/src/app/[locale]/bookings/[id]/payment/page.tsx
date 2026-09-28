@@ -10,12 +10,20 @@ import { Elements } from '@stripe/react-stripe-js';
 import { Booking, BookingStatus, PaymentIntent } from '@/types';
 import { bookingsApi, paymentsApi } from '@/lib/api';
 import { getStripe } from '@/lib/stripe';
+import {
+  CODIGO_SESION_CADUCADA,
+  codigoDeError,
+  textoDeError,
+} from '@/lib/errores-api';
+import { formatearImporte } from '@/lib/importes';
 import { useTemaOscuro } from '@/lib/tema';
 import CheckoutForm from '@/components/organisms/CheckoutForm';
 import Spinner from '@/components/atoms/Spinner';
 
 export default function PaymentPage() {
   const t = useTranslations('pago');
+  const tErrores = useTranslations('erroresApi');
+  const tCarga = useTranslations('carga');
   const idioma = useLocale();
 
   // Stripe pinta sus campos con el tema de la página. Ver lib/tema.ts.
@@ -28,6 +36,7 @@ export default function PaymentPage() {
   const [intent, setIntent] = useState<PaymentIntent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sinSesion, setSinSesion] = useState(false);
 
   const refreshIntent = useCallback(async () => {
     const { data: i } = await paymentsApi.createIntent(bookingId);
@@ -43,21 +52,28 @@ export default function PaymentPage() {
         setIntent(i);
       } catch (err: any) {
         const status = err?.response?.status;
-        const apiMsg = err?.response?.data?.message;
-        if (status === 404) setError(t('noEncontrada'));
+        // Nunca el mensaje de la API: está en castellano. El código dice qué
+        // pasó, en el idioma de quien paga.
+        if (!err?.response) setError(t('sinServidor'));
+        else if (status === 404) setError(t('noEncontrada'));
         else if (status === 403) setError(t('sinPermiso'));
-        else if (status === 409) setError(apiMsg || t('pagoEnCurso'));
-        else if (!err?.response) setError(t('sinServidor'));
         else
           setError(
-            apiMsg || t('errorCodigo', { codigo: status ?? t('desconocido') }),
+            textoDeError(
+              err,
+              tErrores,
+              status === 409
+                ? t('pagoEnCurso')
+                : t('errorCodigo', { codigo: status }),
+            ),
           );
+        setSinSesion(codigoDeError(err) === CODIGO_SESION_CADUCADA);
       } finally {
         setIsLoading(false);
       }
     }
     if (bookingId) init();
-  }, [bookingId, router, t]);
+  }, [bookingId, router, t, tErrores]);
 
   if (isLoading) {
     return (
@@ -74,12 +90,24 @@ export default function PaymentPage() {
           {t('errorIniciar')}
         </h1>
         {error && <p className="text-secundario">{error}</p>}
-        <Link
-          href={`/dashboard/bookings/${bookingId}`}
-          className="inline-block text-acento underline text-sm"
-        >
-          {t('volverDetalle')}
-        </Link>
+        {sinSesion ? (
+          <Link
+            href={{
+              pathname: '/auth/login',
+              query: { redirect: `/bookings/${bookingId}/payment` },
+            }}
+            className="inline-block text-acento underline text-sm"
+          >
+            {tCarga('entrarDeNuevo')}
+          </Link>
+        ) : (
+          <Link
+            href={`/dashboard/bookings/${bookingId}`}
+            className="inline-block text-acento underline text-sm"
+          >
+            {t('volverDetalle')}
+          </Link>
+        )}
       </div>
     );
   }
@@ -89,7 +117,7 @@ export default function PaymentPage() {
   const cobroInmediato = booking.status === BookingStatus.COMPLETED;
 
   return (
-    <main className="bg-fondo min-h-screen py-8">
+    <div className="bg-fondo min-h-screen py-8">
       <div className="max-w-2xl mx-auto px-4">
         <h1 className="text-2xl font-bold text-principal mb-2">
           {t('titulo')}
@@ -111,7 +139,7 @@ export default function PaymentPage() {
           </p>
           <p className="mt-1 text-sm text-secundario">
             {t(cobroInmediato ? 'cobroTexto' : 'retencionTexto', {
-              importe: booking.totalPrice,
+              importe: formatearImporte(booking.totalPrice, idioma, true),
             })}
           </p>
           {!cobroInmediato && (
@@ -152,6 +180,6 @@ export default function PaymentPage() {
           </Elements>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

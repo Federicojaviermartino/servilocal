@@ -19,7 +19,8 @@ describe('ServiceCard', () => {
   it('enseña un rango cuando hay precio máximo distinto', () => {
     pintar(otroServicio('rango', { priceMin: 40, priceMax: 90 }) as Service);
 
-    expect(screen.getByText(/40 a 90/)).toBeInTheDocument();
+    // Con la moneda: la tarjeta decía «40 a 90 por hora», sin euros.
+    expect(screen.getByText(/40\s€ a 90\s€/)).toBeInTheDocument();
   });
 
   it('enseña un solo precio cuando no hay máximo', () => {

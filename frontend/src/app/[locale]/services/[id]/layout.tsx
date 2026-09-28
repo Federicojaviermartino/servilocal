@@ -6,66 +6,17 @@ import { SITIO_URL } from '@/lib/sitio';
 import { urlDe, jsonParaScript } from '@/lib/seo';
 import { routing } from '@/i18n/routing';
 import { claveUnidad } from '@/lib/unidad-clave';
+import { formatearImporte } from '@/lib/importes';
+import { obtenerServicio } from '@/lib/servicio-servidor';
+import type { Service } from '@/types';
 
 /**
- * La ficha de servicio es un componente de cliente, así que no puede exportar
- * metadatos por sí misma. Este layout, que sí se ejecuta en el servidor, se
- * encarga de las etiquetas y de los datos estructurados: un buscador los
- * necesita en el HTML inicial, antes de que corra ningún JavaScript.
+ * Las etiquetas y los datos estructurados de la ficha: un buscador los
+ * necesita en el HTML inicial, antes de que corra ningún JavaScript. La
+ * petición es la misma que hace la página (ver servicio-servidor.ts).
  */
 
-interface ServicioSeo {
-  id: string;
-  title: string;
-  description: string;
-  city: string;
-  priceMin: number;
-  priceMax?: number;
-  priceUnit: string;
-  images?: string[];
-  averageRating?: number;
-  totalReviews?: number;
-  category?: { name: string };
-  provider?: { firstName: string; lastName: string };
-}
-
-/**
- * Lo que puede pasar al pedir una ficha, que no es lo mismo.
- *
- * Antes las tres cosas devolvían null y la página respondía 200 con el
- * esqueleto: un identificador inventado daba un «no encontrado» que solo
- * aparecía después de hidratar, así que para un buscador era una página
- * válida y vacía. Un 404 blando, y se indexa.
- *
- * Distinguir «no existe» de «no he podido preguntar» es justo lo que importa
- * aquí: responder 404 porque la API está dormida convertiría un apagón de
- * diez minutos en fichas desindexadas.
- */
-type Resultado =
-  | { estado: 'ok'; servicio: ServicioSeo }
-  | { estado: 'no-existe' }
-  | { estado: 'sin-respuesta' };
-
-async function obtenerServicio(id: string): Promise<Resultado> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) return { estado: 'sin-respuesta' };
-
-  try {
-    const respuesta = await fetch(`${apiUrl}/services/${id}`, {
-      signal: AbortSignal.timeout(15000),
-      next: { revalidate: 3600 },
-    });
-    if (respuesta.status === 404) return { estado: 'no-existe' };
-    if (!respuesta.ok) return { estado: 'sin-respuesta' };
-    return { estado: 'ok', servicio: await respuesta.json() };
-  } catch {
-    // Un fallo de red no debe tumbar el renderizado: se sirve la página con
-    // los metadatos por defecto.
-    return { estado: 'sin-respuesta' };
-  }
-}
-
-async function resumen(locale: string, servicio: ServicioSeo): Promise<string> {
+async function resumen(locale: string, servicio: Service): Promise<string> {
   const t = await getTranslations({ locale, namespace: 'meta' });
   const tUnidades = await getTranslations({ locale, namespace: 'unidades' });
 
@@ -76,11 +27,14 @@ async function resumen(locale: string, servicio: ServicioSeo): Promise<string> {
 
   const precio = servicio.priceMax
     ? t('servicioPrecioRango', {
-        min: servicio.priceMin,
-        max: servicio.priceMax,
+        min: formatearImporte(servicio.priceMin, locale),
+        max: formatearImporte(servicio.priceMax, locale),
         unidad,
       })
-    : t('servicioPrecioDesde', { min: servicio.priceMin, unidad });
+    : t('servicioPrecioDesde', {
+        min: formatearImporte(servicio.priceMin, locale),
+        unidad,
+      });
 
   return t('servicioResumen', {
     descripcion: servicio.description.slice(0, 130),
@@ -135,7 +89,7 @@ export async function generateMetadata({
 }
 
 /** Datos estructurados schema.org para que el servicio pueda aparecer enriquecido. */
-function datosEstructurados(servicio: ServicioSeo) {
+function datosEstructurados(servicio: Service) {
   const datos: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Service',

@@ -13,8 +13,14 @@ export function codigoDeError(error: unknown): string | undefined {
   if (respuesta?.data?.codigo) return respuesta.data.codigo;
   // El limitador de peticiones no pone código: con el 429 basta.
   if (respuesta?.status === 429) return CODIGO_DEMASIADAS_PETICIONES;
+  // Tampoco el guardia de la sesión. Un 401 sin código es una sesión que ya
+  // no vale: la de quien entra con la contraseña equivocada sí lo trae.
+  if (respuesta?.status === 401) return CODIGO_SESION_CADUCADA;
   return undefined;
 }
+
+/** La sesión caducó o se cerró: hay que volver a entrar. */
+export const CODIGO_SESION_CADUCADA = 'sesion-caducada';
 
 /** Demasiadas peticiones seguidas desde el mismo sitio. */
 export const CODIGO_DEMASIADAS_PETICIONES = 'demasiadas-peticiones';
