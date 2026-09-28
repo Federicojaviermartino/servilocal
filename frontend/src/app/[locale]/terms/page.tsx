@@ -28,6 +28,7 @@ const secciones = [
     parrafos: [
       'Debes ser mayor de edad y facilitar información veraz. Eres responsable de la confidencialidad de tus credenciales y de la actividad que se realice desde tu cuenta.',
       'Podemos suspender o desactivar cuentas que incumplan estas condiciones, que publiquen contenido fraudulento o que perjudiquen a otros usuarios.',
+      'Puedes eliminar tu cuenta cuando quieras desde tu perfil, siempre que no tengas reservas pendientes o confirmadas: antes hay que cancelarlas o completarlas. Las cuentas de demostración son compartidas y no se pueden modificar ni eliminar.',
     ],
   },
   {
@@ -39,8 +40,10 @@ const secciones = [
   {
     titulo: '5. Reservas y pagos',
     parrafos: [
-      'Una reserva se considera confirmada cuando el profesional la acepta. El importe acordado puede ajustarse tras hablar con el profesional, antes de que se confirme.',
-      'Los pagos se procesan mediante Stripe. ServiLocal no almacena los datos de tu tarjeta en ningún momento. Las cancelaciones y devoluciones se gestionan entre las partes conforme a lo pactado.',
+      'Una reserva se considera confirmada cuando el profesional la acepta. El importe se fija al reservar, dentro de la horquilla que publica el servicio, y no puede ser inferior a 0,50 euros. Solo se reserva para una fecha futura, con hasta un año de antelación.',
+      'Al pagar, el importe se retiene en tu tarjeta, pero no se cobra: el cobro se hace cuando el profesional da el trabajo por terminado, lo que solo puede ocurrir a partir de la fecha de la reserva. Si la reserva se cancela o se rechaza, la retención se libera y no se cobra nada.',
+      'Si el profesional da por terminado un trabajo sin que haya un importe retenido, puede completarlo sin cobro; en ese caso el cliente puede pagarlo después, y el cobro es inmediato.',
+      'Los pagos se procesan mediante Stripe. ServiLocal no almacena los datos de tu tarjeta: Stripe la guarda en una ficha de cliente para poder renovar la retención cuando la reserva es para dentro de más de una semana, y se borra si eliminas tu cuenta. Si no se puede renovar, te pediremos que vuelvas a autorizar el pago.',
     ],
   },
   {
@@ -87,7 +90,7 @@ export default function TermsPage() {
     <article className="mx-auto max-w-3xl px-4 py-12" lang="es" dir="ltr">
       <h1 className="text-3xl font-bold text-principal">Términos de uso</h1>
       <p className="mt-2 text-sm text-tenue">
-        Última actualización: septiembre de 2026
+        Última actualización: 26 de septiembre de 2026
       </p>
       {idiomaActual !== 'es' && (
         <p

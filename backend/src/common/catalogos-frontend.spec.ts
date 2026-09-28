@@ -8,6 +8,13 @@ import {
   CODIGO_SOLAPE,
 } from './calendario';
 import { CODIGO_RESERVAS_ABIERTAS } from '../services/services.service';
+import {
+  CODIGO_CONTRASENA_INCORRECTA,
+  CODIGO_CUENTA_CON_RESERVAS,
+  CODIGO_CUENTA_DEMOSTRACION,
+  CODIGO_ENLACE_NO_VALIDO,
+} from './cuenta';
+import { CODIGO_CORREO_NO_DISPONIBLE } from '../correo/correo.service';
 
 /**
  * Lo que la API nombra y el frontend tiene que saber decir.
@@ -45,6 +52,11 @@ describe('Lo que la API nombra tiene texto en el frontend', () => {
     CODIGO_ANTES_DE_LA_FECHA,
     CODIGO_SOLAPE,
     CODIGO_RESERVAS_ABIERTAS,
+    CODIGO_CONTRASENA_INCORRECTA,
+    CODIGO_CUENTA_CON_RESERVAS,
+    CODIGO_CUENTA_DEMOSTRACION,
+    CODIGO_ENLACE_NO_VALIDO,
+    CODIGO_CORREO_NO_DISPONIBLE,
   ])('el rechazo «%s»', (codigo) => {
     expect(catalogo.erroresApi).toHaveProperty([codigo]);
   });

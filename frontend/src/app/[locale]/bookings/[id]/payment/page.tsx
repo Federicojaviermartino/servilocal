@@ -119,6 +119,13 @@ export default function PaymentPage() {
               {t('retencionCancelar')}
             </p>
           )}
+          {/* La tarjeta se guarda en Stripe para renovar la retención, y la
+              pantalla no lo decía. Un cobro en el acto no la guarda. */}
+          {!cobroInmediato && (
+            <p className="mt-1 text-sm text-secundario">
+              {t('tarjetaGuardada')}
+            </p>
+          )}
         </div>
 
         <div className="bg-superficie rounded-lg shadow-card p-6">

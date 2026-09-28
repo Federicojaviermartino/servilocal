@@ -1,14 +1,25 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  Equals,
   IsEmail,
   IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
   MaxLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { UserRole } from '../../entities';
+import { normalizarCorreo } from '../../common/cuenta';
+import { IDIOMAS } from '../../correo/plantillas';
+
+/**
+ * bcrypt solo mira los primeros 72 bytes: una contraseña más larga se
+ * truncaba en silencio, y bastaba con acertar el principio.
+ */
+const MAXIMO_CONTRASENA = 72;
 
 export class RegisterDto {
   @ApiProperty({ example: 'Federico' })
@@ -24,13 +35,15 @@ export class RegisterDto {
   lastName: string;
 
   @ApiProperty({ example: 'federico@ejemplo.com' })
+  @Transform(({ value }) => normalizarCorreo(value))
   @IsEmail()
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'Password123!', minLength: 8 })
+  @ApiProperty({ example: 'Password123!', minLength: 8, maxLength: 72 })
   @IsString()
   @MinLength(8)
+  @MaxLength(MAXIMO_CONTRASENA)
   password: string;
 
   @ApiProperty({
@@ -43,11 +56,24 @@ export class RegisterDto {
   @ApiProperty({ required: false, example: '600123456' })
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   phone?: string;
+
+  /**
+   * Ser mayor de edad y aceptar los términos y la política de privacidad.
+   * El registro no pedía nada, y los términos exigen la mayoría de edad.
+   */
+  @ApiProperty({ example: true })
+  @Equals(true, {
+    message:
+      'Para crear la cuenta hay que ser mayor de edad y aceptar los términos de uso y la política de privacidad.',
+  })
+  aceptaTerminos: boolean;
 }
 
 export class LoginDto {
   @ApiProperty({ example: 'federico@ejemplo.com' })
+  @Transform(({ value }) => normalizarCorreo(value))
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -80,6 +106,47 @@ export class SessionResponseDto {
 export class AuthResponseDto extends SessionResponseDto {
   @ApiProperty()
   accessToken: string;
+}
+
+export class CambiarContrasenaDto {
+  @ApiProperty({ description: 'La contraseña de ahora, para confirmar' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
+  actual: string;
+
+  @ApiProperty({ minLength: 8, maxLength: 72 })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(MAXIMO_CONTRASENA)
+  nueva: string;
+}
+
+export class RecuperarContrasenaDto {
+  @ApiProperty({ example: 'federico@ejemplo.com' })
+  @Transform(({ value }) => normalizarCorreo(value))
+  @IsEmail()
+  email: string;
+
+  /** El idioma en que se estaba usando la interfaz: el del correo. */
+  @ApiPropertyOptional({ enum: IDIOMAS, example: 'es' })
+  @IsOptional()
+  @IsIn(IDIOMAS)
+  idioma?: string;
+}
+
+export class RestablecerContrasenaDto {
+  @ApiProperty({ description: 'El que llegó en el enlace del correo' })
+  @IsString()
+  @MinLength(20)
+  @MaxLength(200)
+  token: string;
+
+  @ApiProperty({ minLength: 8, maxLength: 72 })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(MAXIMO_CONTRASENA)
+  nueva: string;
 }
 
 export class SocketTicketDto {

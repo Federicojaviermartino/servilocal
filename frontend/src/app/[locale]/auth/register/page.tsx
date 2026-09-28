@@ -15,6 +15,7 @@ interface RegisterForm {
   password: string;
   confirmPassword: string;
   role: 'client' | 'provider';
+  aceptaTerminos: boolean;
 }
 
 export default function RegisterPage() {
@@ -245,6 +246,52 @@ export default function RegisterPage() {
               />
               {errors.confirmPassword && (
                 <p className="error-text">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            {/* Los términos exigen la mayoría de edad, y el registro no
+                pedía nada: ni aceptarlos ni decir que se es mayor de edad.
+                Los enlaces se abren aparte, para no perder lo escrito. */}
+            <div className="mb-6">
+              <label className="flex items-start gap-2 text-sm text-secundario">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary-600"
+                  aria-invalid={!!errors.aceptaTerminos}
+                  aria-describedby={
+                    errors.aceptaTerminos ? 'terminos-error' : undefined
+                  }
+                  {...register('aceptaTerminos', {
+                    required: t('debesAceptar'),
+                  })}
+                />
+                <span>
+                  {t.rich('aceptoTerminos', {
+                    terminos: (texto) => (
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        className="font-medium text-acento underline"
+                      >
+                        {texto}
+                      </Link>
+                    ),
+                    privacidad: (texto) => (
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        className="font-medium text-acento underline"
+                      >
+                        {texto}
+                      </Link>
+                    ),
+                  })}
+                </span>
+              </label>
+              {errors.aceptaTerminos && (
+                <p id="terminos-error" className="error-text">
+                  {errors.aceptaTerminos.message}
+                </p>
               )}
             </div>
 

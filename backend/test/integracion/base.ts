@@ -20,6 +20,7 @@ import { CobrosAuditados1790400000000 } from '../../src/database/migrations/1790
 import { CalendarioReservas1790500000000 } from '../../src/database/migrations/1790500000000-CalendarioReservas';
 import { IntegridadDeLosDatos1790600000000 } from '../../src/database/migrations/1790600000000-IntegridadDeLosDatos';
 import { RestriccionDeSolapes1790700000000 } from '../../src/database/migrations/1790700000000-RestriccionDeSolapes';
+import { CuentaYPrivacidad1790800000000 } from '../../src/database/migrations/1790800000000-CuentaYPrivacidad';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -55,6 +56,7 @@ const MIGRACIONES = [
   CalendarioReservas1790500000000,
   IntegridadDeLosDatos1790600000000,
   RestriccionDeSolapes1790700000000,
+  CuentaYPrivacidad1790800000000,
 ];
 
 /**

@@ -100,6 +100,33 @@ export class User {
   @Column({ type: 'varchar', length: 255, nullable: true, select: false })
   stripeCustomerId: string | null;
 
+  /**
+   * Cuándo aceptó los términos, y qué versión. El registro no pedía nada:
+   * nadie aceptaba explícitamente las condiciones ni decía ser mayor de
+   * edad, y no quedaba constancia de a qué texto se había dado conformidad.
+   * Las cuentas anteriores lo tienen vacío.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  terminosAceptadosEn: Date | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  versionTerminos: string | null;
+
+  /**
+   * Los tokens emitidos antes de este momento no valen. Cambiar o recuperar
+   * la contraseña cierra así las demás sesiones abiertas, también la de
+   * quien la hubiera robado.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  sesionesDesde: Date | null;
+
+  /**
+   * Cuándo la eliminó su titular. La fila se queda, anonimizada: la
+   * necesitan las reservas, los pagos y las valoraciones de otras personas.
+   */
+  @Column({ type: 'timestamptz', nullable: true })
+  eliminadaEn: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 

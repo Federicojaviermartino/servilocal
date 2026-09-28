@@ -7,7 +7,14 @@ import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import cookieParser from 'cookie-parser';
-import { SesionRevocada, User, UserRole } from '../entities';
+import { DataSource } from 'typeorm';
+import {
+  RestablecimientoContrasena,
+  SesionRevocada,
+  User,
+  UserRole,
+} from '../entities';
+import { CorreoService } from '../correo/correo.service';
 import { OrigenGuard } from '../common/guards/origen.guard';
 import { SoloLecturaInterceptor } from '../common/interceptores/solo-lectura.interceptor';
 import { AuthController } from './auth.controller';
@@ -29,6 +36,8 @@ const CLAVE = 'Password123!';
 
 let hash: string;
 let soloLectura = false;
+/** Lo que deja un cambio de contraseña: los tokens anteriores no valen. */
+let sesionesDesde: Date | null = null;
 
 const usuarios = {
   findOne: vi.fn(async () => ({
@@ -40,7 +49,27 @@ const usuarios = {
     role: UserRole.CLIENT,
     isActive: true,
     soloLectura,
+    sesionesDesde,
   })),
+  // La cuenta se busca por lower(email) con una consulta: da lo mismo que
+  // findOne, que es lo que preparan las pruebas.
+  createQueryBuilder: vi.fn(() => {
+    const consulta = {
+      where: () => consulta,
+      addSelect: () => consulta,
+      getOne: () => usuarios.findOne(),
+    };
+    return consulta;
+  }),
+  update: vi.fn(
+    async (
+      _id: string,
+      cambios: { password?: string; sesionesDesde?: Date },
+    ) => {
+      if (cambios.password) hash = cambios.password;
+      if (cambios.sesionesDesde) sesionesDesde = cambios.sesionesDesde;
+    },
+  ),
 };
 
 /** La lista de sesiones cerradas, en memoria: lo que importa es qué entra. */
@@ -76,6 +105,17 @@ beforeAll(async () => {
       SesionesService,
       { provide: getRepositoryToken(User), useValue: usuarios },
       { provide: getRepositoryToken(SesionRevocada), useValue: revocadas },
+      // La recuperación por correo se prueba en su propia batería: aquí no
+      // debe salir nada hacia Brevo.
+      {
+        provide: getRepositoryToken(RestablecimientoContrasena),
+        useValue: {},
+      },
+      {
+        provide: CorreoService,
+        useValue: { exigirDisponible: vi.fn(), enviar: vi.fn() },
+      },
+      { provide: DataSource, useValue: {} },
       {
         provide: ConfigService,
         useValue: { get: () => SECRETO, getOrThrow: () => SECRETO },
@@ -99,8 +139,10 @@ afterAll(async () => {
   vi.unstubAllEnvs();
 });
 
-beforeEach(() => {
+beforeEach(async () => {
   soloLectura = false;
+  sesionesDesde = null;
+  hash = await bcrypt.hash(CLAVE, 4);
   vi.stubEnv('NODE_ENV', 'test');
 });
 
@@ -203,6 +245,7 @@ describe('Sesión en cookie', () => {
           email: 'ana@ejemplo.com',
           password: CLAVE,
           role: UserRole.CLIENT,
+          aceptaTerminos: true,
         }),
       });
 
@@ -254,6 +297,72 @@ describe('Sesión en cookie', () => {
 
       const respuesta = await pedir('/auth/profile', {
         headers: { cookie: `sesion=${antiguo}` },
+      });
+
+      expect(respuesta.status).toBe(401);
+    });
+  });
+
+  describe('al cambiar la contraseña', () => {
+    const cambiar = (cookie: string, actual = CLAVE) =>
+      pedir('/auth/cambiar-contrasena', {
+        method: 'POST',
+        headers: { cookie, origin: FRONTEND },
+        body: JSON.stringify({ actual, nueva: 'OtraClave123!' }),
+      });
+
+    it('la sesión de quien la cambia sigue, con una cookie nueva', async () => {
+      const cookie = await entrar();
+
+      const respuesta = await cambiar(cookie);
+
+      expect(respuesta.status).toBe(200);
+      const [nueva] = respuesta.headers.getSetCookie();
+      expect(nueva).toMatch(/^sesion=.+HttpOnly/i);
+      const perfil = await pedir('/auth/profile', {
+        headers: { cookie: nueva.split(';')[0] },
+      });
+      expect(perfil.status).toBe(200);
+    });
+
+    it('y una sesión abierta antes deja de valer', async () => {
+      // La de un ordenador ajeno, o la de quien la robó. Emitida hace un
+      // minuto: las del mismo segundo que el cambio siguen valiendo, porque
+      // la hora de un token no tiene más precisión.
+      const antigua = jwt.sign(
+        {
+          sub: 'uuid-123',
+          email: 'laura@ejemplo.com',
+          role: 'client',
+          iat: Math.floor(Date.now() / 1000) - 60,
+        },
+        { audience: 'servilocal-api', expiresIn: '1h', jwtid: 'antigua' },
+      );
+      const cookie = await entrar();
+
+      await cambiar(cookie);
+      const respuesta = await pedir('/auth/profile', {
+        headers: { cookie: `sesion=${antigua}` },
+      });
+
+      expect(respuesta.status).toBe(401);
+    });
+
+    it('con la actual equivocada, 400 y no 401: la sesión no se da por caducada', async () => {
+      const cookie = await entrar();
+
+      const respuesta = await cambiar(cookie, 'NoEsEsta123!');
+
+      expect(respuesta.status).toBe(400);
+      expect((await respuesta.json()).codigo).toBe('contrasena-incorrecta');
+      expect(respuesta.headers.getSetCookie()).toEqual([]);
+    });
+
+    it('sin sesión, no', async () => {
+      const respuesta = await pedir('/auth/cambiar-contrasena', {
+        method: 'POST',
+        headers: { origin: FRONTEND },
+        body: JSON.stringify({ actual: CLAVE, nueva: 'OtraClave123!' }),
       });
 
       expect(respuesta.status).toBe(401);

@@ -16,3 +16,14 @@ export function origenesPermitidos(): string[] {
     .map((s) => s.trim())
     .filter(Boolean);
 }
+
+/**
+ * Dónde vive el frontend, para los enlaces que salen por correo. Sin
+ * FRONTEND_URL, el primer origen permitido: es el mismo sitio.
+ */
+export function urlDelFrontend(): string {
+  return (process.env.FRONTEND_URL || origenesPermitidos()[0]).replace(
+    /\/+$/,
+    '',
+  );
+}

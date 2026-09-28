@@ -14,6 +14,8 @@ export interface JwtPayload {
   role: string;
   /** Identificador de la sesión. Lo pone jsonwebtoken al firmar. */
   jti?: string;
+  /** Cuándo se emitió, en segundos. Lo pone jsonwebtoken al firmar. */
+  iat?: number;
 }
 
 @Injectable()
@@ -58,6 +60,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     if (!user) {
       throw new UnauthorizedException('Usuario no encontrado o desactivado');
+    }
+
+    // Emitido antes de cambiar o recuperar la contraseña: esa sesión se
+    // cerró con el cambio, aunque la firma siga siendo buena.
+    if (
+      user.sesionesDesde &&
+      (payload.iat ?? 0) * 1000 < user.sesionesDesde.getTime()
+    ) {
+      throw new UnauthorizedException('Sesión cerrada');
     }
 
     return user;

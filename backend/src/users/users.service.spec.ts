@@ -1,10 +1,50 @@
 import type { Mock } from 'vitest';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { User } from '../entities';
+import { DataSource } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import {
+  Booking,
+  BookingStatus,
+  Conversation,
+  Message,
+  Notification,
+  Payment,
+  RestablecimientoContrasena,
+  Review,
+  Service,
+  User,
+  UserRole,
+} from '../entities';
 import { UsersService } from './users.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
+import { PaymentsService } from '../payments/payments.service';
+
+/** La transacción de la eliminación, y las consultas de la exportación. */
+const gestor = {
+  query: vi.fn(async () => []),
+  delete: vi.fn(async () => ({ affected: 1 })),
+  update: vi.fn(async () => ({ affected: 1 })),
+};
+const manager = {
+  count: vi.fn(async () => 0),
+  find: vi.fn(
+    async (_entidad: unknown, _opciones?: unknown) => [] as unknown[],
+  ),
+};
+const dataSource = {
+  manager,
+  transaction: vi.fn(async (ejecutar: (g: typeof gestor) => Promise<unknown>) =>
+    ejecutar(gestor),
+  ),
+};
+const pagos = { olvidarCliente: vi.fn(async () => undefined) };
 
 describe('UsersService', () => {
   let servicio: UsersService;
@@ -22,12 +62,17 @@ describe('UsersService', () => {
       find: vi.fn(async (_o?: unknown) => [] as User[]),
     };
     auditoria.anotar.mockClear();
+    vi.clearAllMocks();
+    manager.count.mockResolvedValue(0);
+    manager.find.mockResolvedValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: repo },
         { provide: AuditoriaService, useValue: auditoria },
+        { provide: DataSource, useValue: dataSource },
+        { provide: PaymentsService, useValue: pagos },
       ],
     }).compile();
 
@@ -50,6 +95,21 @@ describe('UsersService', () => {
         BadRequestException,
       );
       expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it('una cuenta que eliminó su titular no se reactiva', async () => {
+      // Sería una cáscara vacía, con una contraseña que no conoce nadie.
+      repo.findOne.mockResolvedValueOnce({
+        id: OTRO,
+        isActive: false,
+        eliminadaEn: new Date(),
+      } as User);
+
+      await expect(servicio.toggleActive(OTRO, ACTOR)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(repo.save).not.toHaveBeenCalled();
+      expect(auditoria.anotar).not.toHaveBeenCalled();
     });
 
     it('sigue avisando si la cuenta no existe', async () => {
@@ -187,6 +247,284 @@ describe('UsersService', () => {
       );
 
       expect(auditoria.anotar).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('eliminar la cuenta', () => {
+    const CLAVE = 'Clave12345!';
+    const cuenta = async (extra: Partial<User> = {}) =>
+      ({
+        id: YO,
+        password: await bcrypt.hash(CLAVE, 4),
+        role: UserRole.CLIENT,
+        esDemostracion: false,
+        soloLectura: false,
+        stripeCustomerId: 'cus_1',
+        eliminadaEn: null,
+        ...extra,
+      }) as unknown as User;
+
+    const rechazo = async (promesa: Promise<unknown>) =>
+      promesa.catch((e: unknown) => e) as Promise<{
+        getResponse: () => unknown;
+      }>;
+
+    it('borra sus datos personales y deja la fila, anonimizada', async () => {
+      // La necesitan las reservas, los pagos y las valoraciones de otros.
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      const [entidad, id, cambios] = gestor.update.mock.calls[0] as unknown as [
+        unknown,
+        string,
+        Record<string, unknown>,
+      ];
+      expect(entidad).toBe(User);
+      expect(id).toBe(YO);
+      expect(cambios).toMatchObject({
+        firstName: 'Cuenta',
+        lastName: 'eliminada',
+        email: `eliminada-${YO}@servilocal.invalid`,
+        phone: null,
+        bio: null,
+        avatarUrl: null,
+        address: null,
+        city: null,
+        postalCode: null,
+        location: null,
+        isActive: false,
+        stripeCustomerId: null,
+        eliminadaEn: expect.any(Date),
+        sesionesDesde: expect.any(Date),
+      });
+      // Y su contraseña deja de valer.
+      expect(await bcrypt.compare(CLAVE, cambios.password as string)).toBe(
+        false,
+      );
+    });
+
+    it('retira sus servicios con historial y borra los que no lo tienen', async () => {
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      const sentencias = gestor.query.mock.calls.map((c) =>
+        String((c as unknown[])[0]),
+      );
+      expect(sentencias.some((s) => s.includes('UPDATE "services"'))).toBe(
+        true,
+      );
+      expect(sentencias.some((s) => s.includes('DELETE FROM "services"'))).toBe(
+        true,
+      );
+      for (const llamada of gestor.query.mock.calls) {
+        expect((llamada as unknown[])[1]).toEqual([YO]);
+      }
+    });
+
+    it('borra sus avisos y sus enlaces de recuperación', async () => {
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      expect(gestor.delete).toHaveBeenCalledWith(Notification, { userId: YO });
+      expect(gestor.delete).toHaveBeenCalledWith(RestablecimientoContrasena, {
+        userId: YO,
+      });
+    });
+
+    it('y la tarjeta que guardó en Stripe', async () => {
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      expect(pagos.olvidarCliente).toHaveBeenCalledWith('cus_1');
+    });
+
+    it('sin ficha en Stripe, no hay nada que borrar allí', async () => {
+      repo.findOne.mockResolvedValueOnce(
+        await cuenta({ stripeCustomerId: null }),
+      );
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      expect(pagos.olvidarCliente).not.toHaveBeenCalled();
+    });
+
+    it('con reservas abiertas, como cliente o como profesional, no se deja', async () => {
+      // Primero se cancelan o se completan: es lo que lleva el dinero
+      // adonde tiene que ir.
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+      manager.count.mockResolvedValueOnce(2);
+
+      const error = await rechazo(servicio.eliminarCuenta(YO, CLAVE));
+
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse()).toMatchObject({
+        codigo: 'cuenta-con-reservas-abiertas',
+      });
+      const [entidad, { where }] = manager.count.mock.calls[0] as unknown as [
+        unknown,
+        { where: Array<Record<string, unknown>> },
+      ];
+      expect(entidad).toBe(Booking);
+      expect(where).toEqual([
+        {
+          clientId: YO,
+          status: expect.objectContaining({
+            value: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+          }),
+        },
+        {
+          providerId: YO,
+          status: expect.objectContaining({
+            value: [BookingStatus.PENDING, BookingStatus.CONFIRMED],
+          }),
+        },
+      ]);
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+    });
+
+    it('sin la contraseña correcta, 400 con su código y nada cambia', async () => {
+      // Una sesión abierta en un ordenador ajeno no basta.
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      const error = await rechazo(servicio.eliminarCuenta(YO, 'NoEsEsta1!'));
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      expect(error.getResponse()).toMatchObject({
+        codigo: 'contrasena-incorrecta',
+      });
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+    });
+
+    it('una cuenta de demostración no se elimina: la comparten todos', async () => {
+      repo.findOne.mockResolvedValueOnce(
+        await cuenta({ esDemostracion: true }),
+      );
+
+      const error = await rechazo(servicio.eliminarCuenta(YO, CLAVE));
+
+      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(error.getResponse()).toMatchObject({
+        codigo: 'cuenta-de-demostracion',
+      });
+    });
+
+    it('ni una de administración: la plataforma se quedaría sin nadie', async () => {
+      repo.findOne.mockResolvedValueOnce(
+        await cuenta({ role: UserRole.ADMIN }),
+      );
+
+      await expect(servicio.eliminarCuenta(YO, CLAVE)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('una ya eliminada no existe', async () => {
+      repo.findOne.mockResolvedValueOnce(
+        await cuenta({ eliminadaEn: new Date() }),
+      );
+
+      await expect(servicio.eliminarCuenta(YO, CLAVE)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('descargar los datos', () => {
+    const CONVERSACION = {
+      id: 'c1',
+      participantOneId: YO,
+      participantTwoId: OTRO,
+      participantTwo: {
+        firstName: 'Luis',
+        lastName: 'Gómez',
+        email: 'luis@correo.test',
+      },
+    };
+
+    beforeEach(() => {
+      repo.findOne.mockResolvedValue({
+        id: YO,
+        email: 'ana@ejemplo.org',
+        firstName: 'Ana',
+        lastName: 'Ruiz',
+        role: UserRole.CLIENT,
+        stripeCustomerId: 'cus_1',
+      } as unknown as User);
+      manager.find.mockImplementation(async (entidad: unknown) => {
+        if (entidad === Conversation) return [CONVERSACION];
+        if (entidad === Message)
+          return [
+            { conversationId: 'c1', senderId: YO, content: 'Hola' },
+            { conversationId: 'c1', senderId: OTRO, content: 'Buenas' },
+          ];
+        if (entidad === Booking)
+          return [
+            {
+              id: 'b1',
+              status: BookingStatus.COMPLETED,
+              service: { title: 'Fontanería' },
+              provider: {
+                firstName: 'Luis',
+                lastName: 'Gómez',
+                email: 'luis@correo.test',
+                phone: '600000000',
+              },
+            },
+          ];
+        if (entidad === Payment) return [{ id: 'p1', amount: 45 }];
+        if (
+          entidad === Review ||
+          entidad === Service ||
+          entidad === Notification
+        )
+          return [];
+        return [];
+      });
+    });
+
+    it('reúne lo suyo: cuenta, reservas, pagos y conversaciones', async () => {
+      const datos = (await servicio.exportarDatos(YO)) as Record<
+        string,
+        Record<string, unknown>
+      >;
+
+      expect(datos.cuenta.email).toBe('ana@ejemplo.org');
+      expect(
+        (datos.reservas.comoCliente as Array<{ servicio: string }>)[0].servicio,
+      ).toBe('Fontanería');
+      expect(datos.pagos).toEqual([expect.objectContaining({ importe: 45 })]);
+      expect(datos.conversaciones).toEqual([
+        {
+          conQuien: 'Luis',
+          mensajes: [
+            expect.objectContaining({ deQuien: 'yo', texto: 'Hola' }),
+            expect.objectContaining({
+              deQuien: 'la otra parte',
+              texto: 'Buenas',
+            }),
+          ],
+        },
+      ]);
+    });
+
+    it('de la otra parte, solo el nombre de pila: sus datos son suyos', async () => {
+      const texto = JSON.stringify(await servicio.exportarDatos(YO));
+
+      expect(texto).toContain('Luis');
+      expect(texto).not.toContain('Gómez');
+      expect(texto).not.toContain('luis@correo.test');
+      expect(texto).not.toContain('600000000');
+    });
+
+    it('ni la ficha de Stripe ni nada de la contraseña', async () => {
+      const texto = JSON.stringify(await servicio.exportarDatos(YO));
+
+      expect(texto).not.toContain('cus_1');
+      expect(texto).not.toMatch(/password|contrasena/i);
     });
   });
 });

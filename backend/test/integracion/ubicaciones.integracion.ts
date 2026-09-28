@@ -25,7 +25,12 @@ describe('Ubicaciones en PostGIS', () => {
       fuente.getRepository(Booking),
     );
     // El perfil no anota nada en el historial: basta con un hueco.
-    usuarios = new UsersService(fuente.getRepository(User), {} as never);
+    usuarios = new UsersService(
+      fuente.getRepository(User),
+      {} as never,
+      fuente,
+      {} as never,
+    );
   });
 
   afterAll(async () => {

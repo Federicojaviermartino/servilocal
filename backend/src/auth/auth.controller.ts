@@ -27,26 +27,14 @@ import {
   AuthResponseDto,
   SessionResponseDto,
   SocketTicketDto,
+  CambiarContrasenaDto,
+  RecuperarContrasenaDto,
+  RestablecerContrasenaDto,
 } from './dto/auth.dto';
 import { abrirSesion, cerrarSesion, tokenDeCookie } from './sesion';
 import { SesionesService } from './sesiones.service';
 import type { PeticionAutenticada } from './peticion-autenticada';
-
-/**
- * Registro e inicio de sesión aceptan cinco intentos por minuto y por IP.
- * Sin este límite, probar contraseñas contra una cuenta conocida no tiene
- * ningún coste para el atacante.
- *
- * Se puede elevar con THROTTLE_AUTH_LIMIT para entornos de prueba, donde una
- * batería de tests inicia sesión muchas veces seguidas desde la misma IP.
- * En producción debe quedarse en el valor por defecto.
- */
-const LIMITE_AUTENTICACION = {
-  default: {
-    limit: Number(process.env.THROTTLE_AUTH_LIMIT) || 5,
-    ttl: 60000,
-  },
-};
+import { LIMITE_AUTENTICACION } from '../common/limites';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -142,6 +130,66 @@ export class AuthController {
       ExtractJwt.fromAuthHeaderAsBearerToken()(peticion),
     ]);
     for (const token of tokens) await this.sesiones.revocar(token);
+  }
+
+  /**
+   * Con el límite de los accesos: sin él, la contraseña actual se podría
+   * probar sin coste desde una sesión abierta en un ordenador ajeno.
+   */
+  @Throttle(LIMITE_AUTENTICACION)
+  @Post('cambiar-contrasena')
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Cambiar la contraseña',
+    description:
+      'Pide la actual y cierra las demás sesiones de la cuenta. Esta sigue ' +
+      'abierta, con una cookie nueva.',
+  })
+  @ApiResponse({ status: 200, description: 'Contraseña cambiada' })
+  @ApiResponse({ status: 400, description: 'La contraseña actual no es esa' })
+  @ApiResponse({ status: 403, description: 'Cuenta de demostración' })
+  async cambiarContrasena(
+    @Request() req: PeticionAutenticada,
+    @Body() dto: CambiarContrasenaDto,
+    @Res({ passthrough: true }) respuesta: Response,
+  ): Promise<SessionResponseDto> {
+    const sesion = await this.authService.cambiarContrasena(
+      req.user.id,
+      dto.actual,
+      dto.nueva,
+    );
+    abrirSesion(respuesta, sesion);
+    return { user: sesion.user };
+  }
+
+  @Throttle(LIMITE_AUTENTICACION)
+  @Post('recuperar')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({
+    summary: 'Pedir un enlace para elegir contraseña nueva',
+    description:
+      'Responde lo mismo exista o no la cuenta. Sin envío de correo ' +
+      'configurado, 503.',
+  })
+  @ApiResponse({ status: 202, description: 'Si la cuenta existe, se envía' })
+  @ApiResponse({ status: 503, description: 'Correo no configurado' })
+  async recuperar(@Body() dto: RecuperarContrasenaDto): Promise<void> {
+    await this.authService.solicitarRecuperacion(dto.email, dto.idioma);
+  }
+
+  @Throttle(LIMITE_AUTENTICACION)
+  @Post('restablecer')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Elegir contraseña nueva con el enlace del correo',
+    description: 'Cierra todas las sesiones de la cuenta.',
+  })
+  @ApiResponse({ status: 204, description: 'Contraseña cambiada' })
+  @ApiResponse({ status: 400, description: 'Enlace no válido o caducado' })
+  async restablecer(@Body() dto: RestablecerContrasenaDto): Promise<void> {
+    await this.authService.restablecer(dto.token, dto.nueva);
   }
 
   /**

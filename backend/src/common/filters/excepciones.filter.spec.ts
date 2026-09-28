@@ -99,6 +99,7 @@ describe('FiltroDeExcepciones', () => {
     ['23505', HttpStatus.CONFLICT, 'un duplicado'],
     ['23503', HttpStatus.CONFLICT, 'una clave ajena rota'],
     ['23514', HttpStatus.BAD_REQUEST, 'una restricción incumplida'],
+    ['22001', HttpStatus.BAD_REQUEST, 'un texto más largo que su columna'],
   ])(
     'un error %s de la base es culpa de la petición: %i, no 500 (%s)',
     (code, esperado) => {

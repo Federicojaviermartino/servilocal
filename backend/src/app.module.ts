@@ -20,6 +20,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { MessagesModule } from './messages/messages.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AuditoriaModule } from './auditoria/auditoria.module';
+import { CorreoModule } from './correo/correo.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { IaModule } from './ia/ia.module';
@@ -61,6 +62,7 @@ import configIa from './ia/ia.config';
     MessagesModule,
     NotificationsModule,
     AuditoriaModule,
+    CorreoModule,
     HealthModule,
     AdminModule,
     IaModule,

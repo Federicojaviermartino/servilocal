@@ -1,4 +1,20 @@
 /**
+ * Registro, acceso y lo que pide la contraseña: cinco intentos por minuto
+ * y visitante. Sin este límite, probar contraseñas contra una cuenta
+ * conocida no tiene ningún coste para el atacante.
+ *
+ * Se puede elevar con THROTTLE_AUTH_LIMIT para entornos de prueba, donde una
+ * batería de tests inicia sesión muchas veces seguidas desde la misma IP.
+ * En producción debe quedarse en el valor por defecto.
+ */
+export const LIMITE_AUTENTICACION = {
+  default: {
+    limit: Number(process.env.THROTTLE_AUTH_LIMIT) || 5,
+    ttl: 60000,
+  },
+};
+
+/**
  * Los límites de las rutas que crean algo en nombre de alguien.
  *
  * El general, 120 por minuto y visitante, deja crear una reserva cada medio

@@ -156,6 +156,14 @@ function LoginPageContent() {
                   {errors.password.message}
                 </p>
               )}
+              <p className="mt-2 text-end text-sm">
+                <Link
+                  href="/auth/recuperar"
+                  className="text-acento hover:underline"
+                >
+                  {t('olvidaste')}
+                </Link>
+              </p>
             </div>
 
             <button

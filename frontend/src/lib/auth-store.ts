@@ -27,6 +27,7 @@ interface AuthState {
     email: string;
     password: string;
     role: string;
+    aceptaTerminos: boolean;
   }) => Promise<void>;
   logout: () => Promise<void>;
   loadFromStorage: () => void;

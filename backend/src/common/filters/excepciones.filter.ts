@@ -59,6 +59,12 @@ const ERRORES_DE_LA_PETICION: Record<
   // Dos reservas confirmadas del mismo profesional que se pisan. El
   // servicio de reservas lo traduce con su código; esto es la red por si
   // llega por otro camino.
+  // Un valor más largo que su columna. La validación debería pararlo antes;
+  // esto es la red para lo que se le escape.
+  '22001': {
+    codigo: HttpStatus.BAD_REQUEST,
+    mensaje: 'Algún dato es más largo de lo que se admite.',
+  },
   '23P01': {
     codigo: HttpStatus.CONFLICT,
     mensaje: 'La operación choca con otra reserva confirmada.',

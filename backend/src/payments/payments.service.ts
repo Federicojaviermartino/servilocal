@@ -849,6 +849,23 @@ export class PaymentsService {
   }
 
   /**
+   * Borra en Stripe la ficha de cliente de quien elimina su cuenta, y con
+   * ella la tarjeta que guardó para renovar las retenciones. Si Stripe no
+   * contesta, la cuenta se elimina igual: se anota para borrarla a mano.
+   */
+  async olvidarCliente(clienteStripe: string): Promise<void> {
+    try {
+      await this.stripe.customers.del(clienteStripe);
+    } catch (error) {
+      this.logger.warn(
+        `No se pudo borrar en Stripe la ficha de cliente ${clienteStripe}: ${
+          error instanceof Error ? error.message : 'causa desconocida'
+        }. Hay que borrarla a mano.`,
+      );
+    }
+  }
+
+  /**
    * Revisa las retenciones de las reservas que siguen abiertas.
    *
    * Stripe suelta una autorización sin cobrar a los siete días, y una

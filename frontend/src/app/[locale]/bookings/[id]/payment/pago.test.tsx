@@ -70,6 +70,9 @@ describe('Página de pago', () => {
 
     expect(screen.getByText(es.pago.retencionTitulo)).toBeVisible();
     expect(screen.getByText(es.pago.retencionCancelar)).toBeVisible();
+    // La tarjeta queda guardada en Stripe para renovar la retención, y la
+    // pantalla no lo decía.
+    expect(screen.getByText(es.pago.tarjetaGuardada)).toBeVisible();
     expect(formulario).toHaveBeenCalledWith(
       expect.objectContaining({ estadoReserva: BookingStatus.PENDING }),
     );
@@ -87,6 +90,8 @@ describe('Página de pago', () => {
     ).toBeVisible();
     expect(screen.queryByText(es.pago.retencionTitulo)).toBeNull();
     expect(screen.queryByText(es.pago.retencionCancelar)).toBeNull();
+    // Un cobro en el acto no guarda la tarjeta.
+    expect(screen.queryByText(es.pago.tarjetaGuardada)).toBeNull();
     expect(formulario).toHaveBeenCalledWith(
       expect.objectContaining({ estadoReserva: BookingStatus.COMPLETED }),
     );

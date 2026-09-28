@@ -30,8 +30,21 @@ const datos = [
   {
     categoria: 'Datos de pago',
     detalle:
-      'Identificadores de la operación. Los datos de la tarjeta los trata Stripe, nunca ServiLocal.',
-    finalidad: 'Procesar el cobro de la reserva.',
+      'Identificadores de la operación. Los datos de la tarjeta los trata Stripe, nunca ServiLocal: Stripe guarda tu tarjeta en una ficha de cliente para poder renovar la retención cuando la reserva es para dentro de más de una semana.',
+    finalidad:
+      'Procesar el cobro de la reserva y mantener la retención hasta que el trabajo se completa.',
+  },
+  {
+    categoria: 'Constancia de aceptación',
+    detalle:
+      'La fecha en que aceptaste los términos y esta política al registrarte, y la versión que aceptaste.',
+    finalidad: 'Poder acreditar que diste tu conformidad, y a qué texto.',
+  },
+  {
+    categoria: 'Recuperación de la contraseña',
+    detalle:
+      'Tu correo, cuando pides un enlace para elegir contraseña nueva. Del enlace guardamos solo una huella, y caduca en una hora.',
+    finalidad: 'Enviarte ese enlace.',
   },
   {
     categoria: 'Consultas al asistente',
@@ -49,11 +62,10 @@ const datos = [
 ];
 
 const derechos = [
-  'Acceder a los datos que tratamos sobre ti.',
-  'Rectificar los que sean inexactos.',
-  'Solicitar su supresión cuando ya no sean necesarios.',
+  'Acceder a los datos que tratamos sobre ti, y llevártelos en un formato legible: desde tu perfil puedes descargarlos todos en un fichero.',
+  'Rectificar los que sean inexactos, también desde tu perfil.',
+  'Suprimirlos: desde tu perfil puedes eliminar tu cuenta.',
   'Limitar u oponerte a determinados tratamientos.',
-  'Solicitar la portabilidad de tus datos en un formato legible.',
   'Presentar una reclamación ante la Agencia Española de Protección de Datos.',
 ];
 
@@ -71,7 +83,7 @@ export default function PrivacyPage() {
         Política de privacidad
       </h1>
       <p className="mt-2 text-sm text-tenue">
-        Última actualización: septiembre de 2026
+        Última actualización: 26 de septiembre de 2026
       </p>
       {idiomaActual !== 'es' && (
         <p
@@ -148,10 +160,12 @@ export default function PrivacyPage() {
         <p className="mt-3 text-secundario">
           Con la otra parte de una reserva, en la medida necesaria para
           prestarla, y con estos proveedores, que tratan los datos por cuenta
-          nuestra y solo para lo que se indica: Stripe para los pagos, Anthropic
-          para interpretar las consultas del asistente de búsqueda, y Sentry
-          para el registro de errores. No vendemos datos personales ni los
-          cedemos con fines publicitarios.
+          nuestra y solo para lo que se indica: Render, que aloja la aplicación
+          en Fráncfort (Alemania); Neon, que aloja la base de datos; Stripe para
+          los pagos; Brevo para enviar los correos de recuperación de la
+          contraseña; Anthropic para interpretar las consultas del asistente de
+          búsqueda, y Sentry para el registro de errores. No vendemos datos
+          personales ni los cedemos con fines publicitarios.
         </p>
         <p className="mt-3 text-secundario">
           Al asistente de búsqueda solo viaja el texto que escribes, junto con
@@ -168,9 +182,10 @@ export default function PrivacyPage() {
         </h2>
         <p className="mt-3 text-secundario">
           Anthropic y Sentry pueden tratar datos fuera del Espacio Económico
-          Europeo. Esas transferencias se amparan en las cláusulas contractuales
+          Europeo, y Neon también, según la región en que se aloje la base de
+          datos. Esas transferencias se amparan en las cláusulas contractuales
           tipo aprobadas por la Comisión Europea. Puedes evitar por completo la
-          primera sin perder el servicio: el buscador con filtros no usa el
+          de Anthropic sin perder el servicio: el buscador con filtros no usa el
           asistente.
         </p>
       </section>
@@ -180,9 +195,12 @@ export default function PrivacyPage() {
           Cuánto tiempo los conservamos
         </h2>
         <p className="mt-3 text-secundario">
-          Mientras tu cuenta esté activa y, después, durante los plazos de
-          prescripción legal aplicables a las obligaciones contables y de
-          consumo. Transcurridos esos plazos, los suprimimos o anonimizamos.
+          Mientras tu cuenta esté activa. Si la eliminas, borramos tus datos
+          personales y la tarjeta que Stripe tenga guardada. Tus reservas, pagos
+          y valoraciones se conservan sin tu nombre, porque forman parte del
+          historial de otras personas y los pagos deben conservarse durante los
+          plazos que fija la normativa fiscal y de consumo; tus mensajes siguen
+          en las conversaciones de la otra parte, también sin tu nombre.
         </p>
       </section>
 
@@ -191,10 +209,14 @@ export default function PrivacyPage() {
           Almacenamiento en tu navegador
         </h2>
         <p className="mt-3 text-secundario">
-          Para mantener tu sesión iniciada guardamos un token de acceso en el
-          almacenamiento local de tu navegador. No utilizamos cookies
-          publicitarias ni de seguimiento de terceros. Al cerrar sesión, ese
-          token se elimina.
+          Tu sesión va en una cookie propia que solo lee el servidor: el código
+          de la página no puede acceder a ella, y se borra al cerrar sesión.
+          Otra cookie recuerda el idioma que elegiste. En el almacenamiento
+          local del navegador guardamos tu preferencia de tema y tu nombre y tu
+          papel en la plataforma, para mostrarlos, pero no el acceso a tu
+          cuenta. Todo ello es necesario para el funcionamiento que pides; no
+          utilizamos cookies publicitarias ni de seguimiento, y por eso no te
+          pedimos consentimiento para ninguna.
         </p>
       </section>
 
@@ -205,6 +227,10 @@ export default function PrivacyPage() {
             <li key={derecho}>{derecho}</li>
           ))}
         </ul>
+        <p className="mt-3 text-secundario">
+          Para lo que no puedas hacer desde tu perfil, escríbenos a través del
+          repositorio público del proyecto.
+        </p>
       </section>
 
       <p className="mt-10 text-sm text-secundario">

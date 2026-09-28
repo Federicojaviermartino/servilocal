@@ -7,11 +7,15 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { SesionesService } from './sesiones.service';
-import { SesionRevocada, User } from '../entities';
+import { RestablecimientoContrasena, SesionRevocada, User } from '../entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, SesionRevocada]),
+    TypeOrmModule.forFeature([
+      User,
+      SesionRevocada,
+      RestablecimientoContrasena,
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

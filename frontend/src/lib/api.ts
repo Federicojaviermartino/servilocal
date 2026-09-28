@@ -69,7 +69,15 @@ export const authApi = {
     email: string;
     password: string;
     role: string;
+    aceptaTerminos: boolean;
   }) => api.post('/auth/register', data),
+  // Cierra las demás sesiones; esta sigue, con una cookie nueva.
+  cambiarContrasena: (actual: string, nueva: string) =>
+    api.post('/auth/cambiar-contrasena', { actual, nueva }),
+  recuperar: (email: string, idioma: string) =>
+    api.post('/auth/recuperar', { email, idioma }),
+  restablecer: (token: string, nueva: string) =>
+    api.post('/auth/restablecer', { token, nueva }),
   login: (data: { email: string; password: string }) =>
     api.post('/auth/login', data),
   // Con el plazo largo: si la API está dormida, la cookie tiene que borrarse
@@ -82,7 +90,14 @@ export const authApi = {
 
 export const usersApi = {
   getAll: () => api.get('/users'),
+  // El propio perfil. /users/:id es solo de administración: el perfil lo
+  // pedía por ahí, y a clientes y profesionales no les cargaba.
+  getMe: () => api.get('/users/me'),
   getById: (id: string) => api.get(`/users/${id}`),
+  exportarDatos: () =>
+    api.get<Blob>('/users/me/datos', { responseType: 'blob' }),
+  eliminarCuenta: (contrasena: string) =>
+    api.post('/users/me/eliminar', { contrasena }),
   updateProfile: (data: Record<string, unknown>) =>
     api.put('/users/profile', data),
   toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`),
