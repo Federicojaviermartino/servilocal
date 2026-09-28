@@ -146,7 +146,7 @@ endpoint now returns them already aggregated.
 
 ## Data model
 
-Twelve entities, all UUID-keyed, all managed through TypeORM migrations.
+Thirteen entities, all UUID-keyed, all managed through TypeORM migrations.
 
 ```
 User ──< Service >── Category ──┐
@@ -163,6 +163,7 @@ User ──< Service >── Category ──┐
 
 UsoIa                                (UNIQUE on fecha + funcionalidad)
 SesionRevocada                       (keyed by the token's jti; see decision 9)
+RestablecimientoContrasena >── User  (password-recovery links, stored as a hash)
 ```
 
 Constraints worth naming:
@@ -197,6 +198,11 @@ Constraints worth naming:
   the deploy. A later migration adds it wherever it is still missing, once those
   bookings have been resolved: that is how production got it, after three demo bookings
   created by an automated test had blocked it.
+- **Deleting an account anonymises it.** The row stays, because bookings, payments and
+  reviews of other people point to it, but names, email, phone, address and location are
+  erased, the password is replaced by one nobody knows, and the card saved at Stripe is
+  deleted there. The person's services with bookings are withdrawn and emptied, the rest
+  are deleted, and notifications and recovery links go with the account.
 - **History does not cascade.** Bookings, payments and reviews restrict the deletion of
   the users, services and bookings they point to. A service with bookings is withdrawn
   (`withdrawnAt`) instead of deleted, and one with open bookings cannot be removed until
@@ -287,6 +293,7 @@ optional takes anything else down.**
 | Redis / Valkey | Throttler counters survive deploys, sockets span instances, category reads are cached | Throttler counts in memory, sockets stay on one instance, reads go to the database |
 | Sentry | Errors and sampled traces reported, with the session cookie, bearer tokens and the proxy secret stripped from both, and no request bodies, cookies, local variables or assistant conversations collected at all | Reporting off, a log line says so |
 | Anthropic key | Assistant active under a hard monthly ceiling checked *before* each call | A null provider fails immediately with a typed cause and the caller takes its deterministic path |
+| Brevo key | Password-recovery emails, in the language the page was in | Outside production the email is written to the log, so the flow can be tried locally; in production the API answers 503 and the page says recovery is unavailable |
 
 Redis connections are split by purpose: queries fail fast (`enableOfflineQueue: false`),
 subscriptions queue — the socket adapter issues `psubscribe` before the connection is up,

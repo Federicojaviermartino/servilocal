@@ -58,6 +58,15 @@ dependencies of either the API or the front end.
   would have expired anyway. Only that session is closed — the demo accounts
   are shared by many visitors at once, and one of them signing out must not
   sign out the rest.
+- Changing or recovering the password invalidates every session issued before
+  it, so one opened with a stolen password is closed too. Recovery links last
+  an hour, work once, are stored only as a SHA-256 hash, and an account
+  receives at most three an hour; the response is the same whether the
+  account exists or not, so it cannot be used to find out who is registered.
+- People can download all their data and delete their account from the
+  profile. Deletion anonymises the account and erases the card saved at
+  Stripe; bookings, payments and reviews stay without the name, because other
+  people's history depends on them.
 - The WebSocket connects straight to the API and authenticates with a
   one-minute ticket signed for a different audience; the API refuses it as a
   session, and the socket refuses a session token.

@@ -10,6 +10,50 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.4.0] — 2026-09-26
+
+### Added
+
+- The account can be managed from the profile: change the password, which asks for the
+  current one and closes every other session; download everything the platform keeps
+  about you as a JSON file; and delete the account.
+- Password recovery by email, sent through Brevo in the language the page was in. The
+  link lasts an hour, works once and is stored only as a hash, and an account receives
+  at most three an hour. Without a Brevo key the API says recovery is unavailable
+  instead of pretending to send.
+- Registration asks people to confirm they are of legal age and accept the terms and the
+  privacy policy, and records when they did and which version they accepted.
+- The payment page says the card is saved at Stripe to renew the hold, and that it is
+  erased with the account.
+
+### Changed
+
+- Deleting an account anonymises it. Personal data and the card saved at Stripe are
+  erased; bookings, payments, reviews and messages stay, without the name, because they
+  are part of other people's history and payments must be kept for tax purposes. It is
+  refused with open bookings, for demo accounts and for administrators.
+- Email addresses are stored and matched in lower case: an account registered as
+  "Ana@…" could not sign in as "ana@…".
+- The privacy policy and the terms describe what the application actually does: the
+  session cookie, the saved card, holding and capturing the payment, completing without
+  charge, the hosting providers, and the rights that can now be exercised from the
+  profile.
+
+### Fixed
+
+- The profile page did not load for clients or providers. It asked for an
+  administration-only route and got a 403, so nobody but an administrator could edit
+  their own profile.
+- A phone number, postal code or address longer than its column reached the database
+  and came back as a 500; it is now refused with a 400.
+
+### Security
+
+- Changing or recovering the password invalidates every session issued before it,
+  including one opened with a stolen password.
+- Passwords longer than 72 characters are refused: bcrypt ignores whatever comes after,
+  so only the beginning had to be guessed.
+
 ## [2.3.1] — 2026-09-26
 
 ### Fixed
