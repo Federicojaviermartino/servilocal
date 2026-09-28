@@ -110,12 +110,12 @@ later is blocked without anyone having to remember it.
 - Accent- and case-insensitive search that also matches trade names, so "fontaneria" finds *Fontanería*
 - Service detail with verified reviews, price range and provider profile
 - Light and dark themes: follows the system preference, and remembers an explicit choice
-- Available in 10 languages, picked from the browser and switchable at any time, right-to-left layout included
+- Available in 10 languages, picked from the browser and switchable at any time, right-to-left layout included; amounts are written as each language writes them
 
 **Clients**
 - Booking form with validation, dates handled in ISO UTC to avoid timezone drift; past dates, dates more than a year ahead and slots the provider has already committed are refused
 - Payment through Stripe Payment Element using **manual capture**: funds are held, not taken, until the job is done, and the hold is renewed before Stripe drops it
-- Bookings filtered by status, with cancellation where allowed
+- Bookings filtered by status, with cancellation where allowed; cancelling asks first and can carry a reason for the other party
 - Reviews — only after a completed booking, so ratings reflect real work
 - Direct messaging with providers
 
@@ -127,6 +127,7 @@ later is blocked without anyone having to remember it.
 **Everyone with an account**
 - Change the password from the profile, which closes every other session, or recover it by email with a one-hour link
 - Download everything the platform keeps about you as a file, and delete the account: personal data and the saved card are erased, and what other people's history needs stays without your name
+- If the session expires while you are writing, sending says so, takes you to sign in and back, and keeps what you wrote
 
 **Administrators**
 - Protected by JWT guards plus a role guard
@@ -156,7 +157,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 772 unit tests on the API with doubles, plus 68 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 433 in the browser. Playwright for 94 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 782 unit tests on the API with doubles, plus 68 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 513 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -469,14 +470,14 @@ Controls implemented in the API and the front end:
 
 | Area | Control |
 |------|---------|
-| Authentication | JWT with Passport in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie that page scripts cannot read, kept first-party by relaying API calls through the front end. `bcrypt` password hashing, password column excluded from queries with `select: false`. Tokens carry an audience, so the socket's one-minute ticket is not a session and a session is not a ticket. Signing out revokes that session server-side, so a copied token stops working too, while other sessions of the same account stay open. Changing or recovering the password invalidates every earlier session; recovery links last an hour, work once and are stored only as a hash |
+| Authentication | JWT with Passport in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie that page scripts cannot read, kept first-party by relaying API calls through the front end. `bcrypt` password hashing, password column excluded from queries with `select: false`. Tokens carry an audience, so the socket's one-minute ticket is not a session and a session is not a ticket. Signing out revokes that session server-side, so a copied token stops working too, while other sessions of the same account stay open. Changing or recovering the password invalidates every earlier session; recovery links last an hour, work once and are stored only as a hash. Signing in reveals neither in its answer nor in its timing whether an email is registered, and the redirect after it only accepts paths of the application |
 | Privacy | Data export and account deletion from the profile. Deletion anonymises the account and erases the card saved at Stripe, keeping bookings, payments and reviews without the name. Registration records when the terms were accepted and which version |
 | Cross-site requests | `SameSite=Lax`, plus an `Origin` check on every state-changing request, which also stops login CSRF |
 | Authorisation | Route guards by role; the role guard rejects a missing user instead of throwing a `500` |
 | Input validation | Global `ValidationPipe` with `whitelist` and `forbidNonWhitelisted`; `ParseUUIDPipe` on every id parameter, so a malformed id returns `400` and never reaches the database |
 | Rate limiting | `@nestjs/throttler` globally, a tighter limit on the login route, counters in Redis so a deploy does not reset them, and a tracker keyed on `CF-Connecting-IP` so the bucket belongs to the visitor and not to whichever balancer served the request. For calls relayed by the front end, the visitor address it forwards counts instead, and only when it arrives with the shared secret |
 | Payments | Webhook signature verified against the raw request body; funds held with manual capture, never taken automatically |
-| Transport | Content Security Policy plus `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`; database connections validate the server certificate |
+| Transport | Content Security Policy and HSTS plus `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`; database connections validate the server certificate |
 | Error handling | Global exception filter. A 5xx logs method, path, status code and the user id when there is one, plus the stack trace — one formatted line, not JSON. Sentry capture strips the session cookie, bearer tokens and the proxy secret from errors and performance traces, and collects no request bodies, cookies, local variables or assistant conversations, checked by a test that runs a sign-in through the real SDK |
 
 Hardening still in progress is tracked in the [roadmap](#roadmap).
@@ -489,7 +490,7 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 772 unit tests across 46 suites, all with doubles (Vitest)
+npm run test          # 782 unit tests across 47 suites, all with doubles (Vitest)
 npm run test:cov      # fails below 90% statements / 80% branches
 npm run test:integracion   # 68 tests against a real database and stripe-mock
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
@@ -500,7 +501,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 433 unit tests (Vitest)
+npm run test          # 513 unit tests (Vitest)
 npm run test:cov      # fails below 78% statements / 78% branches
 npm run build
 
@@ -517,7 +518,7 @@ npm run storybook
 npm run lock
 ```
 
-94 end-to-end tests run on four projects — Chrome on desktop and on a 375 px phone, Firefox, and Safari's WebKit — for 376 executions per run. They cover search with accent-insensitive matching, publishing a service from the provider's dashboard, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so a copied cookie stops working, registering only after accepting the terms, changing the password, deleting the account, theme switching, language detection and switching, the admin panel including its charts, moderation queue and audit log, the booking state machine — a booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge —, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, and a full booking paid with a Stripe test card.
+98 end-to-end tests run on four projects — Chrome on desktop and on a 375 px phone, Firefox, and Safari's WebKit — for 392 executions per run. They cover search with accent-insensitive matching, publishing a service from the provider's dashboard, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so a copied cookie stops working, registering only after accepting the terms, changing the password, deleting the account, theme switching, language detection and switching, a service page that arrives rendered, a title and a canonical URL on every page, the admin panel including its charts, moderation queue and audit log, the booking state machine — a booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge —, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, landmarks included, and a full booking paid with a Stripe test card.
 
 The payment test skips itself, with an explicit reason, when Stripe keys are not configured — the booking is still created, but there is nothing to charge. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 
@@ -535,6 +536,7 @@ All of these run in CI on every push, to any branch. The end-to-end job spins up
 | Done | Money loop: the provider accepts or rejects, completing captures the hold, cancelling or rejecting releases it |
 | Done | Calendar: durations, no past dates, completion from the booking date, and no overlapping confirmed bookings, enforced by the database |
 | Done | Account self-service: password change and recovery by email, data export and deletion, and consent recorded at registration |
+| Done | Front end: API errors explained in each language from their code, drafts kept across an expired session, amounts formatted per language, a server-rendered service page, a title on every page and landmarks checked by axe |
 | Done | Payment holds renewed on the saved card before Stripe drops them; when the bank insists on the cardholder, both parties are told and the client authorises again |
 | Done | Browser session in an `HttpOnly` cookie, kept first-party by relaying API calls through the front end |
 | Done | Public search returns a provider projection, not the full row |

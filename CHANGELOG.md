@@ -10,6 +10,58 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.5.0] — 2026-09-28
+
+### Added
+
+- A form that fails because the session has expired says so, links to sign in again and
+  back to the same page, and keeps what was being written: a booking, the profile, a
+  service, a review or a message comes back after signing in.
+- Cancelling or rejecting a booking asks first and lets you write a reason, which the
+  other party sees in the booking. Cancelling used to happen on a single click.
+- The admin charts carry their data in a table for screen readers.
+
+### Changed
+
+- Amounts are written the way each language writes them: "45,50 €" in Spanish,
+  "€45.50" in English. They read "45.5 euros" in every language, and a service card said
+  "30 per hour" with no currency at all.
+- The service page arrives with its content in the HTML: the service and its reviews are
+  fetched on the server. It used to arrive as skeletons, so search engines and link
+  previews saw nothing, not even the title.
+- API errors are explained in the page's language from their code, never with the API's
+  own message: sign-in, registration and payment used to show it as it came, in Spanish
+  or in English. New codes for an email already in use, wrong credentials, a deactivated
+  account and the payment conflicts.
+- Every private page has its own translated title and asks not to be indexed. Terms,
+  privacy and about have their own canonical URL; they used to declare the home page's.
+- The payment summary says "Amount to hold" when the card is only held.
+- The privacy policy names Cloudflare and OpenStreetMap, which receive the visitor's IP
+  address.
+- The admin charts load on their own, so Recharts no longer weighs on the panel.
+
+### Fixed
+
+- Accessibility: registration errors are tied to their fields and a name that is too
+  long says why; closing the assistant gives focus back to its button; four pages had a
+  `<main>` inside the layout's, and the axe check now covers landmarks; map markers have
+  names; the list and map switch says which view is active; changing page moves focus to
+  the results and respects reduced motion; the review comment box had no name.
+- Arabic: the arrows of the pagination, the back link and the send button point the
+  right way, the admin tabs follow the reading direction with the arrow keys, and
+  notifications appear on the left.
+- The confirmation for deleting a category was written in Spanish in every language.
+
+### Security
+
+- After signing in, the page only goes on to paths of the application. A link carrying
+  `redirect=https://…` could send someone who had just signed in to a page asking for
+  the password again.
+- The front end sends HSTS, as the API already did.
+- Signing in checks the password before saying that an account is deactivated, and
+  compares against a dummy hash when the email does not exist, so neither the answer nor
+  the time it takes reveals which emails are registered.
+
 ## [2.4.0] — 2026-09-26
 
 ### Added

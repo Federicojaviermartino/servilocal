@@ -226,7 +226,17 @@ the language picker, the `hreflang` alternates and the RTL flag.
 
 **Rendering.** Every page is prerendered once per locale at build time rather than
 translated in the browser, so a crawler and a first-time visitor receive the same HTML.
-Interactive screens hydrate into client components from there.
+Interactive screens hydrate into client components from there. The public service page
+also fetches its data on the server: the service and its reviews come with the same
+`cache()`d request its metadata uses, so the HTML already carries the title, the price
+and the reviews. If the API does not answer, the page fetches them from the browser
+instead, and only a real 404 from the API turns into a 404 page.
+
+**Errors and expired sessions.** The API sends a stable code with every rejection the
+interface has to explain, and the page picks its own sentence in its language; the API's
+message, which is in Spanish, is never shown. A submission that fails because the session
+has expired says so, links to sign-in and back to the same page, and leaves what was being
+written in `sessionStorage`, where the form picks it up when it opens again.
 
 **Components** follow Atomic Design under `src/components`: `atoms` (Button, Input,
 Badge, Spinner…), `molecules` (SearchBar, Pagination, ServiceCard…), `organisms`

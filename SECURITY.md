@@ -67,11 +67,17 @@ dependencies of either the API or the front end.
   profile. Deletion anonymises the account and erases the card saved at
   Stripe; bookings, payments and reviews stay without the name, because other
   people's history depends on them.
+- Signing in answers the same way, and in the same time, whether the email
+  exists or not: without an account the password is still compared, against a
+  dummy hash of the same cost, and a deactivated account only says so once the
+  password has been checked. After signing in, the page only goes on to paths
+  of the application, so a crafted link cannot hand the visitor over to
+  another site.
 - The WebSocket connects straight to the API and authenticates with a
   one-minute ticket signed for a different audience; the API refuses it as a
   session, and the socket refuses a session token.
 - Rate limiting per visitor, `helmet` for response headers, and a Content
-  Security Policy on the front end. Creating bookings and sending messages
+  Security Policy and HSTS on the front end. Creating bookings and sending messages
   have their own, tighter limits, so nobody can flood an inbox with fake
   requests. Requests relayed by the front end carry
   the visitor's address, which the API only trusts alongside a secret shared

@@ -37,7 +37,9 @@ axe run would be the kind of statement this project tries not to make.
   keyboard, or to anyone who cannot tell those colours apart. It now carries a
   legend. Automated tooling did not catch it, and neither did we until someone
   looked at the screen.
-- Images carry alternative text; decorative icons are `aria-hidden`.
+- Images carry alternative text; decorative icons are `aria-hidden`. Map markers
+  are named after their service, and the admin charts carry their data in a table
+  for screen readers, next to the drawing.
 - Text reflows at 375 px without horizontal scrolling. Tables and charts, which
   cannot reflow, sit in their own focusable scroll containers.
 
@@ -46,26 +48,34 @@ axe run would be the kind of statement this project tries not to make.
 - The whole application works without a mouse. A skip link is the first tab stop
   on every page; the notification panel closes with `Escape` and returns focus to
   the bell; the admin tab list follows the ARIA pattern — one tab stop, arrows,
-  `Home` and `End` inside it.
+  `Home` and `End` inside it, with the arrows reversed in Arabic. Closing the search
+  assistant gives focus back to the button that opened it, and changing page in the
+  results moves focus to their heading.
 - Focus is always visible, including where the real control is visually hidden:
   the registration role cards draw a ring when the hidden radio inside them takes
   focus.
 - `prefers-reduced-motion` is honoured. Spinners, skeleton pulses and transitions
   collapse to a near-instant change for anyone who has asked their system for less
-  movement.
+  movement, and so does scrolling requested from a script.
 - No time limits, no content that flashes.
 
 **Understandable**
 
 - Ten languages, each prerendered, with `lang` and `dir` set on the document root.
-  Arabic renders right-to-left.
-- Form errors say what is wrong in words, next to the field, and are announced.
+  Arabic renders right-to-left, with spacing and corners set by logical properties
+  and directional icons mirrored.
+- Every page has its own title in its language, so the route announcer speaks when
+  moving between sections of the dashboard.
+- Form errors say what is wrong in words, next to the field, and are tied to it with
+  `aria-describedby`, so a screen reader says why a field is invalid.
 - Navigation is in the same place on every page, and the current section is marked
   with `aria-current`, not only with colour.
 
 **Robust**
 
-- Landmarks (`banner`, `main`, `contentinfo`, `navigation`) on every page.
+- Landmarks (`banner`, `main`, `contentinfo`, `navigation`) on every page, with a
+  single `main`. Toggle buttons such as the list and map switch expose their state
+  with `aria-pressed`, not only with colour.
 - Interactive elements use native semantics where possible. Where ARIA is used —
   the tab list, the notification panel — it follows the authoring practices,
   including focus management, which is the part most often skipped.
@@ -77,6 +87,7 @@ axe run would be the kind of statement this project tries not to make.
 | Check | Tool | Runs |
 |-------|------|------|
 | WCAG 2.1 A and AA rules on key pages | `@axe-core/playwright` | Every push |
+| Landmark rules: one `main`, at the top level | `@axe-core/playwright` | Every push |
 | The same rules in dark mode, on every page and the admin panel | `@axe-core/playwright` | Every push |
 | The admin panel, tab by tab | `@axe-core/playwright` | Every push |
 | Keyboard operation, focus return, ARIA tab pattern | Playwright | Every push |
