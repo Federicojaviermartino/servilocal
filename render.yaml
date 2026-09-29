@@ -18,8 +18,9 @@
 # flujo que mantiene despierta la demo, que durante una caída falla y
 # bloquearía el commit que la arregla. Lo que tiene que impedir que llegue a
 # main algo en rojo es la protección de la rama, exigiendo la integración
-# continua, y todavía no está activada: hasta entonces, a main solo se lleva
-# un commit que ya pasó en su rama.
+# continua, activada desde la 2.7.1: exige los siete trabajos, también a
+# quien administra el repositorio, y a main solo llega un commit que ya pasó
+# en su rama.
 #
 # Los secretos van con «sync: false»: Render los pide al crear el servicio y
 # nunca se escriben aquí.

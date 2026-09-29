@@ -10,6 +10,59 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.8.0] — 2026-09-29
+
+### Fixed
+
+- A card declined and then replaced with another in the same form left the money held
+  in Stripe and the payment marked failed for good: nobody could capture it, cancelling
+  did not release it, and Stripe dropped it after seven days. A declined card now only
+  records the reason, and the payment stays pending, as Stripe lets the client retry on
+  the same intent. Paying, confirming, completing, cancelling and the hourly review ask
+  Stripe for the intent's current state, so payments already stuck recover on their
+  own, and the review also reconciles pending and failed payments of the last eight
+  days, which covers webhooks that never arrived.
+- A request the provider left unanswered stayed pending forever, and its hold was
+  renewed on the client's card every four days. An hourly job now cancels it once its
+  date has passed, releases the hold and tells both parties.
+- The client could cancel a confirmed booking after its time, with the work possibly
+  done, releasing the hold. Now only the provider or the administration can, and the
+  booking page says so.
+- A deactivated provider's services could still be booked and paid from a direct link.
+- Changing a service's category answered with the new one and kept the old.
+- Deleting a category that still had services answered 500; it now answers 409 with its
+  code, and the database refuses it too.
+- A `null` in a required field of an edit — a service's title or city, a profile's
+  name, a category's name — reached the database and answered 500; it is now a 400.
+- `page=1e308` in the public search answered 500, and `page=1.5` was accepted.
+- Completing without charge sent the "completed without charge" notice even when the
+  client had paid in between and the hold was captured.
+- Two messages at once between the same people could open two conversations.
+- A longitude of 0 switched the distance filter off.
+- A second operation on a booking locked by a payment waited for the 30-second
+  statement timeout and answered 500; it now gives up after five seconds with a 409.
+- The seed, run from a machine outside UTC, stored every date shifted; the API and the
+  seed now run in UTC.
+
+### Changed
+
+- Status changes the administration makes on other people's bookings, and the services
+  it withdraws, are recorded in the audit log.
+- Billed revenue in the admin metrics counts captured payments, not the price of every
+  completed booking: with the demo data it showed 80,686 € billed and nothing captured.
+- Search honours the provider's coverage radius: a service only shows up within the
+  smaller of the two distances.
+- Lists return their most recent rows: 100 for the public ones, 200 for each person's,
+  500 accounts in the admin panel.
+- Branch protection on `main` requires the seven CI jobs, for administrators too.
+
+### Tests
+
+- Integration tests against PostgreSQL for what doubles cannot show: two conversations
+  racing on a warm connection pool, a category change actually saved, the database
+  refusing to delete a category with services, a pending request expiring, the coverage
+  radius and the revenue query joining payments.
+
 ## [2.7.1] — 2026-09-29
 
 ### Fixed
@@ -593,6 +646,7 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[2.8.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.7.1...v2.8.0
 [2.7.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.5.0...v2.6.0

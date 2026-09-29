@@ -378,7 +378,17 @@ never wait on each other crosswise. A hold that arrives after the booking closed
 resolved on arrival: released if it was cancelled or rejected, captured if it was
 completed. Captures and refunds carry idempotency keys, and Stripe calls time out after
 ten seconds with two retries, which bounds how long a row stays locked while Stripe
-answers.
+answers; whoever waits on that row gives up after five seconds with a 409
+(`lock_timeout`) instead of hanging for the thirty of the statement timeout.
+
+A declined card does not close a payment: Stripe leaves the intent waiting for another
+payment method, and the form lets the client retry on it. So `payment_failed` only
+records the reason and the payment stays pending; a payment is marked failed only when
+its intent is cancelled. Webhooks are applied with a table of allowed transitions,
+because they arrive late and out of order; the paths that ask Stripe for the intent's
+current state — confirming, opening the payment page, completing, cancelling and the
+hourly review — may also take a payment out of failed, since a cancelled intent never
+comes back. That is how payments stuck by the earlier behaviour recover on their own.
 
 A hold does not outlive seven days, and a booking can be weeks away, so holds are
 renewed. Paying saves the card to a Stripe customer (`setup_future_usage: off_session`),
@@ -390,7 +400,13 @@ finds no payment to mark failed. Each payment is reviewed in its own transaction
 instance nor a retry after a lost response can hold twice. When the bank wants the
 cardholder present, or the card no longer works, the hold is released, the payment is
 marked failed and both parties are notified; the client authorises again from the
-booking. The same review reconciles what a missed webhook left behind.
+booking. The same review reconciles what a missed webhook left behind: held payments,
+and every payment left pending or failed in the last eight days.
+
+A request the provider leaves unanswered until its date can no longer be accepted, so
+another hourly job cancels it, releases the hold and tells both parties. Once the time
+of a confirmed booking has passed, the client can no longer cancel it — the work may
+be done, and cancelling releases the money —; the provider or the administration can.
 
 **3 · The audit log is append-only and denormalised.**
 No route creates, edits or deletes an entry; the service exposes only `anotar` and
@@ -495,6 +511,15 @@ Stated here rather than discovered later.
   expiry would arrive through the webhook and be reported the same way.
 - **Cached reads expire by time, not by event**, except for the category tree, which is
   invalidated explicitly on write. Everything else can be at most one TTL stale.
+- **Lists return their most recent rows only:** 100 for the public ones, 200 for each
+  person's bookings, payments and messages, 500 accounts in the admin panel. Nothing is
+  paginated beyond that; what is left out is still in each person's data export.
+- **A confirmed booking nobody completes keeps its hold.** It is renewed every four days
+  until the provider completes or cancels it, or the administration does. Expiring it
+  automatically could release money for work already done.
+- **Dates are timestamps without a time zone**, read and written in the process's local
+  time, so the API and the seed pin themselves to UTC. A script that bypasses them and
+  runs outside UTC would still write shifted times.
 - **The free tier sleeps.** Cold starts are visible on the first request after an idle
   period; the scheduled workflow only covers working hours.
 

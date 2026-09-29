@@ -28,10 +28,10 @@ Deploys stay on every commit that reaches `main` (`autoDeployTrigger: commit`),
 not *After CI Checks Pass*. Render holds a deploy back if any check on the commit
 fails, and the head of `main` also carries the post-deploy smoke test, which waits
 for that very deploy, and the keep-awake ping, which fails during an outage and
-would hold back the commit that fixes it. What should keep a red commit out of
-`main` is branch protection requiring CI, which is not set up yet; until it is, the
-only guard is the procedure below: `main` only ever receives a commit that already
-passed on its branch.
+would hold back the commit that fixes it. What keeps a red commit out of `main` is
+branch protection: it requires the seven CI jobs, for administrators too, and forbids
+force-pushing and deleting the branch. A commit only reaches `main` after passing on its
+own branch, as in the procedure below.
 
 ## Deploying
 
@@ -135,7 +135,9 @@ download a workflow's artifacts.
 
 ## Seeding
 
-`npm run seed` deletes every row and inserts the demo data. It refuses any host
+`npm run seed` deletes every row and inserts the demo data. The demo ages: its pending
+requests are dated a week ahead, and once their date passes the hourly job expires them,
+so the provider inbox runs out of requests to accept until the next seed. It refuses any host
 that is not local unless `SEMILLA_CONFIRMAR` carries the name of the database
 being emptied, so a production URL left in `.env` cannot wipe production by
 accident.

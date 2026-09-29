@@ -3,7 +3,7 @@
 # ServiLocal
 
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
-![Version](https://img.shields.io/badge/VERSION-2.7.1-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/VERSION-2.8.0-2563eb?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-12-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
@@ -22,7 +22,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-1543%20unit%20%2B%2070%20integration%20%2B%2098%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-1609%20unit%20%2B%2076%20integration%20%2B%2098%20e2e-475569)
 
 </div>
 
@@ -133,7 +133,8 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 **Clients**
 - Booking form with validation, dates handled in ISO UTC to avoid timezone drift; past dates, dates more than a year ahead and slots the provider has already committed are refused
 - Payment through Stripe Payment Element using **manual capture**: funds are held, not taken, until the job is done, and the hold is renewed before Stripe drops it
-- Bookings filtered by status, with cancellation where allowed; cancelling asks first and can carry a reason for the other party
+- Bookings filtered by status, with cancellation where allowed; cancelling asks first and can carry a reason for the other party. Once the time of a confirmed booking has passed, only the provider can cancel it
+- A request the provider leaves unanswered until its date expires on its own, and the hold is released
 - Reviews — only after a completed booking, so ratings reflect real work
 - Direct messaging with providers
 
@@ -175,7 +176,7 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 827 unit tests on the API with doubles, plus 70 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey, and 716 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 890 unit tests on the API with doubles, plus 76 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey, and 719 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -479,7 +480,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `THROTTLE_AUTH_LIMIT` | Optional. Raises the login rate limit in test environments |
 | `THROTTLE_RESERVAS_LIMIT`, `THROTTLE_MENSAJES_LIMIT` | Optional. Raise the per-minute limits on creating bookings (10) and sending messages (30) in test environments |
 | `ANTHROPIC_API_KEY` | Optional. Without it the AI layer stays inactive and the app boots normally |
-| `RETENCIONES_AUTOMATICAS` | Optional. `false` turns off the hourly review that renews payment holds |
+| `RETENCIONES_AUTOMATICAS` | Optional. `false` turns off the hourly jobs that move money on their own: renewing payment holds, reconciling payments with Stripe and expiring requests left unanswered |
 | `IA_ACTIVA` | Optional. `false` turns the AI layer off even when a key is present |
 | `IA_MODELO` | Optional. Defaults to `claude-haiku-4-5-20251001` |
 | `IA_TOPE_MENSUAL_CENTIMOS` | Optional. Hard monthly ceiling in cents, checked before every call. Defaults to `100` (1 €) |
@@ -524,7 +525,7 @@ Register `https://servilocal-api.onrender.com/api/payments/webhook` in the Strip
 
 - `payment_intent.amount_capturable_updated` — records the funds as held; accepting the booking is still the provider's call. If the booking was cancelled meanwhile, the hold is released at once; if it was completed without charge, it is captured
 - `payment_intent.succeeded` — completes the payment
-- `payment_intent.payment_failed` — leaves the booking awaiting retry
+- `payment_intent.payment_failed` — records why the card was declined; the payment stays pending, because the client can retry with another card in the same form
 - `payment_intent.canceled` — marks the payment failed; if Stripe dropped a hold on its own, the client is asked to authorise again and the provider is told
 
 ---
@@ -567,9 +568,9 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 827 unit tests across 50 suites, all with doubles (Vitest)
+npm run test          # 890 unit tests across 56 suites, all with doubles (Vitest)
 npm run test:cov      # fails below 95% statements / 89% branches
-npm run test:integracion   # 70 tests against a real database, stripe-mock and Valkey
+npm run test:integracion   # 76 tests against a real database, stripe-mock and Valkey
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run build
 
@@ -578,7 +579,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 716 unit tests (Vitest)
+npm run test          # 719 unit tests (Vitest)
 npm run test:cov      # fails below 89% statements / 87% branches
 npm run build
 
@@ -610,6 +611,8 @@ All of these run in CI on every push, to any branch. The end-to-end job spins up
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
 | Done | Redis in production: rate-limit counters survive a deploy and sockets span instances. The application still runs without it, by design |
+| Done | Payments follow Stripe's own state: a card declined and replaced in the same form ends held, not failed, and payments left pending or failed are reconciled every hour |
+| Done | Requests left unanswered past their date expire and release their hold |
 | Done | Money loop: the provider accepts or rejects, completing captures the hold, cancelling or rejecting releases it |
 | Done | Calendar: durations, no past dates, completion from the booking date, and no overlapping confirmed bookings, enforced by the database |
 | Done | Account self-service: password change and recovery by email, data export and deletion, and consent recorded at registration |

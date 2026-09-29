@@ -93,9 +93,10 @@ dependencies of either the API or the front end.
   which is public, and without allowed origins; a secret shorter than 32
   characters or a missing proxy secret is reported in the log. Values that
   may carry credentials, such as database or Redis URLs, are never echoed.
-- Administrative actions, manual captures and refunds included, are written
-  to an append-only audit log with no foreign key to users, so the record
-  survives the deletion of the account that produced it.
+- Administrative actions — manual captures and refunds, status changes on
+  other people's bookings and services withdrawn included — are written to an
+  append-only audit log with no foreign key to users, so the record survives
+  the deletion of the account that produced it.
 - Bookings, payments and reviews cannot be deleted by cascade: a service with
   bookings is withdrawn, not deleted, so the other party's history stays.
 - The demo accounts, whose passwords are on the sign-in page, are kept apart
