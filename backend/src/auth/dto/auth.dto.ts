@@ -9,6 +9,7 @@ import {
   IsString,
   MinLength,
   MaxLength,
+  ValidateBy,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { UserRole } from '../../entities';
@@ -18,8 +19,23 @@ import { IDIOMAS } from '../../correo/plantillas';
 /**
  * bcrypt solo mira los primeros 72 bytes: una contraseña más larga se
  * truncaba en silencio, y bastaba con acertar el principio.
+ *
+ * Bytes y no caracteres: una letra acentuada ocupa dos y una árabe también,
+ * así que con 72 caracteres el tope dejaba pasar hasta 288 bytes, y lo que
+ * pasaba de 72 no contaba.
  */
 const MAXIMO_CONTRASENA = 72;
+const caben72Bytes = () =>
+  ValidateBy({
+    name: 'cabeEnBcrypt',
+    validator: {
+      validate: (valor: unknown) =>
+        typeof valor === 'string' &&
+        Buffer.byteLength(valor, 'utf8') <= MAXIMO_CONTRASENA,
+      defaultMessage: () =>
+        `La contraseña no puede ocupar más de ${MAXIMO_CONTRASENA} bytes`,
+    },
+  });
 
 export class RegisterDto {
   @ApiProperty({ example: 'Federico' })
@@ -43,7 +59,7 @@ export class RegisterDto {
   @ApiProperty({ example: 'Password123!', minLength: 8, maxLength: 72 })
   @IsString()
   @MinLength(8)
-  @MaxLength(MAXIMO_CONTRASENA)
+  @caben72Bytes()
   password: string;
 
   @ApiProperty({
@@ -91,6 +107,8 @@ export interface SessionUser {
   lastName: string;
   role: UserRole;
   soloLectura: boolean;
+  /** Cuenta de la demostración: lo que cambie en ella se restaura a la hora. */
+  esDemostracion: boolean;
 }
 
 /**
@@ -118,7 +136,7 @@ export class CambiarContrasenaDto {
   @ApiProperty({ minLength: 8, maxLength: 72 })
   @IsString()
   @MinLength(8)
-  @MaxLength(MAXIMO_CONTRASENA)
+  @caben72Bytes()
   nueva: string;
 }
 
@@ -145,7 +163,7 @@ export class RestablecerContrasenaDto {
   @ApiProperty({ minLength: 8, maxLength: 72 })
   @IsString()
   @MinLength(8)
-  @MaxLength(MAXIMO_CONTRASENA)
+  @caben72Bytes()
   nueva: string;
 }
 

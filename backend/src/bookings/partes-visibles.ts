@@ -1,4 +1,5 @@
 import { Booking, BookingStatus, User } from '../entities';
+import { servicioPublico } from '../services/servicio-publico';
 
 /**
  * Estados en los que cada parte ve el contacto de la otra.
@@ -36,5 +37,8 @@ export function reservaVisible(reserva: Booking): Booking {
     ...reserva,
     client: parteVisible(reserva.client, conContacto),
     provider: parteVisible(reserva.provider, conContacto),
+    // La dirección de referencia del servicio no le hace falta a nadie en
+    // una reserva, y con crear una pendiente se la llevaba cualquiera.
+    service: reserva.service && servicioPublico(reserva.service),
   } as Booking;
 }

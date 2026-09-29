@@ -229,17 +229,6 @@ export class MessagesService {
     // que nadie haya escrito. Devolver vacío es correcto; un 404 no lo sería.
     if (!conversation) return [];
 
-    await this.messageRepository
-      .createQueryBuilder()
-      .update(Message)
-      .set({ isRead: true, readAt: new Date() })
-      .where('conversationId = :conversationId', {
-        conversationId: conversation.id,
-      })
-      .andWhere('senderId != :userId', { userId })
-      .andWhere('isRead = false')
-      .execute();
-
     // Los últimos, y en su orden: se piden del más reciente hacia atrás y
     // se dan la vuelta.
     const ultimos = await this.messageRepository.find({
@@ -277,6 +266,35 @@ export class MessagesService {
       .andWhere('msg.senderId != :userId', { userId })
       .andWhere('msg.isRead = :isRead', { isRead: false })
       .getCount();
+  }
+
+  /**
+   * Marca como leídos los mensajes que el otro ha enviado en el hilo.
+   *
+   * Lo hacía la propia lectura del hilo, un GET: así escapaba al modo de
+   * solo lectura, que filtra por método, y a la comprobación de origen, y
+   * bastaba un enlace desde otro sitio para marcar como leídos los mensajes
+   * de alguien. Ahora es una escritura aparte, que la pantalla pide al abrir
+   * la conversación. Devuelve cuántos ha marcado.
+   */
+  async marcarLeidos(
+    userId: string,
+    partnerId: string,
+  ): Promise<{ marcados: number }> {
+    const conversation = await this.findConversationBetween(userId, partnerId);
+    if (!conversation) return { marcados: 0 };
+
+    const resultado = await this.messageRepository
+      .createQueryBuilder()
+      .update(Message)
+      .set({ isRead: true, readAt: new Date() })
+      .where('conversationId = :conversationId', {
+        conversationId: conversation.id,
+      })
+      .andWhere('senderId != :userId', { userId })
+      .andWhere('isRead = false')
+      .execute();
+    return { marcados: resultado.affected ?? 0 };
   }
 
   private async findConversationBetween(

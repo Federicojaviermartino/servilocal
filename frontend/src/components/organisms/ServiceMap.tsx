@@ -14,14 +14,22 @@ import { Link } from '@/i18n/navigation';
 import { Service } from '@/types';
 import { useNombreUnidad } from '@/lib/unidades';
 import { useImporte } from '@/lib/importes';
+import iconoRetina from 'leaflet/dist/images/marker-icon-2x.png';
+import icono from 'leaflet/dist/images/marker-icon.png';
+import sombra from 'leaflet/dist/images/marker-shadow.png';
 
-// Workaround para los iconos de Leaflet en bundlers
+/** Next da la imagen importada como objeto con src; otros empaquetadores, como texto. */
+const urlDe = (imagen: string | { src: string }) =>
+  typeof imagen === 'string' ? imagen : imagen.src;
+
+// Los iconos de los marcadores, servidos desde el propio dominio. Venían de
+// unpkg.com, así que cada visita al mapa le daba a un tercero la dirección
+// IP de quien miraba, y la política de privacidad no lo decía.
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconRetinaUrl: urlDe(iconoRetina),
+  iconUrl: urlDe(icono),
+  shadowUrl: urlDe(sombra),
 });
 
 interface ServiceMapProps {

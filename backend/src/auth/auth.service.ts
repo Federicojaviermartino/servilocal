@@ -200,10 +200,29 @@ export class AuthService {
    * correos para saber quién está registrado. Por eso tampoco se dice nada
    * cuando el envío falla o la cuenta no puede recuperarse; se anota en el
    * registro del servidor.
+   *
+   * Y tarda lo mismo. Antes de responder solo se comprueba que haya correo:
+   * guardar el enlace y llamar a Brevo pasa únicamente si la cuenta existe,
+   * y esperarlo lo delataba en el tiempo de respuesta. Eso va en la tarea
+   * que se devuelve, que la ruta no espera y que no falla nunca: lo que
+   * vaya mal, lo anota.
    */
-  async solicitarRecuperacion(email: string, idioma?: string): Promise<void> {
+  solicitarRecuperacion(email: string, idioma?: string): Promise<void> {
     this.correo.exigirDisponible();
 
+    return this.prepararRecuperacion(email, idioma).catch((error: unknown) => {
+      this.logger.error(
+        `No se pudo preparar una recuperación de contraseña: ${
+          error instanceof Error ? error.message : 'causa desconocida'
+        }`,
+      );
+    });
+  }
+
+  private async prepararRecuperacion(
+    email: string,
+    idioma?: string,
+  ): Promise<void> {
     const usuario = await this.buscarPorCorreo(email);
     if (
       !usuario ||
@@ -245,11 +264,7 @@ export class AuthService {
 
     try {
       await this.correo.enviar(
-        correoDeRecuperacion(
-          lengua,
-          { email: usuario.email, nombre: usuario.firstName },
-          enlace,
-        ),
+        correoDeRecuperacion(lengua, { email: usuario.email }, enlace),
       );
     } catch (error) {
       this.logger.error(
@@ -353,6 +368,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         soloLectura: user.soloLectura ?? false,
+        esDemostracion: user.esDemostracion ?? false,
       },
     };
   }

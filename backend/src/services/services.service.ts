@@ -24,6 +24,7 @@ import {
   SearchServicesDto,
 } from './dto/service.dto';
 import { ampliarBusqueda, escaparLike } from './sinonimos';
+import { servicioPublico } from './servicio-publico';
 import { TOPE_LISTA_PUBLICA } from '../common/topes';
 
 /** Eliminar un servicio con reservas abiertas: se resuelven antes. */
@@ -239,8 +240,17 @@ export class ServicesService {
     }
 
     // Con historial, se retira en vez de borrarse: sus reservas, pagos y
-    // valoraciones son de otras personas. Antes se borraban en cascada.
-    if (await this.bookingRepository.exists({ where: { serviceId: id } })) {
+    // valoraciones son de otras personas. Antes se borraban en cascada. Y
+    // el de una cuenta de demostración también se retira, para que la
+    // restauración horaria pueda devolverlo (ver DemostracionService).
+    const dueno = await this.serviceRepository.manager.findOne(User, {
+      where: { id: service.providerId },
+      select: { id: true, esDemostracion: true },
+    });
+    if (
+      dueno?.esDemostracion ||
+      (await this.bookingRepository.exists({ where: { serviceId: id } }))
+    ) {
       await this.serviceRepository.update(id, {
         isActive: false,
         withdrawnAt: new Date(),
@@ -482,7 +492,7 @@ export class ServicesService {
     const total = await this.contarHasta(qb, TOPE_CONTEO);
 
     return {
-      data: services,
+      data: services.map(servicioPublico),
       meta: {
         total,
         // Para que quien pinte esto pueda decir «más de mil» en vez de dar

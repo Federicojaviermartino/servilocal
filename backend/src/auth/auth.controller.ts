@@ -175,8 +175,10 @@ export class AuthController {
   })
   @ApiResponse({ status: 202, description: 'Si la cuenta existe, se envía' })
   @ApiResponse({ status: 503, description: 'Correo no configurado' })
-  async recuperar(@Body() dto: RecuperarContrasenaDto): Promise<void> {
-    await this.authService.solicitarRecuperacion(dto.email, dto.idioma);
+  recuperar(@Body() dto: RecuperarContrasenaDto): void {
+    // Sin esperar al envío, para que lo que tarda no diga si la cuenta
+    // existe: ver AuthService.solicitarRecuperacion.
+    void this.authService.solicitarRecuperacion(dto.email, dto.idioma);
   }
 
   @Throttle(LIMITE_AUTENTICACION)

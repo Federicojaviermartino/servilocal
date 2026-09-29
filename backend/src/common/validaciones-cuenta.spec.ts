@@ -65,6 +65,17 @@ describe('El registro', () => {
     ).toContain('password');
   });
 
+  it('el tope es de bytes, no de caracteres: con letras de dos bytes caben menos', async () => {
+    // 40 letras árabes son 80 bytes: con el tope en caracteres pasaban, y
+    // bcrypt ignoraba las cuatro últimas.
+    expect(
+      await rechazadas(RegisterDto, { ...REGISTRO, password: 'ب'.repeat(40) }),
+    ).toContain('password');
+    expect(
+      await rechazadas(RegisterDto, { ...REGISTRO, password: 'ب'.repeat(36) }),
+    ).not.toContain('password');
+  });
+
   it('un teléfono más largo que su columna, tampoco', async () => {
     expect(
       await rechazadas(RegisterDto, { ...REGISTRO, phone: '6'.repeat(21) }),

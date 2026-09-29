@@ -39,6 +39,30 @@ describe('Editar un servicio', () => {
   });
 });
 
+describe('Las imágenes de un servicio', () => {
+  it.each([
+    ['un data: con lo que sea', ['data:text/html,<script>alert(1)</script>']],
+    ['una dirección sin cifrar', ['http://imagenes.example/grifo.jpg']],
+    ['texto que no es una dirección', ['grifo']],
+    [
+      'más de diez',
+      Array.from({ length: 11 }, (_, i) => `https://imagenes.example/${i}.jpg`),
+    ],
+  ])('no admiten %s', async (_que, images) => {
+    // Valía cualquier texto: también un data: con lo que se quisiera, en
+    // un catálogo que las cuentas de demostración pueden editar.
+    expect(await rechazadas(UpdateServiceDto, { images })).toEqual(['images']);
+  });
+
+  it('las https, sí', async () => {
+    expect(
+      await rechazadas(UpdateServiceDto, {
+        images: ['https://images.pexels.com/photos/1/grifo.jpeg'],
+      }),
+    ).toEqual([]);
+  });
+});
+
 describe('La paginación de la búsqueda', () => {
   it('una página enorme se rechaza en vez de llegar a la consulta', async () => {
     // page=1e308 acababa en OFFSET Infinity y en un 500 de la búsqueda

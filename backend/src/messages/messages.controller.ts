@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Param,
+  Patch,
   Body,
   UseGuards,
   Request,
@@ -55,14 +56,24 @@ export class MessagesController {
 
   @Get('conversation/:partnerId')
   @ApiOperation({
-    summary:
-      'Obtener los mensajes intercambiados con un interlocutor (marca como leídos)',
+    summary: 'Obtener los mensajes intercambiados con un interlocutor',
   })
   async getMessages(
     @Request() req: PeticionAutenticada,
     @Param('partnerId', ParseUUIDPipe) partnerId: string,
   ) {
     return this.messagesService.findMessagesWithPartner(req.user.id, partnerId);
+  }
+
+  @Patch('conversation/:partnerId/read')
+  @ApiOperation({
+    summary: 'Marcar como leídos los mensajes recibidos de un interlocutor',
+  })
+  async marcarLeidos(
+    @Request() req: PeticionAutenticada,
+    @Param('partnerId', ParseUUIDPipe) partnerId: string,
+  ) {
+    return this.messagesService.marcarLeidos(req.user.id, partnerId);
   }
 
   @Get('unread/count')

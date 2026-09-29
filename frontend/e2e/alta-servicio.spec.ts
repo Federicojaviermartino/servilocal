@@ -39,8 +39,9 @@ test('un profesional publica un servicio y lo ve en su panel', async ({
     await expect(page.getByText('Servicio creado')).toBeVisible();
     await expect(page.getByText(titulo)).toBeVisible();
   } finally {
-    // Se borra pase lo que pase: la búsqueda cuenta los servicios de la
-    // semilla, y los cuatro navegadores comparten la misma base.
+    // Se quita pase lo que pase: la búsqueda cuenta los servicios de la
+    // semilla, y los cuatro navegadores comparten la misma base. Siendo de
+    // una cuenta de demostración, se retira en vez de borrarse.
     if (id) {
       await page.request.delete(`/api/services/${id}`, {
         headers: { origin: new URL(page.url()).origin },

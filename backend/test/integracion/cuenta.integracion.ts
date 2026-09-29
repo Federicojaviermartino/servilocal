@@ -206,6 +206,55 @@ describe('La cuenta', () => {
         await fuente.query(`DELETE FROM users WHERE id = $1`, [cuenta.id]);
       }
     });
+
+    it('su correo sale del historial de moderación, y la decisión se queda', async () => {
+      const cuenta = await cuentaNueva('client');
+      const entrada = async (sobre: string, correo: string) =>
+        (
+          await fuente.query(
+            `INSERT INTO audit_logs
+               ("actorId", "actorEmail", accion, entidad, "entidadId", contexto)
+             VALUES (uuid_generate_v4(), 'admin@correo.test',
+                     'usuario_desactivado', 'usuario', $1,
+                     jsonb_build_object('email', $2::text))
+             RETURNING id`,
+            [sobre, correo],
+          )
+        )[0].id as string;
+      const suya = await entrada(cuenta.id, cuenta.email);
+      // La de otra cuenta no se toca.
+      const ajena = await entrada(
+        '00000000-0000-4000-8000-000000000001',
+        'otra@correo.test',
+      );
+
+      try {
+        await usuarios.eliminarCuenta(cuenta.id, CLAVE);
+
+        const filas: Array<{
+          id: string;
+          actorEmail: string;
+          accion: string;
+          contexto: Record<string, string>;
+        }> = await fuente.query(
+          `SELECT id, "actorEmail", accion, contexto FROM audit_logs
+           WHERE id = ANY($1)`,
+          [[suya, ajena]],
+        );
+        const porId = Object.fromEntries(filas.map((f) => [f.id, f]));
+        expect(porId[suya]).toMatchObject({
+          actorEmail: 'admin@correo.test',
+          accion: 'usuario_desactivado',
+          contexto: { email: `eliminada-${cuenta.id}@servilocal.invalid` },
+        });
+        expect(porId[ajena].contexto).toEqual({ email: 'otra@correo.test' });
+      } finally {
+        await fuente.query(`DELETE FROM audit_logs WHERE id = ANY($1)`, [
+          [suya, ajena],
+        ]);
+        await fuente.query(`DELETE FROM users WHERE id = $1`, [cuenta.id]);
+      }
+    });
   });
 
   describe('recuperar la contraseña', () => {

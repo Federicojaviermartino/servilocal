@@ -453,10 +453,36 @@ describe('AuthService', () => {
         throw new ServiceUnavailableException();
       });
 
+      // Al momento, no en la tarea: es lo único que la ruta espera.
+      expect(() => service.solicitarRecuperacion('ana@ejemplo.org')).toThrow(
+        ServiceUnavailableException,
+      );
+      expect(mockUserRepository.createQueryBuilder).not.toHaveBeenCalled();
+    });
+
+    it('si algo falla antes del envío, se anota y la tarea no falla', async () => {
+      // La ruta no la espera: un rechazo sin atender tumbaría el proceso.
+      mockUserRepository.findOne.mockResolvedValue(cuenta());
+      enlaces.save.mockRejectedValueOnce(new Error('la base no responde'));
+
       await expect(
         service.solicitarRecuperacion('ana@ejemplo.org'),
-      ).rejects.toThrow(ServiceUnavailableException);
-      expect(mockUserRepository.createQueryBuilder).not.toHaveBeenCalled();
+      ).resolves.toBeUndefined();
+      expect(correo.enviar).not.toHaveBeenCalled();
+    });
+
+    it('el correo no lleva el nombre de la cuenta', async () => {
+      // El correo no se verifica al registrarse: el nombre pudo escribirlo
+      // otra persona, y era texto suyo en un correo auténtico.
+      mockUserRepository.findOne.mockResolvedValue(
+        cuenta({ firstName: 'Llama ya al 600 000 000' }),
+      );
+
+      await service.solicitarRecuperacion('ana@ejemplo.org', 'es');
+
+      const { mensaje } = enlaceEnviado();
+      expect(mensaje.para).toEqual({ email: 'ana@ejemplo.org' });
+      expect(JSON.stringify(mensaje)).not.toContain('600 000 000');
     });
   });
 

@@ -21,12 +21,15 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { ServicesService } from './services.service';
+import { servicioPublico } from './servicio-publico';
 import {
   CreateServiceDto,
   UpdateServiceDto,
   SearchServicesDto,
 } from './dto/service.dto';
 import type { PeticionAutenticada } from '../auth/peticion-autenticada';
+import { Throttle } from '@nestjs/throttler';
+import { LIMITE_SERVICIOS } from '../common/limites';
 
 @ApiTags('services')
 @Controller('services')
@@ -42,21 +45,37 @@ export class ServicesController {
     return this.servicesService.search(searchDto);
   }
 
+  // Antes que :id, que si no la tomaría por un identificador.
+  @Get('mine')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(UserRole.PROVIDER)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Mis servicios, con su dirección de referencia (profesional)',
+  })
+  async findMine(@Request() req: PeticionAutenticada) {
+    return this.servicesService.findByProvider(req.user.id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Obtener servicio por ID (público)' })
   @ApiResponse({ status: 200, description: 'Detalle del servicio' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.servicesService.findById(id, { publica: true });
+    return servicioPublico(
+      await this.servicesService.findById(id, { publica: true }),
+    );
   }
 
   @Get('provider/:providerId')
   @ApiOperation({ summary: 'Listar servicios de un proveedor (público)' })
   @ApiResponse({ status: 200, description: 'Servicios del proveedor' })
   async findByProvider(@Param('providerId', ParseUUIDPipe) providerId: string) {
-    return this.servicesService.findByProvider(providerId);
+    const servicios = await this.servicesService.findByProvider(providerId);
+    return servicios.map(servicioPublico);
   }
 
   @Post()
+  @Throttle(LIMITE_SERVICIOS)
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.PROVIDER)
   @ApiBearerAuth()

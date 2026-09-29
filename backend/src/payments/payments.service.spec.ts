@@ -660,6 +660,25 @@ describe('PaymentsService', () => {
         await servicio.findByBooking('b1', { id: 'admin', role: 'admin' }),
       ).toBeTruthy();
     });
+
+    it('la de demostración, solo si la reserva es de su mundo', async () => {
+      const demo = { id: 'demo', role: 'admin', soloLectura: true };
+      const real = await construir(PAGO, {
+        ...RESERVA,
+        client: { esDemostracion: false },
+        provider: { esDemostracion: false },
+      } as never);
+      const deSuMundo = await construir(PAGO, {
+        ...RESERVA,
+        client: { esDemostracion: true },
+        provider: { esDemostracion: true },
+      } as never);
+
+      await expect(real.servicio.findByBooking('b1', demo)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(await deSuMundo.servicio.findByBooking('b1', demo)).toBeTruthy();
+    });
   });
   describe('abrir el cobro', () => {
     const RESERVA = {
@@ -2199,6 +2218,23 @@ describe('PaymentsService', () => {
           order: { createdAt: 'DESC' },
         }),
       );
+    });
+
+    it('sin la dirección de referencia del servicio', async () => {
+      const { servicio, pagos } = await construir(null);
+      pagos.find.mockResolvedValueOnce([
+        {
+          id: 'p1',
+          booking: {
+            id: 'b1',
+            service: { id: 's1', title: 'Fontanería', address: 'Calle Mía 1' },
+          },
+        },
+      ] as never);
+
+      const [pago] = await servicio.findByClient('c1');
+
+      expect(pago.booking.service).toEqual({ id: 's1', title: 'Fontanería' });
     });
   });
 });

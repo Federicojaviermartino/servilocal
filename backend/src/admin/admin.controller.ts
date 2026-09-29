@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +9,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard, Roles } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
 import { AdminService } from './admin.service';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
+import { soloVeLaDemostracion } from '../common/demostracion';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -41,7 +43,9 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Listado ordenado por reputación' })
   @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
-  reputacion() {
-    return this.adminService.reputacion();
+  reputacion(@Request() req: PeticionAutenticada) {
+    return this.adminService.reputacion({
+      soloDemostracion: soloVeLaDemostracion(req.user),
+    });
   }
 }

@@ -27,3 +27,18 @@ export function comprobarMismoMundo(una: Cuenta, otra: Cuenta): void {
     });
   }
 }
+
+/**
+ * Si quien mira es la administración de demostración, que solo ve su mundo.
+ *
+ * Su contraseña está en la pantalla de acceso. La máscara de datos
+ * personales le tapa correos, teléfonos y direcciones, pero no el texto
+ * libre —la descripción de una reserva o su motivo de cancelación, donde
+ * alguien puede contar cómo se entra en su casa—, y desde una valoración
+ * denunciada llegaba a la reserva de una cuenta real. Para ella, lo que no
+ * es de demostración no existe: ni en las listas ni pidiéndolo por su
+ * identificador, que responde 404 y no 403.
+ */
+export const soloVeLaDemostracion = (
+  quien?: { soloLectura?: boolean } | null,
+): boolean => quien?.soloLectura === true;

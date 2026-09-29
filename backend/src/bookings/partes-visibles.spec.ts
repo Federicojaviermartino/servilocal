@@ -24,6 +24,7 @@ const reserva = (status: BookingStatus) =>
     status,
     client: persona('cliente'),
     provider: persona('profesional'),
+    service: { id: 's1', title: 'Fontanería', address: 'Calle Mía 1' },
   }) as unknown as Booking;
 
 describe('lo que ve cada parte de una reserva', () => {
@@ -71,12 +72,25 @@ describe('lo que ve cada parte de una reserva', () => {
     }
   });
 
+  it.each(Object.values(BookingStatus))(
+    'la dirección de referencia del servicio, en ningún estado (%s)',
+    (estado) => {
+      // Con crear una reserva pendiente, cualquiera se llevaba la dirección
+      // que el profesional puso al publicar, a menudo la de su casa.
+      expect(reservaVisible(reserva(estado)).service).toEqual({
+        id: 's1',
+        title: 'Fontanería',
+      });
+    },
+  );
+
   it('no toca la reserva original', () => {
     const original = reserva(BookingStatus.PENDING);
 
     reservaVisible(original);
 
     expect(original.client.phone).toBe('600 111 222');
+    expect(original.service.address).toBe('Calle Mía 1');
   });
 
   it('una parte que no se cargó sigue sin estar', () => {

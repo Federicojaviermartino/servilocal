@@ -25,6 +25,18 @@ export const LIMITE_AUTENTICACION = {
  * Se pueden elevar para las baterías de pruebas, que crean muchas seguidas
  * desde la misma dirección. En producción deben quedarse en su valor.
  */
+/**
+ * Publicar servicios: veinte por hora y visitante. Con las cuentas de
+ * demostración a mano de cualquiera, el catálogo se podía llenar de
+ * anuncios falsos a ritmo de uno por segundo.
+ */
+export const LIMITE_SERVICIOS = {
+  default: {
+    limit: Number(process.env.THROTTLE_SERVICIOS_LIMIT) || 20,
+    ttl: 60 * 60 * 1000,
+  },
+};
+
 export const LIMITE_RESERVAS = {
   default: {
     limit: Number(process.env.THROTTLE_RESERVAS_LIMIT) || 10,

@@ -139,6 +139,8 @@ export const servicesApi = {
   search: (params: ServiceSearchParams) =>
     api.get('/services/search', { params }),
   getById: (id: string) => api.get(`/services/${id}`),
+  // Los propios, con la dirección de referencia, que lo público ya no trae.
+  getMine: () => api.get('/services/mine'),
   getByProvider: (providerId: string) =>
     api.get(`/services/provider/${providerId}`),
   create: (data: Record<string, unknown>) => api.post('/services', data),
@@ -175,6 +177,9 @@ export const messagesApi = {
   getConversations: () => api.get('/messages/conversations'),
   getConversation: (partnerId: string) =>
     api.get(`/messages/conversation/${partnerId}`),
+  // Leer el hilo ya no marca nada: es una escritura aparte.
+  markRead: (partnerId: string) =>
+    api.patch(`/messages/conversation/${partnerId}/read`),
   send: (data: { receiverId: string; content: string }) =>
     api.post('/messages', data),
 };

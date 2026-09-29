@@ -15,6 +15,7 @@ import {
   BookingStatus,
   Service,
   NotificationType,
+  User,
 } from '../entities';
 import {
   CreateReviewDto,
@@ -22,6 +23,27 @@ import {
   ReportReviewDto,
 } from './dto/review.dto';
 import { TOPE_LISTA, TOPE_LISTA_PUBLICA } from '../common/topes';
+import { servicioPublico } from '../services/servicio-publico';
+
+/** De quien valoró, lo que se enseña a cualquiera: nombre e inicial. */
+function autorPublico(cliente: User): User {
+  const inicial = cliente.lastName?.trim().charAt(0).toUpperCase();
+  return {
+    firstName: cliente.firstName,
+    lastName: inicial ? `${inicial}.` : '',
+    avatarUrl: cliente.avatarUrl,
+  } as User;
+}
+
+/** Sin la dirección de referencia del servicio: ver servicioPublico. */
+function conServicioPublico(valoracion: Review): Review {
+  return valoracion.service
+    ? ({
+        ...valoracion,
+        service: servicioPublico(valoracion.service),
+      } as Review)
+    : valoracion;
+}
 
 @Injectable()
 export class ReviewsService {
@@ -123,12 +145,27 @@ export class ReviewsService {
     return this.reviewRepository.save(review);
   }
 
-  async reportReview(reviewId: string, dto: ReportReviewDto): Promise<Review> {
+  async reportReview(
+    reviewId: string,
+    dto: ReportReviewDto,
+    denunciante?: { esDemostracion?: boolean },
+  ): Promise<Review> {
     const review = await this.reviewRepository.findOne({
       where: { id: reviewId },
+      relations: { client: true },
     });
 
-    if (!review) {
+    // Cada mundo denuncia lo suyo, como reserva y escribe a los suyos. Una
+    // cuenta de demostración, cuya contraseña es pública, llenaría la cola de
+    // la moderación de verdad; y el motivo que escribe una cuenta real, texto
+    // libre, acabaría en la cola que ve la administración de demostración.
+    // Lo de la demostración, además, se restaura solo cada hora.
+    if (
+      !review ||
+      (denunciante &&
+        Boolean(denunciante.esDemostracion) !==
+          Boolean(review.client?.esDemostracion))
+    ) {
       throw new NotFoundException('Valoración no encontrada');
     }
 
@@ -146,9 +183,14 @@ export class ReviewsService {
    * corregir. De la reseña tampoco salen el identificador de la reserva ni el
    * motivo de la denuncia: lo primero permitía cruzar datos y lo segundo es
    * una alegación privada entre el profesional y la moderación.
+   *
+   * Y de quien valoró, solo el nombre y la inicial del apellido: con el
+   * nombre completo, la ciudad y su identificador, quien dejaba una reseña
+   * negativa quedaba identificado ante cualquiera, que además podía
+   * escribirle.
    */
   async findByService(serviceId: string): Promise<Review[]> {
-    return this.reviewRepository.find({
+    const valoraciones = await this.reviewRepository.find({
       where: { serviceId },
       relations: { client: true },
       select: {
@@ -163,16 +205,19 @@ export class ReviewsService {
           firstName: true,
           lastName: true,
           avatarUrl: true,
-          city: true,
         },
       },
       order: { createdAt: 'DESC' },
       take: TOPE_LISTA_PUBLICA,
     });
+    return valoraciones.map((valoracion) => ({
+      ...valoracion,
+      client: valoracion.client && autorPublico(valoracion.client),
+    }));
   }
 
   async findByClient(clientId: string): Promise<Review[]> {
-    return this.reviewRepository.find({
+    const valoraciones = await this.reviewRepository.find({
       where: { clientId },
       relations: {
         service: true,
@@ -180,11 +225,17 @@ export class ReviewsService {
       order: { createdAt: 'DESC' },
       take: TOPE_LISTA,
     });
+    return valoraciones.map(conServicioPublico);
   }
 
-  async findReported(): Promise<Review[]> {
-    return this.reviewRepository.find({
-      where: { isReported: true },
+  /** Con `soloDemostracion`, las de la demostración: ver soloVeLaDemostracion. */
+  async findReported({
+    soloDemostracion = false,
+  }: { soloDemostracion?: boolean } = {}): Promise<Review[]> {
+    const denunciadas = await this.reviewRepository.find({
+      where: soloDemostracion
+        ? { isReported: true, client: { esDemostracion: true } }
+        : { isReported: true },
       relations: {
         client: true,
         service: true,
@@ -192,6 +243,7 @@ export class ReviewsService {
       order: { createdAt: 'DESC' },
       take: TOPE_LISTA,
     });
+    return denunciadas.map(conServicioPublico);
   }
 
   async dismissReport(reviewId: string, actor: Actor): Promise<Review> {

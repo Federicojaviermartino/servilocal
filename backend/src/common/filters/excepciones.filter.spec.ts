@@ -185,4 +185,20 @@ describe('FiltroDeExcepciones', () => {
     expect(resumen).toContain('/api/algo');
     expect(resumen).toContain('u1');
   });
+
+  it('la ruta se registra sin su consulta, que puede llevar datos de quien pregunta', () => {
+    const { filtro, host } = construir({
+      url: '/api/services/search?q=calle+mayor+7',
+      originalUrl: '/api/v1/services/search?q=calle+mayor+7',
+    });
+    const registro = vi
+      .spyOn(registrador(filtro), 'error')
+      .mockImplementation(() => undefined);
+
+    filtro.catch(new Error('algo se rompió'), host);
+
+    const [resumen] = registro.mock.calls[0] as string[];
+    expect(resumen).toContain('/api/v1/services/search');
+    expect(resumen).not.toContain('calle');
+  });
 });

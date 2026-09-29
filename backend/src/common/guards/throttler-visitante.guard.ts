@@ -1,3 +1,4 @@
+import { isIPv6 } from 'node:net';
 import { Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { visitanteReenviado } from '../proxy-frontend';
@@ -14,6 +15,43 @@ const CABECERA_VISITANTE = 'cf-connecting-ip';
 
 /** Cuando no hay nada fiable. Comparte cubo, que es el lado seguro. */
 const DESCONOCIDO = 'desconocido';
+
+/** Una IPv4 escrita como IPv6: ::ffff:192.0.2.1. */
+const IPV4_EN_IPV6 = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i;
+
+/**
+ * La clave de una dirección: las IPv6, por su /64.
+ *
+ * Un proveedor no da a cada conexión una IPv6, sino un bloque /64 entero, y
+ * cambiar de dirección dentro de él es gratis: contadas una a una, bastaba
+ * con rotarlas para no gastar nunca el límite. Las IPv4, también las
+ * escritas como IPv6, se quedan como están.
+ */
+export function agruparVisitante(ip: string): string {
+  const mapeada = IPV4_EN_IPV6.exec(ip);
+  if (mapeada) return mapeada[1];
+  if (!isIPv6(ip)) return ip;
+
+  // Lo que va tras «%» es la interfaz de red, no parte de la dirección.
+  const [direccion] = ip.split('%');
+  const [antes, despues] = direccion.split('::');
+  const bloques = (texto?: string) => (texto ? texto.split(':') : []);
+  const izquierda = bloques(antes);
+  // Una IPv4 al final ocupa dos bloques.
+  const derecha = bloques(despues).flatMap((b) =>
+    b.includes('.') ? ['0', '0'] : [b],
+  );
+  const huecos =
+    despues === undefined ? 0 : 8 - izquierda.length - derecha.length;
+  const completa = [
+    ...izquierda,
+    ...Array<string>(huecos).fill('0'),
+    ...derecha,
+  ];
+
+  const prefijo = completa.slice(0, 4).map((b) => parseInt(b, 16).toString(16));
+  return `${prefijo.join(':')}::/64`;
+}
 
 /**
  * Limitador por visitante real, no por balanceador.
@@ -47,7 +85,7 @@ export class ThrottlerVisitanteGuard extends ThrottlerGuard {
     const cabeceras = (req?.headers ?? {}) as Record<string, unknown>;
 
     const reenviado = visitanteReenviado(cabeceras);
-    if (reenviado) return reenviado;
+    if (reenviado) return agruparVisitante(reenviado);
 
     const declarada = cabeceras[CABECERA_VISITANTE];
 
@@ -55,12 +93,12 @@ export class ThrottlerVisitanteGuard extends ThrottlerGuard {
     // repetida ya sería anómalo viniendo de Cloudflare.
     const visitante = Array.isArray(declarada) ? declarada[0] : declarada;
     if (typeof visitante === 'string' && visitante.trim()) {
-      return visitante.trim();
+      return agruparVisitante(visitante.trim());
     }
 
     // Sin Cloudflare delante se vuelve a lo de siempre. Nunca a un valor que
     // haya llegado sin pasar por el borde: eso sería la puerta de atrás.
     const ip = req?.ip;
-    return typeof ip === 'string' && ip ? ip : DESCONOCIDO;
+    return typeof ip === 'string' && ip ? agruparVisitante(ip) : DESCONOCIDO;
   }
 }

@@ -1,4 +1,7 @@
-import { ThrottlerVisitanteGuard } from './throttler-visitante.guard';
+import {
+  agruparVisitante,
+  ThrottlerVisitanteGuard,
+} from './throttler-visitante.guard';
 
 /** Acceso al método protegido, que es justo lo que hay que comprobar. */
 function clave(req: Record<string, unknown>): Promise<string> {
@@ -120,6 +123,50 @@ describe('ThrottlerVisitanteGuard', () => {
       });
 
       expect(r).toBe(REAL);
+    });
+  });
+
+  describe('las IPv6, por su /64', () => {
+    it('dos direcciones del mismo bloque comparten contador', async () => {
+      // Cada conexión recibe un /64 entero: rotar dentro de él era gratis.
+      const una = await clave({
+        headers: { 'cf-connecting-ip': '2a02:9130:84a0:5d1c::1' },
+      });
+      const otra = await clave({
+        headers: {
+          'cf-connecting-ip': '2a02:9130:84a0:5d1c:ffff:1234:abcd:9',
+        },
+      });
+
+      expect(una).toBe('2a02:9130:84a0:5d1c::/64');
+      expect(otra).toBe(una);
+    });
+
+    it('bloques vecinos no se mezclan', () => {
+      expect(agruparVisitante('2a02:9130:84a0:5d1c::1')).not.toBe(
+        agruparVisitante('2a02:9130:84a0:5d1d::1'),
+      );
+    });
+
+    it.each([
+      ['2001:0DB8:0000:0000:0001::1', '2001:db8:0:0::/64'],
+      ['2001:db8::', '2001:db8:0:0::/64'],
+      ['::1', '0:0:0:0::/64'],
+      ['fe80::1%eth0', 'fe80:0:0:0::/64'],
+      ['2001:db8:1:2:3:4:5:6', '2001:db8:1:2::/64'],
+      ['64:ff9b::192.0.2.1', '64:ff9b:0:0::/64'],
+    ])('%s cuenta como %s', (ip, esperado) => {
+      expect(agruparVisitante(ip)).toBe(esperado);
+    });
+
+    it('una IPv4, también escrita como IPv6, se queda como está', async () => {
+      expect(agruparVisitante(REAL)).toBe(REAL);
+      expect(agruparVisitante(`::ffff:${REAL}`)).toBe(REAL);
+      expect(await clave({ ip: `::ffff:${REAL}` })).toBe(REAL);
+    });
+
+    it('lo que no es una dirección no se toca', () => {
+      expect(agruparVisitante('no-es-una-ip')).toBe('no-es-una-ip');
     });
   });
 

@@ -284,11 +284,35 @@ describe('Contenido de la política de privacidad', () => {
     pintar(<PrivacyPage />);
 
     const tabla = screen.getByRole('table');
-    // Una fila de cabecera y ocho categorías.
-    expect(within(tabla).getAllByRole('row')).toHaveLength(9);
+    // Una fila de cabecera y nueve categorías.
+    expect(within(tabla).getAllByRole('row')).toHaveLength(10);
     expect(within(tabla).getByText('Datos de cuenta')).toBeInTheDocument();
     expect(
       within(tabla).getByText('Consultas al asistente'),
+    ).toBeInTheDocument();
+    expect(
+      within(tabla).getByText('Historial de moderación'),
+    ).toBeInTheDocument();
+  });
+
+  it('da un correo de contacto y dice qué ve cualquier visitante', () => {
+    pintar(<PrivacyPage />);
+
+    // Ejercer un derecho no puede obligar a hacerlo en público, que era lo
+    // único que ofrecía la política: el repositorio.
+    const correos = screen.getAllByRole('link', {
+      name: 'federicojaviermartino@gmail.com',
+    });
+    expect(correos).toHaveLength(2);
+    for (const enlace of correos) {
+      expect(enlace).toHaveAttribute(
+        'href',
+        'mailto:federicojaviermartino@gmail.com',
+      );
+    }
+    expect(screen.queryByText(/repositorio/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Qué ve cualquier visitante' }),
     ).toBeInTheDocument();
   });
 

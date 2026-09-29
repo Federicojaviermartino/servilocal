@@ -10,6 +10,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { IsNull } from 'typeorm';
 import { AccionAuditada, Booking, BookingStatus, Service } from '../entities';
 import { ServicesService } from './services.service';
+import { servicioPublico } from './servicio-publico';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 
 /** Lo que nunca puede salir de un proveedor en una respuesta pública. */
@@ -261,6 +262,26 @@ describe('ServicesService', () => {
       expect(repo.remove).toHaveBeenCalled();
     });
 
+    it('el de una cuenta de demostración se retira, no se borra: se restaura', async () => {
+      // Borrado no habría forma de devolverlo a la hora (DemostracionService).
+      const { servicio, repo } = await conServicio();
+      (repo as unknown as { update: Mock }).update = vi.fn(async () => ({
+        affected: 1,
+      }));
+      repo.manager.findOne.mockResolvedValueOnce({
+        id: DUENO,
+        esDemostracion: true,
+      } as never);
+
+      await servicio.remove('s1', DUENO, 'provider');
+
+      expect(repo.remove).not.toHaveBeenCalled();
+      expect((repo as unknown as { update: Mock }).update).toHaveBeenCalledWith(
+        's1',
+        expect.objectContaining({ isActive: false }),
+      );
+    });
+
     it('y lo que retira la administración queda en el historial', async () => {
       const { servicio, auditoria } = await conServicio();
 
@@ -281,6 +302,32 @@ describe('ServicesService', () => {
       await servicio.remove('s1', DUENO, 'provider');
 
       expect(auditoria.anotar).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('la dirección de referencia', () => {
+    it('no sale en la búsqueda: solo la ve su dueño, desde su panel', async () => {
+      // Es obligatoria al publicar, y quien ponía la de su casa la publicaba
+      // a cualquiera sin saberlo.
+      const qb = constructorFalso();
+      qb.getMany = vi.fn(async () => [
+        { id: 's1', title: 'Fontanería', address: 'Calle Mayor 7, 2.º B' },
+      ]);
+      const { servicio } = await construir(qb);
+
+      const resultado = await servicio.search({} as never);
+
+      expect(resultado.data[0]).toEqual({ id: 's1', title: 'Fontanería' });
+    });
+
+    it('servicioPublico la quita sin tocar lo demás', () => {
+      expect(
+        servicioPublico({
+          id: 's1',
+          city: 'Málaga',
+          address: 'Calle Larios 1',
+        } as never),
+      ).toEqual({ id: 's1', city: 'Málaga' });
     });
   });
 

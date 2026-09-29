@@ -155,6 +155,7 @@ export const useAuthStore = create<AuthState>((set) => {
             lastName: data.lastName,
             role: data.role,
             soloLectura: data.soloLectura ?? false,
+            esDemostracion: data.esDemostracion ?? false,
           });
         },
         (error: { response?: { status?: number } }) => {

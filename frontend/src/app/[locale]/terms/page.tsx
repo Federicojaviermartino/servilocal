@@ -42,7 +42,7 @@ const secciones = [
     parrafos: [
       'Debes ser mayor de edad y facilitar información veraz. Eres responsable de la confidencialidad de tus credenciales y de la actividad que se realice desde tu cuenta.',
       'Podemos suspender o desactivar cuentas que incumplan estas condiciones, que publiquen contenido fraudulento o que perjudiquen a otros usuarios.',
-      'Puedes eliminar tu cuenta cuando quieras desde tu perfil, siempre que no tengas reservas pendientes o confirmadas: antes hay que cancelarlas o completarlas. Las cuentas de demostración son compartidas y no se pueden modificar ni eliminar.',
+      'Puedes eliminar tu cuenta cuando quieras desde tu perfil, siempre que no tengas reservas pendientes o confirmadas: antes hay que cancelarlas o completarlas. Las cuentas de demostración son compartidas: no se pueden eliminar ni se les puede cambiar la contraseña, y lo que se cambie con ellas en servicios, perfiles o valoraciones se deshace al cabo de una hora.',
     ],
   },
   {
@@ -104,7 +104,7 @@ export default function TermsPage() {
     <article className="mx-auto max-w-3xl px-4 py-12" lang="es" dir="ltr">
       <h1 className="text-3xl font-bold text-principal">Términos de uso</h1>
       <p className="mt-2 text-sm text-tenue">
-        Última actualización: 26 de septiembre de 2026
+        Última actualización: 29 de septiembre de 2026
       </p>
       {idiomaActual !== 'es' && (
         <p

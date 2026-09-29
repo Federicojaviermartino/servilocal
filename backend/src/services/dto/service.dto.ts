@@ -10,6 +10,8 @@ import {
   Max,
   MaxLength,
   IsUUID,
+  IsUrl,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SiSeEnvia } from '../../common/si-se-envia';
@@ -106,9 +108,14 @@ export class CreateServiceDto {
   @Max(100)
   coverageRadiusKm?: number;
 
+  // Direcciones https y con tope. Antes valía cualquier texto, también un
+  // data: con lo que se quisiera, y sin límite de cuántas.
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(10)
+  @MaxLength(500, { each: true })
+  @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true })
   images?: string[];
 }
 
@@ -185,9 +192,14 @@ export class UpdateServiceDto {
   @Max(100)
   coverageRadiusKm?: number;
 
+  // Direcciones https y con tope. Antes valía cualquier texto, también un
+  // data: con lo que se quisiera, y sin límite de cuántas.
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(10)
+  @MaxLength(500, { each: true })
+  @IsUrl({ protocols: ['https'], require_protocol: true }, { each: true })
   images?: string[];
 }
 

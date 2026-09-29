@@ -29,7 +29,7 @@ export interface RespuestaAsistente {
     ciudad: string | null;
     texto: string | null;
   };
-  servicios: Service[];
+  servicios: Omit<Service, 'address'>[];
   total: number;
 }
 
@@ -210,13 +210,13 @@ export class AsistenteService {
     categoryId?: string;
     city?: string;
     query?: string;
-  }): Promise<{ data: Service[]; meta: number }> {
+  }): Promise<{ data: Omit<Service, 'address'>[]; meta: number }> {
     const resultado = (await this.servicios.search({
       ...filtros,
       page: 1,
       limit: 6,
     } as Parameters<ServicesService['search']>[0])) as {
-      data?: Service[];
+      data?: Omit<Service, 'address'>[];
       meta?: { total?: number };
     };
 

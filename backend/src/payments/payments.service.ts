@@ -22,6 +22,8 @@ import {
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
 import { TOPE_LISTA } from '../common/topes';
+import { soloVeLaDemostracion } from '../common/demostracion';
+import { servicioPublico } from '../services/servicio-publico';
 
 /**
  * Completar sin pago retenido ya no ocurre en silencio: la API responde 409
@@ -749,7 +751,7 @@ export class PaymentsService {
   }
 
   async findByClient(clientId: string): Promise<Payment[]> {
-    return this.paymentRepository.find({
+    const pagos = await this.paymentRepository.find({
       where: { clientId },
       relations: {
         booking: {
@@ -759,13 +761,40 @@ export class PaymentsService {
       order: { createdAt: 'DESC' },
       take: TOPE_LISTA,
     });
+    // Sin la dirección de referencia del servicio: ver servicioPublico.
+    return pagos.map((pago) =>
+      pago.booking?.service
+        ? ({
+            ...pago,
+            booking: {
+              ...pago.booking,
+              service: servicioPublico(pago.booking.service),
+            },
+          } as Payment)
+        : pago,
+    );
   }
 
   /** El pago de una reserva lo ven sus dos partes, y la moderación. */
   async findByBooking(
     bookingId: string,
-    quien?: { id: string; role: string },
+    quien?: { id: string; role: string; soloLectura?: boolean },
   ): Promise<Payment | null> {
+    // La administración de demostración, solo en su mundo: ver
+    // soloVeLaDemostracion.
+    if (soloVeLaDemostracion(quien)) {
+      const reserva = await this.bookingRepository.findOne({
+        where: { id: bookingId },
+        relations: { client: true, provider: true },
+      });
+      if (
+        !reserva?.client?.esDemostracion ||
+        !reserva.provider?.esDemostracion
+      ) {
+        throw new NotFoundException('Reserva no encontrada');
+      }
+    }
+
     if (quien && quien.role !== 'admin') {
       const reserva = await this.bookingRepository.findOne({
         where: { id: bookingId },

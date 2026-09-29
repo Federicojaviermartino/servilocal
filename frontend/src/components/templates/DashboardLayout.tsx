@@ -113,7 +113,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               })}
             </nav>
           </aside>
-          <section className="lg:col-span-3">{children}</section>
+          <section className="lg:col-span-3">
+            {/* Las contraseñas de estas cuentas son públicas: lo que se
+                cambie se restaura a la hora, y conviene saberlo antes. */}
+            {user?.esDemostracion && !user.soloLectura && (
+              <p
+                role="note"
+                className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+              >
+                {t('demostracionAviso')}
+              </p>
+            )}
+            {children}
+          </section>
         </div>
       </div>
     </div>

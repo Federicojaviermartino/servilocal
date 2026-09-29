@@ -17,7 +17,7 @@ function servicio(variables: Record<string, string>): CorreoService {
 
 const MENSAJE = correoDeRecuperacion(
   'es',
-  { email: 'ana@ejemplo.org', nombre: 'Ana' },
+  { email: 'ana@ejemplo.org' },
   'https://servilocal-web.onrender.com/auth/restablecer?token=abc',
 );
 
@@ -53,7 +53,7 @@ describe('CorreoService', () => {
       const cuerpo = JSON.parse(peticion.body as string);
       expect(cuerpo).toMatchObject({
         sender: { email: 'no-responder@ejemplo.org', name: 'ServiLocal' },
-        to: [{ email: 'ana@ejemplo.org', name: 'Ana' }],
+        to: [{ email: 'ana@ejemplo.org' }],
         subject: MENSAJE.asunto,
       });
       expect(cuerpo.textContent).toContain('token=abc');
@@ -110,32 +110,28 @@ describe('El correo de recuperación', () => {
   it.each(IDIOMAS)('está escrito en %s', (idioma) => {
     const correo = correoDeRecuperacion(
       idioma,
-      { email: 'a@b.c', nombre: 'Ana' },
+      { email: 'a@b.c' },
       'https://x/auth/restablecer?token=t',
     );
 
     expect(correo.asunto.trim()).not.toBe('');
-    expect(correo.texto).toContain('Ana');
     expect(correo.texto).toContain('https://x/auth/restablecer?token=t');
     expect(correo.html).toContain('href="https://x/auth/restablecer?token=t"');
   });
 
   it('cada idioma tiene su propio texto', () => {
     const asuntos = IDIOMAS.map(
-      (idioma) =>
-        correoDeRecuperacion(idioma, { email: 'a@b.c', nombre: 'A' }, 'x')
-          .asunto,
+      (idioma) => correoDeRecuperacion(idioma, { email: 'a@b.c' }, 'x').asunto,
     );
 
     expect(new Set(asuntos).size).toBe(IDIOMAS.length);
   });
 
-  it('el nombre no se interpreta como HTML', () => {
-    // El nombre lo escribe quien se registra.
+  it('el enlace no se interpreta como HTML', () => {
     const correo = correoDeRecuperacion(
       'es',
-      { email: 'a@b.c', nombre: '<img src=x onerror=alert(1)>' },
-      'https://x',
+      { email: 'a@b.c' },
+      'https://x/"><img src=x onerror=alert(1)>',
     );
 
     expect(correo.html).not.toContain('<img');
@@ -143,11 +139,7 @@ describe('El correo de recuperación', () => {
   });
 
   it('en árabe, de derecha a izquierda', () => {
-    const correo = correoDeRecuperacion(
-      'ar',
-      { email: 'a@b.c', nombre: 'A' },
-      'https://x',
-    );
+    const correo = correoDeRecuperacion('ar', { email: 'a@b.c' }, 'https://x');
 
     expect(correo.html).toContain('dir="rtl"');
   });

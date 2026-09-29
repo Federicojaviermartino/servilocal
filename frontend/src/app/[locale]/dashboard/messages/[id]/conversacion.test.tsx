@@ -6,6 +6,9 @@ import ConversationPage from './page';
 
 const getConversation = vi.fn();
 const send = vi.fn();
+const markRead = vi.fn(async (_partnerId: string) => ({
+  data: { marcados: 1 },
+}));
 const toastError = vi.fn();
 const desplazar = vi.fn();
 
@@ -14,6 +17,7 @@ vi.mock('@/lib/api', () => ({
     getConversation: (id: string) => getConversation(id),
     getConversations: async () => ({ data: [] }),
     send: (datos: unknown) => send(datos),
+    markRead: (id: string) => markRead(id),
   },
 }));
 
@@ -66,6 +70,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   getConversation.mockReset();
   send.mockReset();
+  markRead.mockClear();
   toastError.mockReset();
   desplazar.mockReset();
   // jsdom no desplaza nada: se anota a quién se le pide.
@@ -92,6 +97,26 @@ describe('Conversación', () => {
 
     expect(getConversation).toHaveBeenCalledTimes(2);
     expect(screen.getByText(mensaje.content)).toBeInTheDocument();
+  });
+
+  it('al abrirla, marca como leído lo recibido, aparte de leerla', async () => {
+    // Leer era lo que marcaba, con un GET; ahora es una escritura aparte.
+    getConversation.mockResolvedValue({
+      data: [{ ...mensaje, isRead: false }],
+    });
+    pintar();
+    await esperar();
+
+    expect(markRead).toHaveBeenCalledWith('u2');
+  });
+
+  it('y si no hay nada sin leer, no pide nada en cada refresco', async () => {
+    getConversation.mockResolvedValue({ data: [{ ...mensaje, isRead: true }] });
+    pintar();
+    await esperar();
+    await esperar(10000);
+
+    expect(markRead).not.toHaveBeenCalled();
   });
 
   it('baja hasta el último mensaje desplazando solo la lista', async () => {

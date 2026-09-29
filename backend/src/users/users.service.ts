@@ -51,8 +51,12 @@ export class UsersService {
     private readonly pagos: PaymentsService,
   ) {}
 
-  async findAll(): Promise<User[]> {
+  /** Con `soloDemostracion`, las de la demostración: ver soloVeLaDemostracion. */
+  async findAll({
+    soloDemostracion = false,
+  }: { soloDemostracion?: boolean } = {}): Promise<User[]> {
     return this.userRepository.find({
+      where: soloDemostracion ? { esDemostracion: true } : undefined,
       select: {
         id: true,
         firstName: true,
@@ -372,6 +376,11 @@ export class UsersService {
       await bcrypt.genSalt(10),
     );
 
+    // .invalid es un dominio reservado: nunca llega a ningún buzón. Con el
+    // identificador, no choca con otras cuentas eliminadas, y el correo de
+    // antes queda libre para registrarse de nuevo.
+    const correoAnonimo = `eliminada-${usuarioId}@servilocal.invalid`;
+
     await this.dataSource.transaction(async (gestor) => {
       // Sus servicios con historial se retiran y se vacían: el título se
       // queda, porque es lo que ven en sus reservas quienes los
@@ -398,13 +407,21 @@ export class UsersService {
       await gestor.delete(Notification, { userId: usuarioId });
       await gestor.delete(RestablecimientoContrasena, { userId: usuarioId });
 
+      // El historial de moderación copia el correo de la cuenta que se
+      // desactivó o se reactivó: se cambia por el anonimizado. La entrada se
+      // queda, porque cuenta una decisión que tomó la administración.
+      await gestor.query(
+        `UPDATE "audit_logs"
+         SET "contexto" = "contexto" || jsonb_build_object('email', $2::text)
+         WHERE "entidad" = 'usuario' AND "entidadId" = $1
+           AND "contexto" ? 'email'`,
+        [usuarioId, correoAnonimo],
+      );
+
       await gestor.update(User, usuarioId, {
         firstName: 'Cuenta',
         lastName: 'eliminada',
-        // .invalid es un dominio reservado: nunca llega a ningún buzón. Con
-        // el identificador, no choca con otras cuentas eliminadas, y el
-        // correo de antes queda libre para registrarse de nuevo.
-        email: `eliminada-${usuarioId}@servilocal.invalid`,
+        email: correoAnonimo,
         password: inservible,
         phone: null as unknown as string,
         bio: null as unknown as string,

@@ -308,12 +308,20 @@ export class AdminService {
    * servicio, así que quien publicaba tres tenía tres reputaciones y ninguna
    * suya. Para decidir a quién promocionar o a quién desactivar hace falta el
    * agregado de la persona, y eso no existía en ninguna pantalla.
+   *
+   * Con `soloDemostracion`, solo los de la demostración y con el apellido
+   * acortado, como en el resto del panel: ver soloVeLaDemostracion. El
+   * nombre llegaba ya unido, y la máscara de datos personales, que busca
+   * `lastName`, no lo reconocía.
    */
-  async reputacion(): Promise<ReputacionProveedor[]> {
-    const filas = await this.usuarios
+  async reputacion({
+    soloDemostracion = false,
+  }: { soloDemostracion?: boolean } = {}): Promise<ReputacionProveedor[]> {
+    const consulta = this.usuarios
       .createQueryBuilder('u')
       .select('u.id', 'proveedorId')
-      .addSelect("u.firstName || ' ' || u.lastName", 'nombre')
+      .addSelect('u.firstName', 'nombre')
+      .addSelect('u.lastName', 'apellidos')
       .addSelect('u.city', 'ciudad')
       .addSelect('u.isActive', 'activo')
       .addSelect(
@@ -343,16 +351,24 @@ export class AdminService {
         '(SELECT COUNT(*) FROM reviews r JOIN services s ON s.id = r."serviceId" WHERE s."providerId" = u.id AND r."providerResponse" IS NOT NULL)',
         'respondidas',
       )
-      .where('u.role = :rol', { rol: UserRole.PROVIDER })
-      .getRawMany();
+      .where('u.role = :rol', { rol: UserRole.PROVIDER });
+    if (soloDemostracion) consulta.andWhere('u.esDemostracion = true');
+    const filas = await consulta.getRawMany();
 
     return filas
       .map((f) => {
         const valoraciones = Number(f.valoraciones);
         const respondidas = Number(f.respondidas);
+        const apellidos = String(f.apellidos ?? '');
+        const inicial = apellidos.charAt(0);
         return {
           proveedorId: f.proveedorId,
-          nombre: f.nombre,
+          nombre: [
+            f.nombre,
+            soloDemostracion ? inicial && `${inicial}.` : apellidos,
+          ]
+            .filter(Boolean)
+            .join(' '),
           ciudad: f.ciudad,
           activo: Boolean(f.activo),
           servicios: Number(f.servicios),

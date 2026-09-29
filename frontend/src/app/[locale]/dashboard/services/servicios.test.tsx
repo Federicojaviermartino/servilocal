@@ -5,14 +5,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../../../messages/es.json';
 import ServicesPage from './page';
 
-const getByProvider = vi.fn();
+const getMine = vi.fn();
 const remove = vi.fn();
 const toastError = vi.fn();
 const toastExito = vi.fn();
 
 vi.mock('@/lib/api', () => ({
   servicesApi: {
-    getByProvider: (id: string) => getByProvider(id),
+    getMine: () => getMine(),
     remove: (id: string) => remove(id),
     create: vi.fn(),
     update: vi.fn(),
@@ -62,7 +62,7 @@ async function pintarYEliminar() {
 describe('Mis servicios', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getByProvider.mockResolvedValue({ data: [SERVICIO] });
+    getMine.mockResolvedValue({ data: [SERVICIO] });
   });
 
   it('eliminar uno con reservas abiertas dice por qué no se puede', async () => {
@@ -104,7 +104,7 @@ describe('Mis servicios', () => {
           datos: { title: 'Pintura de interiores' },
         }),
       );
-      getByProvider.mockResolvedValue({ data: [] });
+      getMine.mockResolvedValue({ data: [] });
 
       render(
         <NextIntlClientProvider locale="es" messages={es as never}>
@@ -126,7 +126,7 @@ describe('Mis servicios', () => {
           datos: { title: 'Grifos y cisternas' },
         }),
       );
-      getByProvider.mockResolvedValue({ data: [SERVICIO] });
+      getMine.mockResolvedValue({ data: [SERVICIO] });
 
       render(
         <NextIntlClientProvider locale="es" messages={es as never}>

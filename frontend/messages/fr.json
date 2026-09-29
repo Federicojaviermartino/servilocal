@@ -508,6 +508,7 @@
     "accesosRapidos": "Accès rapides",
     "buscarServicio": "Chercher un service",
     "buscarServicioTexto": "Trouvez des professionnels près de chez vous.",
+    "demostracionAviso": "Vous utilisez un compte de démonstration : essayez tout. Ce que vous modifiez dans les services, votre profil ou les avis est annulé au bout d'une heure.",
     "gestionarServicios": "Gérer mes services",
     "gestionarServiciosTexto": "Créez, modifiez ou mettez en pause vos services publiés.",
     "hola": "Bonjour, {nombre}",

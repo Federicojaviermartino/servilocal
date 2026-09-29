@@ -26,6 +26,7 @@ import { AdminModule } from './admin/admin.module';
 import { IaModule } from './ia/ia.module';
 import configIa from './ia/ia.config';
 import { validarEntorno } from './config/entorno';
+import { DemostracionModule } from './demostracion/demostracion.module';
 
 @Module({
   imports: [
@@ -68,6 +69,7 @@ import { validarEntorno } from './config/entorno';
     AuditoriaModule,
     CorreoModule,
     HealthModule,
+    DemostracionModule,
     AdminModule,
     IaModule,
   ],

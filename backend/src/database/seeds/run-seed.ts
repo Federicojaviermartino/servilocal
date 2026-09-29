@@ -12,6 +12,7 @@ import { COORDENADAS_CIUDAD } from '../../common/ciudades';
 import { comprobarDestino, destinoDe } from './barrera';
 import { Booking, BookingStatus } from '../../entities/booking.entity';
 import { Review } from '../../entities/review.entity';
+import { GUARDAR_INSTANTANEA } from '../../demostracion/instantanea';
 
 /**
  * Datos de demostración.
@@ -1097,6 +1098,12 @@ async function runSeed() {
       ? 'Las cuentas de demostración usan la contraseña Password123!'
       : 'Todas las cuentas usan la contraseña Password123!',
   );
+
+  // La copia de lo público de la demostración, para restaurarla cada hora:
+  // ver DemostracionService.
+  for (const consulta of GUARDAR_INSTANTANEA) {
+    await gestor.query(consulta);
+  }
 
   await transaccion.commitTransaction();
   await transaccion.release();

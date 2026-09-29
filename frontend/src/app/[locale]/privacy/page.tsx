@@ -23,6 +23,10 @@ export async function generateMetadata({
   };
 }
 
+// El mismo que SECURITY.md. Ejercer un derecho no puede obligar a hacerlo
+// en público, que es lo que pasaba cuando el único canal era el repositorio.
+const CONTACTO = 'federicojaviermartino@gmail.com';
+
 const datos = [
   {
     categoria: 'Datos de cuenta',
@@ -34,7 +38,7 @@ const datos = [
     detalle:
       'Teléfono, biografía, dirección, ciudad y código postal, si decides facilitarlos.',
     finalidad:
-      'Mostrar tu perfil a la otra parte de una reserva y calcular distancias.',
+      'Mostrar tu perfil a la otra parte de una reserva y calcular distancias. Si ofreces servicios, una parte es pública: lo explica el apartado «Qué ve cualquier visitante».',
   },
   {
     categoria: 'Datos de uso',
@@ -68,6 +72,13 @@ const datos = [
       'Interpretar lo que necesitas y traducirlo a filtros de búsqueda sobre nuestro propio catálogo.',
   },
   {
+    categoria: 'Historial de moderación',
+    detalle:
+      'Cuando la administración desactiva o reactiva una cuenta, retira una valoración o un servicio, descarta una denuncia o actúa sobre una reserva o un pago ajenos, anotamos quién lo hizo, cuándo y sobre qué. De una cuenta se anota su correo; de una valoración retirada, la nota y el comienzo del texto.',
+    finalidad:
+      'Poder explicar cada decisión de moderación y responder de ella.',
+  },
+  {
     categoria: 'Datos técnicos de errores',
     detalle:
       'Cuando algo falla, la traza del error y datos técnicos de la petición.',
@@ -97,7 +108,7 @@ export default function PrivacyPage() {
         Política de privacidad
       </h1>
       <p className="mt-2 text-sm text-tenue">
-        Última actualización: 28 de septiembre de 2026
+        Última actualización: 29 de septiembre de 2026
       </p>
       {idiomaActual !== 'es' && (
         <p
@@ -121,8 +132,12 @@ export default function PrivacyPage() {
         </h2>
         <p className="mt-3 text-secundario">
           El responsable del tratamiento es Federico Javier Martino, autor del
-          proyecto. Puedes contactar a través del repositorio público del
-          proyecto para cualquier cuestión relativa a esta política.
+          proyecto. Para cualquier cuestión sobre esta política o sobre tus
+          datos, escribe a{' '}
+          <a href={`mailto:${CONTACTO}`} className="text-acento underline">
+            {CONTACTO}
+          </a>
+          .
         </p>
       </section>
 
@@ -155,6 +170,25 @@ export default function PrivacyPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-principal">
+          Qué ve cualquier visitante
+        </h2>
+        <p className="mt-3 text-secundario">
+          Una parte de lo que publicas la puede ver cualquiera, tenga cuenta o
+          no. Si ofreces servicios, tu nombre y apellidos, tu ciudad, tu
+          biografía y tu foto, y de cada servicio su título, su descripción, sus
+          precios, sus fotos, su ciudad y un punto en el mapa, que se calcula a
+          partir de la ciudad y no de tu dirección. Si valoras un servicio, tu
+          nombre con la inicial del apellido, tu foto, la nota y el comentario,
+          junto con la respuesta del profesional.
+        </p>
+        <p className="mt-3 text-secundario">
+          La dirección de referencia de un servicio solo la ve quien lo publica.
+          Tu correo, tu teléfono y tu dirección no se publican nunca.
+        </p>
       </section>
 
       <section className="mt-8">
@@ -202,10 +236,10 @@ export default function PrivacyPage() {
           Transferencias internacionales
         </h2>
         <p className="mt-3 text-secundario">
-          Anthropic, Sentry y Cloudflare pueden tratar datos fuera del Espacio
-          Económico Europeo, y Neon también, según la región en que se aloje la
-          base de datos. OpenStreetMap está en el Reino Unido, que la Comisión
-          Europea reconoce con un nivel de protección adecuado. Esas
+          Stripe, Anthropic, Sentry y Cloudflare pueden tratar datos fuera del
+          Espacio Económico Europeo, y Neon también, según la región en que se
+          aloje la base de datos. OpenStreetMap está en el Reino Unido, que la
+          Comisión Europea reconoce con un nivel de protección adecuado. Esas
           transferencias se amparan en las cláusulas contractuales tipo
           aprobadas por la Comisión Europea. Puedes evitar por completo la de
           Anthropic sin perder el servicio: el buscador con filtros no usa el
@@ -223,7 +257,9 @@ export default function PrivacyPage() {
           y valoraciones se conservan sin tu nombre, porque forman parte del
           historial de otras personas y los pagos deben conservarse durante los
           plazos que fija la normativa fiscal y de consumo; tus mensajes siguen
-          en las conversaciones de la otra parte, también sin tu nombre.
+          en las conversaciones de la otra parte, también sin tu nombre. El
+          historial de moderación también se conserva, porque explica decisiones
+          que tomó la administración, pero tu correo desaparece de él.
         </p>
       </section>
 
@@ -237,8 +273,12 @@ export default function PrivacyPage() {
           Otra cookie recuerda el idioma que elegiste. En el almacenamiento
           local del navegador guardamos tu preferencia de tema y tu nombre y tu
           papel en la plataforma, para mostrarlos, pero no el acceso a tu
-          cuenta. Todo ello es necesario para el funcionamiento que pides; no
-          utilizamos cookies publicitarias ni de seguimiento, y por eso no te
+          cuenta. Si la sesión caduca mientras escribes una reserva, un mensaje,
+          una valoración, un servicio o tu perfil, lo escrito se guarda en el
+          almacenamiento de esa pestaña para recuperarlo cuando vuelvas a
+          entrar: no sale de tu navegador, y se borra al recuperarlo o al cerrar
+          la pestaña. Todo ello es necesario para el funcionamiento que pides;
+          no utilizamos cookies publicitarias ni de seguimiento, y por eso no te
           pedimos consentimiento para ninguna.
         </p>
       </section>
@@ -251,8 +291,11 @@ export default function PrivacyPage() {
           ))}
         </ul>
         <p className="mt-3 text-secundario">
-          Para lo que no puedas hacer desde tu perfil, escríbenos a través del
-          repositorio público del proyecto.
+          Para lo que no puedas hacer desde tu perfil, escribe a{' '}
+          <a href={`mailto:${CONTACTO}`} className="text-acento underline">
+            {CONTACTO}
+          </a>
+          .
         </p>
       </section>
 

@@ -100,6 +100,34 @@ describe('DashboardLayout', () => {
     expect(screen.getByText('contenido')).toBeInTheDocument();
   });
 
+  it('con una cuenta de demostración, avisa de que lo que cambie se deshace', () => {
+    // Sus contraseñas son públicas y la demostración se restaura cada hora:
+    // mejor saberlo antes de ver desaparecer un cambio.
+    useAuthStore.setState({
+      user: {
+        id: 'u1',
+        firstName: 'Carlos',
+        role: 'provider',
+        esDemostracion: true,
+      } as never,
+      isAuthenticated: true,
+    });
+
+    pintar();
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      es.panel.demostracionAviso,
+    );
+  });
+
+  it('con una cuenta real, no', () => {
+    entrarComo('provider');
+
+    pintar();
+
+    expect(screen.queryByRole('note')).toBeNull();
+  });
+
   it('la sección actual se marca como tal', () => {
     // Sin marcarla, el menú no dice dónde se está.
     rutaActual = '/dashboard/profile';

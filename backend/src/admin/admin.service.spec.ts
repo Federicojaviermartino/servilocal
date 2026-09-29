@@ -301,5 +301,35 @@ describe('AdminService', () => {
 
       expect(orden).toEqual(['muchas', 'pocas']);
     });
+
+    it('la administración de verdad ve a todos, con el nombre completo', async () => {
+      const consulta = consultaFalsa({
+        raws: [fila({ nombre: 'Carlos', apellidos: 'Ruiz Pérez' })],
+      });
+      const servicio = await construir({
+        usuarios: repositorioFalso([consulta]),
+      });
+
+      const [p] = await servicio.reputacion();
+
+      expect(p.nombre).toBe('Carlos Ruiz Pérez');
+      expect(consulta.andWhere).not.toHaveBeenCalled();
+    });
+
+    it('la de demostración, solo a los suyos y con el apellido acortado', async () => {
+      // Su contraseña es pública, y la máscara no reconocía un nombre que
+      // llegaba ya unido: salían los apellidos de cuentas reales.
+      const consulta = consultaFalsa({
+        raws: [fila({ nombre: 'Carlos', apellidos: 'Ruiz Pérez' })],
+      });
+      const servicio = await construir({
+        usuarios: repositorioFalso([consulta]),
+      });
+
+      const [p] = await servicio.reputacion({ soloDemostracion: true });
+
+      expect(consulta.andWhere).toHaveBeenCalledWith('u.esDemostracion = true');
+      expect(p.nombre).toBe('Carlos R.');
+    });
   });
 });

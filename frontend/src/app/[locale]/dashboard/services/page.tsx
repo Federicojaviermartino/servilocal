@@ -50,9 +50,7 @@ export default function ProviderServicesPage() {
   // los servicios fallaría dentro del efecto en lugar de en la promesa.
   const { datos, estado, reintentar, referencia } = useCarga<Service[]>(
     () =>
-      user
-        ? servicesApi.getByProvider(user.id)
-        : Promise.reject(new Error('sin usuario')),
+      user ? servicesApi.getMine() : Promise.reject(new Error('sin usuario')),
     [user?.id],
   );
   const services = datos ?? [];

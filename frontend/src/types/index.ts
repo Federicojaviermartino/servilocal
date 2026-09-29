@@ -21,6 +21,8 @@ export interface User {
   /** Cuenta de escaparate: entra y lo ve todo, pero el servidor le rechaza
    *  cualquier escritura. */
   soloLectura: boolean;
+  /** Cuenta de la demostración: lo que se cambie se deshace a la hora. */
+  esDemostracion?: boolean;
   /** Si su titular la eliminó: la cuenta queda anonimizada. */
   eliminadaEn?: string | null;
   createdAt: string;
@@ -31,7 +33,13 @@ export interface User {
 export interface AuthResponse {
   user: Pick<
     User,
-    'id' | 'email' | 'firstName' | 'lastName' | 'role' | 'soloLectura'
+    | 'id'
+    | 'email'
+    | 'firstName'
+    | 'lastName'
+    | 'role'
+    | 'soloLectura'
+    | 'esDemostracion'
   >;
 }
 
@@ -60,7 +68,8 @@ export interface Service {
   priceUnit: string;
   /** Lo que ocupa cada reserva en la agenda, en minutos. */
   durationMinutes?: number;
-  address: string;
+  /** Solo en los propios (/services/mine): lo público no la trae. */
+  address?: string;
   city: string;
   latitude?: number;
   longitude?: number;

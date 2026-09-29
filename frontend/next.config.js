@@ -37,7 +37,7 @@ const csp = [
   // impide es cargar scripts de dominios ajenos.
   "script-src 'self' 'unsafe-inline' https://js.stripe.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://images.unsplash.com https://res.cloudinary.com https://*.tile.openstreetmap.org https://unpkg.com https://*.stripe.com",
+  "img-src 'self' data: blob: https://images.unsplash.com https://res.cloudinary.com https://*.tile.openstreetmap.org https://*.stripe.com",
   "font-src 'self' data:",
   `connect-src 'self' ${apiOrigen} ${apiOrigenSocket} https://api.stripe.com https://maps.stripe.com https://m.stripe.network`,
   'frame-src https://js.stripe.com https://hooks.stripe.com',

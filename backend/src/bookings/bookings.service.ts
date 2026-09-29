@@ -20,7 +20,10 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { reservaVisible } from './partes-visibles';
-import { comprobarMismoMundo } from '../common/demostracion';
+import {
+  comprobarMismoMundo,
+  soloVeLaDemostracion,
+} from '../common/demostracion';
 import {
   comprobarFechaNueva,
   comprobarQueHaLlegado,
@@ -99,6 +102,8 @@ function comprobarPrecio(servicio: Service, propuesto: number): number {
 export interface Solicitante {
   id: string;
   role: string;
+  /** La administración de demostración: ver soloVeLaDemostracion. */
+  soloLectura?: boolean;
 }
 
 /** Las dos partes de la reserva, y la moderación. Nadie más. */
@@ -251,7 +256,11 @@ export class BookingsService {
       },
     });
 
-    if (!booking) {
+    if (
+      !booking ||
+      (soloVeLaDemostracion(quien) &&
+        !(booking.client?.esDemostracion && booking.provider?.esDemostracion))
+    ) {
       throw new NotFoundException('Reserva no encontrada');
     }
 

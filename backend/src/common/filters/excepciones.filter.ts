@@ -119,8 +119,12 @@ export class FiltroDeExcepciones implements ExceptionFilter {
     if (codigo >= HttpStatus.INTERNAL_SERVER_ERROR) {
       const detalle =
         excepcion instanceof Error ? excepcion.stack : String(excepcion);
+      // Sin la consulta, como el registro por petición: puede llevar lo que
+      // alguien buscó o datos suyos, y un 500 los dejaba en el registro y en
+      // Sentry.
+      const ruta = (peticion.originalUrl ?? peticion.url).split('?')[0];
       this.logger.error(
-        `${peticion.method} ${peticion.url} -> ${codigo}` +
+        `${peticion.method} ${ruta} -> ${codigo}` +
           (peticion.user ? ` (usuario ${peticion.user.id})` : ''),
         detalle,
       );
@@ -128,7 +132,7 @@ export class FiltroDeExcepciones implements ExceptionFilter {
       Sentry.withScope((ambito) => {
         ambito.setContext('peticion', {
           metodo: peticion.method,
-          ruta: peticion.url,
+          ruta,
         });
         if (peticion.user) ambito.setUser({ id: peticion.user.id });
         // El mismo que ve el usuario en pantalla y el que sale en el

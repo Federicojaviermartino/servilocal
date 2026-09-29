@@ -68,6 +68,7 @@ export class BookingsController {
     return this.bookingsService.verReserva(id, {
       id: req.user.id,
       role: req.user.role,
+      soloLectura: req.user.soloLectura,
     });
   }
 

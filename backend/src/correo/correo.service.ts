@@ -20,7 +20,8 @@ export const CODIGO_CORREO_NO_DISPONIBLE = 'correo-no-disponible';
 export type ModoCorreo = 'brevo' | 'registro' | 'apagado';
 
 export interface Correo {
-  para: { email: string; nombre: string };
+  /** Sin nombre: ver correoDeRecuperacion. */
+  para: { email: string };
   asunto: string;
   texto: string;
   html: string;
@@ -96,7 +97,7 @@ export class CorreoService {
             'ServiLocal',
           ),
         },
-        to: [{ email: correo.para.email, name: correo.para.nombre }],
+        to: [{ email: correo.para.email }],
         subject: correo.asunto,
         textContent: correo.texto,
         htmlContent: correo.html,

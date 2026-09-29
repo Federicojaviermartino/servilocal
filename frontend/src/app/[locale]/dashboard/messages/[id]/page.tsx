@@ -43,8 +43,14 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   const recargar = useCallback(() => {
     messagesApi.getConversation(partnerId).then(
       ({ data }) => {
-        setMessages(data || []);
+        const hilo: Message[] = data || [];
+        setMessages(hilo);
         setEstado('listo');
+        // Lo recibido se marca leído aparte, y solo si hay algo que marcar:
+        // la conversación se refresca cada diez segundos sin socket.
+        if (hilo.some((m) => m.senderId === partnerId && !m.isRead)) {
+          messagesApi.markRead(partnerId).catch(() => undefined);
+        }
       },
       (error: AxiosError) => {
         setReferencia(referenciaDe(error));

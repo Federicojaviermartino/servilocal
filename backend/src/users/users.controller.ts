@@ -13,6 +13,7 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  NotFoundException,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -30,6 +31,7 @@ import { EliminarCuentaDto, UpdateUserDto } from './dto/update-user.dto';
 import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 import { cerrarSesion } from '../auth/sesion';
 import { LIMITE_AUTENTICACION } from '../common/limites';
+import { soloVeLaDemostracion } from '../common/demostracion';
 
 @ApiTags('users')
 @Controller('users')
@@ -42,8 +44,10 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar todos los usuarios (solo admin)' })
   @ApiResponse({ status: 200, description: 'Lista de usuarios' })
-  async findAll() {
-    return this.usersService.findAll();
+  async findAll(@Request() req: PeticionAutenticada) {
+    return this.usersService.findAll({
+      soloDemostracion: soloVeLaDemostracion(req.user),
+    });
   }
 
   @Get('me')
@@ -127,8 +131,15 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
   @ApiResponse({ status: 200, description: 'Datos del usuario' })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  async findOne(
+    @Request() req: PeticionAutenticada,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
     const user = await this.usersService.findById(id);
+    // Para la administración de demostración, una cuenta real no existe.
+    if (soloVeLaDemostracion(req.user) && !user.esDemostracion) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
     const { password, ...result } = user;
     return result;
   }

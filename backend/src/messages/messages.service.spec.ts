@@ -473,19 +473,41 @@ describe('MessagesService', () => {
       expect(await servicio.findMessagesWithPartner(YO, OTRO)).toEqual([]);
     });
 
-    it('marca como leídos los del otro, nunca los propios', async () => {
+    it('leerlo no marca nada: un GET no escribe', async () => {
+      // Marcaba como leídos al leer, y así escapaba al modo de solo lectura
+      // y a la comprobación de origen: bastaba un enlace desde otro sitio.
       const { servicio, qbMensajes } = await construir(null, {
         hiloEncontrado: conversacion(),
       });
 
       await servicio.findMessagesWithPartner(YO, OTRO);
 
+      expect(qbMensajes.set).not.toHaveBeenCalled();
+      expect(qbMensajes.execute).not.toHaveBeenCalled();
+    });
+
+    it('marcarlo leído marca los del otro, nunca los propios', async () => {
+      const { servicio, qbMensajes } = await construir(null, {
+        hiloEncontrado: conversacion(),
+      });
+      qbMensajes.execute.mockResolvedValueOnce({ affected: 3 });
+
+      expect(await servicio.marcarLeidos(YO, OTRO)).toEqual({ marcados: 3 });
       expect(qbMensajes.set).toHaveBeenCalledWith(
         expect.objectContaining({ isRead: true, readAt: expect.any(Date) }),
       );
       expect(qbMensajes.andWhere).toHaveBeenCalledWith('senderId != :userId', {
         userId: YO,
       });
+    });
+
+    it('sin conversación, no hay nada que marcar', async () => {
+      const { servicio, qbMensajes } = await construir(null, {
+        hiloEncontrado: null,
+      });
+
+      expect(await servicio.marcarLeidos(YO, OTRO)).toEqual({ marcados: 0 });
+      expect(qbMensajes.execute).not.toHaveBeenCalled();
     });
 
     it('el hilo trae los últimos mensajes, y se lee del más antiguo al más reciente', async () => {

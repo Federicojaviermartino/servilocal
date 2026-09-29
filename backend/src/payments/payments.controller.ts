@@ -103,6 +103,7 @@ export class PaymentsController {
     return this.paymentsService.findByBooking(bookingId, {
       id: req.user.id,
       role: req.user.role,
+      soloLectura: req.user.soloLectura,
     });
   }
 }

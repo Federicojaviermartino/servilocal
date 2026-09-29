@@ -37,7 +37,10 @@ export enum AccionAuditada {
  * lo protagonizó, que es cuando más falta hace.
  *
  * Y solo se escribe y se lee: no hay forma de modificar ni de borrar una
- * entrada. Un registro que se puede editar no prueba nada.
+ * entrada. Un registro que se puede editar no prueba nada. La excepción es
+ * el correo de una cuenta que su titular elimina, que se cambia por el
+ * anonimizado (ver UsersService.eliminarCuenta): la decisión sigue
+ * constando, pero no quién era.
  */
 @Entity('audit_logs')
 @Index('IDX_audit_logs_created', ['createdAt'])

@@ -26,6 +26,7 @@ import {
   ReportReviewDto,
 } from './dto/review.dto';
 import type { PeticionAutenticada } from '../auth/peticion-autenticada';
+import { soloVeLaDemostracion } from '../common/demostracion';
 
 @ApiTags('reviews')
 @Controller('reviews')
@@ -54,8 +55,10 @@ export class ReviewsController {
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar valoraciones reportadas (solo admin)' })
-  async findReported() {
-    return this.reviewsService.findReported();
+  async findReported(@Request() req: PeticionAutenticada) {
+    return this.reviewsService.findReported({
+      soloDemostracion: soloVeLaDemostracion(req.user),
+    });
   }
 
   @Post()
@@ -91,10 +94,11 @@ export class ReviewsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Reportar valoración inapropiada' })
   async report(
+    @Request() req: PeticionAutenticada,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReportReviewDto,
   ) {
-    return this.reviewsService.reportReview(id, dto);
+    return this.reviewsService.reportReview(id, dto, req.user);
   }
 
   @Patch(':id/dismiss-report')

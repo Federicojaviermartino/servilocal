@@ -133,6 +133,22 @@ describe('UsersService', () => {
       expect(opciones.select).not.toHaveProperty('password');
       expect(opciones.select).not.toHaveProperty('location');
     });
+
+    it('a la administración de demostración, solo las cuentas de su mundo', async () => {
+      // Con el registro abierto, las cuentas reales quedaban a la vista de
+      // cualquier visitante, aunque con los datos tapados.
+      await servicio.findAll({ soloDemostracion: true });
+
+      const opciones = repo.find.mock.calls[0][0] as { where: unknown };
+      expect(opciones.where).toEqual({ esDemostracion: true });
+    });
+
+    it('a la de verdad, todas', async () => {
+      await servicio.findAll();
+
+      const opciones = repo.find.mock.calls[0][0] as { where: unknown };
+      expect(opciones.where).toBeUndefined();
+    });
   });
 
   describe('editar el perfil', () => {
@@ -318,9 +334,25 @@ describe('UsersService', () => {
       expect(sentencias.some((s) => s.includes('DELETE FROM "services"'))).toBe(
         true,
       );
-      for (const llamada of gestor.query.mock.calls) {
-        expect((llamada as unknown[])[1]).toEqual([YO]);
+      for (const [sql, parametros] of gestor.query.mock.calls as unknown[][]) {
+        if (String(sql).includes('"services"')) {
+          expect(parametros).toEqual([YO]);
+        }
       }
+    });
+
+    it('cambia su correo por el anonimizado en el historial de moderación', async () => {
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      const historial = (gestor.query.mock.calls as unknown[][]).find(([sql]) =>
+        String(sql).includes('UPDATE "audit_logs"'),
+      );
+      expect(historial?.[1]).toEqual([
+        YO,
+        `eliminada-${YO}@servilocal.invalid`,
+      ]);
     });
 
     it('borra sus avisos y sus enlaces de recuperación', async () => {

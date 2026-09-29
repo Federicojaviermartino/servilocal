@@ -272,6 +272,61 @@ describe('ReviewsService', () => {
       expect(r.reportReason).toBe('Habla de otro profesional');
     });
 
+    it('una cuenta de demostración no denuncia valoraciones del mundo real', async () => {
+      // Su contraseña es pública: llenaría la cola de la moderación de
+      // verdad. Para ella, la valoración no existe.
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        client: { esDemostracion: false },
+      });
+
+      await expect(
+        service.reportReview(
+          'v1',
+          { reportReason: 'Spam' },
+          { esDemostracion: true },
+        ),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockReviewRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('ni una real denuncia lo de la demostración', async () => {
+      // Su motivo, texto libre, llegaría a la cola que ve la administración
+      // de demostración, cuya contraseña es pública.
+      mockReviewRepository.findOne.mockResolvedValue({
+        id: 'v1',
+        client: { esDemostracion: true },
+      });
+
+      await expect(
+        service.reportReview(
+          'v1',
+          { reportReason: 'Me llamo Ana y mi teléfono es el 600 000 000' },
+          { esDemostracion: false },
+        ),
+      ).rejects.toThrow(NotFoundException);
+      expect(mockReviewRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('dentro de cada mundo, se denuncia', async () => {
+      mockReviewRepository.save.mockImplementation(async (v: unknown) => v);
+
+      for (const esDemostracion of [true, false]) {
+        mockReviewRepository.findOne.mockResolvedValueOnce({
+          id: 'v1',
+          client: { esDemostracion },
+        });
+
+        const r = await service.reportReview(
+          'v1',
+          { reportReason: 'Spam' },
+          { esDemostracion },
+        );
+
+        expect(r.isReported).toBe(true);
+      }
+    });
+
     it('descartar la denuncia copia el motivo al historial antes de borrarlo', async () => {
       // Se limpia de la valoración, así que si no se copia aquí se pierde
       // justo la razón por la que alguien la moderó.
@@ -367,6 +422,18 @@ describe('ReviewsService', () => {
       );
     });
 
+    it('la administración de demostración solo ve las denuncias de su mundo', async () => {
+      mockReviewRepository.find.mockResolvedValue([]);
+
+      await service.findReported({ soloDemostracion: true });
+
+      expect(mockReviewRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { isReported: true, client: { esDemostracion: true } },
+        }),
+      );
+    });
+
     it('las de un servicio salen de la más reciente a la más antigua', async () => {
       mockReviewRepository.find.mockResolvedValue([]);
 
@@ -397,11 +464,37 @@ describe('ReviewsService', () => {
       };
       expect(Object.keys(opciones.select.client).sort()).toEqual([
         'avatarUrl',
-        'city',
         'firstName',
         'id',
         'lastName',
       ]);
+    });
+
+    it('y de su nombre, solo el nombre y la inicial del apellido', async () => {
+      // Con el nombre completo, la ciudad y su identificador, quien dejaba
+      // una reseña negativa quedaba identificado ante cualquiera, que
+      // además podía escribirle.
+      mockReviewRepository.find.mockResolvedValue([
+        {
+          id: 'r1',
+          rating: 2,
+          client: {
+            id: 'c1',
+            firstName: 'Ana',
+            lastName: 'Núñez',
+            avatarUrl: null,
+            city: 'Málaga',
+          },
+        },
+      ]);
+
+      const [valoracion] = await service.findByService('s1');
+
+      expect(valoracion.client).toEqual({
+        firstName: 'Ana',
+        lastName: 'N.',
+        avatarUrl: null,
+      });
     });
 
     it('tampoco sale el identificador de la reserva ni la denuncia', async () => {
@@ -431,6 +524,22 @@ describe('ReviewsService', () => {
           relations: { service: true },
         }),
       );
+    });
+
+    it('ni las de un cliente ni la cola de moderación llevan la dirección del servicio', async () => {
+      const valorada = () => ({
+        id: 'r1',
+        service: { id: 's1', title: 'Fontanería', address: 'Calle Mía 1' },
+      });
+      mockReviewRepository.find.mockResolvedValueOnce([valorada()]);
+      mockReviewRepository.find.mockResolvedValueOnce([valorada()]);
+
+      const [suya] = await service.findByClient('c1');
+      const [denunciada] = await service.findReported();
+
+      for (const valoracion of [suya, denunciada]) {
+        expect(valoracion.service).toEqual({ id: 's1', title: 'Fontanería' });
+      }
     });
   });
 });

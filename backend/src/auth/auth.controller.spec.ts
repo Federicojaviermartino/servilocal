@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
@@ -82,6 +83,17 @@ const revocadas = {
   delete: vi.fn(async () => undefined),
 };
 
+/**
+ * La recuperación por correo se prueba en su propia batería. Aquí, solo lo
+ * que se ve desde fuera, y sin que salga nada hacia Brevo.
+ */
+const enlaces = {
+  count: vi.fn(async () => 0),
+  create: vi.fn((datos: object) => datos),
+  save: vi.fn(async (datos: object) => datos),
+};
+const correo = { exigirDisponible: vi.fn(), enviar: vi.fn() };
+
 let app: NestExpressApplication;
 let base: string;
 const jwt = new JwtService({ secret: SECRETO });
@@ -105,16 +117,11 @@ beforeAll(async () => {
       SesionesService,
       { provide: getRepositoryToken(User), useValue: usuarios },
       { provide: getRepositoryToken(SesionRevocada), useValue: revocadas },
-      // La recuperación por correo se prueba en su propia batería: aquí no
-      // debe salir nada hacia Brevo.
       {
         provide: getRepositoryToken(RestablecimientoContrasena),
-        useValue: {},
+        useValue: enlaces,
       },
-      {
-        provide: CorreoService,
-        useValue: { exigirDisponible: vi.fn(), enviar: vi.fn() },
-      },
+      { provide: CorreoService, useValue: correo },
       { provide: DataSource, useValue: {} },
       {
         provide: ConfigService,
@@ -583,5 +590,36 @@ describe('Sesión en cookie', () => {
 
       expect(respuesta.status).toBe(200);
     });
+  });
+});
+
+describe('POST /auth/recuperar', () => {
+  const pedirEnlace = (init: RequestInit = {}) =>
+    pedir('/auth/recuperar', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'laura@ejemplo.com' }),
+      ...init,
+    });
+
+  it('responde sin esperar al envío, que solo ocurre si la cuenta existe', async () => {
+    // Esperarlo delataba en el tiempo de respuesta qué correos tienen
+    // cuenta. Con un envío que no acaba nunca, la ruta no respondería.
+    correo.enviar.mockClear();
+    correo.enviar.mockImplementationOnce(() => new Promise(() => undefined));
+
+    const respuesta = await pedirEnlace({ signal: AbortSignal.timeout(3_000) });
+
+    expect(respuesta.status).toBe(202);
+    await vi.waitFor(() => expect(correo.enviar).toHaveBeenCalledTimes(1));
+  });
+
+  it('sin correo configurado, 503', async () => {
+    correo.exigirDisponible.mockImplementationOnce(() => {
+      throw new ServiceUnavailableException();
+    });
+
+    const respuesta = await pedirEnlace();
+
+    expect(respuesta.status).toBe(503);
   });
 });

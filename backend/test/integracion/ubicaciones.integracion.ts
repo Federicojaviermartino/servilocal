@@ -101,7 +101,9 @@ describe('Ubicaciones en PostGIS', () => {
         longitude: 4.51,
         radiusKm: 5,
       });
-      expect(cerca.data.map((s: Service) => s.id)).toEqual([creado.id]);
+      expect(cerca.data.map((s: Pick<Service, 'id'>) => s.id)).toEqual([
+        creado.id,
+      ]);
 
       // Y lo que devuelve la API es GeoJSON, que es lo que lee el mapa.
       expect(cerca.data[0].location).toEqual({
@@ -120,7 +122,9 @@ describe('Ubicaciones en PostGIS', () => {
         longitude: 4.5,
         radiusKm: 10,
       });
-      expect(fueraDeSuCobertura.data.map((s: Service) => s.id)).toEqual([]);
+      expect(
+        fueraDeSuCobertura.data.map((s: Pick<Service, 'id'>) => s.id),
+      ).toEqual([]);
     } finally {
       await fuente.query(`DELETE FROM services WHERE id = $1`, [creado.id]);
     }

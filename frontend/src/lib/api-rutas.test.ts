@@ -148,6 +148,18 @@ describe('rutas del cliente HTTP', () => {
       '/services/provider/p1',
     ],
     [
+      'los servicios propios, con su dirección',
+      () => api.servicesApi.getMine(),
+      'get',
+      '/services/mine',
+    ],
+    [
+      'marcar leído un hilo',
+      () => api.messagesApi.markRead('p1'),
+      'patch',
+      '/messages/conversation/p1/read',
+    ],
+    [
       'publicar servicio',
       () => api.servicesApi.create({}),
       'post',
