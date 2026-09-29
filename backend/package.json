@@ -1,6 +1,6 @@
 {
   "name": "servilocal-backend",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "ServiLocal - API REST para marketplace de servicios locales",
   "author": "Federico Javier Martino",
   "license": "MIT",
@@ -24,6 +24,8 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/config/data-source.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/config/data-source.ts",
+    "migration:show": "npm run typeorm -- migration:show -d src/config/data-source.ts",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
     "lock": "node ../scripts/regenerar-lockfile.mjs",
     "test:integracion": "vitest run --config vitest.integracion.config.ts",

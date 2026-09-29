@@ -63,7 +63,9 @@ axe run would be the kind of statement this project tries not to make.
 
 - Ten languages, each prerendered, with `lang` and `dir` set on the document root.
   Arabic renders right-to-left, with spacing and corners set by logical properties
-  and directional icons mirrored.
+  and directional icons mirrored. Messages take their own direction
+  (`dir="auto"`), so a message written in Arabic reads right-to-left on a page in
+  Spanish, and the other way round.
 - Every page has its own title in its language, so the route announcer speaks when
   moving between sections of the dashboard.
 - Form errors say what is wrong in words, next to the field, and are tied to it with

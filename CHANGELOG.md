@@ -10,6 +10,70 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.6.0] — 2026-09-28
+
+### Added
+
+- The API checks its whole environment before opening the port and refuses to start,
+  listing every problem, when something required is missing or malformed: a secret, a
+  number that is not a number, a switch that is not exactly `true` or `false`, an origin
+  with a path. In production it also refuses the example `JWT_SECRET`. A deploy that
+  does not start never replaces the running one.
+- One JSON line per request in the API's log, with the request id that error screens
+  show as their reference code.
+- `render.yaml` describes both Render services, and `docs/OPERATIONS.md` covers
+  deploying, rolling back with and without migrations, restoring the database, seeding,
+  watching production, rotating secrets and the free-plan limits. `migration:revert` and
+  `migration:show` scripts to go with it.
+- The smoke test opens an issue when it fails and closes it when it passes again. A
+  missing `PROXY_SECRETO` is a warning until the repository variable
+  `HUMO_EXIGIR_PROXY` is set, so red means something again.
+- The CI summary lists the end-to-end tests that only passed on a retry, by name, and
+  the Playwright report is kept for every run, not only failed ones.
+
+### Changed
+
+- Search filters and the list or map view live in the URL: they survive a new text
+  search, going back and reloading, and a link opens what was on screen.
+- The booking page tells a service that does not exist from one that could not be
+  loaded, and lets you retry the second. Sending a review no longer reloads the page and
+  wipes what was being written in the others.
+- In the admin panel, your own account and one its owner deleted cannot be toggled, and
+  the button says why; rejections are explained by their code; percentages follow the
+  language.
+- Messages take their own text direction, so Arabic reads right to left on a Spanish
+  page, long words wrap, and the input has a name and the API's 2000-character limit.
+- Shutting down is graceful: Nest closes the database, Redis and the hold scheduler on
+  `SIGTERM`, and the front-end image runs Next directly so that the signal reaches it.
+- Base images pinned by version and digest and watched by Dependabot; Ubuntu 24.04 and
+  `stripe-mock` pinned in CI; a time limit on every job; superseded runs cancelled
+  outside `main`; Playwright browsers cached; the front-end image is started in CI, not
+  only built. The keep-awake ping runs every five minutes.
+- Coverage now measures the pages, the JWT strategy, the real-time gateway and the hold
+  scheduler, and the floors sit a few points under what is measured.
+
+### Fixed
+
+- `robots.txt` left `/dashboard` itself open to crawlers: the rule had a trailing slash.
+- The sitemap only listed the first 50 services.
+- A booking's description had no length limit; it now takes up to 2000 characters, like
+  a message.
+- The dashboard summary asked for bookings while redirecting an administrator.
+- A notification that arrived before the live connection was up, or during a cut, only
+  showed after reloading. The bell now catches up whenever the socket connects or
+  reconnects, and a list fetched just before a notification, which arrives after it,
+  no longer wipes it from the screen.
+
+### Tests
+
+- A deactivated account loses access with the token it already had, checked against
+  the database and not only with a double that always returned an active user.
+- Pages had no unit tests: the admin panel, search, booking, reviews, dashboard, public
+  pages and the sitemap now do.
+- Two end-to-end tests passed without testing what they said: the live notification
+  accepted any unread count, and the provider inbox never pressed "Accept". Fixing the
+  first one is what uncovered the missed notifications above.
+
 ## [2.5.0] — 2026-09-28
 
 ### Added

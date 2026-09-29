@@ -70,6 +70,21 @@ each degrade on their own without taking anything else down. See
 | Key Value (Valkey) | Render, optional | Must be in the **same region** as the API: Render's private network does not cross regions |
 | CI + keep-warm | GitHub Actions | Tests on every push, plus a scheduled job that keeps both services awake during working hours |
 
+Both services are described in [`render.yaml`](render.yaml), and how to deploy, roll
+back, restore the database and rotate secrets is in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+
+**Starting and stopping.** The API checks its whole environment before opening the port
+(`src/config/entorno.ts`): a missing secret, a number that is not a number, a switch that
+is not exactly `true` or `false` or an origin with a path stops it, with every problem
+listed at once. A deploy that does not start never replaces the running one. On the way
+down, shutdown hooks let Nest close the database pool, Redis and the hold scheduler when
+Render sends `SIGTERM`, and both images run their server directly as the main process so
+that the signal reaches it.
+
+**Logs.** One JSON line per request — method, path without the query string, status,
+milliseconds and request id — besides the formatted lines Nest writes. The request id is
+the reference code an error screen shows, so a report can be traced to its line.
+
 The API sits behind Cloudflare, which sits in front of Render. That chain is the reason
 the rate limiter does not trust `req.ip` — see [Decisions](#decisions). The front end sits
 behind Cloudflare too, which shapes how it relays requests to the API (decision 9).
@@ -484,7 +499,7 @@ Stated here rather than discovered later.
 |-------|------|------------------|
 | Back end | Vitest + SWC | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
 | Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, and that the entities describe exactly the schema the migrations build |
-| Front end | Vitest | Library helpers, components, and catalogue parity across the ten locales |
+| Front end | Vitest | Library helpers, components, pages, and catalogue parity across the ten locales |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
 | AI assistant | Evaluation set, `src/ia/evaluacion` | 48 messages in ten languages with the category and city each should yield. The dictionary path runs in CI; the model path runs by hand, since each case is a paid call, through the same prompt and validation as production |
@@ -499,3 +514,10 @@ which nobody is looking at.
 Two habits, learned the hard way, apply to the tests themselves: a test must be shown to
 fail before it is trusted, and a test that asserts on the wrong side of a condition
 passes just as green as one that works.
+
+Coverage floors sit a few points below what is measured, and the measurement includes the
+pages, the JWT strategy, the real-time gateway and the hold scheduler: with the floors far
+below and those files left out, a whole untested service fitted under the minimum. In CI,
+Playwright retries a failed test twice, and a test that only passes on a retry is listed
+by name in the job summary and flagged as a warning, with its trace kept, instead of
+disappearing into a green run.

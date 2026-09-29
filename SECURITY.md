@@ -88,6 +88,11 @@ dependencies of either the API or the front end.
   variables or conversations with the assistant in the first place. A test
   sends a sign-in, password included, through the real SDK and fails if any
   of it comes out.
+- The API checks its configuration before it starts. In production it
+  refuses to run with the example `JWT_SECRET` from `backend/.env.example`,
+  which is public, and without allowed origins; a secret shorter than 32
+  characters or a missing proxy secret is reported in the log. Values that
+  may carry credentials, such as database or Redis URLs, are never echoed.
 - Administrative actions, manual captures and refunds included, are written
   to an append-only audit log with no foreign key to users, so the record
   survives the deletion of the account that produced it.

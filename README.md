@@ -157,7 +157,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 782 unit tests on the API with doubles, plus 68 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 513 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 826 unit tests on the API with doubles, plus 69 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 711 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -418,6 +418,13 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `IA_ACTIVA` | Optional. `false` turns the AI layer off even when a key is present |
 | `IA_MODELO` | Optional. Defaults to `claude-haiku-4-5-20251001` |
 | `IA_TOPE_MENSUAL_CENTIMOS` | Optional. Hard monthly ceiling in cents, checked before every call. Defaults to `100` (1 €) |
+| `DB_SSL_PERMISIVO` | Optional. `true` accepts a database certificate that cannot be verified, for providers with a self-signed one. Off by default |
+| `PORT` | Optional. Defaults to `3001`; Render sets it |
+| `THROTTLE_LIMIT` | Optional. The general per-visitor limit, 120 requests a minute by default |
+| `IA_MAX_TOKENS_SALIDA`, `IA_TIEMPO_ESPERA_MS` | Optional. Output ceiling per call and how long to wait for the model |
+| `SENTRY_TRACES_SAMPLE_RATE` | Optional. Share of requests traced, between 0 and 1; `0.1` by default |
+| `DIAGNOSTICO_TOKEN` | Optional. Turns on `GET /api/diagnostico/ip`, which shows how many proxies sit in front of the API. Set it, measure, remove it |
+| `ADMIN_PASSWORD`, `ADMIN_EMAIL` | Seed only. Without `ADMIN_PASSWORD` the seed creates just the read-only demo administrator |
 | `REDIS_URL` | Optional. Without it the rate limiter counts in memory, sockets stay on one instance and nothing is cached. On Render, create a free Key Value instance **in the same region as the API** (the private network does not cross regions) and copy its internal URL. Recommended eviction policy: `allkeys-lru` |
 
 **Front end (`servilocal-web`)**
@@ -428,6 +435,8 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `PROXY_SECRETO` | Same value as on the API. Read at runtime, never sent to the browser |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
 | `NEXT_PUBLIC_SITE_URL` | Canonical site URL for `sitemap.xml` and Open Graph |
+
+Every variable is checked when the API boots: a required one that is missing, a number that is not a number or an origin with a path stops it with the list of problems, and a deploy that does not start never replaces the running one. See [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 `NEXT_PUBLIC_*` variables are injected as Docker build args, because Next.js inlines them at build time. After changing one, redeploy with **Clear build cache** — a restart is not enough.
 
@@ -440,6 +449,8 @@ The deployed demo uses:
 - **Neon** for PostgreSQL with PostGIS — a free tier that does not expire after 30 days, unlike the alternatives.
 - **Render** for two web services, each built from its own Dockerfile: the NestJS API and the Next.js front end.
 - **GitHub Actions** for CI and for a scheduled job that keeps both services awake during working hours.
+
+The Render services are described in [`render.yaml`](render.yaml), and deploying, rolling back, restoring the database and rotating secrets are written down step by step in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 ### Stripe webhook
 
@@ -490,9 +501,9 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 782 unit tests across 47 suites, all with doubles (Vitest)
-npm run test:cov      # fails below 90% statements / 80% branches
-npm run test:integracion   # 68 tests against a real database and stripe-mock
+npm run test          # 826 unit tests across 50 suites, all with doubles (Vitest)
+npm run test:cov      # fails below 95% statements / 89% branches
+npm run test:integracion   # 69 tests against a real database and stripe-mock
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run build
 
@@ -501,8 +512,8 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 513 unit tests (Vitest)
-npm run test:cov      # fails below 78% statements / 78% branches
+npm run test          # 711 unit tests (Vitest)
+npm run test:cov      # fails below 89% statements / 87% branches
 npm run build
 
 # End-to-end (Playwright: Chrome desktop and mobile, Firefox, Safari's WebKit)
@@ -537,6 +548,7 @@ All of these run in CI on every push, to any branch. The end-to-end job spins up
 | Done | Calendar: durations, no past dates, completion from the booking date, and no overlapping confirmed bookings, enforced by the database |
 | Done | Account self-service: password change and recovery by email, data export and deletion, and consent recorded at registration |
 | Done | Front end: API errors explained in each language from their code, drafts kept across an expired session, amounts formatted per language, a server-rendered service page, a title on every page and landmarks checked by axe |
+| Done | Operations: configuration checked at boot, graceful shutdown, a log line per request, the Render services as a Blueprint and a runbook for deploying, rolling back and restoring; every page under unit test |
 | Done | Payment holds renewed on the saved card before Stripe drops them; when the bank insists on the cardholder, both parties are told and the client authorises again |
 | Done | Browser session in an `HttpOnly` cookie, kept first-party by relaying API calls through the front end |
 | Done | Public search returns a provider projection, not the full row |
