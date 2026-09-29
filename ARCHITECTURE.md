@@ -106,7 +106,8 @@ Order matters here, and one ordering detail drove a design choice.
     │
     ├─ ThrottlerVisitanteGuard                           (global guard)
     │     keyed on the visitor the front end relays, if the
-    │     shared secret matches; else CF-Connecting-IP; else req.ip
+    │     shared secret matches; else CF-Connecting-IP; else req.ip;
+    │     IPv6 addresses by their /64
     │
     ├─ OrigenGuard                                       (global guard)
     │     rejects state-changing requests from a foreign Origin
@@ -125,8 +126,8 @@ Order matters here, and one ordering detail drove a design choice.
     ├─ controller → service → repository
     │
     └─ FiltroDeExcepciones                               (global filter)
-          structured logging, Sentry capture without
-          any credential
+          structured logging and Sentry capture, without
+          credentials or the query string
 ```
 
 **Why the read-only rule is an interceptor and not a guard.** Nest runs global guards
@@ -134,7 +135,10 @@ Order matters here, and one ordering detail drove a design choice.
 `AuthGuard('jwt')` had set it, find `undefined`, and let everything through.
 Interceptors run after guards, when the user is resolved. The same interceptor denies
 by HTTP method rather than by a list of forbidden routes, so a new destructive endpoint
-is blocked without anyone having to remember to register it.
+is blocked without anyone having to remember to register it. That only holds while no
+`GET` writes anything. One did: opening a conversation marked it as read, so a read-only
+account could do it and a link from another site could trigger it. Marking a thread as
+read is now a `PATCH` of its own.
 
 ## Back end
 
@@ -152,6 +156,7 @@ is blocked without anyone having to remember to register it.
 | `messages` | Direct messaging between client and provider |
 | `notifications` | Persisted notices, pushed over the socket |
 | `auditoria` | Append-only record of administration actions |
+| `demostracion` | Hourly restore of whatever the demo accounts changed |
 | `admin` | Aggregated metrics and provider reputation |
 | `ia` | Optional assistant layer with a hard spend ceiling |
 | `health` | Liveness that checks the database, not just the process |
@@ -354,7 +359,8 @@ position 0 is whatever the client claims. `CF-Connecting-IP` cannot be forged �
 yourself and Cloudflare answers `403` at the edge. Raising `trust proxy` to 3 also works
 today, and was rejected: it assumes exactly two infrastructure hops, which Render
 documents nowhere. Requests relayed by the front end are the one exception, covered in
-decision 9.
+decision 9. IPv6 addresses are counted by their /64: a connection is given a whole block,
+and taking a new address for every request was free.
 
 **2 · Payments use manual capture.**
 Funds are authorised when the booking is made, not taken — the correct model for a
@@ -412,7 +418,8 @@ be done, and cancelling releases the money —; the provider or the administrati
 No route creates, edits or deletes an entry; the service exposes only `anotar` and
 `listar`, and a unit test fails if a mutating method ever appears. The actor's email is
 copied rather than referenced, so the record survives the deletion of the account it
-describes.
+describes. The one change it allows is the email of an account its owner deletes, which
+is replaced by the anonymised one: the decision stays on record, not who it concerned.
 
 **4 · Notification text is composed by the reader, not the writer.**
 See [Real time](#real-time). The same principle drives the audit panel: the server
@@ -492,6 +499,27 @@ directive is now left out when the API is on localhost. And a `Secure` cookie re
 the request arrived over HTTPS — always, in production — rather than whenever `NODE_ENV` is
 `production`.
 
+**10 · The demo repairs itself instead of being locked.**
+The demo passwords are on the sign-in page, so anyone could rewrite the catalogue that
+everyone sees, publish fake listings or leave reviews. Making the demo accounts read-only
+would stop that and hide most of what the application does. Instead, the seed keeps a
+copy of what the demo shows the public — its services, profiles and reviews — in
+`demostracion_original`, and an hourly job inside the API puts back whatever the demo
+accounts changed, deletes what they published, or withdraws it if it already has
+bookings, and deletes the reviews they wrote, recomputing each service's rating. It only
+touches what has been left alone for an hour, so nobody's changes are undone while they
+are trying the demo, and the dashboard tells demo users that it will happen. A demo
+provider's deleted service is withdrawn rather than deleted, so the job can bring it
+back, and publishing is limited to twenty services an hour. The hour is measured on the
+database's clock, because timestamps carry no time zone.
+
+The read-only demo administrator is the other half. It sees every screen of the panel,
+but only the demo's world: a real account's profile, booking or payment answers 404, as
+if it did not exist, and the moderation queue and the providers' reputation list only the
+demo's. Reporting a review follows booking and messaging: each world only reports its
+own, so neither a demo account can fill the real moderation queue nor a real account's
+free-text reason reach the queue that anyone with the demo password can read.
+
 ## Known limitations
 
 Stated here rather than discovered later.
@@ -522,6 +550,10 @@ Stated here rather than discovered later.
   runs outside UTC would still write shifted times.
 - **The free tier sleeps.** Cold starts are visible on the first request after an idle
   period; the scheduled workflow only covers working hours.
+- **The demo restore leaves bookings, payments and messages alone.** They are history
+  shared between demo accounts, and undoing them would pull a booking out from under
+  someone halfway through trying the flow, so they accumulate until the next seed. Like
+  the other hourly jobs, it only runs while the API is awake.
 
 ## Testing and CI
 

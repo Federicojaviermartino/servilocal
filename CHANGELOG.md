@@ -10,6 +10,71 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.9.0] — 2026-09-29
+
+### Security
+
+- Anyone with the demo passwords, which are on the sign-in page, could rewrite the
+  catalogue everyone sees, publish fake listings or leave reviews, and nothing put it
+  back. Every hour, whatever the demo accounts changed more than an hour earlier in
+  services, profiles and reviews now goes back to a copy the seed keeps; what they
+  published is deleted, or withdrawn if it already has bookings; and the reviews they
+  wrote are deleted, with the ratings recomputed. The dashboard warns demo users that
+  it will happen. A service's photos must be `https` links, ten at most, and each
+  visitor can publish twenty services an hour.
+- The read-only demo administrator, whose password is public too, could read real
+  accounts: through a reported review it reached a real booking, whose description is
+  free text the mask does not cover, and the providers' reputation showed full
+  surnames. It now sees only the demo's world: a real account's profile, booking or
+  payment answers 404, and the moderation queue and the reputation list only the
+  demo's, with surnames shortened. Reporting a review follows booking and messaging:
+  each world only reports its own.
+- A service's reference address, required when publishing and often the provider's
+  home, went to anyone: in the search, the service page and a provider's list, and in
+  the bookings, payments and reviews of the other party. The interface never showed
+  it. Now only its owner sees it, through the new `GET /services/mine`.
+- Public reviews carried the reviewer's full surname, city and id; they now show the
+  first name and the initial.
+- Opening a conversation marked its messages as read inside a `GET`, which a read-only
+  account could do and a link from another site could trigger. It is now
+  `PATCH /messages/conversation/:partnerId/read`, which the page calls only when
+  there is something unread.
+- The password limit from 2.4.0 counted 72 characters, while bcrypt reads 72 bytes:
+  forty Arabic letters passed, and the last four did not count. It now counts bytes.
+- Password recovery answers as soon as it knows email is available, and stores the
+  link and calls the email provider afterwards, so its timing no longer tells whether
+  an account exists. The email no longer greets anyone by name: addresses are not
+  verified at sign-up, so the name could have been typed by someone else and sent, in
+  a genuine ServiLocal email, to an address that never asked for it.
+- The rate limiter counts IPv6 addresses by their /64.
+- Errors were logged, and sent to Sentry, with the full URL, so a failed search
+  recorded what someone had searched for. The query string is left out.
+- The map's marker icons came from unpkg.com, which received every visitor's address.
+  The front end serves them now, and the CSP no longer allows that host.
+- Deleting an account replaces its email in the moderation history with the anonymised
+  one.
+
+### Changed
+
+- The privacy policy says what any visitor can see, gives a private contact email
+  instead of the public repository, and declares the moderation history, the drafts
+  kept in the browser tab when a session expires, and Stripe among the international
+  transfers. The terms no longer say that the demo accounts cannot be modified: they
+  can, and what is changed with them is undone an hour later. New accounts record their
+  acceptance of the version of 29 September.
+- SECURITY.md lists two more known gaps: what the missing `PROXY_SECRETO` does today —
+  every visitor reaching the API through the front end shares a single visitor's
+  limits — and that registration reveals whether an email has an account.
+
+### Tests
+
+- Integration tests against PostgreSQL and PostGIS for the demo restore — rewritten,
+  withdrawn and new services, profiles, reviews and ratings, and changes less than an
+  hour old left alone —, for the demo administrator's world, including the reputation,
+  and for the moderation history after an account is deleted.
+- The recovery route is tested over HTTP with an email that never finishes sending,
+  and fails if it waits for it.
+
 ## [2.8.0] — 2026-09-29
 
 ### Fixed

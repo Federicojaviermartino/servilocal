@@ -142,6 +142,19 @@ that is not local unless `SEMILLA_CONFIRMAR` carries the name of the database
 being emptied, so a production URL left in `.env` cannot wipe production by
 accident.
 
+The seed also saves the copy of the demo that the API restores every hour, in
+`demostracion_original`. What the demo accounts change in services, profiles and
+reviews goes back to what the last seed left once it has been untouched for an hour,
+and what they publish is deleted, or withdrawn if it already has bookings. So:
+
+- To change what the demo shows, change the seed and run it. An edit made straight in
+  the database is undone within the hour.
+- In production, where the seed is not run, the copy was taken by the migration that
+  created the table.
+- Each pass that changes something logs `Demostración restaurada: …` with the counts.
+- `RESTAURAR_DEMOSTRACION=false` turns the job off, for instance on a local copy you
+  want to edit by hand.
+
 ## Watching production
 
 - **Health**: `GET https://servilocal-api.onrender.com/api/health` checks the
