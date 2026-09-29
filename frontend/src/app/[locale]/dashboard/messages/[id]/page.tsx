@@ -38,7 +38,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   const borrador = useBorrador<string>(`mensaje:${partnerId}`);
   const [content, setContent] = useState(borrador.recuperado ?? '');
   const [isSending, setIsSending] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const lista = useRef<HTMLDivElement>(null);
 
   const recargar = useCallback(() => {
     messagesApi.getConversation(partnerId).then(
@@ -120,8 +120,12 @@ function Conversacion({ partnerId }: { partnerId: string }) {
     return () => clearInterval(intervalo);
   }, [conectado, recargar]);
 
+  // Al último mensaje, desplazando solo la lista. Con scrollIntoView se
+  // desplazaba también la ventana, y al abrir una conversación la cabecera y
+  // los primeros mensajes quedaban fuera de la vista.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: desplazamiento() });
+    const caja = lista.current;
+    caja?.scrollTo({ top: caja.scrollHeight, behavior: desplazamiento() });
   }, [messages]);
 
   const handleSend = async (e: FormEvent) => {
@@ -169,7 +173,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div ref={lista} className="flex-1 overflow-y-auto p-4 space-y-3">
           {messages.length === 0 ? (
             <p className="text-center text-tenue py-10">{t('sinMensajes')}</p>
           ) : (
@@ -212,7 +216,6 @@ function Conversacion({ partnerId }: { partnerId: string }) {
               );
             })
           )}
-          <div ref={endRef} />
         </div>
 
         <form

@@ -1,5 +1,6 @@
 import { cache } from 'react';
 import type { Review, Service } from '@/types';
+import { apiDelServidor } from './api-servidor';
 
 /**
  * La ficha de un servicio pedida desde el servidor, para el HTML inicial,
@@ -30,7 +31,7 @@ export type Resultado =
   | { estado: 'sin-respuesta' };
 
 export const obtenerServicio = cache(async (id: string): Promise<Resultado> => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = apiDelServidor();
   if (!apiUrl) return { estado: 'sin-respuesta' };
 
   try {
@@ -55,7 +56,7 @@ export const obtenerServicio = cache(async (id: string): Promise<Resultado> => {
 /** Las valoraciones de un servicio, o null si no se han podido pedir. */
 export const obtenerValoraciones = cache(
   async (id: string): Promise<Review[] | null> => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const apiUrl = apiDelServidor();
     if (!apiUrl) return null;
 
     try {

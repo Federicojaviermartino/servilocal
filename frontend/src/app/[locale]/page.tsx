@@ -23,7 +23,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="bg-gradient-to-br from-primary-700 to-primary-900 text-white py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-balance">
             {t('heroTitulo')}
           </h1>
           <p className="text-lg text-primary-100 mb-8 max-w-2xl mx-auto">

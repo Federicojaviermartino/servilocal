@@ -68,6 +68,28 @@ describe('La ficha de un servicio', () => {
     expect(getByService).not.toHaveBeenCalled();
   });
 
+  it('lo que escribe cada cual toma su propia dirección', () => {
+    // En árabe, un texto en castellano se leía al revés: la puntuación y el
+    // corte quedaban en el lado equivocado.
+    pintar({
+      servicio: {
+        ...SERVICIO,
+        provider: { ...SERVICIO.provider, bio: 'Fontanero desde 2010.' },
+      },
+      valoraciones: [{ ...VALORACION, providerResponse: 'Gracias, Ana.' }],
+    });
+
+    for (const texto of [
+      SERVICIO.title,
+      SERVICIO.description,
+      VALORACION.comment!,
+      'Gracias, Ana.',
+      'Fontanero desde 2010.',
+    ]) {
+      expect(screen.getByText(texto)).toHaveAttribute('dir', 'auto');
+    }
+  });
+
   it('si el servidor no pudo preguntar, lo pide desde el navegador', async () => {
     getById.mockResolvedValue({ data: SERVICIO });
     getByService.mockResolvedValue({ data: [] });

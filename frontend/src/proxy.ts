@@ -2,8 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 import { routing } from './i18n/routing';
 import { cabecerasHaciaLaApi, destinoEnLaApi } from './lib/pasarela-api';
-
-const URL_API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { apiDelServidor } from './lib/api-servidor';
 
 const conIdioma = createMiddleware(routing);
 
@@ -13,7 +12,8 @@ export default function proxy(peticion: NextRequest) {
   // Las llamadas a la API pasan por aquí para que la cookie de sesión sea de
   // este dominio. Ver lib/pasarela-api.ts.
   if (pathname.startsWith('/api/')) {
-    return NextResponse.rewrite(destinoEnLaApi(pathname, search, URL_API), {
+    const api = apiDelServidor() || 'http://localhost:3001/api';
+    return NextResponse.rewrite(destinoEnLaApi(pathname, search, api), {
       request: {
         headers: cabecerasHaciaLaApi(
           peticion.headers,

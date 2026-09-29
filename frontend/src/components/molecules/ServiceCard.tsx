@@ -45,10 +45,12 @@ export default function ServiceCard({ service }: ServiceCardProps) {
         )}
       </div>
       <div className="p-4">
-        <h3 className="font-semibold text-principal line-clamp-1">
+        {/* dir="auto" en lo que escribe el profesional: en árabe, un título
+            en castellano se cortaba por el lado equivocado. */}
+        <h3 dir="auto" className="font-semibold text-principal line-clamp-1">
           {service.title}
         </h3>
-        <p className="mt-1 text-sm text-secundario line-clamp-2">
+        <p dir="auto" className="mt-1 text-sm text-secundario line-clamp-2">
           {service.description}
         </p>
         <div className="mt-3 flex items-center gap-3 text-sm text-secundario">

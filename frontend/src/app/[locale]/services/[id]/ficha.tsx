@@ -186,7 +186,9 @@ export default function FichaServicio({
                     {nombreCategoria(service.category)}
                   </Badge>
                 )}
-                <h1 className="text-2xl font-bold text-principal">
+                {/* Lo que escribe el profesional toma su propia dirección:
+                    en árabe, un texto en castellano se leía al revés. */}
+                <h1 dir="auto" className="text-2xl font-bold text-principal">
                   {service.title}
                 </h1>
                 <div className="mt-3 flex items-center gap-4 text-sm text-secundario">
@@ -204,7 +206,7 @@ export default function FichaServicio({
                   <h2 className="text-lg font-semibold text-principal">
                     {t('descripcion')}
                   </h2>
-                  <p className="text-secundario whitespace-pre-line">
+                  <p dir="auto" className="text-secundario whitespace-pre-line">
                     {service.description}
                   </p>
                 </div>
@@ -240,7 +242,10 @@ export default function FichaServicio({
                             <RatingStars rating={review.rating} size="sm" />
                           </div>
                           {review.comment && (
-                            <p className="mt-2 text-secundario text-sm">
+                            <p
+                              dir="auto"
+                              className="mt-2 text-secundario text-sm"
+                            >
                               {review.comment}
                             </p>
                           )}
@@ -249,7 +254,7 @@ export default function FichaServicio({
                               <p className="text-xs font-medium text-tenue mb-1">
                                 {t('respuestaProfesional')}
                               </p>
-                              <p className="text-sm text-secundario">
+                              <p dir="auto" className="text-sm text-secundario">
                                 {review.providerResponse}
                               </p>
                             </div>
@@ -312,7 +317,7 @@ export default function FichaServicio({
                 </div>
               </div>
               {service.provider.bio && (
-                <p className="mt-4 text-sm text-secundario">
+                <p dir="auto" className="mt-4 text-sm text-secundario">
                   {service.provider.bio}
                 </p>
               )}

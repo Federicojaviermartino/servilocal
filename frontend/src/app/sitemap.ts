@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { routing } from '@/i18n/routing';
 import { alternativas, urlDe } from '@/lib/seo';
+import { apiDelServidor } from '@/lib/api-servidor';
 
 // Se regenera cada hora en lugar de fijarse en la compilación: así los
 // servicios nuevos entran solos y, si la API está dormida al compilar, el
@@ -25,7 +26,7 @@ const PAGINAS_MAXIMAS = 20;
  * preferible un sitemap con solo las páginas fijas que un despliegue roto.
  */
 async function obtenerServicios(): Promise<ServicioDelSitemap[]> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  const apiUrl = apiDelServidor();
   if (!apiUrl) {
     // Next incrusta esta variable durante la compilación. Sin ella el sitemap
     // se publica solo con las páginas fijas y las fichas de servicio quedan

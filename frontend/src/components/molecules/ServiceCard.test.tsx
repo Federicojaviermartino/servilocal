@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it } from 'vitest';
 import es from '../../../messages/es.json';
 import de from '../../../messages/de.json';
+import ar from '../../../messages/ar.json';
 import { SERVICIO_EJEMPLO, otroServicio } from '../../../.storybook/datos';
 import ServiceCard from './ServiceCard';
 import type { Service } from '@/types';
@@ -50,6 +51,20 @@ describe('ServiceCard', () => {
       screen.getByText(/pro Stunde|pro Auftrag|pro Tag/),
     ).toBeInTheDocument();
     expect(screen.getByText(SERVICIO_EJEMPLO.title)).toBeInTheDocument();
+  });
+
+  it('el título y la descripción toman su propia dirección', () => {
+    // En árabe, un título en castellano se cortaba por el lado equivocado:
+    // «…Desatasco de tuberías y» en vez de «Desatasco de tuberías y…».
+    pintar(SERVICIO_EJEMPLO, ar, 'ar');
+
+    expect(
+      screen.getByRole('heading', { name: SERVICIO_EJEMPLO.title }),
+    ).toHaveAttribute('dir', 'auto');
+    expect(screen.getByText(SERVICIO_EJEMPLO.description)).toHaveAttribute(
+      'dir',
+      'auto',
+    );
   });
 
   it('enlaza a la ficha del servicio', () => {

@@ -7,6 +7,7 @@ import ConversationPage from './page';
 const getConversation = vi.fn();
 const send = vi.fn();
 const toastError = vi.fn();
+const desplazar = vi.fn();
 
 vi.mock('@/lib/api', () => ({
   messagesApi: {
@@ -66,6 +67,11 @@ beforeEach(() => {
   getConversation.mockReset();
   send.mockReset();
   toastError.mockReset();
+  desplazar.mockReset();
+  // jsdom no desplaza nada: se anota a quién se le pide.
+  Element.prototype.scrollTo = function (this: Element, opciones: unknown) {
+    desplazar(this, opciones);
+  } as typeof Element.prototype.scrollTo;
   Element.prototype.scrollIntoView = vi.fn();
 });
 
@@ -86,6 +92,21 @@ describe('Conversación', () => {
 
     expect(getConversation).toHaveBeenCalledTimes(2);
     expect(screen.getByText(mensaje.content)).toBeInTheDocument();
+  });
+
+  it('baja hasta el último mensaje desplazando solo la lista', async () => {
+    // Con scrollIntoView se desplazaba también la ventana, y al abrir una
+    // conversación la cabecera y los primeros mensajes quedaban fuera.
+    getConversation.mockResolvedValue({ data: [mensaje] });
+    pintar();
+    await esperar();
+
+    const lista = screen.getByText(mensaje.content).closest('.overflow-y-auto');
+    expect(desplazar).toHaveBeenLastCalledWith(
+      lista,
+      expect.objectContaining({ top: expect.any(Number) }),
+    );
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('si la primera carga falla, lo dice y deja reintentar', async () => {

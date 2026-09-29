@@ -182,7 +182,9 @@ function LoginPageContent() {
               {t('demoTitulo')}
             </p>
             <p className="mt-1 text-xs text-secundario">{t('demoTexto')}</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {/* Una cuenta por fila: en tres columnas, dentro de una tarjeta
+                tan estrecha, los correos se partían a mitad de palabra. */}
+            <div className="mt-3 grid gap-2">
               {CUENTAS_DEMO.map((cuenta) => (
                 <button
                   key={cuenta.email}
@@ -191,14 +193,16 @@ function LoginPageContent() {
                   disabled={isLoading}
                   className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-start transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <span className="block text-sm font-medium text-acento">
-                    {t(`demo${cuenta.clave}`)}
+                  <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <span className="text-sm font-medium text-acento">
+                      {t(`demo${cuenta.clave}`)}
+                    </span>
+                    <span className="break-all text-xs text-tenue">
+                      {cuenta.email}
+                    </span>
                   </span>
                   <span className="mt-0.5 block text-xs text-secundario">
                     {t(`demo${cuenta.clave}Descripcion`)}
-                  </span>
-                  <span className="mt-1 block break-all text-xs text-tenue">
-                    {cuenta.email}
                   </span>
                 </button>
               ))}
