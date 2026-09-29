@@ -324,11 +324,14 @@ optional takes anything else down.**
 
 Redis connections are split by purpose: queries fail fast (`enableOfflineQueue: false`),
 subscriptions queue — the socket adapter issues `psubscribe` before the connection is up,
-and failing that call fast kills the API at boot. The client speaks RESP3, so the server
-has to be Redis 6 or later, or any Valkey. CI does not run a Redis: what it shares
-between instances — the throttler count, the cache, a message crossing from one
-instance's socket to another's — was checked by hand with two APIs on one Valkey, and
-again with Redis switched off, to see the same checks fail.
+and failing that call fast kills the API at boot. They close last, once the HTTP server
+and the sockets are down: closed earlier, the socket adapter's unsubscribes were rejected
+with nobody to catch them, and every shutdown exited with code 1. The client speaks
+RESP3, so the server has to be Redis 6 or later, or any Valkey. CI runs a Valkey for
+that shutdown order only; what Redis shares between instances — the throttler count,
+the cache, a message crossing from one instance's socket to another's — was checked by
+hand with two APIs on one Valkey, and again with Redis switched off, to see the same
+checks fail.
 
 The read cache treats every failure — disconnection, corrupt JSON, a cold instance — as
 a miss. It exposes `recordar(key, seconds, compute)`, with no method that can return an
@@ -500,7 +503,7 @@ Stated here rather than discovered later.
 | Layer | Tool | What it protects |
 |-------|------|------------------|
 | Back end | Vitest + SWC | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
-| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, and that the entities describe exactly the schema the migrations build |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, and that shutting down closes the sockets before Redis |
 | Front end | Vitest | Library helpers, components, pages, and catalogue parity across the ten locales |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |

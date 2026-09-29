@@ -18,14 +18,20 @@ steps, not an explanation.
 
 The Render side is described in [`render.yaml`](../render.yaml). It only takes
 effect once it is linked in Render as a Blueprint (*New → Blueprint*, pick this
-repository, and accept the existing services). Two of its settings are not what
-the dashboard has today, and both matter:
+repository, and accept the existing services). One of its settings is not what
+the dashboard has today, and it matters:
 
-- **`autoDeployTrigger: checksPass`**: deploy once CI is green, not on every push.
-  Today a push to `main` deploys straight away, migrations included, before CI has
-  finished.
 - **`healthCheckPath`**: `/api/health` and `/salud`. Without one, Render treats a
   deploy as live as soon as the port opens.
+
+Deploys stay on every commit that reaches `main` (`autoDeployTrigger: commit`),
+not *After CI Checks Pass*. Render holds a deploy back if any check on the commit
+fails, and the head of `main` also carries the post-deploy smoke test, which waits
+for that very deploy, and the keep-awake ping, which fails during an outage and
+would hold back the commit that fixes it. What should keep a red commit out of
+`main` is branch protection requiring CI, which is not set up yet; until it is, the
+only guard is the procedure below: `main` only ever receives a commit that already
+passed on its branch.
 
 ## Deploying
 
@@ -138,14 +144,23 @@ accident.
 
 - **Health**: `GET https://servilocal-api.onrender.com/api/health` checks the
   database and answers 503 when it does not respond.
-- **Keep-awake ping**: every five minutes from 08:00 to 15:55 UTC, both services.
-  It fails, and GitHub emails whoever last changed the workflow, when either does
-  not answer 200 after a retry. Nothing watches outside those hours.
+- **Keep-awake ping**: from 08:00 to 15:59 UTC a run starts every ten minutes. It
+  first checks the home page and `/api/health`, and fails straight away, so GitHub
+  emails whoever last changed the workflow, when either does not answer 200 after
+  a retry. Then it stays for 45 minutes calling `/salud` and `/api/health/vivo`
+  every four, which do not touch the database, so a scheduled run that GitHub
+  starts late or skips does not let the services sleep, and Neon can still
+  suspend. Nothing watches outside those hours.
 - **Smoke test**: after every deploy of `main`; opens an issue when it fails.
 - **Request log**: one JSON line per request in the API's log in Render, with
   method, path (no query string), status, milliseconds and the request id. Anyone
   reporting an error screen can read out its reference code, which is that id:
   search the log for it.
+- **Instances**: every time a service wakes up, Render gives it a new instance id.
+  Search the log by service, not by instance, or a search from before the last
+  wake-up comes back empty. Going to sleep leaves no event in Render's event list,
+  even when the process exits with an error on the way down; a crash while
+  serving shows up there as a failure.
 - **Errors**: Sentry, once `SENTRY_DSN` is set.
 
 An external monitor outside working hours is worth having, but it wakes the
@@ -166,7 +181,7 @@ hours a month; checking both services every hour would use up the quota.
 ## Free-plan limits
 
 - **Render**: 750 hours a month for the whole workspace, which has four services.
-  The keep-awake window costs about 505 of them. When the quota runs out, Render
+  The keep-awake window costs about 510 of them. When the quota runs out, Render
   suspends every free service until the next month.
 - **Neon**: compute suspends after five idle minutes; the next query waits for it
   to resume.

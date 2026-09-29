@@ -10,6 +10,43 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.7.1] — 2026-09-29
+
+### Fixed
+
+- Since 2.6.0 the API exited with code 1 every time it shut down, and on Render's free
+  plan that is every time it goes to sleep. It closed Redis before the HTTP server and
+  the sockets, and the socket adapter, unsubscribing from its channels over a closed
+  connection, left a rejection that nobody caught. Redis now closes last. An
+  integration test shuts the application down against a real Valkey, which CI now
+  runs, and CI also stops the API image with `SIGTERM` and requires it to exit
+  with 0.
+- The keep-awake ping let both services fall asleep several times a day: GitHub
+  started the five-minute schedule up to 35 minutes late. A run now starts every ten
+  minutes, off the hour, checks both services once, and then stays for 45 minutes
+  calling them every four. Those calls go to `/salud` and to a new
+  `GET /api/health/vivo`, which does not touch the database, so the database can
+  still suspend between checks.
+- The ping's check stopped at the first `curl` that could not connect, without the
+  retry and without saying which service had failed.
+
+### Changed
+
+- `render.yaml` deploys on every commit to `main` again, not after CI checks pass.
+  Render holds a deploy back if any check on the commit fails, and the post-deploy
+  smoke test and the keep-awake ping hang off the same commit: the smoke test waits
+  for that very deploy, and a ping failing during an outage would hold back the fix.
+  Branch protection requiring CI is what should keep a red commit out of `main`;
+  it is not set up yet.
+- `react-hook-form` 7.89.
+
+### Documentation
+
+- The CI badge follows `main`: it turned red whenever a Dependabot proposal failed.
+- Redis moves to done in the roadmap; it has been in production for a while.
+- The release dates of 2.4.0 and 2.6.0 follow their tags, and the 2.7.0 entry no
+  longer counts the routes, which it got wrong.
+
 ## [2.7.0] — 2026-09-29
 
 ### Added
@@ -45,15 +82,15 @@ the project, and carry that commit's date.
 
 ### Documentation
 
-- The API reference in the README lists all 62 routes, grouped, and says that each one
-  also answers under `/api/v1`.
+- The API reference in the README lists every public route, grouped, and says that
+  each one also answers under `/api/v1`.
 - Corrected: Stripe's secret key is checked when the API starts, not optional until
   someone pays; the locale file is `proxy.ts`, not `middleware.ts`; the mobile
   end-to-end project is a Pixel 5 at 393 px, with the narrowest layouts checked at
   375 px; the PostgreSQL versions that had drifted from the diagrams are gone; the
   version and test badges are current.
 
-## [2.6.0] — 2026-09-28
+## [2.6.0] — 2026-09-29
 
 ### Added
 
@@ -169,7 +206,7 @@ the project, and carry that commit's date.
   compares against a dummy hash when the email does not exist, so neither the answer nor
   the time it takes reveals which emails are registered.
 
-## [2.4.0] — 2026-09-26
+## [2.4.0] — 2026-09-28
 
 ### Added
 
@@ -556,6 +593,7 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[2.7.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.5.0...v2.6.0
 [2.5.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.4.0...v2.5.0
