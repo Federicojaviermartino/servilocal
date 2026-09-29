@@ -9,7 +9,7 @@ practice here, how it is verified, and — just as importantly — what is not c
 |---|---|
 | Target | WCAG 2.1 level AA |
 | Status | Partially conformant. No known level A or AA failure; the gaps below are level AAA or untested |
-| Verified on | Chromium desktop (1440×900) and a Pixel 5 viewport (375 px), light and dark themes |
+| Verified on | Chromium desktop (1440×900) and a Pixel 5 viewport (393 px), light and dark themes, with reflow checked at 375 px |
 | Last checked | Every push — the checks run in CI |
 
 "Partially conformant" is the honest label. Automated tooling catches roughly a

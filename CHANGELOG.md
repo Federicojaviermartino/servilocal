@@ -10,6 +10,49 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.7.0] — 2026-09-29
+
+### Added
+
+- Screenshots of every main screen, retaken from the running application by
+  `frontend/scripts/capturas.mjs` so that they can follow the interface: home, search as
+  a list and on the map, dark mode, Arabic, service detail, the search assistant, a
+  booking seen by the client and by the provider, messages, demo access, the admin panel
+  and two on a phone. The ones in the README were still those of 1.1.0.
+- `API_INTERNA`, the address the front-end server uses to reach the API when it is not
+  the one the browser uses. Unset, it falls back to `NEXT_PUBLIC_API_URL`, as before.
+
+### Changed
+
+- `docker compose up --build` runs the whole application as it is deployed, and the
+  README says how to seed it. The previous file started development servers inside the
+  production images, which are installed without development dependencies and could
+  not run them; passed the API address to the front end at run time, when Next only
+  reads it at build time; and left the front end's server calling `localhost` inside
+  its own container.
+- The home headline is balanced across its lines instead of leaving one word alone on
+  the last.
+
+### Fixed
+
+- Service titles and descriptions, reviews, providers' replies and bios take their own
+  text direction, as messages already did: in Arabic, a Spanish title was cut off at
+  the wrong end.
+- Opening a conversation scrolled the whole window to the latest message, and the header
+  and first messages ended up out of view. Only the list scrolls now.
+- The demo access cards on the sign-in page broke email addresses mid-word in three
+  narrow columns; there is one account per row now.
+
+### Documentation
+
+- The API reference in the README lists all 62 routes, grouped, and says that each one
+  also answers under `/api/v1`.
+- Corrected: Stripe's secret key is checked when the API starts, not optional until
+  someone pays; the locale file is `proxy.ts`, not `middleware.ts`; the mobile
+  end-to-end project is a Pixel 5 at 393 px, with the narrowest layouts checked at
+  375 px; the PostgreSQL versions that had drifted from the diagrams are gone; the
+  version and test badges are current.
+
 ## [2.6.0] — 2026-09-28
 
 ### Added
@@ -513,6 +556,12 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[2.7.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.6.0...v2.7.0
+[2.6.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.5.0...v2.6.0
+[2.5.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.4.0...v2.5.0
+[2.4.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.3.1...v2.4.0
+[2.3.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.3.0...v2.3.1
+[2.3.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.2...v2.2.0
 [2.1.2]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.1.0...v2.1.1

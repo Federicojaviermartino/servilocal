@@ -43,7 +43,7 @@ through them, and which trade-offs were taken deliberately.
               migrations │           │ SDK      │ (opt.)  │ (optional)
                          ▼           ▼          ▼         ▼
               ┌────────────────┐ ┌────────┐ ┌────────┐ ┌──────────┐
-              │  PostgreSQL 18 │ │ Stripe │ │ Valkey │ │  Claude  │
+              │  PostgreSQL    │ │ Stripe │ │ Valkey │ │  Claude  │
               │   + PostGIS    │ │        │ │        │ │          │
               └────────────────┘ └────────┘ └────────┘ └──────────┘
                                       │
@@ -55,9 +55,11 @@ The browser never calls the API's host for REST: it calls `/api` on the front en
 which relays the request (see [Decisions](#decisions), 9). The WebSocket is the
 exception and connects straight to the API.
 
-Everything to the right of PostgreSQL is optional at runtime. Stripe is required for
-the payment flow but not for the application to boot; Redis, Sentry and the AI layer
-each degrade on their own without taking anything else down. See
+Everything to the right of PostgreSQL is optional at runtime except Stripe's secret key,
+which the API checks with the rest of its environment before starting. No call reaches
+Stripe until someone pays, so a test-mode key is enough to run everything else; Redis,
+Sentry, email and the AI layer each degrade on their own without taking anything else
+down. See
 [Optional infrastructure](#optional-infrastructure).
 
 ## Runtime topology

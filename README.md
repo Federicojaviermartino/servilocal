@@ -3,11 +3,11 @@
 # ServiLocal
 
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
-![Version](https://img.shields.io/badge/VERSION-2.2.0-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/VERSION-2.7.0-2563eb?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-12-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
-![PostGIS](https://img.shields.io/badge/POSTGIS-3.6-336791?style=for-the-badge&logo=postgresql&logoColor=white)
+![PostGIS](https://img.shields.io/badge/POSTGRESQL-POSTGIS-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 
 **Local Services Marketplace with Geospatial Search and Real Payments**
 
@@ -22,7 +22,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-1108%20unit%20%2B%2063%20integration%20%2B%2089%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-1542%20unit%20%2B%2069%20integration%20%2B%2098%20e2e-475569)
 
 </div>
 
@@ -84,17 +84,35 @@ later is blocked without anyone having to remember it.
 
 ## Screenshots
 
-| Search with filters, map view and pagination |
-|---|
-| ![Search results](docs/screenshots/search.png) |
+Taken from the running application with the seeded data by [`frontend/scripts/capturas.mjs`](frontend/scripts/capturas.mjs), so they can be retaken whenever the interface changes.
 
-| The same screen in dark mode |
+| Home |
 |---|
-| ![Search results in dark mode](docs/screenshots/search-dark.png) |
+| ![Home page with the search box](docs/screenshots/home.png) |
 
-| Service detail | One-click demo access |
+| Search with filters and pagination | Map view |
 |---|---|
-| ![Service detail](docs/screenshots/service-detail.png) | ![Demo login](docs/screenshots/demo-login.png) |
+| ![Search results](docs/screenshots/search.png) | ![Search results on the map](docs/screenshots/search-map.png) |
+
+| Dark mode | Arabic, right to left |
+|---|---|
+| ![Search results in dark mode](docs/screenshots/search-dark.png) | ![Search results in Arabic](docs/screenshots/search-arabic.png) |
+
+| Service detail | Search assistant, here on its dictionary path with no model key |
+|---|---|
+| ![Service detail](docs/screenshots/service-detail.png) | ![Natural-language search assistant](docs/screenshots/assistant.png) |
+
+| Client — a confirmed booking | Provider — incoming bookings |
+|---|---|
+| ![Booking detail](docs/screenshots/booking-detail.png) | ![Provider inbox](docs/screenshots/provider-inbox.png) |
+
+| Messages | One-click demo access |
+|---|---|
+| ![Conversation between a client and a provider](docs/screenshots/messages.png) | ![Demo login](docs/screenshots/demo-login.png) |
+
+| Administration — metrics, reputation and audit log |
+|---|
+| ![Administration dashboard](docs/screenshots/admin.png) |
 
 | Mobile — search | Mobile — service detail |
 |---|---|
@@ -157,7 +175,7 @@ later is blocked without anyone having to remember it.
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 826 unit tests on the API with doubles, plus 69 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 711 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a 375 px phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 826 unit tests on the API with doubles, plus 69 integration tests against a real PostGIS database and Stripe's official `stripe-mock`, and 716 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -177,8 +195,8 @@ Three-tier client–server. The front end consumes the REST API; the API persist
          │ Stripe Payment Element              TypeORM │ migrations
          ▼                                             ▼
 ┌──────────────────┐     signed webhook       ┌──────────────────┐
-│      Stripe      │ ───────────────────────► │  PostgreSQL 16   │
-│  manual capture  │                          │   + PostGIS 3.4  │
+│      Stripe      │ ───────────────────────► │    PostgreSQL    │
+│  manual capture  │                          │    + PostGIS     │
 └──────────────────┘                          └──────────────────┘
 ```
 
@@ -217,6 +235,25 @@ The UML diagrams in [`diagrams/`](diagrams/) are the ones submitted with the the
 - Docker and Docker Compose
 - A Stripe account in test mode (publishable and secret keys)
 
+### Everything in Docker
+
+The quickest way to see it running: the database, the API and the front end, built from
+their own Dockerfiles exactly as they are deployed.
+
+```bash
+git clone https://github.com/Federicojaviermartino/servilocal.git
+cd servilocal
+docker compose up --build
+docker compose exec -e SEMILLA_CONFIRMAR=servilocal api node dist/database/seeds/run-seed.js
+```
+
+Then open http://localhost:3000 and use the demo buttons on the sign-in page. The API runs
+its migrations on start; the seed empties the database before filling it, which is why it
+asks for the database name. Payments need your own Stripe test keys. Compose and CI use
+PostgreSQL 16 with PostGIS 3.4.
+
+To work on the code with hot reload, run only the database in Docker and each app with npm:
+
 ### 1. Clone and start the database
 
 ```bash
@@ -227,30 +264,13 @@ docker compose up -d db
 
 ### 2. Configure the back end
 
-Create `backend/.env` from `backend/.env.example`:
-
-```env
-# Local database (ignored when DATABASE_URL is set)
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=servilocal_user
-DB_PASSWORD=servilocal_dev_2026
-DB_DATABASE=servilocal
-
-# Alternative: a single URL, SSL enabled
-# DATABASE_URL=postgresql://user:password@host:5432/database
-
-JWT_SECRET=change_this_in_production
-JWT_EXPIRATION=7d
-
-CORS_ORIGINS=http://localhost:3000
-
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...   # optional at boot
-
-NODE_ENV=development
-PORT=3001
+```bash
+cp backend/.env.example backend/.env
 ```
+
+The example file lists every variable the API reads, with what each one does; the
+defaults work against the database above. Add your Stripe test key to try payments. See
+[Configuration](#configuration) for the full list.
 
 ### 3. Install, migrate and seed
 
@@ -331,12 +351,13 @@ servilocal/
     .storybook/             Component catalogue config and sample data
     e2e/                    Playwright specs, desktop and mobile projects
     messages/               Translation catalogues, one JSON per locale
+    scripts/                capturas.mjs, which takes the screenshots in this README
     src/
       app/
         [locale]/           Every route, prerendered once per language
         robots.ts, sitemap.ts
       i18n/                 Locale list, localised navigation, per-request config
-      middleware.ts         Locale detection and URL prefixing
+      proxy.ts              Locale detection and prefixing, and the relay of /api to the API
       components/
         atoms/              Button, Input, Badge, Avatar, Spinner
         molecules/          SearchBar, ServiceCard, SelectorTema, SelectorIdioma, Pagination
@@ -347,7 +368,9 @@ servilocal/
       types/                Shared TypeScript types
   diagrams/                 UML diagrams as submitted with the thesis (Mermaid)
   wireframes/               Responsive wireframes
-  scripts/                  Lock file regeneration inside Linux
+  scripts/                  Smoke and load tests, dependency audit, CI summaries and
+                            lock file regeneration inside Linux
+  docs/OPERATIONS.md        Deploying, rolling back, restoring and watching production
   docs/screenshots/         Images used in this README
   docker-compose.yml
 ```
@@ -356,40 +379,81 @@ servilocal/
 
 ## API Reference
 
-Interactive documentation is generated with OpenAPI and served at **[`/api/docs`](https://servilocal-api.onrender.com/api/docs)**. Every route is prefixed with `/api`.
+Interactive documentation is generated with OpenAPI and served at **[`/api/docs`](https://servilocal-api.onrender.com/api/docs)**. Every route answers under `/api/v1/…` and, for clients written before versioning, under `/api/…` as well. *JWT* means any signed-in account; a role means that role only.
+
+**Session and account**
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/auth/register` | — | Create a client or provider account and open a browser session |
+| `POST` | `/auth/register` | — | Create a client or provider account, with consent recorded, and open a browser session |
 | `POST` | `/auth/login` | — | Open a browser session: sets an `HttpOnly` cookie, returns the user but not the token |
 | `POST` | `/auth/token` | — | Obtain a bearer JWT, for Swagger, scripts and tests. No cookie |
 | `POST` | `/auth/logout` | — | Delete the session cookie and revoke that session on the server |
-| `GET` | `/auth/socket-ticket` | JWT | One-minute ticket for the Socket.IO handshake, refused as a session |
 | `GET` | `/auth/profile` | JWT | Current user, resolved from the token |
+| `GET` | `/auth/socket-ticket` | JWT | One-minute ticket for the Socket.IO handshake, refused as a session |
 | `POST` | `/auth/cambiar-contrasena` | JWT | Change the password; closes every other session |
 | `POST` | `/auth/recuperar` · `/auth/restablecer` | — | Password recovery by email, with a one-hour, single-use link |
+| `GET` `PUT` | `/users/me` · `/users/profile` | JWT | Read and edit your own profile |
 | `GET` | `/users/me/datos` | JWT | Download all your data as JSON |
 | `POST` | `/users/me/eliminar` | JWT | Delete your account, anonymising what other people's history needs |
+
+**Services and categories**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
 | `GET` | `/services/search` | — | Geospatial search with filters and pagination |
 | `GET` | `/services/:id` | — | Service detail |
 | `GET` | `/services/provider/:providerId` | — | Services published by one provider |
-| `POST` `PUT` `DELETE` | `/services` | Provider | Manage own services |
-| `GET` | `/categories` | — | Hierarchical category tree |
-| `POST` `PUT` `DELETE` | `/categories/:id` | Admin | Manage categories |
+| `POST` | `/services` | Provider | Publish a service |
+| `PUT` `DELETE` | `/services/:id` | Provider | Edit or remove your own service; one with bookings is withdrawn, not deleted |
+| `GET` | `/categories` · `/categories/:id` | — | Hierarchical category tree, and one category |
+| `POST` | `/categories` | Admin | Create a category |
+| `PUT` `DELETE` | `/categories/:id` | Admin | Edit or delete a category |
+
+**Bookings and payments**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
 | `POST` | `/bookings` | Client | Create a booking |
-| `GET` | `/bookings/my` · `/bookings/received` | JWT | Bookings by role |
-| `PATCH` | `/bookings/:id/status` | JWT | Advance the booking state machine |
+| `GET` | `/bookings/my` | JWT | Your bookings as a client |
+| `GET` | `/bookings/received` | Provider | Bookings on your services |
+| `GET` | `/bookings/:id` | JWT | One booking, to either party |
+| `PATCH` | `/bookings/:id/status` | JWT | Advance the booking state machine, with an optional reason when cancelling or rejecting |
 | `POST` | `/payments/create-intent` | Client | Payment intent with manual capture |
+| `POST` | `/payments/confirm/:paymentIntentId` | JWT | Confirm with Stripe, not with the browser, that the funds are held |
+| `GET` | `/payments/my` · `/payments/booking/:bookingId` | JWT | Your payments, and the payment of a booking |
 | `POST` | `/payments/capture/:bookingId` | Admin | Capture held funds of a completed booking; recorded in the audit log |
 | `POST` | `/payments/refund/:bookingId` | Admin | Refund a closed booking; recorded in the audit log |
 | `POST` | `/payments/webhook` | Signature | Stripe events, verified against the raw body |
+
+**Reviews, messages and notifications**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
 | `GET` | `/reviews/service/:serviceId` | — | Reviews for a service |
+| `GET` | `/reviews/my` | JWT | Reviews you have written |
 | `POST` | `/reviews` | Client | Review a completed booking |
 | `PATCH` | `/reviews/:id/response` | Provider | Public reply to a review |
 | `PATCH` | `/reviews/:id/report` | JWT | Report a review |
 | `GET` | `/reviews/reported` | Admin | Moderation queue |
-| `POST` | `/messages` · `/messages/conversation/:id` | JWT | Direct messaging |
-| `GET` | `/users` · `PATCH /users/:id/toggle-active` | Admin | User administration |
+| `PATCH` `DELETE` | `/reviews/:id/dismiss-report` · `/reviews/:id` | Admin | Keep a reported review, or delete it |
+| `POST` | `/messages` | JWT | Start a conversation |
+| `GET` | `/messages/conversations` · `/messages/conversation/:partnerId` | JWT | Your conversations, and one thread |
+| `POST` | `/messages/conversation/:conversationId` | JWT | Reply in a thread |
+| `GET` | `/messages/unread/count` | JWT | Unread messages |
+| `GET` | `/notifications` · `/notifications/unread/count` | JWT | Your notifications |
+| `PATCH` | `/notifications/:id/read` · `/notifications/read-all` | JWT | Mark one or all as read |
+
+**Administration, assistant and health**
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/users` · `/users/:id` | Admin | User administration |
+| `PATCH` | `/users/:id/toggle-active` | Admin | Activate or deactivate an account; recorded in the audit log |
+| `GET` | `/admin/metricas` · `/admin/reputacion` | Admin | Aggregated metrics and provider reputation, computed in SQL |
+| `GET` | `/admin/auditoria` | Admin | Audit log, paginated |
+| `POST` | `/ia/asistente` | — | Natural-language search, with or without the model |
+| `GET` | `/ia/estado` · `/ia/consumo` | — · Admin | Whether the assistant is available, and its spending |
 | `GET` | `/health` | — | Liveness, `503` when the database does not answer |
 
 ---
@@ -435,6 +499,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `PROXY_SECRETO` | Same value as on the API. Read at runtime, never sent to the browser |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key |
 | `NEXT_PUBLIC_SITE_URL` | Canonical site URL for `sitemap.xml` and Open Graph |
+| `API_INTERNA` | Optional. Where the front end's own server reaches the API, when that is not the public address: inside Docker Compose it is `http://api:3001/api`. Read at runtime |
 
 Every variable is checked when the API boots: a required one that is missing, a number that is not a number or an origin with a path stops it with the list of problems, and a deploy that does not start never replaces the running one. See [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
@@ -512,7 +577,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 711 unit tests (Vitest)
+npm run test          # 716 unit tests (Vitest)
 npm run test:cov      # fails below 89% statements / 87% branches
 npm run build
 
@@ -529,7 +594,7 @@ npm run storybook
 npm run lock
 ```
 
-98 end-to-end tests run on four projects — Chrome on desktop and on a 375 px phone, Firefox, and Safari's WebKit — for 392 executions per run. They cover search with accent-insensitive matching, publishing a service from the provider's dashboard, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so a copied cookie stops working, registering only after accepting the terms, changing the password, deleting the account, theme switching, language detection and switching, a service page that arrives rendered, a title and a canonical URL on every page, the admin panel including its charts, moderation queue and audit log, the booking state machine — a booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge —, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, landmarks included, and a full booking paid with a Stripe test card.
+98 end-to-end tests run on four projects — Chrome on desktop and on a Pixel 5 phone (393 px), Firefox, and Safari's WebKit, with the narrowest layouts checked at 375 px — for 392 executions per run. They cover search with accent-insensitive matching, publishing a service from the provider's dashboard, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so a copied cookie stops working, registering only after accepting the terms, changing the password, deleting the account, theme switching, language detection and switching, a service page that arrives rendered, a title and a canonical URL on every page, the admin panel including its charts, moderation queue and audit log, the booking state machine — a booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge —, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, landmarks included, and a full booking paid with a Stripe test card.
 
 The payment test skips itself, with an explicit reason, when Stripe keys are not configured — the booking is still created, but there is nothing to charge. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 
