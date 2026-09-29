@@ -33,6 +33,7 @@ export class CreateBookingDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   // Se mantiene porque la ficha publica una horquilla y el cliente elige

@@ -19,11 +19,12 @@ vi.mock('@/lib/api', () => ({
 // avisos en vivo no lo había probado nunca nadie.
 const socket = vi.hoisted(() => ({
   entregar: null as null | ((aviso: unknown) => void),
+  conectado: false,
 }));
 vi.mock('@/lib/socket-mensajes', () => ({
   useAvisosEnVivo: (manejador: (aviso: unknown) => void) => {
     socket.entregar = manejador;
-    return { conectado: false };
+    return { conectado: socket.conectado };
   },
 }));
 
@@ -52,6 +53,61 @@ function pintar(mensajes: unknown = es, locale = 'es') {
 describe('CampanaAvisos', () => {
   beforeEach(() => {
     listar.mockReset();
+    socket.conectado = false;
+  });
+
+  it('una lista pedida antes de un aviso, que llega después que él, no lo borra', async () => {
+    // Pasaba al conectar: la lista se pedía, el aviso llegaba por el socket
+    // mientras tanto, y la respuesta, más vieja, lo sustituía todo.
+    let responder!: (valor: unknown) => void;
+    listar.mockReturnValueOnce(
+      new Promise((resolver) => {
+        responder = resolver;
+      }),
+    );
+    pintar();
+
+    await act(async () => {
+      socket.entregar!(
+        aviso({ id: 'nuevo', createdAt: '2026-09-18T12:00:00.000Z' }),
+      );
+    });
+    await act(async () => {
+      responder({
+        data: [aviso({ id: 'viejo', isRead: true })],
+      });
+    });
+
+    expect(
+      screen.getByRole('button', {
+        name: es.avisos.abrirConPendientes.replace('{total}', '1'),
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('al conectarse el socket vuelve a pedir la lista, para ponerse al día', async () => {
+    // Un aviso que llega mientras el socket no está no se reenvía: el que
+    // llegaba justo al abrir la página, antes de que terminara de
+    // conectarse, no aparecía hasta recargar.
+    listar
+      .mockResolvedValueOnce({ data: [] })
+      .mockResolvedValueOnce({ data: [aviso()] });
+    const { rerender } = pintar();
+    await waitFor(() => expect(listar).toHaveBeenCalledTimes(1));
+
+    socket.conectado = true;
+    rerender(
+      <NextIntlClientProvider locale="es" messages={es as never}>
+        <CampanaAvisos />
+      </NextIntlClientProvider>,
+    );
+
+    await waitFor(() => expect(listar).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByRole('button', {
+        name: es.avisos.abrirConPendientes.replace('{total}', '1'),
+      }),
+    ).toBeInTheDocument();
   });
 
   it('cuenta solo los que están sin leer', async () => {

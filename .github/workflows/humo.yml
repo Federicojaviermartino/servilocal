@@ -8,6 +8,10 @@
 #
 # Corre cuando la integración termina en verde sobre main, que es lo que
 # Render despliega, y también a mano desde la pestaña de Actions.
+#
+# Si falla, abre una incidencia en el repositorio, o comenta en la que ya
+# esté abierta, y la cierra cuando vuelve a pasar: un rojo en la pestaña de
+# Actions solo lo ve quien entra a mirarla, y una incidencia avisa.
 name: Prueba de humo
 
 on:
@@ -17,21 +21,32 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Solo lee el código; ver ci.yml.
+# Solo lee el código; ver ci.yml. Escribir incidencias, solo el trabajo que
+# las abre.
 permissions:
   contents: read
-
-# Dos despliegues seguidos: solo importa el último.
-concurrency:
-  group: humo
-  cancel-in-progress: true
 
 jobs:
   produccion:
     name: Producción tras desplegar
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    runs-on: ubuntu-latest
+    # Solo tras un empujón a main de este repositorio: una propuesta desde
+    # la rama main de una bifurcación también se llama «main», y antes podía
+    # encolar una prueba que se saltaba pero cancelaba la buena.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+    # Dos despliegues seguidos: solo importa el último. En el trabajo y no en
+    # el flujo, para que una ejecución que se salta no cancele la que corre.
+    concurrency:
+      group: humo
+      cancel-in-progress: true
 
     steps:
       # La cabeza de main, que es lo que Render despliega. No el commit del
@@ -71,4 +86,33 @@ jobs:
         env:
           HUMO_VERSION_API: ${{ steps.versiones.outputs.api }}
           HUMO_VERSION_WEB: ${{ steps.versiones.outputs.web }}
+          # Una variable del repositorio, no un secreto: se pone a «si»
+          # cuando PROXY_SECRETO ya esté en los dos servicios.
+          HUMO_EXIGIR_PROXY: ${{ vars.HUMO_EXIGIR_PROXY }}
         run: node scripts/humo/comprobar.mjs
+
+      - name: Avisar con una incidencia
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EJECUCION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create humo --color d93f0b \
+            --description "La prueba de humo contra producción falla" 2>/dev/null || true
+          abierta=$(gh issue list --label humo --state open --json number --jq '.[0].number')
+          texto="La prueba de humo ha fallado tras desplegar $(git rev-parse --short origin/main): $EJECUCION"
+          if [ -n "$abierta" ]; then
+            gh issue comment "$abierta" --body "$texto"
+          else
+            gh issue create --label humo \
+              --title "Producción: la prueba de humo falla" --body "$texto"
+          fi
+
+      - name: Cerrar la incidencia si vuelve a pasar
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for numero in $(gh issue list --label humo --state open --json number --jq '.[].number'); do
+            gh issue close "$numero" --comment "Vuelve a pasar tras desplegar $(git rev-parse --short origin/main)."
+          done

@@ -87,6 +87,23 @@ updates:
     commit-message:
       prefix: 'Actualiza'
 
+  # La imagen base de las dos: la versión va fijada con su resumen, y sin
+  # esto no la movería nadie.
+  - package-ecosystem: docker
+    directories: ['/backend', '/frontend']
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      node:
+        patterns: ['node']
+    ignore:
+      # Node sigue en la 22, la versión de soporte largo con que se prueba.
+      - dependency-name: 'node'
+        update-types: ['version-update:semver-major']
+    commit-message:
+      prefix: 'Actualiza'
+
   # Las acciones de los flujos de trabajo se quedan ancladas en versiones
   # viejas sin que nadie lo note, y son código de terceros con acceso al
   # repositorio.

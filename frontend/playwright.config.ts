@@ -23,7 +23,15 @@ export default defineConfig({
   workers: 1,
   timeout: 90000,
   expect: { timeout: 20000 },
-  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
+  // En integración continua, también en JSON: de ahí sale el resumen del
+  // trabajo, con las pruebas intermitentes por su nombre.
+  reporter: process.env.CI
+    ? [
+        ['github'],
+        ['html', { open: 'never' }],
+        ['json', { outputFile: 'playwright-report/resultados.json' }],
+      ]
+    : 'list',
   use: {
     baseURL: BASE_URL,
     locale: 'es-ES',

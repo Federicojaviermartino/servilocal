@@ -22,9 +22,17 @@ on:
 permissions:
   contents: read
 
+# Un empujón nuevo a la misma rama deja el anterior sin sentido: se cancela.
+# En main no, porque cada commit de main se despliega y tiene que quedar
+# probado, y la prueba de humo espera a que termine esta.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   backend-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -80,7 +88,8 @@ jobs:
         run: npm run build
 
   frontend-build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -138,7 +147,8 @@ jobs:
   # sus códigos de error, y no hace falta ninguna clave.
   integracion:
     name: Integración contra base de datos y Stripe
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
 
     services:
       postgres:
@@ -155,7 +165,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       stripe:
-        image: stripe/stripe-mock:latest
+        # Fijada: con «latest», un cambio en el emulador podía poner la
+        # integración en rojo sin tocar una línea del código.
+        image: stripe/stripe-mock:v0.205.0
         ports:
           - 12111:12111
 
@@ -198,7 +210,8 @@ jobs:
 
   dependencias:
     name: Vulnerabilidades en producción
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v7
@@ -221,7 +234,8 @@ jobs:
 
   secretos:
     name: Secretos filtrados
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
       # Con la historia entera: un secreto borrado en un commit posterior
@@ -254,7 +268,8 @@ jobs:
   # hasta el final.
   imagenes:
     name: Construcción de las imágenes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     # Para arrancar la imagen de verdad. La API corre las migraciones al
     # levantarse, así que le basta una base vacía.
@@ -284,6 +299,30 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=http://localhost:3001/api \
             -t servilocal-web:ci ./frontend
+
+      # La del frontend se construía y no se encendía nunca: la de extremo a
+      # extremo arranca el frontend fuera de Docker. Una imagen a la que le
+      # faltara algo que la compilación sí tiene pasaba entera.
+      - name: Comprobar que el frontend no corre como root y arranca
+        run: |
+          usuario=$(docker run --rm --entrypoint sh servilocal-web:ci -c whoami)
+          echo "La imagen del frontend corre como: $usuario"
+          test "$usuario" = "node"
+          docker run -d --name web-ci -p 3000:3000 servilocal-web:ci
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/salud > /dev/null; then
+              echo "El frontend responde tras $((i * 2))s"
+              curl -sf -o /dev/null http://localhost:3000/ \
+                || (echo "La portada no responde"; docker logs web-ci; exit 1)
+              docker rm -f web-ci > /dev/null
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El frontend no llegó a responder. Registro del contenedor:"
+          docker logs web-ci
+          docker rm -f web-ci > /dev/null
+          exit 1
 
       - name: Comprobar que la API no corre como root
         run: |
@@ -341,7 +380,8 @@ jobs:
 
   e2e:
     name: Tests de extremo a extremo
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     needs: [backend-test, frontend-build]
 
     services:
@@ -401,6 +441,10 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
       - name: Preparar la API
         working-directory: ./backend
@@ -433,18 +477,46 @@ jobs:
         run: |
           npm ci
           npm run build
-          # Los tres motores: Chrome, Firefox y el WebKit de Safari. Con
-          # Chrome solo, lo que se rompía únicamente en Safari —la página
-          # entera por upgrade-insecure-requests, la cookie de sesión por
-          # http— no lo veía nadie.
-          npx playwright install --with-deps chromium firefox webkit
+          echo "PLAYWRIGHT=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_ENV"
+
+      # Los navegadores pesan cientos de megas y se descargaban en cada
+      # ejecución. Se guardan por versión de Playwright.
+      - name: Recuperar los navegadores
+        id: navegadores
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT }}
+
+      # Los tres motores: Chrome, Firefox y el WebKit de Safari. Con Chrome
+      # solo, lo que se rompía únicamente en Safari —la página entera por
+      # upgrade-insecure-requests, la cookie de sesión por http— no lo veía
+      # nadie. Con los navegadores ya guardados, solo faltan las bibliotecas
+      # del sistema.
+      - name: Instalar los navegadores
+        working-directory: ./frontend
+        run: |
+          if [ "${{ steps.navegadores.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install-deps chromium firefox webkit
+          else
+            npx playwright install --with-deps chromium firefox webkit
+          fi
 
       - name: Ejecutar Playwright
         working-directory: ./frontend
         run: npm run e2e
 
-      - name: Guardar el informe si algo falla
-        if: failure()
+      # Una prueba que falla y pasa al reintentarla deja el trabajo en verde,
+      # y antes el informe solo se guardaba si algo fallaba: la traza de lo
+      # que había salido mal se perdía. Ahora se guarda siempre, y el
+      # resumen cuenta las intermitentes.
+      - name: Resumir el resultado
+        if: ${{ !cancelled() }}
+        working-directory: ./frontend
+        run: node ../scripts/resumen-playwright.mjs playwright-report/resultados.json
+
+      - name: Guardar el informe
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: informe-playwright

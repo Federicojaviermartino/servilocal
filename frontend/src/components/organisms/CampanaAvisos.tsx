@@ -52,7 +52,20 @@ export default function CampanaAvisos() {
     avisosApi
       .listar()
       .then(({ data }) => {
-        setAvisos(Array.isArray(data) ? data : []);
+        const lista: Aviso[] = Array.isArray(data) ? data : [];
+        // Se funde con lo que haya llegado por el socket mientras tanto, en
+        // vez de sustituirlo: una lista pedida justo antes de un aviso llega
+        // después que él, y lo borraba de la pantalla.
+        const traidos = new Set(lista.map((a) => a.id));
+        const ultimo = lista[0]?.createdAt ?? '';
+        setAvisos((previos) =>
+          [
+            ...previos.filter(
+              (a) => !traidos.has(a.id) && a.createdAt > ultimo,
+            ),
+            ...lista,
+          ].slice(0, 20),
+        );
         setFallo(false);
       })
       .catch(() => setFallo(true));
@@ -90,7 +103,7 @@ export default function CampanaAvisos() {
   }, [avisos]);
 
   // Llega por el mismo socket que los mensajes: se pone arriba sin recargar.
-  useAvisosEnVivo((aviso: Aviso) => {
+  const { conectado } = useAvisosEnVivo((aviso: Aviso) => {
     if (conocidos.current.has(aviso.id)) return;
     conocidos.current.add(aviso.id);
 
@@ -106,6 +119,14 @@ export default function CampanaAvisos() {
     setAnuncio(textoDe(aviso));
     window.setTimeout(() => setAnuncio(''), 1000);
   });
+
+  // Al conectar, y al volver a conectar tras un corte, se pide la lista otra
+  // vez. Un aviso que llega mientras el socket no está no se reenvía: el que
+  // llegaba justo al abrir la página, antes de que el socket terminara de
+  // conectarse, no aparecía hasta recargar.
+  useEffect(() => {
+    if (conectado) cargar();
+  }, [conectado, cargar]);
 
   // Pulsar fuera cierra el panel, como cualquier desplegable.
   useEffect(() => {

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
@@ -23,11 +23,16 @@ export default function DashboardHomePage() {
 
   // Los contadores del resumen salen de aquí. Con la lista vacía por un
   // fallo de red enseñaban tres ceros, que es una afirmación, no un hueco.
+  // Sin usuario todavía, o con uno de administración al que se está
+  // redirigiendo, no se pide nada: antes se pedía igual, y era una petición
+  // de más que podía acabar en un 401.
   const { datos, estado, reintentar, referencia } = useCarga<Booking[]>(
     () =>
-      user?.role === UserRole.PROVIDER
-        ? bookingsApi.getReceived()
-        : bookingsApi.getMyBookings(),
+      !user || user.role === UserRole.ADMIN
+        ? Promise.resolve({ data: [] })
+        : user.role === UserRole.PROVIDER
+          ? bookingsApi.getReceived()
+          : bookingsApi.getMyBookings(),
     [user?.id, user?.role],
   );
   const bookings = datos ?? [];

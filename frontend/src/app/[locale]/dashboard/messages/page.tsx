@@ -1,5 +1,4 @@
 'use client';
-import { useState, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { useLocale, useTranslations } from 'next-intl';
@@ -60,7 +59,10 @@ export default function MessagesPage() {
                       })}
                     </span>
                   </div>
-                  <p className="text-sm text-secundario truncate mt-1">
+                  <p
+                    dir="auto"
+                    className="text-sm text-secundario truncate mt-1"
+                  >
                     {c.lastMessage.content}
                   </p>
                 </div>

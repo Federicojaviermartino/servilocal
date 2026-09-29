@@ -25,12 +25,16 @@ import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
 import { IaModule } from './ia/ia.module';
 import configIa from './ia/ia.config';
+import { validarEntorno } from './config/entorno';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      // Antes de nada: con el entorno mal, mejor no arrancar que arrancar
+      // a medias. Ver config/entorno.ts.
+      validate: validarEntorno,
       // Sin este load, configService.get('ia.x') devuelve undefined en
       // silencio y toda la capa se comporta como si no estuviera configurada.
       load: [configIa],

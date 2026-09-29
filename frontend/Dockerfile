@@ -2,7 +2,10 @@
 # contenedor Linux precisamente para que el árbol sea reproducible, y npm
 # install puede resolver uno distinto. Con install, ese trabajo se quedaba en
 # la integración continua y no llegaba a la imagen que se despliega.
-FROM node:22-alpine AS builder
+# Versión y resumen fijos: con «22-alpine» a secas, dos construcciones del
+# mismo commit podían salir con Node o Alpine distintos, según el día.
+# Dependabot propone la siguiente (ver .github/dependabot.yml).
+FROM node:22.23.3-alpine3.24@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -14,11 +17,13 @@ COPY . .
 # y no al arrancar: cambiarlas exige reconstruir, no reiniciar.
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_SITE_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:22.23.3-alpine3.24@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
@@ -38,4 +43,7 @@ COPY --from=builder --chown=node:node /app/next.config.js ./next.config.js
 USER node
 
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+# Next directamente, sin npm ni un shell de por medio: la señal de parada de
+# cada despliegue le llegaba a npm, que no la pasaba, y Render acababa
+# matando el proceso al agotar el plazo. Toma el puerto de PORT.
+CMD ["node", "node_modules/next/dist/bin/next", "start"]

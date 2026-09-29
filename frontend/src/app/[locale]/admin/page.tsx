@@ -27,6 +27,7 @@ import {
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import nextDynamic from 'next/dynamic';
 import { formatearImporte } from '@/lib/importes';
+import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
 import {
   adminApi,
   usersApi,
@@ -392,7 +393,9 @@ function MetricCard({
 
 function UsersSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
+  const avisarFallo = useAvisoDeFallo();
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
+  const yo = useAuthStore((estado) => estado.user?.id);
   const [filter, setFilter] = useState<'all' | UserRole>('all');
 
   const { datos, estado, reintentar, referencia } = useCarga<User[]>(
@@ -415,9 +418,21 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
       toast.success(next ? t('cuentaActivada') : t('cuentaDesactivada'));
       reintentar();
       onMutate?.();
-    } catch {
-      toast.error(t('errorEstadoCuenta'));
+    } catch (error) {
+      avisarFallo(error, t('errorEstadoCuenta'));
     }
+  };
+
+  /**
+   * Por qué no se puede cambiar una cuenta, si no se puede. La API rechaza
+   * desactivarse a uno mismo y reactivar una cuenta que eliminó su titular,
+   * y el botón dejaba pulsar para recibir un «no se pudo» sin motivo.
+   */
+  const bloqueo = (u: User): string | undefined => {
+    if (soloLectura) return t('soloLecturaTexto');
+    if (u.id === yo) return t('noDesactivarte');
+    if (u.eliminadaEn) return t('cuentaEliminadaPorTitular');
+    return undefined;
   };
 
   const visible =
@@ -510,8 +525,8 @@ function UsersSection({ onMutate }: { onMutate?: () => void }) {
                     variant={u.isActive ? 'danger' : 'primary'}
                     size="sm"
                     onClick={() => handleToggle(u)}
-                    disabled={soloLectura}
-                    title={soloLectura ? t('soloLecturaTexto') : undefined}
+                    disabled={!!bloqueo(u)}
+                    title={bloqueo(u)}
                   >
                     {u.isActive ? t('desactivar') : t('activar')}
                   </Button>
@@ -1106,7 +1121,12 @@ function ReputacionSection() {
                   {p.reservasCompletadas}
                 </td>
                 <td className="px-3 py-2 text-end text-secundario">
-                  {p.tasaRespuesta === null ? '—' : `${p.tasaRespuesta}%`}
+                  {p.tasaRespuesta === null
+                    ? '—'
+                    : formato.number(p.tasaRespuesta / 100, {
+                        style: 'percent',
+                        maximumFractionDigits: 1,
+                      })}
                 </td>
                 <td className="px-3 py-2">
                   <Badge variant={p.activo ? 'success' : 'danger'}>
@@ -1122,13 +1142,6 @@ function ReputacionSection() {
   );
 }
 
-/**
- * Consumo de la capa de IA.
- *
- * Se consulta también el estado porque con la capa apagada todas las cifras
- * son cero, y un cero sin explicación se lee como una avería. Aquí el panel
- * dice si está inactiva, si se ha agotado el tope o si funciona.
- */
 /** Lo que pinta el panel de IA: el consumo, y si la capa está disponible. */
 async function pedirIa(): Promise<{
   data: { consumo: ConsumoIa; disponible: boolean; motivo: string | null };
@@ -1146,9 +1159,17 @@ async function pedirIa(): Promise<{
   };
 }
 
+/**
+ * Consumo de la capa de IA.
+ *
+ * Se consulta también el estado porque con la capa apagada todas las cifras
+ * son cero, y un cero sin explicación se lee como una avería. Aquí el panel
+ * dice si está inactiva, si se ha agotado el tope o si funciona.
+ */
 function IaSection() {
   const t = useTranslations('administracion');
   const idioma = useLocale();
+  const formato = useFormatter();
   const {
     datos,
     estado: carga,
@@ -1211,7 +1232,12 @@ function IaSection() {
               tope: euros(consumo.topeCentimos),
             })}
           </span>
-          <span className="text-secundario">{consumo.porcentaje} %</span>
+          <span className="text-secundario">
+            {formato.number(consumo.porcentaje / 100, {
+              style: 'percent',
+              maximumFractionDigits: 1,
+            })}
+          </span>
         </div>
         <div
           className="mt-2 h-2 w-full overflow-hidden rounded-full bg-superficie-alt"

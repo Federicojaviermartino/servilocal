@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { SITIO_URL } from '@/lib/sitio';
 import { routing } from '@/i18n/routing';
+import { alternativas, urlDe } from '@/lib/seo';
 
 // Se regenera cada hora en lugar de fijarse en la compilación: así los
 // servicios nuevos entran solos y, si la API está dormida al compilar, el
@@ -12,25 +12,17 @@ interface ServicioDelSitemap {
   updatedAt?: string;
 }
 
-/**
- * URL absoluta de una ruta en un idioma. El idioma por defecto va sin prefijo
- * porque el enrutado está configurado como «as-needed».
- */
-const urlDe = (idioma: string, ruta: string): string =>
-  idioma === routing.defaultLocale
-    ? `${SITIO_URL}${ruta}`
-    : `${SITIO_URL}/${idioma}${ruta}`;
+/** Lo más que devuelve la búsqueda de una vez. */
+const POR_PAGINA = 50;
 
-/** Mapa hreflang de una ruta: la misma página en todos los idiomas. */
-const alternativasDe = (ruta: string): Record<string, string> =>
-  Object.fromEntries(
-    routing.locales.map((idioma) => [idioma, urlDe(idioma, ruta)]),
-  );
+/** Mil fichas: el mismo tope hasta el que cuenta la búsqueda. */
+const PAGINAS_MAXIMAS = 20;
 
 /**
- * Pide a la API los servicios publicados. Si no responde, se devuelve una
- * lista vacía: es preferible un sitemap con solo las páginas fijas que un
- * despliegue roto.
+ * Pide a la API los servicios publicados, página a página: antes se pedía
+ * una sola, y a partir del servicio 51 las fichas no llegaban al sitemap.
+ * Si no responde, se devuelve lo que se tenga, aunque sea nada: es
+ * preferible un sitemap con solo las páginas fijas que un despliegue roto.
  */
 async function obtenerServicios(): Promise<ServicioDelSitemap[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -44,18 +36,27 @@ async function obtenerServicios(): Promise<ServicioDelSitemap[]> {
     return [];
   }
 
+  const servicios: ServicioDelSitemap[] = [];
   try {
-    const respuesta = await fetch(`${apiUrl}/services/search?limit=50`, {
-      signal: AbortSignal.timeout(15000),
-      next: { revalidate },
-    });
-    if (!respuesta.ok) return [];
+    for (let pagina = 1; pagina <= PAGINAS_MAXIMAS; pagina++) {
+      const respuesta = await fetch(
+        `${apiUrl}/services/search?limit=${POR_PAGINA}&page=${pagina}`,
+        { signal: AbortSignal.timeout(15000), next: { revalidate } },
+      );
+      if (!respuesta.ok) break;
 
-    const cuerpo = await respuesta.json();
-    return Array.isArray(cuerpo) ? cuerpo : cuerpo.data || [];
+      const cuerpo = await respuesta.json();
+      const lote: ServicioDelSitemap[] = Array.isArray(cuerpo)
+        ? cuerpo
+        : cuerpo.data || [];
+      servicios.push(...lote);
+      const paginas = cuerpo.meta?.totalPages ?? 1;
+      if (lote.length < POR_PAGINA || pagina >= paginas) break;
+    }
   } catch {
-    return [];
+    // Lo que haya llegado hasta el fallo sigue valiendo.
   }
+  return servicios;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -81,7 +82,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: ahora,
       changeFrequency: pagina.changeFrequency,
       priority: pagina.priority,
-      alternates: { languages: alternativasDe(pagina.ruta) },
+      alternates: { languages: alternativas(idioma, pagina.ruta).languages },
     })),
   );
 

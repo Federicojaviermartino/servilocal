@@ -13,6 +13,7 @@ import express from 'express';
 import { FiltroDeExcepciones } from '../filters/excepciones.filter';
 import {
   RegistroConPeticion,
+  anotarPeticion,
   identificarPeticion,
   idPeticionActual,
 } from './peticion';
@@ -204,5 +205,77 @@ describe('el identificador en Sentry', () => {
       'id_peticion',
       'reserva-7f3a9c21',
     );
+  });
+});
+
+describe('anotarPeticion', () => {
+  let s: { base: string; cerrar: () => Promise<unknown> };
+  let lineas: string[];
+  let escribir: ReturnType<typeof vi.spyOn>;
+
+  beforeAll(async () => {
+    const app = express();
+    app.use(identificarPeticion);
+    app.use(anotarPeticion);
+    app.get('/api/reservas', (_peticion, respuesta) => {
+      respuesta.status(403).json({});
+    });
+    app.get('/api/health', (_peticion, respuesta) => {
+      respuesta.json({ estado: 'ok' });
+    });
+    const escuchando = app.listen(0, '127.0.0.1');
+    await new Promise((r) => escuchando.once('listening', r));
+    const { port } = escuchando.address() as AddressInfo;
+    s = {
+      base: `http://127.0.0.1:${port}`,
+      cerrar: () => new Promise((r) => escuchando.close(r)),
+    };
+  });
+  afterAll(() => s.cerrar());
+
+  beforeEach(() => {
+    lineas = [];
+    escribir = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation((trozo: string | Uint8Array) => {
+        if (String(trozo).includes('"tipo":"peticion"')) {
+          lineas.push(String(trozo));
+        }
+        return true;
+      });
+  });
+  afterEach(() => escribir.mockRestore());
+
+  /** Espera a que la respuesta termine de salir y se anote. */
+  const pedir = async (ruta: string) => {
+    const respuesta = await fetch(`${s.base}${ruta}`);
+    await respuesta.text();
+    await new Promise((r) => setTimeout(r, 20));
+    return respuesta;
+  };
+
+  it('anota cada petición en una línea de JSON, con su identificador', async () => {
+    // Quien avisaba de un 403 daba su código de referencia y en el registro
+    // no había ninguna línea con él: solo se anotaban los errores 5xx.
+    const respuesta = await pedir('/api/reservas?correo=ana@ejemplo.org');
+
+    expect(lineas).toHaveLength(1);
+    const linea = JSON.parse(lineas[0]);
+    expect(linea).toMatchObject({
+      tipo: 'peticion',
+      metodo: 'GET',
+      ruta: '/api/reservas',
+      estado: 403,
+      id: respuesta.headers.get('x-request-id'),
+    });
+    expect(typeof linea.ms).toBe('number');
+    // Sin la consulta, que podía llevar datos de quien pregunta.
+    expect(lineas[0]).not.toContain('ana@ejemplo.org');
+  });
+
+  it('la comprobación de salud, cuando va bien, no llena el registro', async () => {
+    await pedir('/api/health');
+
+    expect(lineas).toEqual([]);
   });
 });

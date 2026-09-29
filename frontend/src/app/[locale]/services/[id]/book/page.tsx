@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import type { AxiosError } from 'axios';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
@@ -9,8 +10,20 @@ import { servicesApi, bookingsApi } from '@/lib/api';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import BookingForm, { DatosReserva } from '@/components/organisms/BookingForm';
 import Spinner from '@/components/atoms/Spinner';
+import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
 import { useBorrador } from '@/lib/borrador';
+import { referenciaDe } from '@/lib/carga';
+
+/**
+ * Lo que puede pasar al pedir el servicio, que no es lo mismo: un corte de
+ * red, la API dormida o la sesión caducada se decían «servicio no
+ * disponible», y no dejaban reintentar. Solo un 404 es que no está.
+ */
+type Carga =
+  | { servicio: Service }
+  | { fallo: 'no-existe' }
+  | { fallo: 'error' | 'sesion'; referencia?: string };
 
 export default function BookingPage() {
   const t = useTranslations('reserva');
@@ -22,9 +35,10 @@ export default function BookingPage() {
   const borrador = useBorrador<DatosReserva>(`reserva:${serviceId}`);
   const { isAuthenticated, loadFromStorage } = useAuthStore();
 
-  const [service, setService] = useState<Service | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [carga, setCarga] = useState<Carga | null>(null);
+  const [intento, setIntento] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const service = carga && 'servicio' in carga ? carga.servicio : null;
 
   useEffect(() => {
     loadFromStorage();
@@ -37,12 +51,33 @@ export default function BookingPage() {
       }
       return;
     }
-    servicesApi
-      .getById(serviceId)
-      .then((res) => setService(res.data))
-      .catch(() => setService(null))
-      .finally(() => setIsLoading(false));
-  }, [serviceId, isAuthenticated, router]);
+    let vigente = true;
+    servicesApi.getById(serviceId).then(
+      (res) => {
+        if (vigente) setCarga({ servicio: res.data });
+      },
+      (error: AxiosError) => {
+        if (!vigente) return;
+        const estado = error?.response?.status;
+        setCarga(
+          estado === 404
+            ? { fallo: 'no-existe' }
+            : {
+                fallo: estado === 401 ? 'sesion' : 'error',
+                referencia: referenciaDe(error),
+              },
+        );
+      },
+    );
+    return () => {
+      vigente = false;
+    };
+  }, [serviceId, isAuthenticated, router, intento]);
+
+  const reintentar = () => {
+    setCarga(null);
+    setIntento((n) => n + 1);
+  };
 
   const handleSubmit = async (data: DatosReserva) => {
     if (!service) return;
@@ -61,10 +96,22 @@ export default function BookingPage() {
     }
   };
 
-  if (isLoading) {
+  if (!carga) {
     return (
       <div className="flex justify-center py-20">
         <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if ('fallo' in carga && carga.fallo !== 'no-existe') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <EstadoCarga
+          estado={carga.fallo}
+          onReintentar={reintentar}
+          referencia={carga.referencia}
+        />
       </div>
     );
   }

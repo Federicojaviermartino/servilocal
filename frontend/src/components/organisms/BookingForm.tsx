@@ -141,6 +141,7 @@ export default function BookingForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
+          maxLength={2000}
           placeholder={t('descripcionPlaceholder')}
           className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
           required

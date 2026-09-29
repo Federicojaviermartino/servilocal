@@ -1,9 +1,16 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import type { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { RestablecimientoContrasena, User } from '../../src/entities';
+import {
+  RestablecimientoContrasena,
+  SesionRevocada,
+  User,
+} from '../../src/entities';
 import { AuthService } from '../../src/auth/auth.service';
+import { SesionesService } from '../../src/auth/sesiones.service';
+import { JwtStrategy } from '../../src/auth/strategies/jwt.strategy';
 import { UsersService } from '../../src/users/users.service';
 import { crearFuente } from './base';
 
@@ -275,5 +282,41 @@ describe('La cuenta', () => {
     );
 
     expect(indices).toHaveLength(1);
+  });
+
+  it('una cuenta que la administración desactiva pierde el acceso con el token que ya tenía', async () => {
+    // Lo decide una consulta con «isActive: true». Ninguna prueba lo miraba
+    // contra la base: con un doble, quitarla no rompía nada.
+    const cuenta = await cuentaNueva('client');
+    const jwt = new JwtService({ secret: 'secreto-de-integracion' });
+    const estrategia = new JwtStrategy(
+      {
+        getOrThrow: () => 'secreto-de-integracion',
+      } as unknown as ConfigService,
+      fuente.getRepository(User),
+      new SesionesService(fuente.getRepository(SesionRevocada), jwt),
+    );
+    const [{ id: administrador }] = await fuente.query(
+      `SELECT id FROM users WHERE role = 'admin' LIMIT 1`,
+    );
+
+    try {
+      const sesion = await acceso.login({
+        email: cuenta.email,
+        password: CLAVE,
+      });
+      const pase = jwt.decode(sesion.accessToken);
+      await expect(estrategia.validate(pase)).resolves.toMatchObject({
+        id: cuenta.id,
+      });
+
+      await usuarios.toggleActive(cuenta.id, { id: administrador } as never);
+
+      await expect(estrategia.validate(pase)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    } finally {
+      await fuente.query(`DELETE FROM users WHERE id = $1`, [cuenta.id]);
+    }
   });
 });

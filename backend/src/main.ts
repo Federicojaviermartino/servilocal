@@ -25,6 +25,7 @@ import { iniciarSentry } from './common/observabilidad/sentry';
 import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
 import { secretoDelProxy } from './common/proxy-frontend';
 import {
+  anotarPeticion,
   identificarPeticion,
   RegistroConPeticion,
 } from './common/observabilidad/peticion';
@@ -41,6 +42,13 @@ async function bootstrap() {
 
   // Lo primero, para que hasta la respuesta de un CORS rechazado lo lleve.
   app.use(identificarPeticion);
+  app.use(anotarPeticion);
+
+  // Render para la instancia vieja con SIGTERM en cada despliegue. Sin esto
+  // no lo atendía nadie: se cortaban las peticiones y los sockets a medias,
+  // no se cerraban las conexiones con la base, y el programador de
+  // retenciones y Redis no llegaban a ejecutar su cierre.
+  app.enableShutdownHooks();
 
   // Render sirve detrás de un proxy: sin esto todas las peticiones parecen
   // venir de la misma IP y el límite de peticiones afectaría a todos a la vez.

@@ -121,11 +121,19 @@ test.describe('Avisos', () => {
     const reserva = await creada.json();
     confirmadas.push({ id: reserva.id, token: cliente.token });
 
+    // Todo leído antes de empezar. Antes valía «N sin leer» con cualquier N,
+    // y a partir del segundo navegador Laura ya tenía avisos de las
+    // ejecuciones anteriores: con el socket roto, la prueba seguía en verde.
+    const leidos = await request.patch(`${API}/notifications/read-all`, {
+      headers: { Authorization: `Bearer ${cliente.token}` },
+    });
+    expect(leidos.ok(), 'los avisos anteriores se marcan leídos').toBeTruthy();
+
     // El cliente mira la pantalla antes de que ocurra nada.
     await entrarComo(page, 'cliente');
     await page.goto('/dashboard');
     const campana = page.getByRole('button', { name: /Abrir los avisos/ });
-    await expect(campana).toBeVisible();
+    await expect(campana).toHaveAccessibleName('Abrir los avisos');
 
     // El profesional acepta desde fuera, como haría en su propio navegador.
     const aceptada = await request.patch(
@@ -137,17 +145,18 @@ test.describe('Avisos', () => {
     );
     expect(aceptada.ok(), 'el profesional acepta la reserva').toBeTruthy();
 
-    // Sin recargar: el aviso entra por el mismo socket que los mensajes.
-    await expect(
-      page.getByRole('button', { name: /Abrir los avisos, \d+ sin leer/ }),
-    ).toBeVisible({ timeout: 10000 });
+    // Sin recargar: el aviso entra por el mismo socket que los mensajes, y
+    // es este, no uno de antes.
+    await expect(campana).toHaveAccessibleName('Abrir los avisos, 1 sin leer', {
+      timeout: 10000,
+    });
 
     await campana.click();
     const panel = page.getByRole('dialog', { name: 'Avisos' });
     await expect(panel).toBeVisible();
     await expect(
-      panel.getByText('Tu reserva ha sido confirmada.').first(),
-    ).toBeVisible();
+      panel.locator(`a[href$="/dashboard/bookings/${reserva.id}"]`),
+    ).toContainText('Tu reserva ha sido confirmada.');
   });
 
   test('el texto del aviso va en el idioma del visitante', async ({

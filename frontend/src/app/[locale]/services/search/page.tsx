@@ -22,7 +22,7 @@ type Vista = 'list' | 'map';
 // resultados del área, no doce de veinticinco. 50 es el máximo que admite la API.
 const LIMITE_MAPA = 50;
 
-// Carga dinamica del mapa para evitar SSR issues con Leaflet
+// El mapa se carga aparte y solo en el navegador: Leaflet necesita window.
 const ServiceMap = nextDynamic(
   () => import('@/components/organisms/ServiceMap'),
   {
@@ -54,21 +54,54 @@ interface Resultado {
   fallo: FalloBusqueda | null;
 }
 
+/**
+ * Los filtros y la vista viven en la dirección.
+ *
+ * Solo iban el texto, la categoría y la ciudad, y solo al llegar: los del
+ * panel no se escribían nunca, así que buscar un texto nuevo, volver atrás o
+ * recargar los perdía, y un enlace no llevaba los filtros que se veían.
+ */
 function filtrosDeUrl(
   parametros: ReadonlyURLSearchParams,
 ): ServiceSearchParams {
+  const numero = (clave: string) => {
+    const valor = Number(parametros.get(clave));
+    return Number.isFinite(valor) && valor > 0 ? valor : undefined;
+  };
   return {
     query: parametros.get('q') || undefined,
     categoryId: parametros.get('category') || undefined,
     city: parametros.get('city') || undefined,
+    radiusKm: numero('radius'),
+    minRating: numero('rating'),
+    maxPrice: numero('maxPrice'),
   };
+}
+
+function vistaDeUrl(parametros: ReadonlyURLSearchParams): Vista {
+  return parametros.get('view') === 'map' ? 'map' : 'list';
+}
+
+/** La dirección de unos filtros y una vista, siempre en el mismo orden. */
+function urlDeBusqueda(filtros: ServiceSearchParams, vista: Vista): string {
+  const parametros = new URLSearchParams();
+  if (filtros.query) parametros.set('q', filtros.query);
+  if (filtros.categoryId) parametros.set('category', filtros.categoryId);
+  if (filtros.city) parametros.set('city', filtros.city);
+  if (filtros.radiusKm) parametros.set('radius', String(filtros.radiusKm));
+  if (filtros.minRating) parametros.set('rating', String(filtros.minRating));
+  if (filtros.maxPrice) parametros.set('maxPrice', String(filtros.maxPrice));
+  if (vista === 'map') parametros.set('view', 'map');
+  return parametros.toString();
 }
 
 function SearchPageContent({
   inicial,
+  vistaInicial,
   claveUrl,
 }: {
   inicial: ServiceSearchParams;
+  vistaInicial: Vista;
   claveUrl: string;
 }) {
   const t = useTranslations('resultados');
@@ -79,7 +112,7 @@ function SearchPageContent({
   const [consulta, setConsulta] = useState<Consulta>(() => ({
     filtros: inicial,
     pagina: 1,
-    vista: 'list',
+    vista: vistaInicial,
     intento: 0,
   }));
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -154,27 +187,29 @@ function SearchPageContent({
   }, [isLoading, consulta]);
   const tardando = isLoading && tardandoEn === consulta;
 
+  // La URL manda: los filtros y la vista se escriben en ella, y al cambiar
+  // la página vuelve a empezar desde ahí (ver BusquedaDesdeUrl). Si no
+  // cambia, se vuelve a pedir lo mismo desde la primera página.
+  const irA = (destino: string) =>
+    router.replace(
+      destino ? `/services/search?${destino}` : '/services/search',
+    );
+
   const handleSearch = (query: string) => {
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    // La URL manda: si cambia, la página vuelve a empezar desde ella. Antes
-    // se pedía aquí y otra vez al cambiar la URL, y la segunda petición,
-    // que era la que se quedaba, perdía los filtros del panel.
-    if (params.toString() !== claveUrl) {
-      router.replace(`/services/search?${params.toString()}`);
+    const destino = urlDeBusqueda(
+      { ...consulta.filtros, query: query || undefined },
+      consulta.vista,
+    );
+    if (destino !== claveUrl) {
+      irA(destino);
       return;
     }
-    setConsulta((c) => ({
-      ...c,
-      filtros: { ...c.filtros, query: query || undefined },
-      pagina: 1,
-      intento: c.intento + 1,
-    }));
+    setConsulta((c) => ({ ...c, pagina: 1, intento: c.intento + 1 }));
   };
 
   const cambiarVista = (nueva: Vista) => {
     if (nueva === view) return;
-    setConsulta((c) => ({ ...c, vista: nueva, pagina: 1 }));
+    irA(urlDeBusqueda(consulta.filtros, nueva));
   };
 
   const cambiarPagina = (nuevaPagina: number) => {
@@ -188,11 +223,15 @@ function SearchPageContent({
   };
 
   const handleApplyFilters = (newFilters: ServiceSearchParams) => {
-    setConsulta((c) => ({
-      ...c,
-      filtros: { ...c.filtros, ...newFilters },
-      pagina: 1,
-    }));
+    const destino = urlDeBusqueda(
+      { ...consulta.filtros, ...newFilters },
+      consulta.vista,
+    );
+    if (destino !== claveUrl) {
+      irA(destino);
+      return;
+    }
+    setConsulta((c) => ({ ...c, pagina: 1, intento: c.intento + 1 }));
   };
 
   const reintentar = () =>
@@ -347,12 +386,17 @@ function SearchPageContent({
  */
 function BusquedaDesdeUrl() {
   const searchParams = useSearchParams();
-  const claveUrl = searchParams.toString();
+  const inicial = filtrosDeUrl(searchParams);
+  const vistaInicial = vistaDeUrl(searchParams);
+  // En la forma en que la escribe la página: dos direcciones con los mismos
+  // filtros en otro orden son la misma búsqueda.
+  const claveUrl = urlDeBusqueda(inicial, vistaInicial);
   return (
     <SearchPageContent
       key={claveUrl}
       claveUrl={claveUrl}
-      inicial={filtrosDeUrl(searchParams)}
+      inicial={inicial}
+      vistaInicial={vistaInicial}
     />
   );
 }

@@ -56,16 +56,25 @@ export default defineConfig({
         'src/common/observabilidad/peticion.ts',
         // Cómo se entiende un mensaje del asistente, con el modelo y sin él.
         'src/ia/interpretacion.ts',
+        // Quién entra, a quién le llegan los mensajes en vivo, cuándo se
+        // renueva el dinero retenido y con qué se conecta a la base. Tenían
+        // pruebas, pero no se medían: borrarlas no lo habría notado nadie.
+        'src/auth/strategies/**/*.ts',
+        'src/**/*.gateway.ts',
+        'src/payments/programador-retenciones.ts',
+        'src/config/conexion-segura.ts',
+        'src/config/entorno.ts',
       ],
       exclude: ['src/**/*.spec.ts'],
       reportsDirectory: 'coverage',
-      // Los mismos umbrales que con Jest. Cambiar de corredor no es motivo
-      // para bajarlos.
+      // Unos puntos por debajo de lo medido (97 % de sentencias y 91 % de
+      // ramas). Con el suelo en 90 y 80, cabía un servicio nuevo entero sin
+      // una sola prueba sin que la cifra bajara del mínimo.
       thresholds: {
-        statements: 90,
-        branches: 80,
-        functions: 90,
-        lines: 90,
+        statements: 95,
+        branches: 89,
+        functions: 94,
+        lines: 95,
         'src/auth/auth.service.ts': { statements: 85, branches: 75 },
         'src/common/guards/roles.guard.ts': { statements: 90, branches: 100 },
       },

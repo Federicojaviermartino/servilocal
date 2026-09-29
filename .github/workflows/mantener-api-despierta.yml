@@ -7,14 +7,22 @@ name: Mantener la demo despierta
 #
 # Aritmética del cupo: Render concede 750 horas mensuales POR WORKSPACE,
 # repartidas entre todos los servicios gratuitos. Este workspace tiene cuatro.
-# Manteniendo dos servicios despiertos 8 horas al día salen unas 480 h al mes,
-# lo que deja unas 270 h para el resto. Ampliar la franja o añadir servicios
+# De 08:00 a 15:55 más los 15 minutos que tardan en dormirse, son unas 8 h 10
+# min por servicio y día: con dos servicios, unas 505 h en un mes de 31 días,
+# lo que deja unas 245 h para el resto. Ampliar la franja o añadir servicios
 # puede agotar el cupo, y entonces Render suspende TODOS los servicios
 # gratuitos hasta el mes siguiente.
 #
-# La petición a la API va al endpoint de estado, que comprueba la base de datos:
-# así también evita que el cómputo de Neon se suspenda, y devuelve 503 si la
-# base no responde, de modo que el aviso del flujo significa algo.
+# Cada cinco minutos y no cada diez: GitHub retrasa o se salta ejecuciones
+# programadas —se midieron huecos de hasta 27 minutos—, y con diez un solo
+# hueco ya dejaba dormirse la API. No suma horas: el servicio ya estaba
+# despierto.
+#
+# La petición a la API va al endpoint de estado, que comprueba la base de
+# datos y devuelve 503 si no responde, de modo que el aviso del flujo
+# significa algo. No evita que Neon suspenda su cómputo, que lo hace a los
+# cinco minutos sin actividad: eso solo cuesta un arranque en frío de la
+# base.
 
 # Aviso que conviene tener presente: GitHub desactiva solo los flujos
 # programados de un repositorio tras 60 días sin actividad, y avisa por correo
@@ -24,9 +32,9 @@ name: Mantener la demo despierta
 
 on:
   schedule:
-    # Cada 10 minutos, de 08:00 a 15:59 UTC.
+    # Cada 5 minutos, de 08:00 a 15:59 UTC.
     # Son las 10:00-17:59 en horario de verano peninsular y 09:00-16:59 en invierno.
-    - cron: '*/10 8-15 * * *'
+    - cron: '*/5 8-15 * * *'
   workflow_dispatch:
 
 # Solo hace peticiones a la demo: no necesita ni leer el repositorio.
@@ -34,7 +42,8 @@ permissions: {}
 
 jobs:
   ping:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Despertar el frontend y la API
         run: |

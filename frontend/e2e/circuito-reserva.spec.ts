@@ -34,6 +34,7 @@ async function reservaPendiente(
   cliente: { token: string },
   profesional: { id: string },
   fecha = huecoLibre(),
+  descripcion = 'Reserva de la comprobación del circuito.',
 ) {
   const busqueda = await peticion.get(`${API}/services/search?limit=50`);
   const { data } = await busqueda.json();
@@ -50,7 +51,7 @@ async function reservaPendiente(
     data: {
       serviceId: servicio.id,
       scheduledDate: fecha,
-      description: 'Reserva de la comprobación del circuito.',
+      description: descripcion,
       totalPrice: servicio.priceMin,
     },
   });
@@ -80,14 +81,42 @@ test.describe('Quién decide sobre una reserva', () => {
   }) => {
     const cliente = await entrar(request, 'laura@ejemplo.com');
     const profesional = await entrar(request, 'carlos@ejemplo.com');
-    await reservaPendiente(request, cliente, profesional);
+    // Con una descripción que solo tiene esta reserva: antes bastaba con que
+    // hubiera algún botón «Aceptar» en la bandeja, de cualquier reserva
+    // acumulada, y no se pulsaba. Con la bandeja rota seguía en verde.
+    const descripcion = `Reserva de la comprobación del circuito ${Date.now()}`;
+    const reserva = await reservaPendiente(
+      request,
+      cliente,
+      profesional,
+      huecoLibre(),
+      descripcion,
+    );
 
     await entrarComo(page, 'profesional');
     await page.goto('/dashboard/bookings-received');
 
     // Si el pago la confirmara sola, aquí no habría nada que aceptar.
-    const aceptar = page.getByRole('button', { name: /Aceptar/ }).first();
-    await expect(aceptar).toBeVisible();
+    // La tarjeta de esta reserva, por su descripción. No «el primer
+    // antepasado con un botón»: al aceptarla se queda sin botones.
+    const fila = page.locator('.shadow-card').filter({ hasText: descripcion });
+    await fila.getByRole('button', { name: 'Aceptar reserva' }).click();
+    await expect(fila.getByText('Confirmada')).toBeVisible();
+
+    const leida = await request.get(`${API}/bookings/${reserva.id}`, {
+      headers: { Authorization: `Bearer ${profesional.token}` },
+    });
+    expect((await leida.json()).status).toBe('confirmed');
+
+    // Confirmada ocupa agenda: se cancela para no chocar con las siguientes.
+    const cancelada = await request.patch(
+      `${API}/bookings/${reserva.id}/status`,
+      {
+        headers: { Authorization: `Bearer ${cliente.token}` },
+        data: { status: 'cancelled' },
+      },
+    );
+    expect(cancelada.ok(), 'la reserva se cancela al terminar').toBeTruthy();
   });
 
   test('completar exige haber aceptado antes', async ({ request }) => {

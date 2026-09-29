@@ -10,9 +10,12 @@ export default function HomePage() {
   const t = useTranslations('inicio');
 
   const handleSearch = (query: string) => {
-    const params = new URLSearchParams();
-    if (query) params.set('q', query);
-    router.push(`/services/search?${params.toString()}`);
+    // Sin texto, al buscador a secas: antes quedaba «/services/search?».
+    router.push(
+      query
+        ? `/services/search?${new URLSearchParams({ q: query })}`
+        : '/services/search',
+    );
   };
 
   return (

@@ -2,12 +2,16 @@ import type { MetadataRoute } from 'next';
 import { SITIO_URL } from '@/lib/sitio';
 import { routing } from '@/i18n/routing';
 
-/** Rutas privadas, tal como se escriben sin prefijo de idioma. */
+/**
+ * Rutas privadas, tal como se escriben sin prefijo de idioma. Sin barra
+ * final: robots.txt compara por prefijo, y con «/dashboard/» el propio
+ * resumen del panel, que es «/dashboard», quedaba abierto al rastreo.
+ */
 const PRIVADAS = [
-  '/dashboard/',
-  '/bookings/',
+  '/dashboard',
+  '/bookings',
   '/admin',
-  '/auth/',
+  '/auth',
   '/services/*/book',
 ];
 
@@ -16,8 +20,8 @@ const PRIVADAS = [
  * buscador y, sobre todo, evita que aparezcan en resultados rutas privadas
  * como el detalle de una reserva o una conversación.
  *
- * Cada ruta se repite con el prefijo de cada idioma: sin eso, /en/dashboard/
- * quedaría indexable aunque /dashboard/ no lo estuviera.
+ * Cada ruta se repite con el prefijo de cada idioma: sin eso, /en/dashboard
+ * quedaría indexable aunque /dashboard no lo estuviera.
  */
 export default function robots(): MetadataRoute.Robots {
   const disallow = PRIVADAS.flatMap((ruta) => [

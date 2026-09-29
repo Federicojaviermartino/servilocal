@@ -13,7 +13,8 @@ import { useBorrador } from '@/lib/borrador';
 
 interface PendingReviewFormProps {
   booking: Booking;
-  onSubmit: () => void;
+  /** Con la valoración que ha guardado la API. */
+  onSubmit: (valoracion: Review) => void;
 }
 
 function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
@@ -34,14 +35,14 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
     }
     setIsSubmitting(true);
     try {
-      await reviewsApi.create({
+      const { data: guardada } = await reviewsApi.create({
         bookingId: booking.id,
         serviceId: booking.serviceId,
         rating,
         comment: comment || undefined,
       });
       toast.success(t('enviada'));
-      onSubmit();
+      onSubmit(guardada);
     } catch (error) {
       avisarFallo(error, t('errorEnviar'), () =>
         borrador.guardar({ rating, comment }),
@@ -123,8 +124,13 @@ export default function MyReviewsPage() {
     pedirValoraciones,
     [],
   );
-  const pending = datos?.pendientes ?? [];
-  const reviews = datos?.enviadas ?? [];
+  // Lo enviado desde que se abrió la pantalla. Antes, cada envío volvía a
+  // pedirlo todo: mientras cargaba se desmontaban los demás formularios, y
+  // lo que se estuviera escribiendo en otra valoración se perdía.
+  const [recientes, setRecientes] = useState<Review[]>([]);
+  const valoradas = new Set(recientes.map((r) => r.bookingId));
+  const pending = (datos?.pendientes ?? []).filter((b) => !valoradas.has(b.id));
+  const reviews = [...recientes, ...(datos?.enviadas ?? [])];
 
   return (
     <EstadoCarga
@@ -145,7 +151,9 @@ export default function MyReviewsPage() {
                 <PendingReviewForm
                   key={b.id}
                   booking={b}
-                  onSubmit={reintentar}
+                  onSubmit={(valoracion) =>
+                    setRecientes((antes) => [valoracion, ...antes])
+                  }
                 />
               ))}
             </div>

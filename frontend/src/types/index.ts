@@ -21,6 +21,8 @@ export interface User {
   /** Cuenta de escaparate: entra y lo ve todo, pero el servidor le rechaza
    *  cualquier escritura. */
   soloLectura: boolean;
+  /** Si su titular la eliminó: la cuenta queda anonimizada. */
+  eliminadaEn?: string | null;
   createdAt: string;
 }
 

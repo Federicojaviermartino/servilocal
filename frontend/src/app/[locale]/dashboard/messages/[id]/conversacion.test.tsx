@@ -186,4 +186,48 @@ describe('Conversación', () => {
       ).toHaveValue('Mañana a las diez me va bien');
     });
   });
+
+  describe('lo que se escribe', () => {
+    const conMensaje = async (content: string) => {
+      getConversation.mockResolvedValue({ data: [{ ...mensaje, content }] });
+      pintar();
+      await esperar();
+    };
+
+    it('un mensaje en árabe toma su propia dirección', async () => {
+      // Con la página en castellano, un texto en árabe se pintaba de
+      // izquierda a derecha y la puntuación quedaba en el lado equivocado.
+      await conMensaje('مرحبا، هل أنت متاح غدًا؟');
+
+      expect(screen.getByText('مرحبا، هل أنت متاح غدًا؟')).toHaveAttribute(
+        'dir',
+        'auto',
+      );
+    });
+
+    it('las marcas de HTML se enseñan como texto, no se interpretan', async () => {
+      await conMensaje('<script>alert(1)</script> 🙂');
+
+      expect(
+        screen.getByText('<script>alert(1)</script> 🙂'),
+      ).toBeInTheDocument();
+      expect(document.querySelector('script')).toBeNull();
+    });
+
+    it('un texto largo sin espacios se parte, en vez de desbordar', async () => {
+      await conMensaje('a'.repeat(2000));
+
+      expect(screen.getByText('a'.repeat(2000))).toHaveClass('break-words');
+    });
+
+    it('la caja de escribir tiene nombre y el límite de la API', async () => {
+      await conMensaje('Hola');
+
+      const caja = screen.getByRole('textbox', {
+        name: es.mensajesPanel.escribePlaceholder,
+      });
+      expect(caja).toHaveAttribute('maxlength', '2000');
+      expect(caja).toHaveAttribute('dir', 'auto');
+    });
+  });
 });

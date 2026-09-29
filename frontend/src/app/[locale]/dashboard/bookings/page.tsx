@@ -38,17 +38,17 @@ export default function MyBookingsPage() {
       </h1>
 
       <div className="bg-superficie rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
-        {tabs.map((t) => (
+        {tabs.map((pestana) => (
           <button
-            key={t.id}
-            onClick={() => setFilter(t.id)}
+            key={pestana.id}
+            onClick={() => setFilter(pestana.id)}
             className={`px-4 py-2 text-sm rounded-md transition-colors ${
-              filter === t.id
+              filter === pestana.id
                 ? 'bg-primary-600 text-white'
                 : 'text-secundario hover:bg-fondo'
             }`}
           >
-            {t.label}
+            {pestana.label}
           </button>
         ))}
       </div>

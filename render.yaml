@@ -1,0 +1,86 @@
+# Los dos servicios de Render, descritos en el repositorio.
+#
+# Hasta ahora esta configuración solo existía en el panel de Render: cuándo
+# se despliega, qué ruta comprueba la salud, la región, el plan o qué
+# variables hacen falta no se podían revisar ni rehacer desde aquí, y
+# recrear un servicio era hacerlo de memoria. Esto no cambia nada por sí
+# solo: hay que enlazarlo en Render como Blueprint (ver docs/OPERATIONS.md).
+#
+# Lo que difiere de lo que hay hoy en el panel, y es a propósito:
+#   - autoDeployTrigger: checksPass. Hoy se despliega en cuanto llega un
+#     commit a main, antes de que termine la integración continua, así que
+#     un cambio en rojo llega a producción igual, migraciones incluidas.
+#   - healthCheckPath. Hoy no hay ninguna: Render da por bueno un despliegue
+#     en cuanto abre el puerto, y un servicio que responde 503 sigue
+#     recibiendo tráfico.
+#
+# Los secretos van con «sync: false»: Render los pide al crear el servicio y
+# nunca se escriben aquí.
+services:
+  - type: web
+    name: servilocal-api
+    runtime: docker
+    repo: https://github.com/Federicojaviermartino/servilocal
+    branch: main
+    rootDir: backend
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free
+    # Comprueba también la base de datos: con la base caída responde 503.
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRATION
+        value: 24h
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: PROXY_SECRETO
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # Opcionales: sin ellas, lo que dependa de cada una se apaga y la API
+      # arranca igual. Ver la tabla de configuración del README.
+      - key: SENTRY_DSN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: CORREO_REMITENTE
+        sync: false
+      - key: REDIS_URL
+        sync: false
+
+  - type: web
+    name: servilocal-web
+    runtime: docker
+    repo: https://github.com/Federicojaviermartino/servilocal
+    branch: main
+    rootDir: frontend
+    dockerContext: .
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free
+    healthCheckPath: /salud
+    autoDeployTrigger: checksPass
+    # Las NEXT_PUBLIC_* se incrustan al compilar: Render las pasa a la
+    # construcción de la imagen como argumentos, y cambiar una exige volver a
+    # construir, no reiniciar.
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://servilocal-api.onrender.com/api
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://servilocal-web.onrender.com
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: PROXY_SECRETO
+        sync: false

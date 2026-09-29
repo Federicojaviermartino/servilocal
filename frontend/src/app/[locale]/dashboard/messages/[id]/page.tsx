@@ -187,7 +187,16 @@ function Conversacion({ partnerId }: { partnerId: string }) {
                         : 'bg-superficie-alt text-principal'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-line">{m.content}</p>
+                    {/* dir="auto": un mensaje en árabe se lee de derecha a
+                        izquierda aunque la página esté en castellano, y al
+                        revés. break-words: 2000 caracteres sin un espacio
+                        desbordaban la burbuja. */}
+                    <p
+                      dir="auto"
+                      className="text-sm whitespace-pre-line break-words"
+                    >
+                      {m.content}
+                    </p>
                     <p
                       className={`text-xs mt-1 ${
                         isOwn ? 'text-primary-100' : 'text-tenue'
@@ -212,6 +221,9 @@ function Conversacion({ partnerId }: { partnerId: string }) {
         >
           <input
             type="text"
+            dir="auto"
+            maxLength={2000}
+            aria-label={t('escribePlaceholder')}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={t('escribePlaceholder')}

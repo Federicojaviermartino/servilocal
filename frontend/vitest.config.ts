@@ -27,21 +27,30 @@ export default defineConfig({
     exclude: ['e2e/**', 'node_modules/**', '.next/**'],
     coverage: {
       provider: 'v8',
-      include: ['src/lib/**/*.ts', 'src/components/**/*.tsx'],
+      // Las páginas también: medir solo lib y components dejaba fuera el
+      // registro, el pago o las reservas recibidas, y la cifra no se movía
+      // aunque se quedaran sin una sola prueba. Los layouts solo ponen
+      // metadatos y los prueba el navegador.
+      include: [
+        'src/lib/**/*.{ts,tsx}',
+        'src/components/**/*.tsx',
+        'src/app/**/*.{ts,tsx}',
+      ],
       exclude: [
         'src/**/*.stories.tsx',
         'src/**/*.d.ts',
-        'src/lib/auth-store.ts',
+        'src/**/*.test.{ts,tsx}',
+        'src/app/**/layout.tsx',
       ],
       // Un suelo, no una meta: se deja unos puntos por debajo de lo medido
       // para que añadir un componente no rompa la integración antes de que
       // le dé tiempo a nadie a escribirle su prueba. Bajarlo para que pase
       // algo que no está probado vacía de sentido la comprobación entera.
       thresholds: {
-        statements: 78,
-        branches: 78,
-        functions: 70,
-        lines: 79,
+        statements: 89,
+        branches: 87,
+        functions: 84,
+        lines: 90,
       },
     },
   },
