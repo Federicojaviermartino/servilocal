@@ -130,8 +130,15 @@ export default function BookingDetailPage() {
     isProvider && booking.status === BookingStatus.CONFIRMED && haLlegado;
   const completaMasTarde =
     isProvider && booking.status === BookingStatus.CONFIRMED && !haLlegado;
+  // Pasada la hora de una confirmada, el cliente ya no cancela: el trabajo
+  // puede estar hecho, y cancelar suelta el dinero. La API lo rechaza
+  // igual; aquí no se le ofrece un botón que no va a funcionar.
+  const cancelaTarde =
+    isClient && booking.status === BookingStatus.CONFIRMED && haLlegado;
   const canCancel =
-    abierta && (booking.clientId === user.id || booking.providerId === user.id);
+    abierta &&
+    (booking.providerId === user.id ||
+      (booking.clientId === user.id && !cancelaTarde));
 
   return (
     <div>
@@ -242,6 +249,10 @@ export default function BookingDetailPage() {
 
         {completaMasTarde && (
           <p className="mb-4 text-sm text-secundario">{t('completarDesde')}</p>
+        )}
+
+        {cancelaTarde && (
+          <p className="mb-4 text-sm text-secundario">{t('cancelarTarde')}</p>
         )}
 
         {completadaSinPago && (isClient || isProvider) && (

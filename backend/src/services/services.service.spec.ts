@@ -8,8 +8,9 @@ import {
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { IsNull } from 'typeorm';
-import { Booking, BookingStatus, Service } from '../entities';
+import { AccionAuditada, Booking, BookingStatus, Service } from '../entities';
 import { ServicesService } from './services.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 
 /** Lo que nunca puede salir de un proveedor en una respuesta pública. */
 const DATOS_PERSONALES = [
@@ -87,6 +88,11 @@ async function construir(
     // categorías (que hace un FROM de la entidad) y la del conteo acotado
     // (que hace un FROM de una subconsulta). Se reparten por ahí.
     manager: {
+      // El correo de quien actúa, para el historial de la administración.
+      findOne: vi.fn(async () => ({
+        id: 'admin',
+        email: 'admin@servilocal.com',
+      })),
       createQueryBuilder: vi.fn(() => {
         const repartidor = {
           select: vi.fn((...args: unknown[]) =>
@@ -105,6 +111,8 @@ async function construir(
     find: vi.fn(async () => [] as unknown[]),
   };
 
+  const auditoria = { anotar: vi.fn(async () => undefined) };
+
   // Sin reservas, salvo que la prueba diga otra cosa.
   const reservas = {
     count: vi.fn(async () => 0),
@@ -116,6 +124,7 @@ async function construir(
       ServicesService,
       { provide: getRepositoryToken(Service), useValue: repo },
       { provide: getRepositoryToken(Booking), useValue: reservas },
+      { provide: AuditoriaService, useValue: auditoria },
     ],
   }).compile();
 
@@ -123,6 +132,7 @@ async function construir(
     servicio: module.get(ServicesService),
     repo,
     reservas,
+    auditoria,
     qb,
     categorias,
     conteo,
@@ -250,6 +260,52 @@ describe('ServicesService', () => {
 
       expect(repo.remove).toHaveBeenCalled();
     });
+
+    it('y lo que retira la administración queda en el historial', async () => {
+      const { servicio, auditoria } = await conServicio();
+
+      await servicio.remove('s1', OTRO, 'admin');
+
+      expect(auditoria.anotar).toHaveBeenCalledWith({
+        actor: { id: OTRO, email: 'admin@servilocal.com' },
+        accion: AccionAuditada.SERVICIO_RETIRADO,
+        entidad: 'servicio',
+        entidadId: 's1',
+        contexto: { nombre: 'Original' },
+      });
+    });
+
+    it('lo que retira su dueño, no', async () => {
+      const { servicio, auditoria } = await conServicio();
+
+      await servicio.remove('s1', DUENO, 'provider');
+
+      expect(auditoria.anotar).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('la ficha pública', () => {
+    it('no enseña el servicio de un profesional desactivado', async () => {
+      // La búsqueda ya lo ocultaba, pero la ficha se abría por enlace
+      // directo y se podía reservar.
+      const qb = constructorFalso();
+      qb.getOne = vi.fn(async () => ({ id: 's1' }));
+      const { servicio } = await construir(qb);
+
+      await servicio.findById('s1', { publica: true });
+
+      expect(qb.andWhere).toHaveBeenCalledWith('provider.isActive = true');
+    });
+
+    it('pero su dueño, o la administración, sí lo encuentran para editarlo', async () => {
+      const qb = constructorFalso();
+      qb.getOne = vi.fn(async () => ({ id: 's1' }));
+      const { servicio } = await construir(qb);
+
+      await servicio.findById('s1');
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('provider.isActive = true');
+    });
   });
 
   describe('eliminar un servicio con historial', () => {
@@ -351,6 +407,39 @@ describe('ServicesService', () => {
       expect(qb.andWhere).toHaveBeenCalledWith(
         expect.stringContaining('ST_DWithin'),
         expect.objectContaining({ radius: 5000, lat: 40.4, lng: -3.7 }),
+      );
+    });
+
+    it('una longitud 0 también filtra: el meridiano pasa por Castellón', async () => {
+      // Se miraba si había coordenadas por verdad, y 0 es falso: con
+      // longitude=0 el radio dejaba de filtrar y salía el catálogo entero.
+      const qb = constructorFalso();
+      const { servicio } = await construir(qb);
+
+      await servicio.search({
+        latitude: 39.99,
+        longitude: 0,
+        radiusKm: 5,
+      } as never);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('ST_DWithin'),
+        expect.objectContaining({ lat: 39.99, lng: 0 }),
+      );
+    });
+
+    it('y no más lejos de lo que el profesional dice que se desplaza', async () => {
+      // El radio de cobertura se declaraba al publicar y no filtraba nada.
+      const qb = constructorFalso();
+      const { servicio } = await construir(qb);
+
+      await servicio.search({ latitude: 40.4, longitude: -3.7 } as never);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'LEAST(:radius, service.coverageRadiusKm * 1000)',
+        ),
+        expect.anything(),
       );
     });
 
@@ -805,6 +894,8 @@ describe('ServicesService', () => {
           where: { providerId: 'p1', withdrawnAt: IsNull() },
           relations: { category: true },
           order: { createdAt: 'DESC' },
+          // Es pública: con tope, como toda lista.
+          take: 100,
         }),
       );
     });

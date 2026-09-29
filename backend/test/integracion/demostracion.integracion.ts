@@ -24,6 +24,8 @@ describe('Cuentas de demostración', () => {
       { crear: async () => null } as never,
       {} as never,
       fuente,
+      // El historial de la administración no es lo que se prueba aquí.
+      { anotar: async () => undefined } as never,
     );
   });
 

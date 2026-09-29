@@ -34,6 +34,7 @@ import {
   segundoActual,
 } from '../common/cuenta';
 import { PaymentsService } from '../payments/payments.service';
+import { TOPE_ADMINISTRACION } from '../common/topes';
 
 /** Reservas que todavía comprometen a alguien. */
 const ABIERTAS = [BookingStatus.PENDING, BookingStatus.CONFIRMED];
@@ -64,6 +65,8 @@ export class UsersService {
         isActive: true,
         createdAt: true,
       },
+      order: { createdAt: 'DESC' },
+      take: TOPE_ADMINISTRACION,
     });
   }
 

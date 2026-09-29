@@ -354,6 +354,40 @@ describe('Detalle de una reserva', () => {
         screen.getByRole('button', { name: es.reservasPanel.cancelar }),
       );
 
+    it('pasada la hora de una confirmada, el cliente no ve cancelar, y se le dice por qué', async () => {
+      // El trabajo puede estar hecho, y cancelar soltaría el dinero: la API
+      // lo rechaza, así que no se ofrece un botón que no va a funcionar.
+      getById.mockResolvedValue({
+        data: reserva(BookingStatus.CONFIRMED, { scheduledDate: AYER }),
+      });
+      getByBooking.mockResolvedValue({ data: '' });
+      await pintada();
+
+      expect(
+        screen.queryByRole('button', { name: es.reservasPanel.cancelar }),
+      ).toBeNull();
+      expect(
+        screen.getByText(es.reservasPanel.cancelarTarde),
+      ).toBeInTheDocument();
+    });
+
+    it('el profesional sí puede, pasada la hora', async () => {
+      rol = UserRole.PROVIDER;
+      getById.mockResolvedValue({
+        data: reserva(BookingStatus.CONFIRMED, {
+          scheduledDate: AYER,
+          clientId: 'u9',
+          providerId: 'u1',
+        }),
+      });
+      getByBooking.mockResolvedValue({ data: '' });
+      await pintada();
+
+      expect(
+        screen.getByRole('button', { name: es.reservasPanel.cancelar }),
+      ).toBeInTheDocument();
+    });
+
     it('pregunta antes, y si se echa atrás no cancela nada', async () => {
       // Un clic bastaba para cancelarla, sin confirmar.
       getById.mockResolvedValue({ data: reserva(BookingStatus.CONFIRMED) });

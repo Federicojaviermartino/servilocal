@@ -5,6 +5,8 @@ import {
   Booking,
   BookingStatus,
   Category,
+  Payment,
+  PaymentStatus,
   Review,
   Service,
   User,
@@ -209,10 +211,14 @@ export class AdminService {
         .addSelect('COUNT(*)', 'total')
         .groupBy('b.status')
         .getRawMany(),
+      // Lo cobrado de verdad: pagos capturados y no devueltos. Sumaba el
+      // precio de cada reserva completada, también de las completadas sin
+      // cobro y de las que luego se reembolsaron.
       this.reservas
         .createQueryBuilder('b')
-        .select('COALESCE(SUM(b.totalPrice), 0)', 'suma')
-        .where('b.status = :estado', { estado: BookingStatus.COMPLETED })
+        .leftJoin(Payment, 'p', 'p.bookingId = b.id')
+        .select('COALESCE(SUM(p.amount), 0)', 'suma')
+        .where('p.status = :cobrado', { cobrado: PaymentStatus.COMPLETED })
         .getRawOne(),
 
       // Se agrupa por scheduledDate y no por createdAt: createdAt es cuándo
@@ -225,11 +231,11 @@ export class AdminService {
           "to_char(date_trunc('week', b.scheduledDate), 'YYYY-MM-DD')",
           'semana',
         )
+        .leftJoin(Payment, 'p', 'p.bookingId = b.id AND p.status = :cobrado', {
+          cobrado: PaymentStatus.COMPLETED,
+        })
         .addSelect('COUNT(*)', 'reservas')
-        .addSelect(
-          `COALESCE(SUM(CASE WHEN b.status = '${BookingStatus.COMPLETED}' THEN b.totalPrice ELSE 0 END), 0)`,
-          'facturado',
-        )
+        .addSelect('COALESCE(SUM(p.amount), 0)', 'facturado')
         .where('b.scheduledDate >= :desde', { desde: lunesHace(SEMANAS - 1) })
         .groupBy("date_trunc('week', b.scheduledDate)")
         .getRawMany(),

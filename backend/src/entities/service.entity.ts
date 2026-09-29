@@ -41,7 +41,7 @@ export class Service {
   @Column()
   categoryId: string;
 
-  @ManyToOne(() => Category, { onDelete: 'SET NULL' })
+  @ManyToOne(() => Category, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'categoryId' })
   category: Category;
 

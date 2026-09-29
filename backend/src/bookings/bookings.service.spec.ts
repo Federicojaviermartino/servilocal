@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   BadRequestException,
@@ -11,6 +12,7 @@ import {
 import { DataSource, QueryFailedError } from 'typeorm';
 import { BookingsService } from './bookings.service';
 import {
+  AccionAuditada,
   Booking,
   BookingStatus,
   NotificationType,
@@ -44,6 +46,9 @@ const mockServiceRepository = {
 /** Las cuentas que el doble de usuarios da como de demostración. */
 const DEMOSTRACION = new Set<string>();
 
+/** Y las que da como desactivadas. */
+const INACTIVAS = new Set<string>();
+
 /**
  * Responde a la consulta de las dos partes, `where: { id: In([...]) }`, con
  * cuentas activas y reales salvo las marcadas como de demostración.
@@ -52,11 +57,18 @@ const mockUserRepository = {
   find: vi.fn(async (opciones: { where: { id: { value: string[] } } }) =>
     opciones.where.id.value.map((id) => ({
       id,
-      isActive: true,
+      isActive: !INACTIVAS.has(id),
       esDemostracion: DEMOSTRACION.has(id),
     })),
   ),
+  // El correo de quien actúa, para el historial de la administración.
+  findOne: vi.fn(async () => ({
+    id: 'admin-1',
+    email: 'admin@servilocal.com',
+  })),
 };
+
+const auditoria = { anotar: vi.fn(async () => undefined) };
 
 const avisos = { crear: vi.fn(async () => null) };
 
@@ -105,17 +117,98 @@ describe('BookingsService', () => {
         { provide: NotificationsService, useValue: avisos },
         { provide: PaymentsService, useValue: pagos },
         { provide: DataSource, useValue: dataSource },
+        { provide: AuditoriaService, useValue: auditoria },
       ],
     }).compile();
 
     service = module.get<BookingsService>(BookingsService);
     vi.clearAllMocks();
     DEMOSTRACION.clear();
+    INACTIVAS.clear();
     consultaHorario.getExists.mockResolvedValue(false);
   });
 
   it('debería estar definido', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('caducar las solicitudes vencidas', () => {
+    const vencida = () => ({
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p1',
+      status: BookingStatus.PENDING,
+      scheduledDate: AYER,
+    });
+
+    it('se cancelan, se suelta lo retenido y se avisa a las dos partes', async () => {
+      // Se quedaban pendientes para siempre, sin poder aceptarse, y la
+      // retención se renovaba sobre la tarjeta del cliente cada cuatro días.
+      mockBookingRepository.find.mockResolvedValue([{ id: 'b1' }]);
+      const reserva = vencida();
+      mockBookingRepository.findOne.mockResolvedValue(reserva);
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+      const caducadas = await service.caducarPendientes();
+
+      expect(caducadas).toBe(1);
+      expect(reserva.status).toBe(BookingStatus.CANCELLED);
+      expect(pagos.liberarRetencion).toHaveBeenCalledWith('b1', gestor);
+      for (const usuarioId of ['c1', 'p1']) {
+        expect(avisos.crear).toHaveBeenCalledWith({
+          usuarioId,
+          tipo: NotificationType.BOOKING_CANCELLED,
+          datos: { estado: BookingStatus.CANCELLED, caducada: 'si' },
+          enlace: '/dashboard/bookings/b1',
+        });
+      }
+    });
+
+    it('sin motivo escrito: lo explica el aviso, en el idioma de cada uno', async () => {
+      mockBookingRepository.find.mockResolvedValue([{ id: 'b1' }]);
+      const reserva = vencida();
+      mockBookingRepository.findOne.mockResolvedValue(reserva);
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+      await service.caducarPendientes();
+
+      expect(reserva).toMatchObject({ cancellationReason: null });
+    });
+
+    it('una que otra instancia ya tiene bloqueada, o ya no está pendiente, se deja', async () => {
+      mockBookingRepository.find.mockResolvedValue([{ id: 'b1' }]);
+      mockBookingRepository.findOne.mockResolvedValue(null);
+
+      expect(await service.caducarPendientes()).toBe(0);
+      expect(pagos.liberarRetencion).not.toHaveBeenCalled();
+      expect(avisos.crear).not.toHaveBeenCalled();
+    });
+
+    it('si falla una, sigue con las demás', async () => {
+      mockBookingRepository.find.mockResolvedValue([
+        { id: 'b1' },
+        { id: 'b2' },
+      ]);
+      mockBookingRepository.findOne
+        .mockResolvedValueOnce(vencida())
+        .mockResolvedValueOnce({ ...vencida(), id: 'b2' });
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+      pagos.liberarRetencion.mockRejectedValueOnce(new Error('sin base'));
+
+      expect(await service.caducarPendientes()).toBe(1);
+    });
+
+    it('solo busca las pendientes cuya fecha ya pasó', async () => {
+      mockBookingRepository.find.mockResolvedValue([]);
+      const ahora = new Date('2026-10-01T10:00:00Z');
+
+      await service.caducarPendientes(ahora);
+
+      const opciones = mockBookingRepository.find.mock.calls[0][0];
+      expect(opciones.where.status).toBe(BookingStatus.PENDING);
+      expect(opciones.where.scheduledDate.type).toBe('lessThan');
+      expect(opciones.where.scheduledDate.value).toEqual(ahora);
+    });
   });
 
   describe('create', () => {
@@ -151,6 +244,23 @@ describe('BookingsService', () => {
 
       expect(result.status).toBe(BookingStatus.PENDING);
       expect(mockServiceRepository.findOne).toHaveBeenCalled();
+    });
+
+    it('no se reserva el servicio de un profesional desactivado', async () => {
+      // La búsqueda lo ocultaba, pero su ficha seguía abierta por enlace
+      // directo: se reservaba y pagaba algo que nadie iba a aceptar.
+      mockServiceRepository.findOne.mockResolvedValue({
+        id: 'service-uuid',
+        providerId: 'provider-uuid',
+        isActive: true,
+        priceMin: 45,
+      });
+      INACTIVAS.add('provider-uuid');
+
+      await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockBookingRepository.save).not.toHaveBeenCalled();
     });
 
     describe('fechas y agenda', () => {
@@ -764,6 +874,93 @@ describe('BookingsService', () => {
         datos: { estado: BookingStatus.COMPLETED, sinCobro: 'si' },
         enlace: '/dashboard/bookings/b1',
       });
+    });
+
+    it('pero si el cliente pagó entretanto y se cobró, no dice que fue sin cobro', async () => {
+      // Entre el 409 y el clic del profesional, el cliente puede pagar:
+      // entonces se cobra, y el aviso no puede decir lo contrario.
+      pagos.cobrarAlCompletar.mockResolvedValueOnce({ id: 'pago' } as never);
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.CONFIRMED, AYER),
+      );
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+      await service.updateStatus('b1', 'p1', 'provider', {
+        status: BookingStatus.COMPLETED,
+        sinCobro: true,
+      });
+
+      expect(avisos.crear).toHaveBeenCalledWith(
+        expect.objectContaining({
+          datos: { estado: BookingStatus.COMPLETED },
+        }),
+      );
+    });
+
+    it('pasada la hora de una confirmada, el cliente ya no la cancela', async () => {
+      // Cancelaba a las diez y media un trabajo hecho a las diez, se soltaba
+      // el dinero retenido y el profesional no cobraba.
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.CONFIRMED, AYER),
+      );
+
+      const error = await service
+        .updateStatus('b1', 'c1', 'client', {
+          status: BookingStatus.CANCELLED,
+        } as never)
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      expect((error as ConflictException).getResponse()).toMatchObject({
+        codigo: 'cancelacion-tardia',
+      });
+      expect(pagos.liberarRetencion).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['el profesional', 'p1', 'provider'],
+      ['la moderación', 'admin-1', 'admin'],
+    ])('%s sí puede, pasada la hora', async (_quien, id, rol) => {
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.CONFIRMED, AYER),
+      );
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+      const r = await service.updateStatus('b1', id, rol, {
+        status: BookingStatus.CANCELLED,
+      } as never);
+
+      expect(r.status).toBe(BookingStatus.CANCELLED);
+    });
+
+    it('y el cliente sí, antes de la hora', async () => {
+      await cambiar(BookingStatus.CONFIRMED, 'cancelled', 'c1', 'client');
+
+      // Cancelar suelta lo retenido: la cancelación ha seguido adelante.
+      expect(pagos.liberarRetencion).toHaveBeenCalled();
+    });
+
+    it('la moderación cambiando una reserva ajena queda en el historial', async () => {
+      // Completar cobra y cancelar suelta el dinero: no puede hacerse sin
+      // dejar rastro.
+      await cambiar(BookingStatus.CONFIRMED, 'cancelled', 'admin-1', 'admin');
+
+      expect(auditoria.anotar).toHaveBeenCalledWith({
+        actor: { id: 'admin-1', email: 'admin@servilocal.com' },
+        accion: AccionAuditada.RESERVA_CAMBIADA,
+        entidad: 'reserva',
+        entidadId: 'b1',
+        contexto: {
+          antes: BookingStatus.CONFIRMED,
+          ahora: BookingStatus.CANCELLED,
+        },
+      });
+    });
+
+    it('lo que hacen las partes de la reserva no se anota', async () => {
+      await cambiar(BookingStatus.CONFIRMED, 'cancelled', 'c1', 'client');
+
+      expect(auditoria.anotar).not.toHaveBeenCalled();
     });
 
     it('un cambio rechazado no avisa a nadie', async () => {

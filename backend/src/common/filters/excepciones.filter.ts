@@ -55,20 +55,33 @@ const ERRORES_DE_LA_PETICION: Record<
     codigo: HttpStatus.CONFLICT,
     mensaje: 'La operación choca con otros datos que dependen de estos.',
   },
-  // check_violation
-  // Dos reservas confirmadas del mismo profesional que se pisan. El
-  // servicio de reservas lo traduce con su código; esto es la red por si
-  // llega por otro camino.
-  // Un valor más largo que su columna. La validación debería pararlo antes;
-  // esto es la red para lo que se le escape.
+  // not_null_violation: un null en un campo obligatorio. Los DTO de edición
+  // ya lo rechazan; esto es la red para lo que se les escape.
+  '23502': {
+    codigo: HttpStatus.BAD_REQUEST,
+    mensaje: 'Falta algún dato obligatorio.',
+  },
+  // string_data_right_truncation: un valor más largo que su columna. La
+  // validación debería pararlo antes; esto es la red.
   '22001': {
     codigo: HttpStatus.BAD_REQUEST,
     mensaje: 'Algún dato es más largo de lo que se admite.',
   },
+  // exclusion_violation: dos reservas confirmadas del mismo profesional que
+  // se pisan. El servicio de reservas lo traduce con su código; esto es la
+  // red por si llega por otro camino.
   '23P01': {
     codigo: HttpStatus.CONFLICT,
     mensaje: 'La operación choca con otra reserva confirmada.',
   },
+  // lock_not_available: otra operación tiene la fila bloqueada más de lo
+  // que se espera (lock_timeout). No es un fallo: se reintenta enseguida.
+  '55P03': {
+    codigo: HttpStatus.CONFLICT,
+    mensaje:
+      'Otra operación está usando estos datos: vuelve a intentarlo en unos segundos.',
+  },
+  // check_violation
   '23514': {
     codigo: HttpStatus.BAD_REQUEST,
     mensaje: 'Algún dato no cumple las reglas.',

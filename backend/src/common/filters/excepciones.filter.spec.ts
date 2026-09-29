@@ -100,6 +100,8 @@ describe('FiltroDeExcepciones', () => {
     ['23503', HttpStatus.CONFLICT, 'una clave ajena rota'],
     ['23514', HttpStatus.BAD_REQUEST, 'una restricción incumplida'],
     ['22001', HttpStatus.BAD_REQUEST, 'un texto más largo que su columna'],
+    ['23502', HttpStatus.BAD_REQUEST, 'un null en un campo obligatorio'],
+    ['55P03', HttpStatus.CONFLICT, 'una fila bloqueada demasiado tiempo'],
   ])(
     'un error %s de la base es culpa de la petición: %i, no 500 (%s)',
     (code, esperado) => {

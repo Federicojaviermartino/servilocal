@@ -21,6 +21,8 @@ import { CalendarioReservas1790500000000 } from '../../src/database/migrations/1
 import { IntegridadDeLosDatos1790600000000 } from '../../src/database/migrations/1790600000000-IntegridadDeLosDatos';
 import { RestriccionDeSolapes1790700000000 } from '../../src/database/migrations/1790700000000-RestriccionDeSolapes';
 import { CuentaYPrivacidad1790800000000 } from '../../src/database/migrations/1790800000000-CuentaYPrivacidad';
+import { CategoriaConServicios1790900000000 } from '../../src/database/migrations/1790900000000-CategoriaConServicios';
+import { ReservasYServiciosAuditados1791000000000 } from '../../src/database/migrations/1791000000000-ReservasYServiciosAuditados';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -57,6 +59,8 @@ const MIGRACIONES = [
   IntegridadDeLosDatos1790600000000,
   RestriccionDeSolapes1790700000000,
   CuentaYPrivacidad1790800000000,
+  CategoriaConServicios1790900000000,
+  ReservasYServiciosAuditados1791000000000,
 ];
 
 /**

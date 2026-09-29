@@ -66,6 +66,9 @@ interface Opciones {
   inexistentes?: string[];
 }
 
+/** El cerrojo por pareja que serializa la creación de conversaciones. */
+const cerrojo = vi.fn(async () => []);
+
 async function construir(
   hilo: ReturnType<typeof conversacion> | null,
   opciones: Opciones = {},
@@ -84,6 +87,16 @@ async function construir(
     save: vi.fn(async (c: unknown) => c),
     create: vi.fn((c: unknown) => c),
     createQueryBuilder: vi.fn(() => qbConversaciones),
+    // Buscar o crear la conversación va en una transacción con cerrojo; el
+    // gestor reparte al mismo doble de siempre.
+    manager: {
+      transaction: vi.fn(async (ejecutar: (g: unknown) => Promise<unknown>) =>
+        ejecutar({
+          query: cerrojo,
+          getRepository: () => conversaciones,
+        }),
+      ),
+    },
   };
   const mensajes = {
     create: vi.fn((m: unknown) => ({ id: 'm1', ...(m as object) })),
@@ -475,16 +488,24 @@ describe('MessagesService', () => {
       });
     });
 
-    it('el hilo se lee del más antiguo al más reciente', async () => {
+    it('el hilo trae los últimos mensajes, y se lee del más antiguo al más reciente', async () => {
+      // Sin tope, un hilo de miles de mensajes se devolvía entero. Se piden
+      // los últimos, del más reciente hacia atrás, y se dan la vuelta.
       const { servicio, mensajes } = await construir(null, {
         hiloEncontrado: conversacion(),
       });
+      mensajes.find.mockResolvedValueOnce([
+        { id: 'm3' },
+        { id: 'm2' },
+        { id: 'm1' },
+      ]);
 
-      await servicio.findMessagesWithPartner(YO, OTRO);
+      const hilo = await servicio.findMessagesWithPartner(YO, OTRO);
 
       expect(mensajes.find).toHaveBeenCalledWith(
-        expect.objectContaining({ order: { createdAt: 'ASC' } }),
+        expect.objectContaining({ order: { createdAt: 'DESC' }, take: 200 }),
       );
+      expect(hilo.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
     });
 
     it('del remitente solo se traen los campos que se pintan', async () => {

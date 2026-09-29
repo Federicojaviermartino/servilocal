@@ -1,3 +1,4 @@
+import '../../config/zona-horaria';
 import { resolve } from 'path';
 import * as dotenv from 'dotenv';
 import { DataSource } from 'typeorm';

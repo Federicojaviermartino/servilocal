@@ -12,6 +12,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { SiSeEnvia } from '../../common/si-se-envia';
 import {
   DURACION_MAXIMA,
   DURACION_MINIMA,
@@ -113,24 +114,24 @@ export class CreateServiceDto {
 
 export class UpdateServiceDto {
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   @MaxLength(200)
   title?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   @MaxLength(3000)
   description?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsUUID()
   categoryId?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsNumber()
   @Min(PRECIO_MINIMO)
   priceMin?: number;
@@ -142,43 +143,43 @@ export class UpdateServiceDto {
   priceMax?: number;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   priceUnit?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsInt()
   @Min(DURACION_MINIMA)
   @Max(DURACION_MAXIMA)
   durationMinutes?: number;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsNumber()
   @Min(-90)
   @Max(90)
   latitude?: number;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsNumber()
   @Min(-180)
   @Max(180)
   longitude?: number;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   address?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   city?: string;
 
   @ApiPropertyOptional()
-  @IsOptional()
+  @SiSeEnvia()
   @IsNumber()
   @Min(1)
   @Max(100)
@@ -259,16 +260,19 @@ export class SearchServicesDto {
   @IsString()
   sortBy?: string;
 
+  // Enteros y con tope: page=1e308 llegaba a la consulta como OFFSET
+  // Infinity y respondía 500, y page=1.5 pedía media página.
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Type(() => Number)
   @Min(1)
+  @Max(1000)
   page?: number;
 
   @ApiPropertyOptional({ example: 12 })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Type(() => Number)
   @Min(1)
   @Max(50)

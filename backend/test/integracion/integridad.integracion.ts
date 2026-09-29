@@ -30,6 +30,7 @@ describe('Integridad de los datos', () => {
     servicios = new ServicesService(
       fuente.getRepository(Service),
       fuente.getRepository(Booking),
+      { anotar: async () => undefined } as never,
     );
     [reserva] = await fuente.query(
       `SELECT id, "serviceId", "clientId", "providerId" FROM bookings
@@ -53,6 +54,20 @@ describe('Integridad de los datos', () => {
     it('ni una cuenta con reservas', async () => {
       const error = await fuente
         .query(`DELETE FROM users WHERE id = $1`, [reserva.clientId])
+        .catch((e: unknown) => e);
+
+      expect(codigoDe(error)).toBe('23503');
+    });
+
+    it('ni una categoría con servicios', async () => {
+      // La clave decía SET NULL sobre una columna que no admite null, así
+      // que borrarla fallaba con otro error, que la API daba como 500.
+      const [conServicios] = await fuente.query(
+        `SELECT "categoryId" AS id FROM services LIMIT 1`,
+      );
+
+      const error = await fuente
+        .query(`DELETE FROM categories WHERE id = $1`, [conServicios.id])
         .catch((e: unknown) => e);
 
       expect(codigoDe(error)).toBe('23503');
@@ -85,6 +100,7 @@ describe('Integridad de los datos', () => {
         const aislado = new ServicesService(
           consulta.manager.getRepository(Service),
           consulta.manager.getRepository(Booking),
+          { anotar: async () => undefined } as never,
         );
         await consulta.query(
           `UPDATE bookings SET status = 'completed'
@@ -123,6 +139,41 @@ describe('Integridad de los datos', () => {
         .catch((e: unknown) => e);
 
       expect(error).toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('editar un servicio desde la aplicación', () => {
+    it('cambiar de categoría se guarda', async () => {
+      // Respondía con la categoría nueva y guardaba la vieja: TypeORM toma
+      // el identificador de la relación cargada, no el del campo.
+      const [servicio] = await fuente.query(
+        `SELECT id, "providerId", "categoryId" FROM services
+         WHERE "withdrawnAt" IS NULL LIMIT 1`,
+      );
+      const [otra] = await fuente.query(
+        `SELECT id FROM categories WHERE id <> $1 LIMIT 1`,
+        [servicio.categoryId],
+      );
+
+      try {
+        const respuesta = await servicios.update(
+          servicio.id,
+          servicio.providerId,
+          { categoryId: otra.id },
+        );
+        const [guardado] = await fuente.query(
+          `SELECT "categoryId" FROM services WHERE id = $1`,
+          [servicio.id],
+        );
+
+        expect(guardado.categoryId).toBe(otra.id);
+        expect(respuesta.category.id).toBe(otra.id);
+      } finally {
+        await fuente.query(
+          `UPDATE services SET "categoryId" = $1 WHERE id = $2`,
+          [servicio.categoryId, servicio.id],
+        );
+      }
     });
   });
 

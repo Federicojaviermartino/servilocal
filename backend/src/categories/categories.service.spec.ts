@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { CacheService } from '../common/redis/cache.service';
@@ -10,8 +10,10 @@ const ACTOR = { id: 'admin-1', email: 'admin@servilocal.com' };
 
 const ARBOL = [{ id: 'c1', name: 'Fontanería', slug: 'fontaneria' }];
 
-async function construir(existente: unknown = ARBOL[0]) {
+async function construir(existente: unknown = ARBOL[0], servicios = 0) {
   const repo = {
+    // Cuántos servicios tiene la categoría, para decidir si se puede borrar.
+    manager: { count: vi.fn(async () => servicios) },
     find: vi.fn(async () => ARBOL),
     findOne: vi.fn(async () => existente),
     create: vi.fn((c: unknown) => c),
@@ -102,6 +104,30 @@ describe('CategoriesService', () => {
 
       expect(cache.olvidar).toHaveBeenCalled();
       expect(repo.find).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('borrar', () => {
+    it('con servicios dentro no se borra, y lo dice con su código', async () => {
+      // La base tampoco lo permite, y su negativa llegaba como un 500.
+      const { servicio, repo } = await construir(ARBOL[0], 3);
+
+      const error = await servicio.remove('c1', ACTOR).catch((e) => e);
+
+      expect(error).toBeInstanceOf(ConflictException);
+      expect(error.getResponse().codigo).toBe('categoria-con-servicios');
+      expect(repo.remove).not.toHaveBeenCalled();
+    });
+
+    it('cuenta también los servicios retirados, que guardan historial', async () => {
+      const { servicio, repo } = await construir(ARBOL[0], 1);
+
+      await servicio.remove('c1', ACTOR).catch(() => undefined);
+
+      // Sin filtrar por withdrawnAt: un servicio retirado sigue en su categoría.
+      expect(repo.manager.count).toHaveBeenCalledWith(expect.anything(), {
+        where: { categoryId: 'c1' },
+      });
     });
   });
 });

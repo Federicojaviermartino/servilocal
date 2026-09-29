@@ -31,9 +31,16 @@ export const getDatabaseConfig = (
     // bloqueos. Quince segundos para conectar dan margen a que Neon
     // despierte; treinta por sentencia, a cualquier consulta de la
     // aplicación; y una transacción parada un minuto se cierra.
+    //
+    // Y cinco para esperar una fila bloqueada. Pagar una reserva la bloquea
+    // mientras se habla con Stripe, que puede tardar diez segundos por
+    // intento: una segunda operación sobre ella esperaba hasta los treinta
+    // de la sentencia y acababa en un 500. Ahora responde 409 enseguida, y
+    // se puede reintentar; un aviso de Stripe que choque se repite solo.
     extra: {
       connectionTimeoutMillis: 15_000,
       statement_timeout: 30_000,
+      lock_timeout: 5_000,
       idle_in_transaction_session_timeout: 60_000,
     },
   };

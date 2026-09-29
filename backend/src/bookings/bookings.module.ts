@@ -4,6 +4,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { BookingsService } from './bookings.service';
 import { BookingsController } from './bookings.controller';
+import { ProgramadorCaducidad } from './programador-caducidad';
 import { Booking, Service, User } from '../entities';
 
 @Module({
@@ -13,7 +14,7 @@ import { Booking, Service, User } from '../entities';
     PaymentsModule,
   ],
   controllers: [BookingsController],
-  providers: [BookingsService],
+  providers: [BookingsService, ProgramadorCaducidad],
   exports: [BookingsService],
 })
 export class BookingsModule {}

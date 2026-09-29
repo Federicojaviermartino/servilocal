@@ -376,6 +376,9 @@ describe('ReviewsService', () => {
         expect.objectContaining({
           where: { serviceId: 's1' },
           order: { createdAt: 'DESC' },
+          // Pública y sin tope, un servicio con miles de valoraciones se
+          // devolvía entero a cualquiera.
+          take: 100,
         }),
       );
     });

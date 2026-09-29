@@ -202,6 +202,41 @@ describe('CampanaAvisos', () => {
     );
   });
 
+  it('una solicitud caducada lo dice, y una cancelación de antes se sigue leyendo', async () => {
+    // Las solicitudes vencidas sin respuesta ahora se cancelan solas: el
+    // aviso tiene que decir por qué, y los de antes, sin ese dato, no
+    // pueden quedarse en blanco.
+    listar.mockResolvedValue({
+      data: [
+        aviso({
+          id: 'n1',
+          type: 'booking_cancelled',
+          content: '{"estado":"cancelled","caducada":"si"}',
+        }),
+        aviso({
+          id: 'n2',
+          type: 'booking_cancelled',
+          content: '{"estado":"cancelled"}',
+        }),
+      ],
+    });
+
+    pintar();
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /2 sin leer/ })).toBeVisible(),
+    );
+    screen.getByRole('button', { name: /2 sin leer/ }).click();
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'Tu solicitud de reserva caducó: el profesional no respondió antes de la fecha.',
+        ),
+      ).toBeVisible(),
+    );
+    expect(screen.getByText('Tu reserva se ha cancelado.')).toBeVisible();
+  });
+
   it('un aviso guardado antes de que existiera esa variable se sigue leyendo', async () => {
     // Los avisos se guardan con los datos de su momento. Sin un valor
     // neutro, el texto entero se cambiaba por la clave en crudo.
@@ -307,7 +342,7 @@ describe('CampanaAvisos, avisos en vivo', () => {
       socket.entregar!(aviso({ id: 'n2', type: 'booking_cancelled' }));
     });
 
-    expect(anuncio()).toBe(es.avisos.booking_cancelled);
+    expect(anuncio()).toBe('Tu reserva se ha cancelado.');
   });
 
   it('un aviso repetido no se vuelve a anunciar', async () => {
@@ -318,7 +353,7 @@ describe('CampanaAvisos, avisos en vivo', () => {
     act(() => socket.entregar!(aviso({ id: 'n2', type: 'booking_cancelled' })));
     act(() => socket.entregar!(aviso({ id: 'n1', type: 'booking_confirmed' })));
 
-    expect(anuncio()).toBe(es.avisos.booking_cancelled);
+    expect(anuncio()).toBe('Tu reserva se ha cancelado.');
   });
 
   it('ni uno que ya venía en la lista inicial', async () => {

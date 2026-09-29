@@ -6,6 +6,7 @@
 // lejos— se queda con el valor por defecto aunque el .env diga otra cosa. No
 // fallaba: se ignoraba en silencio, que es peor.
 import 'dotenv/config';
+import './config/zona-horaria';
 
 import { NestFactory } from '@nestjs/core';
 import {

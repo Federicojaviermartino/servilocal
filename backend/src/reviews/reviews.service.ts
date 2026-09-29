@@ -21,6 +21,7 @@ import {
   ProviderResponseDto,
   ReportReviewDto,
 } from './dto/review.dto';
+import { TOPE_LISTA, TOPE_LISTA_PUBLICA } from '../common/topes';
 
 @Injectable()
 export class ReviewsService {
@@ -166,6 +167,7 @@ export class ReviewsService {
         },
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA_PUBLICA,
     });
   }
 
@@ -176,6 +178,7 @@ export class ReviewsService {
         service: true,
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA,
     });
   }
 
@@ -187,6 +190,7 @@ export class ReviewsService {
         service: true,
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA,
     });
   }
 

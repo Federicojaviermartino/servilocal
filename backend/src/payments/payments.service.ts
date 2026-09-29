@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, MoreThan, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import {
@@ -21,6 +21,7 @@ import {
 } from '../entities';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
+import { TOPE_LISTA } from '../common/topes';
 
 /**
  * Completar sin pago retenido ya no ocurre en silencio: la API responde 409
@@ -68,6 +69,60 @@ const TRANSICIONES: Record<PaymentStatus, PaymentStatus[]> = {
 
 const puedePasarA = (desde: PaymentStatus, hasta: PaymentStatus): boolean =>
   TRANSICIONES[desde]?.includes(hasta) ?? false;
+
+/**
+ * Desde dónde puede llegar un pago a cada estado cuando se le pregunta a
+ * Stripe, y no por un aviso.
+ *
+ * Un aviso cuenta lo que pasó en su momento, y puede llegar tarde; la
+ * intención consultada dice cómo está ahora. Por eso, preguntando, un pago
+ * fallido puede volver: el de una tarjeta rechazada antes de esta versión,
+ * que quedó marcado así aunque el cliente pagara después con otra en el
+ * mismo formulario. Una intención cancelada no vuelve atrás, así que lo que
+ * falló por eso sigue fallido. Lo cobrado y lo devuelto no se tocan:
+ * devolver no cambia el estado de la intención.
+ */
+const REFLEJOS: Record<PaymentStatus, PaymentStatus[]> = {
+  [PaymentStatus.PENDING]: [
+    PaymentStatus.HELD,
+    PaymentStatus.COMPLETED,
+    PaymentStatus.FAILED,
+  ],
+  [PaymentStatus.FAILED]: [
+    PaymentStatus.PENDING,
+    PaymentStatus.HELD,
+    PaymentStatus.COMPLETED,
+  ],
+  [PaymentStatus.HELD]: [PaymentStatus.COMPLETED, PaymentStatus.FAILED],
+  [PaymentStatus.COMPLETED]: [],
+  [PaymentStatus.REFUNDED]: [],
+};
+
+const puedeReflejar = (desde: PaymentStatus, hasta: PaymentStatus): boolean =>
+  REFLEJOS[desde]?.includes(hasta) ?? false;
+
+/** Lo que significa para el pago el estado de su intención en Stripe. */
+export function estadoSegunStripe(
+  estado: Stripe.PaymentIntent.Status,
+): PaymentStatus {
+  switch (estado) {
+    case 'requires_capture':
+      return PaymentStatus.HELD;
+    case 'succeeded':
+      return PaymentStatus.COMPLETED;
+    case 'canceled':
+      return PaymentStatus.FAILED;
+    // Esperando tarjeta, confirmación, al titular o al banco: se puede pagar.
+    default:
+      return PaymentStatus.PENDING;
+  }
+}
+
+/**
+ * Cuántos días hacia atrás se concilian con Stripe los pagos sin retener:
+ * uno más de los siete que dura una retención.
+ */
+const DIAS_PARA_CONCILIAR = 8;
 
 /**
  * A partir de cuántos días se renueva una retención. Stripe suelta una
@@ -131,7 +186,7 @@ export class PaymentsService {
     amount: number;
     currency: string;
   }> {
-    return this.dataSource.transaction(async (gestor) => {
+    const abierto = await this.dataSource.transaction(async (gestor) => {
       // La fila de la reserva se bloquea mientras dura todo esto.
       //
       // Sin el bloqueo, dos pestañas abiertas en la pantalla de pago hacían
@@ -142,10 +197,12 @@ export class PaymentsService {
       // conoce una.
       //
       // Mantener la transacción abierta durante la llamada a Stripe no es
-      // gratis y conviene decirlo: son unos cientos de milisegundos con una
-      // fila bloqueada. Es asumible porque el bloqueo es de una reserva
-      // concreta —nadie más compite por ella— y porque la alternativa es
-      // cobrar dos veces.
+      // gratis y conviene decirlo: normalmente son unos cientos de
+      // milisegundos, pero con Stripe lento pueden ser diez segundos por
+      // intento, con la fila bloqueada. Es asumible porque el bloqueo es de
+      // una reserva concreta —nadie más compite por ella—, porque quien
+      // espere se corta a los cinco segundos con un 409 (lock_timeout, en
+      // database.config.ts) y porque la alternativa es cobrar dos veces.
       const booking = await gestor.findOne(Booking, {
         where: { id: bookingId },
         lock: { mode: 'pessimistic_write' },
@@ -197,6 +254,11 @@ export class PaymentsService {
         const stripePi = await this.stripe.paymentIntents.retrieve(
           existingPayment.stripePaymentIntentId,
         );
+        // Manda lo que diga Stripe, no lo que conste aquí: un pago puede
+        // figurar pendiente o fallido y estar ya retenido, si su aviso no ha
+        // llegado. Se deja como está allí antes de decidir.
+        await this.reflejar(gestor, existingPayment, stripePi);
+
         const reusable: Stripe.PaymentIntent.Status[] = [
           'requires_payment_method',
           'requires_confirmation',
@@ -222,13 +284,9 @@ export class PaymentsService {
           };
         }
 
-        if (alreadyPaid.includes(stripePi.status)) {
-          throw new ConflictException({
-            statusCode: 409,
-            codigo: CODIGO_PAGO_EN_CURSO,
-            message: 'Esta reserva ya tiene un pago en curso o completado',
-          });
-        }
+        // El 409 se lanza fuera: dentro de la transacción desharía lo que se
+        // acaba de reflejar.
+        if (alreadyPaid.includes(stripePi.status)) return null;
         // Si el PI esta canceled o en otro estado no reutilizable, se crea uno nuevo abajo.
       }
 
@@ -309,6 +367,15 @@ export class PaymentsService {
         currency: 'EUR',
       };
     });
+
+    if (!abierto) {
+      throw new ConflictException({
+        statusCode: 409,
+        codigo: CODIGO_PAGO_EN_CURSO,
+        message: 'Esta reserva ya tiene un pago en curso o completado',
+      });
+    }
+    return abierto;
   }
 
   /**
@@ -356,7 +423,9 @@ export class PaymentsService {
         );
       }
 
-      if (!puedePasarA(payment.status, estado)) return payment;
+      // Se pregunta a Stripe, así que vale la tabla de reflejos: un pago que
+      // se rechazó con una tarjeta y se pagó con otra sale de fallido.
+      if (!puedeReflejar(payment.status, estado)) return payment;
 
       payment.status = estado;
       if (estado === PaymentStatus.HELD) {
@@ -542,12 +611,13 @@ export class PaymentsService {
 
     if (payment?.status === PaymentStatus.COMPLETED) return payment;
 
-    // Pendiente en la base puede estar ya retenido en Stripe, si su aviso
-    // no ha llegado todavía: se pregunta antes de dar por hecho que no hay
-    // nada que cobrar.
+    // Pendiente o fallido en la base puede estar ya retenido en Stripe, si
+    // su aviso no ha llegado o si se rechazó una tarjeta antes de pagar con
+    // otra: se pregunta antes de dar por hecho que no hay nada que cobrar.
     let retenido = payment?.status === PaymentStatus.HELD;
     if (
-      payment?.status === PaymentStatus.PENDING &&
+      (payment?.status === PaymentStatus.PENDING ||
+        payment?.status === PaymentStatus.FAILED) &&
       payment.stripePaymentIntentId
     ) {
       const actual = await this.stripe.paymentIntents.retrieve(
@@ -608,6 +678,29 @@ export class PaymentsService {
     const guardar = (pago: Payment) =>
       gestor ? gestor.save(pago) : this.paymentRepository.save(pago);
 
+    // Lo que consta fallido puede estar retenido en Stripe, o esperando a
+    // que el cliente termine de pagar: se pregunta, y se suelta como
+    // cualquier otro. Si Stripe no contesta, no se impide la cancelación.
+    if (payment.status === PaymentStatus.FAILED) {
+      try {
+        const actual = await this.stripe.paymentIntents.retrieve(
+          payment.stripePaymentIntentId,
+        );
+        const estado = estadoSegunStripe(actual.status);
+        if (estado !== PaymentStatus.HELD && estado !== PaymentStatus.PENDING) {
+          return null;
+        }
+        payment.status = estado;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo comprobar el pago de la reserva ${bookingId}: ${
+            error instanceof Error ? error.message : 'causa desconocida'
+          }. La revisión horaria lo volverá a mirar.`,
+        );
+        return null;
+      }
+    }
+
     if (payment.status === PaymentStatus.HELD) {
       try {
         await this.stripe.paymentIntents.cancel(payment.stripePaymentIntentId, {
@@ -664,6 +757,7 @@ export class PaymentsService {
         },
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA,
     });
   }
 
@@ -710,7 +804,7 @@ export class PaymentsService {
         break;
       }
       case 'payment_intent.payment_failed': {
-        await this.markPaymentFailed(pi.id, pi.last_payment_error?.message);
+        await this.anotarRechazo(pi.id, pi.last_payment_error?.message);
         break;
       }
       case 'payment_intent.canceled': {
@@ -806,6 +900,55 @@ export class PaymentsService {
       }
       return null;
     });
+  }
+
+  /**
+   * Una tarjeta rechazada no cierra el pago: solo se anota el motivo.
+   *
+   * Stripe deja la intención esperando otro medio de pago, y el formulario
+   * deja reintentar con otra tarjeta sobre la misma. Antes esto marcaba el
+   * pago como fallido, que es definitivo: si el segundo intento retenía el
+   * dinero, ya nada lo sacaba de ahí, nadie podía cobrarlo y Stripe lo
+   * soltaba a los siete días. Tampoco se toca un pago que ya no está
+   * pendiente: el rechazo de un primer intento puede llegar después de la
+   * retención del segundo.
+   */
+  private async anotarRechazo(
+    paymentIntentId: string,
+    motivo?: string,
+  ): Promise<void> {
+    if (!motivo) return;
+    await this.dataSource.transaction(async (gestor) => {
+      const payment = await gestor.findOne(Payment, {
+        where: { stripePaymentIntentId: paymentIntentId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (payment?.status !== PaymentStatus.PENDING) return;
+      payment.failureReason = motivo;
+      await gestor.save(payment);
+    });
+  }
+
+  /**
+   * Deja el pago como dice Stripe que está ahora su intención.
+   *
+   * Solo lo que permite REFLEJOS, y guarda si cambia. Recibe la intención ya
+   * consultada y el pago leído con su fila bloqueada. Devuelve si ha
+   * cambiado algo.
+   */
+  private async reflejar(
+    gestor: EntityManager,
+    pago: Payment,
+    intencion: Stripe.PaymentIntent,
+  ): Promise<boolean> {
+    const estado = estadoSegunStripe(intencion.status);
+    if (!puedeReflejar(pago.status, estado)) return false;
+    pago.status = estado;
+    if (estado === PaymentStatus.HELD || estado === PaymentStatus.COMPLETED) {
+      pago.paidAt = pago.paidAt ?? new Date();
+    }
+    await gestor.save(pago);
+    return true;
   }
 
   /** Devuelve el pago y de dónde venía, o null si no ha cambiado nada. */
@@ -925,7 +1068,58 @@ export class PaymentsService {
         );
       }
     }
+
+    // Y lo que consta sin retener de los últimos días: el aviso de Stripe
+    // puede haberse perdido, y un pago que se rechazó con una tarjeta y se
+    // pagó con otra antes de esta versión consta fallido estando retenido.
+    const recientes = await this.paymentRepository.find({
+      where: {
+        status: In([PaymentStatus.PENDING, PaymentStatus.FAILED]),
+        updatedAt: MoreThan(
+          new Date(ahora.getTime() - DIAS_PARA_CONCILIAR * 86_400_000),
+        ),
+      },
+    });
+    const revisados = new Set(retenidos.map((pago) => pago.id));
+    for (const pago of recientes) {
+      if (revisados.has(pago.id)) continue;
+      try {
+        resumen[await this.conciliar(pago.id)] += 1;
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo conciliar el pago ${pago.id}: ${
+            error instanceof Error ? error.message : 'causa desconocida'
+          }. Se volverá a intentar en la próxima revisión.`,
+        );
+      }
+    }
     return resumen;
+  }
+
+  /** Un pago sin retener, como esté ahora en Stripe. */
+  private async conciliar(pagoId: string): Promise<ResultadoRevision> {
+    const conciliado = await this.dataSource.transaction(async (gestor) => {
+      const pago = await gestor.findOne(Payment, {
+        where: {
+          id: pagoId,
+          status: In([PaymentStatus.PENDING, PaymentStatus.FAILED]),
+        },
+        lock: { mode: 'pessimistic_write', onLocked: 'skip_locked' },
+      });
+      if (!pago?.stripePaymentIntentId) return null;
+      const intencion = await this.stripe.paymentIntents.retrieve(
+        pago.stripePaymentIntentId,
+      );
+      return (await this.reflejar(gestor, pago, intencion)) ? pago : null;
+    });
+    if (!conciliado) return 'nada';
+
+    // Retenido con la reserva ya cerrada: se suelta o se cobra, igual que
+    // cuando la retención llega por el webhook.
+    if (conciliado.status === PaymentStatus.HELD) {
+      await this.resolverRetencionTardia(conciliado.bookingId);
+    }
+    return 'conciliada';
   }
 
   private async revisarRetencion(

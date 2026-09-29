@@ -8,16 +8,17 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { SiSeEnvia } from '../../common/si-se-envia';
 
 export class UpdateUserDto {
   @ApiProperty({ required: false, example: 'Federico' })
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   @MaxLength(100)
   firstName?: string;
 
   @ApiProperty({ required: false, example: 'Martino' })
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   @MaxLength(100)
   lastName?: string;

@@ -8,6 +8,7 @@ import {
   MaxLength,
   IsUUID,
 } from 'class-validator';
+import { SiSeEnvia } from '../../common/si-se-envia';
 
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Fontanería' })
@@ -48,7 +49,7 @@ export class CreateCategoryDto {
 
 export class UpdateCategoryDto {
   @ApiProperty({ required: false })
-  @IsOptional()
+  @SiSeEnvia()
   @IsString()
   @MaxLength(100)
   name?: string;
@@ -64,12 +65,12 @@ export class UpdateCategoryDto {
   icon?: string;
 
   @ApiProperty({ required: false })
-  @IsOptional()
+  @SiSeEnvia()
   @IsBoolean()
   isActive?: boolean;
 
   @ApiProperty({ required: false })
-  @IsOptional()
+  @SiSeEnvia()
   @IsNumber()
   sortOrder?: number;
 }

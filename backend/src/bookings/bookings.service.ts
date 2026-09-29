@@ -1,15 +1,24 @@
 import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
-import { Booking, BookingStatus, Service, User } from '../entities';
+import { DataSource, In, LessThan, Repository } from 'typeorm';
+import {
+  AccionAuditada,
+  Booking,
+  BookingStatus,
+  Service,
+  User,
+} from '../entities';
 import { CreateBookingDto, UpdateBookingStatusDto } from './dto/booking.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { reservaVisible } from './partes-visibles';
 import { comprobarMismoMundo } from '../common/demostracion';
 import {
@@ -20,6 +29,7 @@ import {
   esSolape,
 } from '../common/calendario';
 import { NotificationType } from '../entities';
+import { TOPE_LISTA } from '../common/topes';
 
 /**
  * Qué aviso corresponde a cada estado, y a quién.
@@ -97,8 +107,13 @@ const puedeVerla = (reserva: Booking, quien: Solicitante): boolean =>
   reserva.providerId === quien.id ||
   quien.role === 'admin';
 
+/** El cliente intenta cancelar una reserva confirmada cuya hora ya pasó. */
+export const CODIGO_CANCELACION_TARDIA = 'cancelacion-tardia';
+
 @Injectable()
 export class BookingsService {
+  private readonly logger = new Logger(BookingsService.name);
+
   constructor(
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
@@ -109,6 +124,7 @@ export class BookingsService {
     private readonly avisos: NotificationsService,
     private readonly pagos: PaymentsService,
     private readonly dataSource: DataSource,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   async create(
@@ -132,11 +148,14 @@ export class BookingsService {
 
     const partes = await this.userRepository.find({
       where: { id: In([clientId, service.providerId]) },
-      select: { id: true, esDemostracion: true },
+      select: { id: true, esDemostracion: true, isActive: true },
     });
     const cliente = partes.find((parte) => parte.id === clientId);
     const profesional = partes.find((parte) => parte.id === service.providerId);
-    if (!cliente || !profesional) {
+    // Un profesional desactivado no sale en la búsqueda, pero su ficha se
+    // abría por enlace directo y se podía reservar y pagar algo que nadie
+    // iba a aceptar.
+    if (!cliente || !profesional || !profesional.isActive) {
       throw new NotFoundException('Servicio no encontrado o no disponible');
     }
     comprobarMismoMundo(cliente, profesional);
@@ -256,6 +275,10 @@ export class BookingsService {
   ): Promise<Booking> {
     const newStatus = updateDto.status;
     const sinCobro = updateDto.sinCobro === true;
+    // Lo que de verdad pasó, para el aviso: pedir completar sin cobro no
+    // basta si el cliente pagó entretanto, porque entonces se cobra.
+    let completadaSinCobro = false;
+    let estadoAnterior: BookingStatus | null = null;
 
     // Todo en una transacción, con la fila de la reserva bloqueada.
     //
@@ -297,7 +320,11 @@ export class BookingsService {
       // bloquea —quien cancela tiene derecho a cancelar— y eso lo decide el
       // servicio de pagos, no esta línea.
       if (newStatus === BookingStatus.COMPLETED) {
-        await this.pagos.cobrarAlCompletar(booking.id, { gestor, sinCobro });
+        const cobro = await this.pagos.cobrarAlCompletar(booking.id, {
+          gestor,
+          sinCobro,
+        });
+        completadaSinCobro = sinCobro && cobro === null;
       } else if (
         newStatus === BookingStatus.CANCELLED ||
         newStatus === BookingStatus.REJECTED
@@ -305,6 +332,7 @@ export class BookingsService {
         await this.pagos.liberarRetencion(booking.id, gestor);
       }
 
+      estadoAnterior = booking.status;
       booking.status = newStatus;
 
       if (newStatus === BookingStatus.CONFIRMED) {
@@ -331,8 +359,33 @@ export class BookingsService {
     // Con sus relaciones, que la fila bloqueada no podía traer: PostgreSQL
     // no bloquea el lado opcional de una unión externa.
     const guardada = await this.findById(id);
-    await this.avisar(guardada, newStatus, userId, sinCobro);
+    await this.avisar(guardada, newStatus, userId, completadaSinCobro);
+
+    // La administración actuando sobre una reserva ajena mueve dinero:
+    // completar cobra y cancelar lo suelta. Queda en el historial.
+    if (
+      userRole === 'admin' &&
+      userId !== guardada.clientId &&
+      userId !== guardada.providerId
+    ) {
+      await this.auditoria.anotar({
+        actor: { id: userId, email: await this.correoDe(userId) },
+        accion: AccionAuditada.RESERVA_CAMBIADA,
+        entidad: 'reserva',
+        entidadId: id,
+        contexto: { antes: estadoAnterior ?? '', ahora: newStatus },
+      });
+    }
     return reservaVisible(guardada);
+  }
+
+  /** El correo de quien actúa, que el historial guarda copiado. */
+  private async correoDe(usuarioId: string): Promise<string> {
+    const usuario = await this.userRepository.findOne({
+      where: { id: usuarioId },
+      select: { id: true, email: true },
+    });
+    return usuario?.email ?? '';
   }
 
   /**
@@ -369,6 +422,62 @@ export class BookingsService {
     }
   }
 
+  /**
+   * Las solicitudes cuya fecha pasó sin respuesta del profesional.
+   *
+   * Se quedaban pendientes para siempre: ya no se podían aceptar, porque la
+   * fecha había pasado, y la retención se renovaba cada cuatro días sobre la
+   * tarjeta del cliente. Se cancelan, se suelta lo retenido y se avisa a las
+   * dos partes. Sin motivo escrito: guardado en castellano, lo leería igual
+   * quien use la aplicación en otro idioma; el aviso lo explica en el suyo.
+   *
+   * Cada una en su transacción, con la fila bloqueada y saltando las que ya
+   * bloquea otra instancia. Devuelve cuántas ha caducado.
+   */
+  async caducarPendientes(ahora = new Date()): Promise<number> {
+    const vencidas = await this.bookingRepository.find({
+      where: { status: BookingStatus.PENDING, scheduledDate: LessThan(ahora) },
+      select: { id: true },
+    });
+
+    let caducadas = 0;
+    for (const { id } of vencidas) {
+      try {
+        const reserva = await this.dataSource.transaction(async (gestor) => {
+          const pendiente = await gestor.findOne(Booking, {
+            where: { id, status: BookingStatus.PENDING },
+            lock: { mode: 'pessimistic_write', onLocked: 'skip_locked' },
+          });
+          if (!pendiente || pendiente.scheduledDate >= ahora) return null;
+
+          await this.pagos.liberarRetencion(pendiente.id, gestor);
+          pendiente.status = BookingStatus.CANCELLED;
+          pendiente.cancelledAt = ahora;
+          pendiente.cancellationReason = null;
+          return gestor.save(pendiente);
+        });
+        if (!reserva) continue;
+
+        caducadas += 1;
+        for (const usuarioId of [reserva.clientId, reserva.providerId]) {
+          await this.avisos.crear({
+            usuarioId,
+            tipo: NotificationType.BOOKING_CANCELLED,
+            datos: { estado: BookingStatus.CANCELLED, caducada: 'si' },
+            enlace: `/dashboard/bookings/${reserva.id}`,
+          });
+        }
+      } catch (error) {
+        this.logger.warn(
+          `No se pudo caducar la reserva ${id}: ${
+            error instanceof Error ? error.message : 'causa desconocida'
+          }. Se volverá a intentar en la próxima revisión.`,
+        );
+      }
+    }
+    return caducadas;
+  }
+
   async findByClient(clientId: string): Promise<Booking[]> {
     const reservas = await this.bookingRepository.find({
       where: { clientId },
@@ -380,6 +489,7 @@ export class BookingsService {
         provider: true,
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA,
     });
     return reservas.map(reservaVisible);
   }
@@ -395,6 +505,7 @@ export class BookingsService {
         client: true,
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA,
     });
     return reservas.map(reservaVisible);
   }
@@ -452,6 +563,26 @@ export class BookingsService {
           'No tienes permisos para cancelar esta reserva',
         );
       }
+    }
+
+    // Pasada la hora de una reserva confirmada, el cliente ya no la cancela:
+    // el trabajo puede estar hecho, y cancelar suelta el dinero retenido. Se
+    // cancelaba a las diez y media un trabajo hecho a las diez, y el
+    // profesional no cobraba. Si hay un problema, lo resuelven el
+    // profesional o la administración.
+    if (
+      newStatus === BookingStatus.CANCELLED &&
+      booking.status === BookingStatus.CONFIRMED &&
+      booking.clientId === userId &&
+      userRole !== 'admin' &&
+      booking.scheduledDate <= new Date()
+    ) {
+      throw new ConflictException({
+        statusCode: 409,
+        codigo: CODIGO_CANCELACION_TARDIA,
+        message:
+          'La hora de la reserva ya ha pasado: para cancelarla, habla con el profesional.',
+      });
     }
 
     // Las fechas, después de los permisos: a quien no puede tocar la

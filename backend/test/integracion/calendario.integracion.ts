@@ -68,6 +68,8 @@ describe('Agenda sin solapes', () => {
       { crear: async () => null } as never,
       {} as never,
       fuente,
+      // El historial de la administración no es lo que se prueba aquí.
+      { anotar: async () => undefined } as never,
     );
 
     [servicio] = await fuente.query(
@@ -91,6 +93,40 @@ describe('Agenda sin solapes', () => {
 
   afterAll(async () => {
     if (fuente?.isInitialized) await fuente.destroy();
+  });
+
+  describe('las solicitudes que caducan', () => {
+    it('una pendiente cuya fecha pasó queda cancelada; una por venir, no', async () => {
+      // Se quedaban pendientes para siempre, sin poder aceptarse. La API no
+      // deja pedir una fecha pasada, así que se insertan a mano.
+      const pasado = new Date(Date.now() - 2 * 86_400_000);
+      const vencida = await reserva(pasado, BookingStatus.PENDING);
+      const porVenir = await reserva(A_LAS(12), BookingStatus.PENDING);
+      const conPagos = new BookingsService(
+        fuente.getRepository(Booking),
+        fuente.getRepository(Service),
+        fuente.getRepository(User),
+        { crear: async () => null } as never,
+        { liberarRetencion: async () => null } as never,
+        fuente,
+        { anotar: async () => undefined } as never,
+      );
+
+      await conPagos.caducarPendientes();
+
+      const filas: Array<{ id: string; status: string; cancelado: boolean }> =
+        await fuente.query(
+          `SELECT id, status, "cancelledAt" IS NOT NULL AS cancelado
+           FROM bookings WHERE id = ANY($1)`,
+          [[vencida, porVenir]],
+        );
+      const estado = Object.fromEntries(filas.map((f) => [f.id, f]));
+      expect(estado[vencida]).toMatchObject({
+        status: BookingStatus.CANCELLED,
+        cancelado: true,
+      });
+      expect(estado[porVenir].status).toBe(BookingStatus.PENDING);
+    });
   });
 
   describe('la restricción de la base', () => {

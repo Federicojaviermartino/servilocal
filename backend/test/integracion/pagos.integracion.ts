@@ -62,6 +62,8 @@ describe('Pagos contra la API de Stripe', () => {
       { crear: vi.fn(async () => null) } as unknown as NotificationsService,
       servicio,
       fuente,
+      // El historial de la administración no es lo que se prueba aquí.
+      { anotar: async () => undefined } as never,
     );
 
     // El cliente apunta al emulador en vez de a Stripe.

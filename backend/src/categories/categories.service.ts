@@ -1,13 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { AccionAuditada, Category } from '../entities';
+import { AccionAuditada, Category, Service } from '../entities';
 import { AuditoriaService, type Actor } from '../auditoria/auditoria.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CacheService } from '../common/redis/cache.service';
 
 /** El catálogo cambia una vez cada muchos meses; un minuto es conservador. */
 const CLAVE = 'categorias:arbol';
+
+/** La categoría tiene servicios, también retirados, y no se puede borrar. */
+export const CODIGO_CATEGORIA_CON_SERVICIOS = 'categoria-con-servicios';
 const SEGUNDOS = 300;
 
 @Injectable()
@@ -92,6 +99,19 @@ export class CategoriesService {
 
   async remove(id: string, actor: Actor): Promise<void> {
     const category = await this.findById(id);
+    // Con servicios dentro no se borra: también los retirados, que conservan
+    // su historial de reservas. La base tampoco lo permite; sin esto, su
+    // negativa llegaba como un 500.
+    const servicios = await this.categoryRepository.manager.count(Service, {
+      where: { categoryId: id },
+    });
+    if (servicios > 0) {
+      throw new ConflictException({
+        statusCode: 409,
+        codigo: CODIGO_CATEGORIA_CON_SERVICIOS,
+        message: 'La categoría tiene servicios: muévelos antes de borrarla',
+      });
+    }
     const contexto = { nombre: category.name, slug: category.slug };
     await this.categoryRepository.remove(category);
     // Quien borra una categoría tiene que verla desaparecer, no esperar a

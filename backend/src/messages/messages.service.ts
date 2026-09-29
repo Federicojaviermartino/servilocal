@@ -10,6 +10,7 @@ import { Conversation, Message, User } from '../entities';
 import { comprobarMismoMundo } from '../common/demostracion';
 import { SendMessageDto, ReplyMessageDto } from './dto/message.dto';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
+import { TOPE_LISTA } from '../common/topes';
 
 export interface ResumenConversacion {
   partnerId: string;
@@ -239,7 +240,9 @@ export class MessagesService {
       .andWhere('isRead = false')
       .execute();
 
-    return this.messageRepository.find({
+    // Los últimos, y en su orden: se piden del más reciente hacia atrás y
+    // se dan la vuelta.
+    const ultimos = await this.messageRepository.find({
       where: { conversationId: conversation.id },
       relations: { sender: true },
       select: {
@@ -257,8 +260,10 @@ export class MessagesService {
           avatarUrl: true,
         },
       },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'DESC' },
+      take: TOPE_LISTA,
     });
+    return ultimos.reverse();
   }
 
   async getUnreadCount(userId: string): Promise<number> {
@@ -277,33 +282,61 @@ export class MessagesService {
   private async findConversationBetween(
     userOneId: string,
     userTwoId: string,
+    repositorio = this.conversationRepository,
   ): Promise<Conversation | null> {
-    return this.conversationRepository
-      .createQueryBuilder('conv')
-      .where('(conv.participantOneId = :a AND conv.participantTwoId = :b)', {
-        a: userOneId,
-        b: userTwoId,
-      })
-      .orWhere('(conv.participantOneId = :b AND conv.participantTwoId = :a)', {
-        a: userOneId,
-        b: userTwoId,
-      })
-      .getOne();
+    return (
+      repositorio
+        .createQueryBuilder('conv')
+        .where('(conv.participantOneId = :a AND conv.participantTwoId = :b)', {
+          a: userOneId,
+          b: userTwoId,
+        })
+        .orWhere(
+          '(conv.participantOneId = :b AND conv.participantTwoId = :a)',
+          {
+            a: userOneId,
+            b: userTwoId,
+          },
+        )
+        // Si una pareja tuviera dos, siempre la misma: la primera.
+        .orderBy('conv.createdAt', 'ASC')
+        .getOne()
+    );
   }
 
+  /**
+   * La conversación de una pareja, creándola la primera vez.
+   *
+   * Dos mensajes a la vez entre las mismas personas creaban dos: los dos
+   * miraban si existía antes de que ninguno la guardara, y cada mensaje
+   * acababa en un hilo distinto. El cerrojo es por pareja, y dura lo que la
+   * transacción. Sin índice único: si en producción hubiera ya dos de la
+   * misma pareja, crearlo haría fallar el despliegue.
+   */
   private async findOrCreateConversation(
     userOneId: string,
     userTwoId: string,
   ): Promise<Conversation> {
-    const existing = await this.findConversationBetween(userOneId, userTwoId);
+    return this.conversationRepository.manager.transaction(async (gestor) => {
+      const pareja = [userOneId, userTwoId].sort().join(':');
+      await gestor.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+        `conversacion:${pareja}`,
+      ]);
+      const repositorio = gestor.getRepository(Conversation);
 
-    if (existing) return existing;
+      const existente = await this.findConversationBetween(
+        userOneId,
+        userTwoId,
+        repositorio,
+      );
+      if (existente) return existente;
 
-    const conversation = this.conversationRepository.create({
-      participantOneId: userOneId,
-      participantTwoId: userTwoId,
+      return repositorio.save(
+        repositorio.create({
+          participantOneId: userOneId,
+          participantTwoId: userTwoId,
+        }),
+      );
     });
-
-    return this.conversationRepository.save(conversation);
   }
 }

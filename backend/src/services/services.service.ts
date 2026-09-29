@@ -7,7 +7,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository, SelectQueryBuilder } from 'typeorm';
-import { Booking, BookingStatus, Category, Service } from '../entities';
+import {
+  AccionAuditada,
+  Booking,
+  BookingStatus,
+  Category,
+  Service,
+  User,
+} from '../entities';
+import { AuditoriaService } from '../auditoria/auditoria.service';
 import { puntoGeografico } from '../common/geografia';
 import { coordenadasDeCiudad, mismaCiudad } from '../common/ciudades';
 import {
@@ -16,6 +24,7 @@ import {
   SearchServicesDto,
 } from './dto/service.dto';
 import { ampliarBusqueda, escaparLike } from './sinonimos';
+import { TOPE_LISTA_PUBLICA } from '../common/topes';
 
 /** Eliminar un servicio con reservas abiertas: se resuelven antes. */
 export const CODIGO_RESERVAS_ABIERTAS = 'reservas-abiertas';
@@ -119,6 +128,7 @@ export class ServicesService {
     private serviceRepository: Repository<Service>,
     @InjectRepository(Booking)
     private bookingRepository: Repository<Booking>,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   async create(
@@ -136,8 +146,18 @@ export class ServicesService {
     return this.serviceRepository.save(service);
   }
 
-  async findById(id: string): Promise<Service> {
-    const service = await this.serviceRepository
+  /**
+   * Un servicio por su identificador.
+   *
+   * Con `publica`, como lo ve cualquiera: tampoco el de un profesional
+   * desactivado. La búsqueda ya lo ocultaba, pero su ficha se abría por
+   * enlace directo y se podía reservar.
+   */
+  async findById(
+    id: string,
+    { publica = false }: { publica?: boolean } = {},
+  ): Promise<Service> {
+    const consulta = this.serviceRepository
       .createQueryBuilder('service')
       .leftJoin('service.provider', 'provider')
       .addSelect(COLUMNAS_PUBLICAS_PROVEEDOR)
@@ -145,8 +165,9 @@ export class ServicesService {
       .where('service.id = :id', { id })
       // Uno retirado ya no existe para nadie: ni su ficha, ni editarlo.
       // Sus reservas siguen viéndolo, porque lo cargan por su relación.
-      .andWhere('service.withdrawnAt IS NULL')
-      .getOne();
+      .andWhere('service.withdrawnAt IS NULL');
+    if (publica) consulta.andWhere('provider.isActive = true');
+    const service = await consulta.getOne();
 
     if (!service) {
       throw new NotFoundException('Servicio no encontrado');
@@ -179,7 +200,14 @@ export class ServicesService {
     }
 
     Object.assign(service, rest);
-    return this.serviceRepository.save(service);
+    // La categoría viene cargada como relación, y al guardar TypeORM toma
+    // su identificador y no el campo: cambiar de categoría respondía con la
+    // nueva y no se guardaba. Se quita la relación, y se devuelve releído.
+    if (rest.categoryId !== undefined) {
+      delete (service as Partial<Service>).category;
+    }
+    await this.serviceRepository.save(service);
+    return this.findById(id);
   }
 
   async remove(id: string, userId: string, userRole: string): Promise<void> {
@@ -217,10 +245,24 @@ export class ServicesService {
         isActive: false,
         withdrawnAt: new Date(),
       });
-      return;
+    } else {
+      await this.serviceRepository.remove(service);
     }
 
-    await this.serviceRepository.remove(service);
+    // La administración quitando el servicio de otro: queda en el historial.
+    if (userRole === 'admin' && service.providerId !== userId) {
+      const actor = await this.serviceRepository.manager.findOne(User, {
+        where: { id: userId },
+        select: { id: true, email: true },
+      });
+      await this.auditoria.anotar({
+        actor: { id: userId, email: actor?.email ?? '' },
+        accion: AccionAuditada.SERVICIO_RETIRADO,
+        entidad: 'servicio',
+        entidadId: id,
+        contexto: { nombre: service.title },
+      });
+    }
   }
 
   /**
@@ -358,14 +400,21 @@ export class ServicesService {
       });
     }
 
-    // Búsqueda geoespacial con PostGIS (ST_DWithin)
-    if (latitude && longitude) {
+    // Búsqueda geoespacial con PostGIS (ST_DWithin). Comparando con null y
+    // no por verdad: una longitud 0 —el meridiano pasa por Castellón— se
+    // tomaba por «sin coordenadas» y el radio dejaba de filtrar.
+    const conCoordenadas = latitude != null && longitude != null;
+    if (conCoordenadas) {
       const radiusMeters = radiusKm * 1000;
+      // Lo más cerca de las dos distancias: hasta dónde busca el cliente y
+      // hasta dónde se desplaza el profesional, que es lo que declara al
+      // publicar. El radio de cobertura se guardaba y no filtraba nada, y
+      // salían profesionales que no iban a ir.
       qb.andWhere(
         `ST_DWithin(
           service.location::geography,
           ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
-          :radius
+          LEAST(:radius, service.coverageRadiusKm * 1000)
         )`,
         { lng: longitude, lat: latitude, radius: radiusMeters },
       );
@@ -396,7 +445,7 @@ export class ServicesService {
     // Ordenación
     switch (sortBy) {
       case 'distance':
-        if (latitude && longitude) {
+        if (conCoordenadas) {
           qb.orderBy('distance_meters', 'ASC');
         } else {
           qb.orderBy('service.createdAt', 'DESC');
@@ -453,6 +502,7 @@ export class ServicesService {
         category: true,
       },
       order: { createdAt: 'DESC' },
+      take: TOPE_LISTA_PUBLICA,
     });
   }
 }

@@ -23,6 +23,7 @@ describe('Ubicaciones en PostGIS', () => {
     servicios = new ServicesService(
       fuente.getRepository(Service),
       fuente.getRepository(Booking),
+      { anotar: async () => undefined } as never,
     );
     // El perfil no anota nada en el historial: basta con un hueco.
     usuarios = new UsersService(
@@ -107,6 +108,19 @@ describe('Ubicaciones en PostGIS', () => {
         type: 'Point',
         coordinates: [4.5, 38.5],
       });
+
+      // Pero no más lejos de lo que el profesional se desplaza: a unos
+      // tres kilómetros, con un kilómetro de cobertura, ya no sale.
+      await fuente.query(
+        `UPDATE services SET "coverageRadiusKm" = 1 WHERE id = $1`,
+        [creado.id],
+      );
+      const fueraDeSuCobertura = await servicios.search({
+        latitude: 38.525,
+        longitude: 4.5,
+        radiusKm: 10,
+      });
+      expect(fueraDeSuCobertura.data.map((s: Service) => s.id)).toEqual([]);
     } finally {
       await fuente.query(`DELETE FROM services WHERE id = $1`, [creado.id]);
     }

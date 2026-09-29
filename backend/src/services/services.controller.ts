@@ -46,7 +46,7 @@ export class ServicesController {
   @ApiOperation({ summary: 'Obtener servicio por ID (público)' })
   @ApiResponse({ status: 200, description: 'Detalle del servicio' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.servicesService.findById(id);
+    return this.servicesService.findById(id, { publica: true });
   }
 
   @Get('provider/:providerId')
