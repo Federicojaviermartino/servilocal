@@ -73,9 +73,6 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Que el servidor de desarrollo no escriba ficheros suyos en la raíz del
-  // proyecto: desde Next 16.2 lo hace por defecto en ciertos entornos.
-  agentRules: false,
   experimental: {
     // Lo que espera el reenvío de /api/... antes de rendirse. Por defecto son
     // 30 segundos, y la API dormida tarda cerca de un minuto en volver: el
