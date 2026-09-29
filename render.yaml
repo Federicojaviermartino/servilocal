@@ -7,12 +7,19 @@
 # solo: hay que enlazarlo en Render como Blueprint (ver docs/OPERATIONS.md).
 #
 # Lo que difiere de lo que hay hoy en el panel, y es a propósito:
-#   - autoDeployTrigger: checksPass. Hoy se despliega en cuanto llega un
-#     commit a main, antes de que termine la integración continua, así que
-#     un cambio en rojo llega a producción igual, migraciones incluidas.
 #   - healthCheckPath. Hoy no hay ninguna: Render da por bueno un despliegue
 #     en cuanto abre el puerto, y un servicio que responde 503 sigue
 #     recibiendo tráfico.
+#
+# Se despliega con cada commit que llega a main, y no con «checksPass»,
+# aunque este pedía esperar a la integración continua. Render no despliega
+# si falla cualquier comprobación del commit, y a la cabeza de main se
+# cuelgan también la prueba de humo, que espera justo a ese despliegue, y el
+# flujo que mantiene despierta la demo, que durante una caída falla y
+# bloquearía el commit que la arregla. Lo que tiene que impedir que llegue a
+# main algo en rojo es la protección de la rama, exigiendo la integración
+# continua, y todavía no está activada: hasta entonces, a main solo se lleva
+# un commit que ya pasó en su rama.
 #
 # Los secretos van con «sync: false»: Render los pide al crear el servicio y
 # nunca se escriben aquí.
@@ -29,7 +36,7 @@ services:
     plan: free
     # Comprueba también la base de datos: con la base caída responde 503.
     healthCheckPath: /api/health
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
@@ -71,7 +78,7 @@ services:
     region: frankfurt
     plan: free
     healthCheckPath: /salud
-    autoDeployTrigger: checksPass
+    autoDeployTrigger: commit
     # Las NEXT_PUBLIC_* se incrustan al compilar: Render las pasa a la
     # construcción de la imagen como argumentos, y cambiar una exige volver a
     # construir, no reiniciar.

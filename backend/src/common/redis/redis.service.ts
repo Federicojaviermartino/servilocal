@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis, { RedisOptions } from 'ioredis';
 
@@ -58,7 +58,7 @@ export type ModoConexion = 'consulta' | 'suscripcion';
  * Ningún uso puede tratar eso como una avería.
  */
 @Injectable()
-export class RedisService implements OnModuleDestroy {
+export class RedisService implements OnApplicationShutdown {
   private readonly logger = new Logger(RedisService.name);
   private readonly url: string | undefined;
   private readonly conexiones: Redis[] = [];
@@ -104,7 +104,16 @@ export class RedisService implements OnModuleDestroy {
     return conexion;
   }
 
-  async onModuleDestroy(): Promise<void> {
+  /**
+   * Se cierra lo último, cuando ya no quedan ni peticiones ni sockets.
+   *
+   * No en onModuleDestroy: Nest lo llama antes de cerrar el servidor HTTP y
+   * socket.io, y al cerrarse socket.io el adaptador aún se da de baja de sus
+   * canales. Sobre una conexión ya cerrada esas bajas se rechazaban sin que
+   * nadie lo capturase, y el proceso moría con código 1 en cada apagado: con
+   * el plan gratuito de Render, cada vez que la API se dormía.
+   */
+  async onApplicationShutdown(): Promise<void> {
     await Promise.all(
       this.conexiones.map((c) => c.quit().catch(() => undefined)),
     );

@@ -64,4 +64,22 @@ export class HealthController {
 
     return informe;
   }
+
+  /**
+   * Solo si el proceso responde, sin tocar la base de datos.
+   *
+   * Para el flujo que mantiene despierta la demo, que llama cada pocos
+   * minutos: con la comprobación completa, Neon no llegaba a suspender su
+   * cómputo en toda la franja, y eso se paga del cupo. La base se sigue
+   * comprobando arriba, con menos frecuencia.
+   */
+  @Get('vivo')
+  @ApiOperation({ summary: 'El proceso responde; no comprueba la base' })
+  @ApiResponse({ status: 200, description: 'En marcha' })
+  vivo() {
+    return {
+      estado: 'ok',
+      version: process.env.RENDER_GIT_COMMIT?.slice(0, 7) || null,
+    };
+  }
 }

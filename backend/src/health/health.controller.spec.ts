@@ -34,6 +34,19 @@ describe('HealthController', () => {
     );
   });
 
+  it('la de vida responde sin tocar la base, aunque esté caída', () => {
+    // La llama cada pocos minutos el flujo que mantiene despierta la demo:
+    // si consultara la base, Neon no se suspendería nunca en esa franja.
+    vi.stubEnv('RENDER_GIT_COMMIT', '9e66daeb3ca1c45ae566ad833ede4a0bd7c663e0');
+    const controlador = construir(false);
+
+    expect(controlador.vivo()).toEqual({ estado: 'ok', version: '9e66dae' });
+    expect(
+      (controlador as unknown as { dataSource: { query: unknown } }).dataSource
+        .query,
+    ).not.toHaveBeenCalled();
+  });
+
   it('dice qué commit está sirviendo', async () => {
     // La prueba de humo espera a verlo para saber que el despliegue nuevo
     // ya atiende, y no el anterior.

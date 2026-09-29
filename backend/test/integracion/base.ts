@@ -90,7 +90,7 @@ function comprobarQueNoFaltaNinguna(): void {
 /**
  * Conexión a una base de datos de verdad para las pruebas de integración.
  *
- * Las 362 comprobaciones de la batería normal usan dobles, y eso deja fuera
+ * Las pruebas de la batería normal usan dobles, y eso deja fuera
  * todo lo que solo existe dentro de PostgreSQL: si el índice espacial se usa,
  * si el ON CONFLICT acumula en vez de sobrescribir, si el bloqueo de fila
  * serializa dos transacciones, si las migraciones aplican y revierten. Son

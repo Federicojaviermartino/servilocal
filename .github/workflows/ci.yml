@@ -137,16 +137,16 @@ jobs:
       - name: Compilar el catálogo de componentes
         run: npm run build-storybook -- --quiet
 
-  # Las 362 comprobaciones de la batería normal usan dobles, y un doble hace
-  # lo que se le dice: no sabe si el índice espacial se usa, si el ON CONFLICT
-  # acumula, si el bloqueo de fila serializa dos transacciones, ni que Stripe
-  # rechaza un importe que no sea entero. Todo eso solo lo puede contradecir
-  # el software de verdad.
+  # Las pruebas de la batería normal usan dobles, y un doble hace lo que se
+  # le dice: no sabe si el índice espacial se usa, si el ON CONFLICT acumula,
+  # si el bloqueo de fila serializa dos transacciones, que Stripe rechaza un
+  # importe que no sea entero, ni en qué orden cierra Nest cada conexión.
+  # Todo eso solo lo puede contradecir el software de verdad.
   #
   # stripe-mock es el emulador oficial de Stripe: responde con su esquema y
   # sus códigos de error, y no hace falta ninguna clave.
   integracion:
-    name: Integración contra base de datos y Stripe
+    name: Integración contra base de datos, Stripe y Redis
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
@@ -170,6 +170,18 @@ jobs:
         image: stripe/stripe-mock:v0.205.0
         ports:
           - 12111:12111
+      valkey:
+        # Lo que ofrece Render como Key Value. Solo lo usa la prueba del
+        # apagado: el orden en que Nest cierra sockets y Redis no se ve con
+        # dobles, y en producción tumbaba el proceso en cada apagado.
+        image: valkey/valkey:8.1.10
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     defaults:
       run:
@@ -186,6 +198,7 @@ jobs:
       JWT_EXPIRATION: 1h
       STRIPE_SECRET_KEY: sk_test_integracion
       STRIPE_MOCK_URL: http://localhost:12111
+      REDIS_INTEGRACION_URL: redis://localhost:6379
 
     steps:
       - uses: actions/checkout@v7
@@ -272,7 +285,8 @@ jobs:
     timeout-minutes: 20
 
     # Para arrancar la imagen de verdad. La API corre las migraciones al
-    # levantarse, así que le basta una base vacía.
+    # levantarse, así que le basta una base vacía. Con Valkey, como en
+    # producción, para apagarla igual que la apaga Render.
     services:
       postgres:
         image: postgis/postgis:16-3.4
@@ -284,6 +298,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U servilocal_user -d servilocal_imagen"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      valkey:
+        image: valkey/valkey:8.1.10
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -350,7 +373,12 @@ jobs:
       # Una imagen que no arranca pasaba esas comprobaciones enteras: pasó,
       # y lo que la delató fue el trabajo de extremo a extremo, que arranca
       # la API compilada aparte. Mirar dentro no es lo mismo que encenderla.
-      - name: Comprobar que la imagen arranca y responde
+      #
+      # Y se apaga como la apaga Render, con SIGTERM, exigiendo que salga
+      # con 0. Desde la 2.6.0 salía con 1 en cada apagado —cada vez que la
+      # API se dormía— y nada lo detectaba: el contenedor se quitaba con
+      # «rm -f», que no avisa a nadie.
+      - name: Comprobar que la imagen arranca, responde y se apaga limpia
         run: |
           docker run -d --name api-ci --network host \
             -e DB_HOST=localhost \
@@ -363,11 +391,22 @@ jobs:
             -e STRIPE_SECRET_KEY=sk_test_marcador \
             -e CORS_ORIGINS=http://localhost:3000 \
             -e PORT=3001 \
+            -e REDIS_URL=redis://localhost:6379 \
             servilocal-api:ci
           for i in $(seq 1 45); do
             if curl -sf http://localhost:3001/api/health > /dev/null; then
               echo "La imagen responde tras $((i * 2))s"
               curl -s http://localhost:3001/api/health
+              echo
+              docker stop api-ci > /dev/null
+              salida=$(docker inspect -f '{{.State.ExitCode}}' api-ci)
+              echo "Al apagarse con SIGTERM sale con $salida"
+              if [ "$salida" != "0" ]; then
+                echo "Tenía que salir con 0. Final del registro del contenedor:"
+                docker logs api-ci 2>&1 | tail -20
+                docker rm -f api-ci > /dev/null
+                exit 1
+              fi
               docker rm -f api-ci > /dev/null
               exit 0
             fi

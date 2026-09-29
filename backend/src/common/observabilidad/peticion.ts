@@ -73,8 +73,13 @@ export class RegistroConPeticion extends ConsoleLogger {
   }
 }
 
-/** Las rutas que se piden solas cada pocos segundos: su éxito no se anota. */
-const SIN_ANOTAR_SI_VA_BIEN = new Set(['/api/health', '/api/v1/health']);
+/** Las rutas que se piden solas cada pocos minutos: su éxito no se anota. */
+const SIN_ANOTAR_SI_VA_BIEN = new Set([
+  '/api/health',
+  '/api/v1/health',
+  '/api/health/vivo',
+  '/api/v1/health/vivo',
+]);
 
 /**
  * Una línea por petición, en JSON: método, ruta, estado, lo que tardó y su

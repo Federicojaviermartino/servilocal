@@ -130,7 +130,7 @@ describe('RedisService', () => {
       servicio.crear('publicar', 'suscripcion');
       servicio.crear('suscribir', 'suscripcion');
 
-      await servicio.onModuleDestroy();
+      await servicio.onApplicationShutdown();
 
       expect(instancias).toHaveLength(3);
       for (const instancia of instancias) {
@@ -144,7 +144,7 @@ describe('RedisService', () => {
       const servicio = con(URL);
       instancias[0].quit.mockRejectedValueOnce(new Error('ya estaba cerrada'));
 
-      await expect(servicio.onModuleDestroy()).resolves.toBeUndefined();
+      await expect(servicio.onApplicationShutdown()).resolves.toBeUndefined();
     });
   });
 });

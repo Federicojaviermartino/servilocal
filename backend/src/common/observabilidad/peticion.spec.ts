@@ -223,6 +223,9 @@ describe('anotarPeticion', () => {
     app.get('/api/health', (_peticion, respuesta) => {
       respuesta.json({ estado: 'ok' });
     });
+    app.get('/api/health/vivo', (_peticion, respuesta) => {
+      respuesta.json({ estado: 'ok' });
+    });
     const escuchando = app.listen(0, '127.0.0.1');
     await new Promise((r) => escuchando.once('listening', r));
     const { port } = escuchando.address() as AddressInfo;
@@ -275,6 +278,9 @@ describe('anotarPeticion', () => {
 
   it('la comprobación de salud, cuando va bien, no llena el registro', async () => {
     await pedir('/api/health');
+    // La de vida la pide el flujo que mantiene despierta la demo cada
+    // cuatro minutos, desde varias ejecuciones a la vez.
+    await pedir('/api/health/vivo');
 
     expect(lineas).toEqual([]);
   });
