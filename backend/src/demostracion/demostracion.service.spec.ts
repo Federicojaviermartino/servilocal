@@ -16,7 +16,8 @@ type Respuestas = Array<[RegExp, unknown]>;
 
 function construir(respuestas: Respuestas = []) {
   const gestor = {
-    query: vi.fn(async (sql: string) => {
+    // Con los parámetros en la firma, para poder leerlos de mock.calls.
+    query: vi.fn(async (sql: string, _parametros?: unknown[]) => {
       const encontrada = respuestas.find(([patron]) => patron.test(sql));
       return encontrada ? encontrada[1] : [[], 0];
     }),

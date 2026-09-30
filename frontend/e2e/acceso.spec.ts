@@ -132,7 +132,15 @@ test.describe('Acceso a la aplicación', () => {
     await page.getByLabel('Contraseña', { exact: true }).fill('incorrecta');
     await page.getByRole('button', { name: 'Iniciar sesión' }).click();
 
-    await expect(page.getByRole('alert')).toBeVisible();
+    // El texto de las credenciales, no cualquier aviso: con la API caída
+    // también sale uno, y esta prueba seguiría en verde. Filtrado, porque
+    // Next tiene su propio «alert», vacío, para anunciar los cambios de
+    // página.
+    await expect(
+      page.getByRole('alert').filter({
+        hasText: 'Error al iniciar sesión. Verifica tus credenciales.',
+      }),
+    ).toBeVisible();
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 

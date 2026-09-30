@@ -1113,6 +1113,84 @@ describe('BookingsService', () => {
       expect(await service.findById('b1')).toBeTruthy();
     });
   });
+
+  describe('lo que devuelve GET /bookings/:id', () => {
+    // Es verReserva, no findById: la ruta devuelve lo que ve cada parte, y
+    // hasta ahora ninguna prueba pasaba por ella.
+    const PROFESIONAL = {
+      id: 'p1',
+      firstName: 'Luis',
+      lastName: 'Gómez',
+      email: 'luis@correo.test',
+      phone: '600000000',
+      address: 'Calle Mayor 3',
+      postalCode: '28013',
+      location: { type: 'Point', coordinates: [-3.7, 40.4] },
+    };
+    const reserva = (status: BookingStatus) => ({
+      id: 'b1',
+      clientId: 'c1',
+      providerId: 'p1',
+      status,
+      client: { id: 'c1', firstName: 'Ana', email: 'ana@correo.test' },
+      provider: PROFESIONAL,
+      service: { id: 's1', title: 'Fontanería', address: 'Calle Mayor 3' },
+    });
+    const CLIENTA = { id: 'c1', role: 'client' };
+
+    it('pendiente, el cliente no se lleva el contacto del profesional', async () => {
+      // Con crear una reserva pendiente y cancelarla, cualquiera se llevaba
+      // el teléfono y el domicilio del profesional.
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.PENDING),
+      );
+
+      const vista = await service.verReserva('b1', CLIENTA);
+
+      expect(vista.provider).toEqual({
+        id: 'p1',
+        firstName: 'Luis',
+        lastName: 'Gómez',
+        avatarUrl: undefined,
+        city: undefined,
+      });
+      expect(vista.service).not.toHaveProperty('address');
+    });
+
+    it('aceptada, sí: hace falta para ir a hacer el trabajo', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.CONFIRMED),
+      );
+
+      const vista = await service.verReserva('b1', CLIENTA);
+
+      expect(vista.provider).toMatchObject({
+        email: 'luis@correo.test',
+        phone: '600000000',
+        address: 'Calle Mayor 3',
+      });
+    });
+
+    it('las coordenadas de su casa, nunca', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.COMPLETED),
+      );
+
+      const vista = await service.verReserva('b1', CLIENTA);
+
+      expect(vista.provider).not.toHaveProperty('location');
+    });
+
+    it('un tercero sigue sin verla', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.CONFIRMED),
+      );
+
+      await expect(
+        service.verReserva('b1', { id: 'ajeno', role: 'client' }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
   describe('el dinero sigue a la reserva', () => {
     const reserva = (status: BookingStatus, scheduledDate = MANANA) => ({
       id: 'b1',

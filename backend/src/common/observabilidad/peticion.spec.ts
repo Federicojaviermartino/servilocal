@@ -226,6 +226,8 @@ describe('anotarPeticion', () => {
     app.get('/api/health/vivo', (_peticion, respuesta) => {
       respuesta.json({ estado: 'ok' });
     });
+    // Una búsqueda que no termina nunca: el cliente se cansa antes.
+    app.get('/api/lenta', () => undefined);
     const escuchando = app.listen(0, '127.0.0.1');
     await new Promise((r) => escuchando.once('listening', r));
     const { port } = escuchando.address() as AddressInfo;
@@ -283,5 +285,31 @@ describe('anotarPeticion', () => {
     await pedir('/api/health/vivo');
 
     expect(lineas).toEqual([]);
+  });
+
+  it('anota también la petición que el cliente abandona', async () => {
+    // Solo se escuchaba el final de la respuesta, y una petición abandonada
+    // no termina: las más lentas, las que interesan, no dejaban rastro.
+    const cancelar = new AbortController();
+    const pendiente = fetch(`${s.base}/api/lenta`, {
+      signal: cancelar.signal,
+    }).catch(() => undefined);
+    await new Promise((r) => setTimeout(r, 50));
+
+    cancelar.abort();
+    await pendiente;
+    await vi.waitFor(() => expect(lineas).toHaveLength(1));
+
+    expect(JSON.parse(lineas[0])).toMatchObject({
+      ruta: '/api/lenta',
+      estado: null,
+      abortada: true,
+    });
+  });
+
+  it('una respuesta completa no lleva la marca de abandonada', async () => {
+    await pedir('/api/reservas');
+
+    expect(JSON.parse(lineas[0])).not.toHaveProperty('abortada');
   });
 });

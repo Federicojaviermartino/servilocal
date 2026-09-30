@@ -56,16 +56,29 @@ describe('reintento del cliente HTTP', () => {
     alFallar = await interceptor();
   });
 
+  // El doble de axios devuelve la configuración con la que se le vuelve a
+  // llamar: resolver con ella es haber repetido la petición, y marcada, para
+  // no repetirla una segunda vez.
   it('reintenta una lectura que agota el tiempo', async () => {
     const resultado = alFallar(fallo('get', { code: 'ECONNABORTED' }));
 
-    await expect(resultado).resolves.toBeDefined();
+    await expect(resultado).resolves.toEqual({
+      reintentoDe: expect.objectContaining({
+        method: 'get',
+        reintentada: true,
+      }),
+    });
   });
 
   it('reintenta una lectura que no obtiene respuesta', async () => {
     const resultado = alFallar(fallo('get', {}));
 
-    await expect(resultado).resolves.toBeDefined();
+    await expect(resultado).resolves.toEqual({
+      reintentoDe: expect.objectContaining({
+        method: 'get',
+        reintentada: true,
+      }),
+    });
   });
 
   it('no reintenta una escritura', async () => {

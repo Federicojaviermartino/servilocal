@@ -89,11 +89,19 @@ test.describe('Cuando la API no contesta', () => {
     // Sin esto, las comprobaciones de arriba pasarían con una pantalla que
     // enseñara el error siempre.
     await entrarComo(page, 'cliente');
+    // Hasta que llegan las reservas: el título se pinta antes de cargar, y
+    // sin esperar la respuesta esto pasaba con la página aún cargando, que
+    // tampoco enseña el error.
+    const reservas = page.waitForResponse(
+      (r) => r.url().includes('/api/bookings/my') && r.ok(),
+    );
     await page.goto('/dashboard/bookings');
+    await reservas;
 
-    await expect(cajaDeError(page)).toBeHidden();
     await expect(
       page.getByRole('heading', { name: 'Mis reservas' }),
     ).toBeVisible();
+    await expect(page.getByRole('status', { name: /Cargando/i })).toBeHidden();
+    await expect(cajaDeError(page)).toBeHidden();
   });
 });

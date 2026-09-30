@@ -1,5 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { rutaConConsulta, rutaInterna } from './ruta-interna';
+import { createElement } from 'react';
+import { renderToString } from 'react-dom/server';
+import { renderHook } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  rutaConConsulta,
+  rutaInterna,
+  useParametroDeLaDireccion,
+} from './ruta-interna';
 
 describe('rutaInterna', () => {
   it.each(['/dashboard', '/services/abc/book', '/services/search?q=pintor'])(
@@ -41,5 +48,40 @@ describe('rutaConConsulta', () => {
 
   it('sin consulta, la ruta tal cual', () => {
     expect(rutaConConsulta('/dashboard')).toBe('/dashboard');
+  });
+
+  it('en el servidor, donde no hay dirección, también la ruta tal cual', () => {
+    vi.stubGlobal('window', undefined);
+    try {
+      expect(rutaConConsulta('/dashboard')).toBe('/dashboard');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe('useParametroDeLaDireccion', () => {
+  afterEach(() => window.history.replaceState(null, '', '/'));
+
+  it('en el navegador, lee la consulta', () => {
+    window.history.replaceState(null, '', '/messages/p1?servicio=abc');
+
+    const { result } = renderHook(() => useParametroDeLaDireccion('servicio'));
+
+    expect(result.current).toBe('abc');
+  });
+
+  it('en el servidor no hay dirección: se pinta sin él', () => {
+    // Y se completa al hidratar. Si leyera window en el servidor, la página
+    // entera fallaría al pintarse allí.
+    window.history.replaceState(null, '', '/messages/p1?servicio=abc');
+    const Parametro = () =>
+      createElement(
+        'span',
+        null,
+        useParametroDeLaDireccion('servicio') ?? 'sin parámetro',
+      );
+
+    expect(renderToString(createElement(Parametro))).toContain('sin parámetro');
   });
 });

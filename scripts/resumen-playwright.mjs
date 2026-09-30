@@ -1,10 +1,11 @@
 // Resume el informe JSON de Playwright en el resumen del trabajo, y deja un
 // aviso por cada prueba intermitente.
 //
-// Una prueba que falla y pasa al reintentarla deja el trabajo en verde, y
-// nada obligaba a mirarla: una intermitencia es un fallo real que a veces no
-// se ve, o una prueba que no prueba lo que dice. Así queda a la vista en
-// cada ejecución, con su nombre.
+// Una prueba que falla y pasa al reintentarla pone el trabajo en rojo
+// (failOnFlakyTests, en playwright.config.ts): una intermitencia es un fallo
+// real que a veces no se ve, o una prueba que no prueba lo que dice. Aquí
+// queda con su nombre, separada de las que fallan siempre, para no tener que
+// buscarla en el registro.
 //
 // Uso: node scripts/resumen-playwright.mjs <informe.json>
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';

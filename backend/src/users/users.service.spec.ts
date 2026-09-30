@@ -558,5 +558,88 @@ describe('UsersService', () => {
       expect(texto).not.toContain('cus_1');
       expect(texto).not.toMatch(/password|contrasena/i);
     });
+
+    it('como profesional: sus servicios, lo recibido y sus avisos, y de los clientes solo el nombre', async () => {
+      const CLIENTE = {
+        firstName: 'Marta',
+        lastName: 'Soler',
+        email: 'marta@correo.test',
+        phone: '611111111',
+        address: 'Calle del Cliente 7',
+      };
+      manager.find.mockImplementation(
+        async (entidad: unknown, opciones?: unknown) => {
+          const donde = (opciones as { where?: Record<string, unknown> })
+            ?.where;
+          if (entidad === Service)
+            return [{ id: 's1', title: 'Fontanería', address: 'Mi taller' }];
+          if (entidad === Booking)
+            return donde && 'providerId' in donde
+              ? [
+                  {
+                    id: 'b2',
+                    status: BookingStatus.CONFIRMED,
+                    service: { title: 'Fontanería' },
+                    client: CLIENTE,
+                  },
+                ]
+              : [];
+          if (entidad === Review)
+            return donde && 'serviceId' in donde
+              ? [
+                  {
+                    rating: 5,
+                    comment: 'Muy bien',
+                    providerResponse: 'Gracias',
+                    service: { title: 'Fontanería' },
+                    client: CLIENTE,
+                  },
+                ]
+              : [
+                  {
+                    rating: 4,
+                    comment: 'Correcto',
+                    service: { title: 'Pintura' },
+                  },
+                ];
+          if (entidad === Notification)
+            return [{ type: 'booking_created', content: {}, isRead: false }];
+          return [];
+        },
+      );
+
+      const datos = (await servicio.exportarDatos(YO)) as Record<
+        string,
+        Record<string, unknown>
+      >;
+      const texto = JSON.stringify(datos);
+
+      expect(datos.servicios).toEqual([
+        expect.objectContaining({
+          titulo: 'Fontanería',
+          direccion: 'Mi taller',
+        }),
+      ]);
+      expect(datos.reservas.comoProfesional).toEqual([
+        expect.objectContaining({ otraParte: 'Marta' }),
+      ]);
+      expect(datos.valoraciones.recibidas).toEqual([
+        expect.objectContaining({ autor: 'Marta', tuRespuesta: 'Gracias' }),
+      ]);
+      expect(datos.valoraciones.escritas).toEqual([
+        expect.objectContaining({ servicio: 'Pintura', nota: 4 }),
+      ]);
+      expect(datos.avisos).toEqual([
+        expect.objectContaining({ tipo: 'booking_created', leido: false }),
+      ]);
+      for (const dato of [
+        CLIENTE.lastName,
+        CLIENTE.email,
+        CLIENTE.phone,
+        CLIENTE.address,
+      ]) {
+        expect(texto).not.toContain(dato);
+      }
+    });
   });
 });

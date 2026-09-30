@@ -40,6 +40,16 @@ const SUSCRIPCION: RedisOptions = {
   maxRetriesPerRequest: null,
 };
 
+/**
+ * Lo que se espera a que Redis confirme el cierre antes de cortar.
+ *
+ * Si Redis se reinicia justo cuando la API se apaga, el QUIT se queda en la
+ * cola esperando una reconexión que se reintenta sin fin, y el proceso no
+ * terminaba hasta que Render lo mataba. Pasado el plazo se corta sin
+ * despedirse, que para una conexión que ya no se va a usar es lo mismo.
+ */
+export const PLAZO_CIERRE_MS = 3000;
+
 /** Las dos formas de hablar con Redis, que no toleran lo mismo. */
 export type ModoConexion = 'consulta' | 'suscripcion';
 
@@ -114,8 +124,20 @@ export class RedisService implements OnApplicationShutdown {
    * el plan gratuito de Render, cada vez que la API se dormía.
    */
   async onApplicationShutdown(): Promise<void> {
-    await Promise.all(
-      this.conexiones.map((c) => c.quit().catch(() => undefined)),
-    );
+    await Promise.all(this.conexiones.map((c) => this.cerrar(c)));
+  }
+
+  private async cerrar(conexion: Redis): Promise<void> {
+    let plazo: NodeJS.Timeout | undefined;
+    await Promise.race([
+      conexion.quit().catch(() => undefined),
+      new Promise<void>((resolver) => {
+        plazo = setTimeout(resolver, PLAZO_CIERRE_MS);
+      }),
+    ]);
+    clearTimeout(plazo);
+    // También tras un QUIT bueno: cancela el reintento que hubiera
+    // programado, que si no mantendría vivo el proceso.
+    conexion.disconnect();
   }
 }

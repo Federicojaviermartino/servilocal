@@ -27,6 +27,24 @@ const configuracion = [
       'test-results/**',
     ],
   },
+  {
+    // Un .only olvidado deja fuera todas las demás pruebas del fichero, y en
+    // local nadie lo nota porque lo que queda pasa. Vitest ya se niega a
+    // correrlo en la CI, y Playwright también (forbidOnly); esto lo para
+    // antes, en el editor.
+    files: ['src/**/*.test.{ts,tsx}', 'e2e/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "MemberExpression[property.name='only']:matches([object.name=/^(describe|it|test)$/], [object.property.name='describe'])",
+          message:
+            'Un .only deja fuera el resto de las pruebas. Quítalo antes de subir.',
+        },
+      ],
+    },
+  },
 ];
 
 export default configuracion;

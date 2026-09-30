@@ -9,96 +9,51 @@ import 'dotenv/config';
 import './config/zona-horaria';
 
 import { NestFactory } from '@nestjs/core';
-import {
-  VERSION_NEUTRAL,
-  ValidationPipe,
-  VersioningType,
-} from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
-import { origenesPermitidos } from './common/origenes';
 import { AdaptadorSocketRedis } from './common/redis/adaptador-socket';
 import { RedisService } from './common/redis/redis.service';
 import { AppModule } from './app.module';
+import { configurarAplicacion } from './aplicacion';
 import { iniciarSentry } from './common/observabilidad/sentry';
-import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
 import { secretoDelProxy } from './common/proxy-frontend';
-import {
-  anotarPeticion,
-  identificarPeticion,
-  RegistroConPeticion,
-} from './common/observabilidad/peticion';
+import { RegistroConPeticion } from './common/observabilidad/peticion';
+import { anotarApagado } from './common/observabilidad/apagado';
 
 async function bootstrap() {
   // Antes de crear la aplicación, para que la instrumentación alcance a todo
   // lo que se cargue después.
   const sentryActivo = iniciarSentry();
 
+  // Con colores solo en una terminal. En Render la salida va a un fichero de
+  // registro, y los códigos de color llegaban como texto: «\u001b[32m[Nest]».
+  const registro = new RegistroConPeticion({
+    colors: process.stdout.isTTY === true,
+  });
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
-    logger: new RegistroConPeticion(),
+    logger: registro,
   });
 
-  // Lo primero, para que hasta la respuesta de un CORS rechazado lo lleve.
-  app.use(identificarPeticion);
-  app.use(anotarPeticion);
+  configurarAplicacion(app);
 
   // Render para la instancia vieja con SIGTERM en cada despliegue. Sin esto
   // no lo atendía nadie: se cortaban las peticiones y los sockets a medias,
   // no se cerraban las conexiones con la base, y el programador de
   // retenciones y Redis no llegaban a ejecutar su cierre.
-  app.enableShutdownHooks();
-
-  // Render sirve detrás de un proxy: sin esto todas las peticiones parecen
-  // venir de la misma IP y el límite de peticiones afectaría a todos a la vez.
-  app.set('trust proxy', 1);
-
-  app.use(helmet());
-
-  // La sesión del navegador llega en una cookie. Ver auth/sesion.ts.
-  app.use(cookieParser());
-
-  app.enableCors({
-    origin: origenesPermitidos(),
-    credentials: true,
-    // Sin esto, un cliente de otro origen no podría leer el identificador.
-    exposedHeaders: ['X-Request-Id'],
-  });
+  //
+  // Y se sale en cuanto termina el cierre. Node es el proceso 1 del
+  // contenedor, y sin useProcessExit Nest se reenvía la señal, que el
+  // sistema ignora en el proceso 1: el proceso solo salía cuando no quedaba
+  // nada pendiente, y una conexión reintentando lo habría tenido vivo hasta
+  // que Render lo matase.
+  anotarApagado(registro);
+  app.enableShutdownHooks([], { useProcessExit: true });
 
   // Con Redis los sockets se reparten entre instancias; sin él se usa el
   // adaptador normal, que es lo correcto con una sola.
   const adaptador = AdaptadorSocketRedis.crear(app, app.get(RedisService));
   if (adaptador) app.useWebSocketAdapter(adaptador);
-
-  app.setGlobalPrefix('api');
-
-  // Todo respondía bajo /api, sin número de versión, así que cualquier
-  // cambio de forma en una respuesta rompía a quien ya estuviera llamando y
-  // no había manera de publicar el cambio sin romperlo.
-  //
-  // Se registran las dos rutas a la vez: /api/v1/... es la buena, y /api/...
-  // sigue funcionando porque hay una aplicación desplegada llamando así y
-  // apagarla de golpe la dejaría sin servicio. Lo que se gana es que la v2,
-  // cuando haga falta, pueda convivir con la v1 en vez de sustituirla.
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: ['1', VERSION_NEUTRAL],
-  });
-
-  app.useGlobalFilters(new FiltroDeExcepciones());
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('ServiLocal API')

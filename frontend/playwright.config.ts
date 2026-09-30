@@ -11,9 +11,17 @@ const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './e2e',
-  // Un fallo aislado suele ser lentitud de la instancia gratuita, no una
-  // regresión: se reintenta en integración continua antes de darlo por malo.
+  // En integración continua se reintenta, pero ya no para salir en verde:
+  // una prueba que falla y pasa al repetirla es intermitente, y eso también
+  // es un fallo. Una intermitencia es un error real que a veces no se ve, o
+  // una prueba que no prueba lo que dice, y con solo un aviso nadie tenía
+  // que mirarla. El reintento sirve para distinguirla de un fallo fijo y
+  // para grabar la traza.
   retries: process.env.CI ? 2 : 0,
+  failOnFlakyTests: !!process.env.CI,
+  // Un test.only olvidado dejaba las 416 ejecuciones en unas pocas, y en
+  // verde. En la CI, un .only es un fallo.
+  forbidOnly: !!process.env.CI,
   // Un solo worker también en local, igual que en integración continua.
   // Varias pruebas comparten las cuentas de demostración —crean reservas con
   // ellas y esperan el aviso por su socket—, así que en paralelo la de

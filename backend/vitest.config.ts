@@ -38,45 +38,86 @@ export default defineConfig({
     testTimeout: 15000,
     coverage: {
       provider: 'v8',
-      // Lo que decide qué ve y qué puede hacer quien llama: servicios,
-      // guardias, interceptores, filtros, el webhook de pagos y los
-      // transformadores de columnas. Es la misma selección que tenía Jest.
-      include: [
-        'src/**/*.service.ts',
-        'src/**/guards/**/*.ts',
-        'src/**/interceptores/**/*.ts',
-        'src/**/filters/**/*.ts',
-        'src/**/payments-webhook.controller.ts',
-        'src/**/transformers/**/*.ts',
-        // La cookie de sesión, a quién cree el limitador detrás del proxy y
-        // qué credenciales se quitan antes de enviar nada a Sentry.
-        'src/auth/sesion.ts',
-        'src/common/proxy-frontend.ts',
-        'src/common/observabilidad/sentry.ts',
-        'src/common/observabilidad/peticion.ts',
-        // Cómo se entiende un mensaje del asistente, con el modelo y sin él.
-        'src/ia/interpretacion.ts',
-        // Quién entra, a quién le llegan los mensajes en vivo, cuándo se
-        // renueva el dinero retenido y con qué se conecta a la base. Tenían
-        // pruebas, pero no se medían: borrarlas no lo habría notado nadie.
-        'src/auth/strategies/**/*.ts',
-        'src/**/*.gateway.ts',
-        'src/payments/programador-retenciones.ts',
-        'src/config/conexion-segura.ts',
-        'src/config/entorno.ts',
+      // Todo el código, salvo lo que se prueba por otro camino.
+      //
+      // Antes era una lista cerrada de ficheros, y lo que no estaba en ella
+      // no contaba: fuera se quedaban los controladores, qué datos ve cada
+      // parte de una reserva (partes-visibles.ts) o la barrera de la
+      // semilla. Tenían pruebas, pero borrarlas no lo habría notado nadie.
+      include: ['src/**/*.ts'],
+      exclude: [
+        'src/**/*.spec.ts',
+        // Arrancan y declaran; los monta enteros la prueba de permisos de
+        // la integración, y la imagen la arranca y la apaga la CI.
+        'src/main.ts',
+        'src/**/*.module.ts',
+        // Solo decoradores. El esquema que describen se compara con el de
+        // las migraciones, y las migraciones se aplican y se deshacen
+        // enteras, en la integración.
+        'src/entities/**',
+        'src/database/migrations/**',
+        'src/config/data-source.ts',
+        // La semilla la ejecuta la CI antes de la integración y de las
+        // pruebas de extremo a extremo. Su barrera sí se mide.
+        'src/database/seeds/run-seed.ts',
+        // La evaluación del asistente con el modelo de verdad, que se lanza
+        // a mano: npm run evaluar:ia.
+        'src/**/*.evaluacion.ts',
       ],
-      exclude: ['src/**/*.spec.ts'],
       reportsDirectory: 'coverage',
-      // Unos puntos por debajo de lo medido (97 % de sentencias y 91 % de
-      // ramas). Con el suelo en 90 y 80, cabía un servicio nuevo entero sin
-      // una sola prueba sin que la cifra bajara del mínimo.
+      // Unos puntos por debajo de lo medido. Con el suelo en 90 y 80, cabía
+      // un servicio nuevo entero sin una sola prueba sin que la cifra bajara
+      // del mínimo.
       thresholds: {
-        statements: 95,
+        statements: 96,
         branches: 89,
-        functions: 94,
-        lines: 95,
-        'src/auth/auth.service.ts': { statements: 85, branches: 75 },
-        'src/common/guards/roles.guard.ts': { statements: 90, branches: 100 },
+        functions: 97,
+        lines: 96,
+        // Y un suelo propio para lo que mueve dinero, decide quién puede
+        // qué o qué datos personales salen. El global es una media: un
+        // fichero grande y bien probado podía tapar que a uno de estos se le
+        // quedara una rama entera sin prueba.
+        'src/payments/payments.service.ts': {
+          statements: 95,
+          branches: 89,
+          functions: 95,
+        },
+        'src/bookings/bookings.service.ts': {
+          statements: 96,
+          branches: 89,
+          functions: 98,
+        },
+        'src/users/users.service.ts': {
+          statements: 98,
+          branches: 85,
+          functions: 98,
+        },
+        'src/auth/auth.service.ts': { statements: 95, branches: 90 },
+        'src/common/guards/**': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+        },
+        'src/common/interceptores/**': {
+          statements: 100,
+          branches: 92,
+          functions: 100,
+        },
+        'src/bookings/partes-visibles.ts': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+        },
+        'src/services/servicio-publico.ts': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+        },
+        'src/common/demostracion.ts': {
+          statements: 100,
+          branches: 100,
+          functions: 100,
+        },
       },
     },
   },

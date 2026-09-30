@@ -18,7 +18,8 @@
  *                            separados por espacios: el último que tocó su
  *                            carpeta y los que vinieron detrás. Sin ellas no
  *                            se espera a ninguna versión
- *   HUMO_ESPERA_MS           cuánto esperar al despliegue (20 minutos)
+ *   HUMO_ESPERA_MS           cuánto esperar a los dos despliegues, en total
+ *                            (20 minutos)
  *   HUMO_EXIGIR_PROXY        con «si», la falta de PROXY_SECRETO es un fallo;
  *                            sin ella, un aviso
  *
@@ -75,11 +76,11 @@ async function pedir(url, opciones = {}) {
  * cualquiera desde el último cambio de la carpeta en adelante, que es la
  * lista que le pasa el flujo, y ninguna anterior.
  */
-async function esperarVersion(nombre, url, aceptables) {
+async function esperarVersion(nombre, url, aceptables, hasta) {
   const lista = (aceptables ?? '').split(/\s+/).filter(Boolean);
-  const hasta = Date.now() + ESPERA_MS;
   let ultima = null;
-  while (Date.now() < hasta) {
+  // Al menos una vez, aunque el plazo se haya ido entero esperando al otro.
+  for (;;) {
     const respuesta = await pedir(url);
     if (respuesta.ok) {
       ultima = (await respuesta.json()).version ?? null;
@@ -94,6 +95,7 @@ async function esperarVersion(nombre, url, aceptables) {
         return comprobar(`${nombre} sirve ${ultima}`, true);
       }
     }
+    if (Date.now() + 15_000 >= hasta) break;
     await dormir(15_000);
   }
   comprobar(
@@ -162,8 +164,23 @@ function probarSocket(pase) {
 async function main() {
   console.log(`Prueba de humo: ${WEB} y ${API}\n`);
 
-  await esperarVersion('La API', `${API}/api/health`, process.env.HUMO_VERSION_API);
-  await esperarVersion('El frontend', `${WEB}/salud`, process.env.HUMO_VERSION_WEB);
+  // Un solo plazo para los dos, que se despliegan a la vez. Con uno para
+  // cada uno, la espera podía llegar a cuarenta minutos y pasarse de la
+  // media hora del trabajo: GitHub lo cortaba, y un trabajo cortado no llega
+  // al paso que abre la incidencia.
+  const hasta = Date.now() + ESPERA_MS;
+  await esperarVersion(
+    'La API',
+    `${API}/api/health`,
+    process.env.HUMO_VERSION_API,
+    hasta,
+  );
+  await esperarVersion(
+    'El frontend',
+    `${WEB}/salud`,
+    process.env.HUMO_VERSION_WEB,
+    hasta,
+  );
 
   const salud = await pedir(`${API}/api/health`);
   const informe = salud.ok ? await salud.json() : {};

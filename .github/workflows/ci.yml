@@ -34,9 +34,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
+    # Las imágenes de servicio van fijadas por su resumen, no solo por la
+    # etiqueta: una etiqueta se puede volver a publicar con otro contenido, y
+    # la CI cambiaría sin que cambiara nada aquí. Dependabot solo vigila los
+    # Dockerfile, así que estas se actualizan a mano, con el resumen que da
+    # «docker buildx imagetools inspect <imagen>:<etiqueta>».
     services:
       postgres:
-        image: postgis/postgis:16-3.4
+        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
         env:
           POSTGRES_DB: servilocal_test
           POSTGRES_USER: servilocal_user
@@ -152,7 +157,7 @@ jobs:
 
     services:
       postgres:
-        image: postgis/postgis:16-3.4
+        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
         env:
           POSTGRES_DB: servilocal_integracion
           POSTGRES_USER: servilocal_user
@@ -166,15 +171,16 @@ jobs:
           --health-retries 5
       stripe:
         # Fijada: con «latest», un cambio en el emulador podía poner la
-        # integración en rojo sin tocar una línea del código.
-        image: stripe/stripe-mock:v0.205.0
+        # integración en rojo sin tocar una línea del código. Y por resumen,
+        # como todas: ver el primer trabajo.
+        image: stripe/stripe-mock:v0.205.0@sha256:ff32647993847be491e68533e2881c90434fa8d5df40246ee5f7d41253422081
         ports:
           - 12111:12111
       valkey:
         # Lo que ofrece Render como Key Value. Solo lo usa la prueba del
         # apagado: el orden en que Nest cierra sockets y Redis no se ve con
         # dobles, y en producción tumbaba el proceso en cada apagado.
-        image: valkey/valkey:8.1.10
+        image: valkey/valkey:8.1.10@sha256:640c5e62cea04b6d6f2084232651d0cc70362d31f4f805e7be94dbed6855e8f2
         ports:
           - 6379:6379
         options: >-
@@ -289,7 +295,7 @@ jobs:
     # producción, para apagarla igual que la apaga Render.
     services:
       postgres:
-        image: postgis/postgis:16-3.4
+        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
         env:
           POSTGRES_DB: servilocal_imagen
           POSTGRES_USER: servilocal_user
@@ -302,7 +308,7 @@ jobs:
           --health-timeout 5s
           --health-retries 5
       valkey:
-        image: valkey/valkey:8.1.10
+        image: valkey/valkey:8.1.10@sha256:640c5e62cea04b6d6f2084232651d0cc70362d31f4f805e7be94dbed6855e8f2
         ports:
           - 6379:6379
         options: >-
@@ -425,7 +431,7 @@ jobs:
 
     services:
       postgres:
-        image: postgis/postgis:16-3.4
+        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
         env:
           POSTGRES_DB: servilocal_e2e
           POSTGRES_USER: servilocal_user
@@ -546,10 +552,10 @@ jobs:
         working-directory: ./frontend
         run: npm run e2e
 
-      # Una prueba que falla y pasa al reintentarla deja el trabajo en verde,
-      # y antes el informe solo se guardaba si algo fallaba: la traza de lo
-      # que había salido mal se perdía. Ahora se guarda siempre, y el
-      # resumen cuenta las intermitentes.
+      # El informe se guarda siempre, no solo si algo falla: una prueba
+      # intermitente también pone el trabajo en rojo, y su traza es la del
+      # primer reintento. El resumen separa las que fallan siempre de las
+      # intermitentes.
       - name: Resumir el resultado
         if: ${{ !cancelled() }}
         working-directory: ./frontend

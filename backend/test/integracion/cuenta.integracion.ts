@@ -325,6 +325,51 @@ describe('La cuenta', () => {
     expect(texto).not.toContain('password');
   });
 
+  /**
+   * De la otra parte, solo el nombre de pila. La contraseña no sale nunca
+   * —la columna no se lee salvo que se pida—, así que comprobar solo eso
+   * dejaba pasar lo que de verdad importa: si la exportación volcara el
+   * perfil entero de quien está al otro lado, saldrían su correo, su
+   * teléfono y su dirección, y nada fallaría.
+   */
+  it.each([
+    ['la clienta', 'laura@ejemplo.com', 'clientId', 'providerId'],
+    ['el profesional', null, 'providerId', 'clientId'],
+  ])(
+    'descargando %s, de la otra parte solo sale el nombre',
+    async (_quien, correo, columnaPropia, columnaAjena) => {
+      // El profesional, el que más reservas tiene en la semilla.
+      const [{ id }] = await fuente.query(
+        correo
+          ? `SELECT id FROM users WHERE email = $1`
+          : `SELECT "providerId" AS id FROM bookings
+             GROUP BY "providerId" ORDER BY count(*) DESC LIMIT 1`,
+        correo ? [correo] : [],
+      );
+      const otras: Array<Record<string, string | null>> = await fuente.query(
+        `SELECT DISTINCT u.email, u.phone, u.address, u."lastName"
+           FROM bookings b JOIN users u ON u.id = b."${columnaAjena}"
+          WHERE b."${columnaPropia}" = $1
+         UNION
+         SELECT DISTINCT u.email, u.phone, u.address, u."lastName"
+           FROM conversations c
+           JOIN users u ON u.id IN (c."participantOneId", c."participantTwoId")
+          WHERE $1 IN (c."participantOneId", c."participantTwoId")
+            AND u.id <> $1`,
+        [id],
+      );
+
+      const texto = JSON.stringify(await usuarios.exportarDatos(id));
+
+      expect(otras.length).toBeGreaterThan(0);
+      for (const otra of otras) {
+        for (const dato of Object.values(otra)) {
+          if (dato) expect(texto).not.toContain(dato);
+        }
+      }
+    },
+  );
+
   it('el índice sobre lower(email) existe, para que buscar así no recorra la tabla', async () => {
     const indices = await fuente.query(
       `SELECT indexname FROM pg_indexes WHERE indexname = 'IDX_users_email_minusculas'`,

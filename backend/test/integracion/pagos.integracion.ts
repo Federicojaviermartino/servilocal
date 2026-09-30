@@ -598,4 +598,57 @@ describe('Pagos contra la API de Stripe', () => {
       await limpiar(bookingId);
     }
   });
+
+  describe('al eliminar una cuenta', () => {
+    // La tarjeta guardada vive en Stripe, no en la base: borrar la cuenta sin
+    // borrar su ficha allí dejaba la tarjeta a nombre de alguien que ya no
+    // existe. Hasta ahora esto solo se había probado con un doble.
+    it('borra su ficha de cliente en Stripe', async () => {
+      const [ficha, borrar] = [
+        await stripe().customers.create({ email: 'olvidar@correo.test' }),
+        vi.spyOn(stripe().customers, 'del'),
+      ];
+
+      await servicio.olvidarCliente(ficha.id);
+
+      expect(borrar).toHaveBeenCalledWith(ficha.id);
+      await expect(borrar.mock.results[0].value).resolves.toMatchObject({
+        deleted: true,
+      });
+      borrar.mockRestore();
+    });
+
+    it('si Stripe no responde, lo deja anotado y la cuenta se borra igual', async () => {
+      // La cuenta no puede quedarse sin borrar porque Stripe esté caído: se
+      // anota para borrar la ficha a mano.
+      const original = stripe();
+      (servicio as unknown as { stripe: Stripe }).stripe = new Stripe(
+        'sk_test_integracion',
+        {
+          apiVersion: '2023-10-16',
+          host: '127.0.0.1',
+          // Un puerto donde no escucha nadie.
+          port: 9,
+          protocol: 'http',
+          maxNetworkRetries: 0,
+        },
+      );
+      const aviso = vi.spyOn(
+        (servicio as unknown as { logger: { warn: () => void } }).logger,
+        'warn',
+      );
+
+      try {
+        await expect(
+          servicio.olvidarCliente('cus_caido'),
+        ).resolves.toBeUndefined();
+        expect(aviso).toHaveBeenCalledWith(
+          expect.stringContaining('Hay que borrarla a mano'),
+        );
+      } finally {
+        (servicio as unknown as { stripe: Stripe }).stripe = original;
+        aviso.mockRestore();
+      }
+    });
+  });
 });

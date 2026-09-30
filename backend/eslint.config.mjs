@@ -56,5 +56,19 @@ export default defineConfig([
         afterEach: 'readonly',
       },
     },
+    rules: {
+      // Un .only olvidado deja fuera todas las demás pruebas del fichero, y
+      // en local nadie lo nota porque lo que queda pasa. Vitest ya se niega
+      // a correrlo en la CI; esto lo para antes, en el editor.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "MemberExpression[property.name='only']:matches([object.name=/^(describe|it|test)$/], [object.property.name='describe'])",
+          message:
+            'Un .only deja fuera el resto de las pruebas. Quítalo antes de subir.',
+        },
+      ],
+    },
   },
 ]);

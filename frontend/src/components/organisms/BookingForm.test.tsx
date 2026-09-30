@@ -134,7 +134,10 @@ describe('BookingForm', () => {
     const precio = screen.getByLabelText(/Precio acordado/);
 
     await userEvent.clear(precio);
-    await userEvent.type(precio, '900');
+    // De una vez: tecleado cifra a cifra, con la máquina cargada, llegó a
+    // enviarse con 90.
+    await userEvent.click(precio);
+    await userEvent.paste('900');
     await describir('Gotea el grifo de la cocina desde ayer.');
     enviarSaltandoAlNavegador();
 

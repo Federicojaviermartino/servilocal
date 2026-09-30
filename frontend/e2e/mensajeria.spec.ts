@@ -42,12 +42,28 @@ test.describe('Mensajería en tiempo real', () => {
       // ningún mensaje lleva todavía el del interlocutor.
       const texto = `Comprobación en vivo ${Date.now()}`;
       await profesional.getByRole('textbox').last().fill(texto);
+
+      // Sin socket, la conversación se vuelve a pedir cada diez segundos, y
+      // si esa consulta caía justo después de enviar, el mensaje llegaba por
+      // ella y esto pasaba igual. Se cuentan las que haga el cliente desde
+      // que se envía: tiene que ser ninguna.
+      let consultas = 0;
+      cliente.on('request', (peticion) => {
+        if (
+          peticion.method() === 'GET' &&
+          peticion.url().includes(`/messages/conversation/${idProfesional}`)
+        ) {
+          consultas += 1;
+        }
+      });
       await profesional.getByRole('button', { name: /Enviar/i }).click();
 
-      // Lo que se está comprobando de verdad: llega solo. Si esto tardara
-      // más de lo razonable estaría llegando por el sondeo de respaldo, que
-      // es precisamente lo que el socket viene a sustituir.
+      // Lo que se está comprobando de verdad: llega solo, por el socket.
       await expect(cliente.getByText(texto)).toBeVisible({ timeout: 5000 });
+      expect(
+        consultas,
+        'llegó por el sondeo de respaldo, no por el socket',
+      ).toBe(0);
 
       // Y quien escribe también lo ve: el mensaje propio vuelve por el
       // socket, sin pintarlo por adelantado ni recargar la conversación.

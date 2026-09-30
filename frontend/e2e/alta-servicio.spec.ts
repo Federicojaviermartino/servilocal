@@ -43,9 +43,12 @@ test('un profesional publica un servicio y lo ve en su panel', async ({
     // semilla, y los cuatro navegadores comparten la misma base. Siendo de
     // una cuenta de demostración, se retira en vez de borrarse.
     if (id) {
-      await page.request.delete(`/api/services/${id}`, {
+      const retirado = await page.request.delete(`/api/services/${id}`, {
         headers: { origin: new URL(page.url()).origin },
       });
+      // Comprobado: si no se retirara, la búsqueda contaría 26 y fallarían
+      // pruebas que no tienen nada que ver con esta.
+      expect(retirado.ok(), 'el servicio de la prueba se retira').toBe(true);
     }
   }
 });

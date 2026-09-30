@@ -1,0 +1,78 @@
+name: Copia semanal de la base
+
+# Neon guarda seis horas de historia en el plan gratuito: un daño que se
+# descubre al día siguiente ya no se puede deshacer desde allí. Esto guarda
+# una copia propia cada semana, durante noventa días.
+#
+# Va cifrada con age antes de escribirse en disco (scripts/copia-base.sh):
+# el repositorio es público, y cualquiera con cuenta en GitHub puede
+# descargar los artefactos de un flujo. Aquí solo está la clave pública; la
+# privada la guarda quien tenga que restaurar.
+#
+# No hace nada hasta que se configuran las dos piezas, y lo dice:
+#   - el secreto COPIA_DATABASE_URL, la conexión a Neon, mejor con un rol
+#     que solo pueda leer;
+#   - la variable COPIA_CLAVE_AGE, la clave pública (age1…).
+# Cómo crearlas y cómo restaurar una copia: docs/OPERATIONS.md.
+
+on:
+  schedule:
+    # Los lunes a las 03:41 UTC, con la demo dormida: despertar a Neon para
+    # la copia cuesta unos minutos de cómputo a la semana.
+    - cron: '41 3 * * 1'
+  workflow_dispatch:
+
+# No lee el repositorio más que para el script.
+permissions:
+  contents: read
+
+jobs:
+  copia:
+    name: Copiar y cifrar
+    # Solo en este repositorio: una bifurcación no tiene nada que copiar.
+    if: github.repository == 'Federicojaviermartino/servilocal'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      URL_BASE: ${{ secrets.COPIA_DATABASE_URL }}
+      DESTINATARIO: ${{ vars.COPIA_CLAVE_AGE }}
+
+    steps:
+      - name: Comprobar que está configurada
+        id: configuracion
+        run: |
+          if [ -z "$URL_BASE" ] || [ -z "$DESTINATARIO" ]; then
+            echo "::notice title=Copia de la base::Sin el secreto COPIA_DATABASE_URL y la variable COPIA_CLAVE_AGE no se copia nada. Ver docs/OPERATIONS.md."
+            echo "activa=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "activa=si" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.configuracion.outputs.activa == 'si'
+
+      # pg_dump 16, como el servidor de Neon: uno más antiguo no sabe leer
+      # una base más nueva.
+      - name: Instalar pg_dump y age
+        if: steps.configuracion.outputs.activa == 'si'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16 age
+
+      - name: Copiar y cifrar
+        if: steps.configuracion.outputs.activa == 'si'
+        id: copia
+        run: |
+          nombre="copia-$(date -u +%F)"
+          PATH="/usr/lib/postgresql/16/bin:$PATH" \
+            bash scripts/copia-base.sh "$nombre.dump.age"
+          echo "nombre=$nombre" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar la copia
+        if: steps.configuracion.outputs.activa == 'si'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.copia.outputs.nombre }}
+          path: ${{ steps.copia.outputs.nombre }}.dump.age
+          retention-days: 90
+          if-no-files-found: error

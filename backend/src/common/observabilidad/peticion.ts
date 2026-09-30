@@ -89,6 +89,12 @@ const SIN_ANOTAR_SI_VA_BIEN = new Set([
  * de un 403 o de que algo iba lento daba su código de referencia y en el
  * registro no había ninguna línea con él. La ruta va sin la consulta, que
  * podría llevar datos de quien pregunta.
+ *
+ * Se anota al cerrarse la conexión, no al terminar la respuesta: una
+ * petición que el cliente abandona —la página que se cierra a mitad de una
+ * búsqueda lenta— no llega a terminar, y no dejaba ninguna línea. Justo las
+ * lentas, que son las que interesan. Esas salen con `abortada` y, si no se
+ * llegó a responder nada, sin estado.
  */
 export function anotarPeticion(
   peticion: Request,
@@ -96,18 +102,26 @@ export function anotarPeticion(
   siguiente: NextFunction,
 ): void {
   const inicio = process.hrtime.bigint();
-  respuesta.on('finish', () => {
+  respuesta.once('close', () => {
     const ruta = peticion.originalUrl.split('?')[0];
-    if (respuesta.statusCode < 400 && SIN_ANOTAR_SI_VA_BIEN.has(ruta)) return;
+    const abortada = !respuesta.writableFinished;
+    if (
+      !abortada &&
+      respuesta.statusCode < 400 &&
+      SIN_ANOTAR_SI_VA_BIEN.has(ruta)
+    ) {
+      return;
+    }
     const ms = Number(process.hrtime.bigint() - inicio) / 1e6;
     process.stdout.write(
       JSON.stringify({
         tipo: 'peticion',
         metodo: peticion.method,
         ruta,
-        estado: respuesta.statusCode,
+        estado: respuesta.headersSent ? respuesta.statusCode : null,
         ms: Math.round(ms),
         id: respuesta.getHeader('X-Request-Id'),
+        ...(abortada && { abortada: true }),
       }) + '\n',
     );
   });

@@ -214,10 +214,10 @@ describe('El registro', () => {
     // Con más de cien caracteres el formulario no se enviaba y no aparecía
     // ningún texto.
     await rellenar();
-    await userEvent.type(
-      screen.getByLabelText(es.acceso.nombre),
-      'a'.repeat(100),
-    );
+    // Pegado y no tecleado: cien pulsaciones una a una, con la máquina
+    // cargada, pasaban del tiempo máximo de la prueba.
+    await userEvent.click(screen.getByLabelText(es.acceso.nombre));
+    await userEvent.paste('a'.repeat(100));
     await userEvent.click(screen.getByRole('checkbox'));
 
     await crear();

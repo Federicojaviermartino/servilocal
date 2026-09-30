@@ -1,0 +1,96 @@
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
+import { Test } from '@nestjs/testing';
+import { IsString } from 'class-validator';
+import { configurarAplicacion } from './aplicacion';
+
+class EcoDto {
+  @IsString()
+  texto: string;
+}
+
+@Controller('eco')
+class EcoController {
+  @Get()
+  leer() {
+    return { ok: true };
+  }
+
+  @Post()
+  escribir(@Body() dto: EcoDto) {
+    return dto;
+  }
+}
+
+/**
+ * Lo que main.ts pone alrededor de los módulos. La prueba de permisos lo usa
+ * para arrancar la aplicación entera; aquí se comprueba pieza a pieza.
+ */
+describe('configurarAplicacion', () => {
+  const WEB = 'https://servilocal-web.onrender.com';
+  let app: NestExpressApplication;
+  let base: string;
+
+  beforeAll(async () => {
+    vi.stubEnv('CORS_ORIGINS', WEB);
+    const modulo = await Test.createTestingModule({
+      controllers: [EcoController],
+    }).compile();
+    app = modulo.createNestApplication<NestExpressApplication>({
+      logger: false,
+    });
+    configurarAplicacion(app);
+    await app.listen(0, '127.0.0.1');
+    base = (await app.getUrl()).replace('[::1]', '127.0.0.1');
+  });
+
+  afterAll(async () => {
+    await app?.close();
+    vi.unstubAllEnvs();
+  });
+
+  it('todo cuelga de /api, con la versión 1 y sin ella', async () => {
+    expect((await fetch(`${base}/api/eco`)).status).toBe(200);
+    expect((await fetch(`${base}/api/v1/eco`)).status).toBe(200);
+    expect((await fetch(`${base}/eco`)).status).toBe(404);
+  });
+
+  it('cada respuesta lleva su identificador y las cabeceras de seguridad', async () => {
+    const respuesta = await fetch(`${base}/api/eco`);
+
+    expect(respuesta.headers.get('x-request-id')).toMatch(/^[\w-]{8,}$/);
+    expect(respuesta.headers.get('x-content-type-options')).toBe('nosniff');
+  });
+
+  it('la web puede leer la respuesta y su identificador; otra, no', async () => {
+    const propia = await fetch(`${base}/api/eco`, {
+      headers: { origin: WEB },
+    });
+    const ajena = await fetch(`${base}/api/eco`, {
+      headers: { origin: 'https://otra.example' },
+    });
+
+    expect(propia.headers.get('access-control-allow-origin')).toBe(WEB);
+    expect(propia.headers.get('access-control-allow-credentials')).toBe('true');
+    expect(propia.headers.get('access-control-expose-headers')).toContain(
+      'X-Request-Id',
+    );
+    expect(ajena.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
+  it('valida el cuerpo y rechaza los campos que no espera', async () => {
+    const enviar = (cuerpo: unknown) =>
+      fetch(`${base}/api/eco`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(cuerpo),
+      });
+
+    expect((await enviar({ texto: 'hola' })).status).toBe(201);
+    expect((await enviar({})).status).toBe(400);
+    // Un campo de más, como un «role» colado en el registro, no se ignora.
+    const conDeMas = await enviar({ texto: 'hola', role: 'admin' });
+    expect(conDeMas.status).toBe(400);
+    expect(await conDeMas.json()).toMatchObject({ statusCode: 400 });
+  });
+});

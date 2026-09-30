@@ -28,7 +28,8 @@ jobs:
 
     services:
       postgres:
-        image: postgis/postgis:16-3.4
+        # Por resumen, como en ci.yml.
+        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
         env:
           POSTGRES_DB: servilocal_carga
           POSTGRES_USER: servilocal_user

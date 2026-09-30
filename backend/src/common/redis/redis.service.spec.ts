@@ -1,12 +1,13 @@
 import type { Mock } from 'vitest';
 import { ConfigService } from '@nestjs/config';
-import { RedisService } from './redis.service';
+import { PLAZO_CIERRE_MS, RedisService } from './redis.service';
 
 const instancias: Array<{
   url: string;
   opciones: Record<string, unknown>;
   manejadores: Record<string, (e: Error) => void>;
   quit: Mock;
+  disconnect: Mock;
 }> = [];
 
 vi.mock('ioredis', () => {
@@ -19,6 +20,7 @@ vi.mock('ioredis', () => {
           opciones,
           manejadores: {} as Record<string, (e: Error) => void>,
           quit: vi.fn(async () => 'OK'),
+          disconnect: vi.fn(),
         };
         instancias.push(registro);
         Object.assign(this, {
@@ -27,6 +29,7 @@ vi.mock('ioredis', () => {
             return this;
           },
           quit: registro.quit,
+          disconnect: registro.disconnect,
         });
       }
     },
@@ -145,6 +148,39 @@ describe('RedisService', () => {
       instancias[0].quit.mockRejectedValueOnce(new Error('ya estaba cerrada'));
 
       await expect(servicio.onApplicationShutdown()).resolves.toBeUndefined();
+    });
+
+    it('si Redis no contesta al QUIT, corta pasado el plazo', async () => {
+      // Con Redis reiniciándose, el QUIT espera en la cola una reconexión
+      // que no llega, y el proceso no terminaba hasta que Render lo mataba.
+      vi.useFakeTimers();
+      try {
+        const servicio = con(URL);
+        instancias[0].quit.mockReturnValueOnce(new Promise(() => undefined));
+
+        let terminado = false;
+        const cierre = servicio.onApplicationShutdown().then(() => {
+          terminado = true;
+        });
+
+        await vi.advanceTimersByTimeAsync(PLAZO_CIERRE_MS - 1);
+        expect(terminado).toBe(false);
+        expect(instancias[0].disconnect).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(1);
+        await cierre;
+        expect(instancias[0].disconnect).toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('tras cerrar bien también corta, para no dejar un reintento vivo', async () => {
+      const servicio = con(URL);
+
+      await servicio.onApplicationShutdown();
+
+      expect(instancias[0].disconnect).toHaveBeenCalled();
     });
   });
 });

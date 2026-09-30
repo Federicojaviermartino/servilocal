@@ -132,18 +132,27 @@ test.describe('Quién decide sobre una reserva', () => {
     });
 
     expect(salto.status()).toBe(400);
+    // Por la máquina de estados, no por la fecha: la reserva es para dentro
+    // de un mes, y completar una que no ha llegado también da 400. Con solo
+    // el código, esto seguiría en verde sin máquina de estados.
+    expect((await salto.json()).message).toContain(
+      'de "pending" a "completed"',
+    );
   });
 
   test('aceptada y completada, con sus fechas', async ({ request }) => {
     const cliente = await entrar(request, 'laura@ejemplo.com');
     const profesional = await entrar(request, 'carlos@ejemplo.com');
     // Crearla exige una fecha por venir y completarla, que haya llegado: se
-    // reserva para dentro de unos segundos.
+    // reserva para dentro de unos segundos. Quince y no cinco: buscar,
+    // crear, aceptar e intentar completar pronto tienen que caber antes de
+    // la hora, y con la máquina lenta cinco podían no bastar; el intento
+    // «pronto» daba entonces 409 en vez de 400.
     const reserva = await reservaPendiente(
       request,
       cliente,
       profesional,
-      new Date(Date.now() + 5000).toISOString(),
+      new Date(Date.now() + 15000).toISOString(),
     );
     const completar = (datos: Record<string, unknown> = {}) =>
       request.patch(`${API}/bookings/${reserva.id}/status`, {
@@ -170,7 +179,7 @@ test.describe('Quién decide sobre una reserva', () => {
     // idioma.
     await expect
       .poll(async () => (await completar()).status(), {
-        timeout: 20000,
+        timeout: 30000,
         intervals: [1000],
       })
       .toBe(409);

@@ -18,9 +18,19 @@ vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'b1' }) }));
 
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
+  type Destino = string | { pathname: string; query?: Record<string, string> };
   return {
-    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-      React.createElement('a', { href }, children),
+    Link: ({ href, children }: { href: Destino; children: React.ReactNode }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+        },
+        children,
+      ),
     useRouter: () => ({ push: vi.fn() }),
   };
 });
@@ -95,5 +105,92 @@ describe('Página de pago', () => {
     expect(formulario).toHaveBeenCalledWith(
       expect.objectContaining({ estadoReserva: BookingStatus.COMPLETED }),
     );
+  });
+
+  /**
+   * Lo que se ve cuando no se puede empezar a pagar. Ninguna prueba pasaba
+   * por aquí, y es donde acaba quien llega con un enlace viejo, la sesión
+   * caducada o el servidor dormido. El mensaje de la API nunca se enseña:
+   * está en castellano.
+   */
+  describe('cuando no se puede empezar', () => {
+    const conError = async (
+      error: unknown,
+      donde: 'reserva' | 'pago' = 'reserva',
+    ) => {
+      if (donde === 'reserva') {
+        getById.mockRejectedValue(error);
+      } else {
+        getById.mockResolvedValue({ data: reserva(BookingStatus.PENDING) });
+        createIntent.mockRejectedValue(error);
+      }
+      render(
+        <NextIntlClientProvider locale="es" messages={es as never}>
+          <PaymentPage />
+        </NextIntlClientProvider>,
+      );
+      await screen.findByText(es.pago.errorIniciar);
+    };
+    const respuesta = (status: number, data: unknown = {}) => ({
+      response: {
+        status,
+        data: { message: 'En castellano', ...(data as object) },
+      },
+    });
+    const volverAlDetalle = () =>
+      screen.getByRole('link', { name: es.pago.volverDetalle });
+
+    it('sin servidor lo dice así, y no con un código', async () => {
+      await conError(new Error('Network Error'));
+
+      expect(screen.getByText(es.pago.sinServidor)).toBeVisible();
+      expect(volverAlDetalle()).toHaveAttribute(
+        'href',
+        '/dashboard/bookings/b1',
+      );
+    });
+
+    it('una reserva que no existe', async () => {
+      await conError(respuesta(404));
+
+      expect(screen.getByText(es.pago.noEncontrada)).toBeVisible();
+      expect(createIntent).not.toHaveBeenCalled();
+    });
+
+    it('una reserva de otra persona', async () => {
+      await conError(respuesta(403));
+
+      expect(screen.getByText(es.pago.sinPermiso)).toBeVisible();
+    });
+
+    it('un pago que ya está en marcha, al preparar el pago', async () => {
+      await conError(respuesta(409), 'pago');
+
+      expect(screen.getByText(es.pago.pagoEnCurso)).toBeVisible();
+      expect(screen.queryByText('En castellano')).toBeNull();
+    });
+
+    it('otro error, con su código para poder buscarlo', async () => {
+      await conError(respuesta(500), 'pago');
+
+      expect(
+        screen.getByText(es.pago.errorCodigo.replace('{codigo}', '500')),
+      ).toBeVisible();
+    });
+
+    it('con la sesión caducada, lleva a entrar y a volver aquí', async () => {
+      // Sin esto, quien tardaba en pagar volvía al detalle, que también le
+      // pedía entrar, y perdía el camino al pago.
+      await conError(respuesta(401), 'pago');
+
+      expect(screen.getByText(es.erroresApi['sesion-caducada'])).toBeVisible();
+      const entrar = screen.getByRole('link', { name: es.carga.entrarDeNuevo });
+      expect(decodeURIComponent(entrar.getAttribute('href') ?? '')).toContain(
+        'redirect=/bookings/b1/payment',
+      );
+      expect(
+        screen.queryByRole('link', { name: es.pago.volverDetalle }),
+      ).toBeNull();
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, type DataSourceOptions } from 'typeorm';
 import { readdirSync } from 'fs';
 import { resolve } from 'path';
 import * as dotenv from 'dotenv';
@@ -108,6 +108,15 @@ function comprobarQueNoFaltaNinguna(): void {
  * ejecutan contra la base local de alguien que está trabajando.
  */
 export function crearFuente(): DataSource {
+  return new DataSource(opcionesDeLaBase());
+}
+
+/**
+ * Las opciones de la conexión, también para arrancar la aplicación entera:
+ * la de producción señala entidades y migraciones por ruta, que es justo lo
+ * que no funciona aquí.
+ */
+export function opcionesDeLaBase(): DataSourceOptions {
   comprobarQueNoFaltaNinguna();
   const url = process.env.DATABASE_URL;
 
@@ -119,21 +128,19 @@ export function crearFuente(): DataSource {
     logging: false,
   };
 
-  return new DataSource(
-    url
-      ? {
-          ...comun,
-          ...conexionPorUrl(url, process.env.DB_SSL_PERMISIVO === 'true'),
-        }
-      : {
-          ...comun,
-          host: process.env.DB_HOST ?? 'localhost',
-          port: Number(process.env.DB_PORT ?? 5432),
-          username: process.env.DB_USERNAME ?? 'servilocal_user',
-          password: process.env.DB_PASSWORD ?? 'servilocal_dev_2026',
-          database: process.env.DB_DATABASE ?? 'servilocal',
-        },
-  );
+  return url
+    ? {
+        ...comun,
+        ...conexionPorUrl(url, process.env.DB_SSL_PERMISIVO === 'true'),
+      }
+    : {
+        ...comun,
+        host: process.env.DB_HOST ?? 'localhost',
+        port: Number(process.env.DB_PORT ?? 5432),
+        username: process.env.DB_USERNAME ?? 'servilocal_user',
+        password: process.env.DB_PASSWORD ?? 'servilocal_dev_2026',
+        database: process.env.DB_DATABASE ?? 'servilocal',
+      };
 }
 
 /** Identificador irrepetible para no chocar con datos que ya estén. */
