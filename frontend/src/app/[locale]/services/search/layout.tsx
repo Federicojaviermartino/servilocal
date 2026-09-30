@@ -1,14 +1,11 @@
 import type { Metadata } from 'next';
 import { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
-import { alternativas } from '@/lib/seo';
+import { alternativas, grafoAbierto } from '@/lib/seo';
 
-// El buscador es un componente de cliente y no puede exportar metadatos, así
-// que los aporta este layout, que sí se ejecuta en el servidor.
-//
-// Y son metadatos generados, no una constante: una constante no puede saber
-// en qué idioma se está sirviendo, así que las diez versiones compartían
-// título y descripción en castellano.
+// Los metadatos del buscador. Son generados, no una constante: una constante
+// no puede saber en qué idioma se está sirviendo, así que las diez versiones
+// compartían título y descripción en castellano.
 export async function generateMetadata({
   params,
 }: {
@@ -21,6 +18,11 @@ export async function generateMetadata({
     title: t('buscadorTitulo'),
     description: t('buscadorDescripcion'),
     alternates: alternativas(locale, '/services/search'),
+    openGraph: grafoAbierto(locale, {
+      titulo: t('buscadorTitulo'),
+      descripcion: t('buscadorDescripcion'),
+      ruta: '/services/search',
+    }),
   };
 }
 

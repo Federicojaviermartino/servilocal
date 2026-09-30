@@ -8,8 +8,25 @@ import EstadoCarga from './EstadoCarga';
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
-    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-      React.createElement('a', { href }, children),
+    // Como el de next-intl: la dirección puede venir como objeto.
+    Link: ({
+      href,
+      children,
+    }: {
+      href: string | { pathname: string; query?: Record<string, string> };
+      children: React.ReactNode;
+    }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+        },
+        children,
+      ),
+    usePathname: () => '/dashboard/bookings',
   };
 });
 
@@ -81,7 +98,7 @@ describe('EstadoCarga', () => {
     expect(screen.getByText(es.carga.sesionCaducada)).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: es.carga.entrarDeNuevo }),
-    ).toHaveAttribute('href', '/auth/login');
+    ).toHaveAttribute('href', '/auth/login?redirect=%2Fdashboard%2Fbookings');
     expect(
       screen.queryByRole('button', { name: new RegExp(es.carga.reintentar) }),
     ).not.toBeInTheDocument();

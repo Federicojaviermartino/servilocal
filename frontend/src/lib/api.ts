@@ -5,6 +5,7 @@ import {
   CreateReviewDto,
   Payment,
 } from '@/types';
+import { parametrosDeApi } from './busqueda';
 
 // El navegador no llama a la API directamente sino a /api en el propio
 // frontend, que la reenvía (ver proxy.ts): así la cookie de sesión es de este
@@ -93,7 +94,6 @@ export const usersApi = {
   // El propio perfil. /users/:id es solo de administración: el perfil lo
   // pedía por ahí, y a clientes y profesionales no les cargaba.
   getMe: () => api.get('/users/me'),
-  getById: (id: string) => api.get(`/users/${id}`),
   exportarDatos: () =>
     api.get<Blob>('/users/me/datos', { responseType: 'blob' }),
   eliminarCuenta: (contrasena: string) =>
@@ -127,7 +127,6 @@ export const adminApi = {
 
 export const categoriesApi = {
   getAll: () => api.get('/categories'),
-  getById: (id: string) => api.get(`/categories/${id}`),
   create: (data: { name: string; slug: string; description?: string }) =>
     api.post('/categories', data),
   update: (id: string, data: Record<string, unknown>) =>
@@ -136,8 +135,9 @@ export const categoriesApi = {
 };
 
 export const servicesApi = {
+  // Con los nombres de la API: ver parametrosDeApi.
   search: (params: ServiceSearchParams) =>
-    api.get('/services/search', { params }),
+    api.get('/services/search', { params: parametrosDeApi(params) }),
   getById: (id: string) => api.get(`/services/${id}`),
   // Los propios, con la dirección de referencia, que lo público ya no trae.
   getMine: () => api.get('/services/mine'),

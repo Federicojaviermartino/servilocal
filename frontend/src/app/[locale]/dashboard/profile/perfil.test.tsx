@@ -35,6 +35,9 @@ vi.mock('@/lib/auth-store', () => ({
     user: { id: 'u1', email: 'ana@ejemplo.org', role: 'client' },
     logout: salir,
   }),
+  // Los borradores se guardan con quien entró: ver borrador.ts.
+  idRecordado: () => 'u1',
+  PREFIJO_BORRADOR: 'borrador:',
 }));
 
 vi.mock('@/i18n/navigation', () => ({

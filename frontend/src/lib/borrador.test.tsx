@@ -1,11 +1,22 @@
 import { renderHook } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   guardarBorrador,
   leerBorrador,
   olvidarBorrador,
   useBorrador,
 } from './borrador';
+
+let quien: string | null = 'u1';
+
+vi.mock('./auth-store', () => ({
+  PREFIJO_BORRADOR: 'borrador:',
+  idRecordado: () => quien,
+}));
+
+beforeEach(() => {
+  quien = 'u1';
+});
 
 afterEach(() => {
   sessionStorage.clear();
@@ -43,9 +54,21 @@ describe('el borrador', () => {
   });
 
   it('uno estropeado no rompe la pantalla', () => {
-    sessionStorage.setItem('borrador:perfil', '{no es json');
+    sessionStorage.setItem('borrador:u1:perfil', '{no es json');
 
     expect(leerBorrador('perfil')).toBeNull();
+  });
+
+  it('es de quien lo escribió: otra cuenta en la pestaña no lo ve', () => {
+    // La siguiente que entraba recibía el teléfono y la dirección que la
+    // anterior había dejado a medias en su perfil.
+    guardarBorrador('perfil', { phone: '600 111 222' });
+
+    quien = 'u2';
+
+    expect(leerBorrador('perfil')).toBeNull();
+    quien = 'u1';
+    expect(leerBorrador('perfil')).toEqual({ phone: '600 111 222' });
   });
 });
 

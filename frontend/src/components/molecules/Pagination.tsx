@@ -56,12 +56,15 @@ export default function Pagination({
   if (totalPages <= 1) return null;
 
   const paginas = construirRango(page, totalPages);
+  // Un poco más estrechos en el móvil, y si aun así no caben, a una segunda
+  // línea: nueve botones con sus huecos ocupaban 356 px, y a 320 de ancho
+  // la página se desplazaba de lado (WCAG 1.4.10).
   const claseBoton =
-    'inline-flex h-9 min-w-9 items-center justify-center rounded-md px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40';
+    'inline-flex h-9 min-w-8 items-center justify-center rounded-md px-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:min-w-9 sm:px-3';
 
   return (
     <nav
-      className="mt-6 flex items-center justify-center gap-1"
+      className="mt-6 flex flex-wrap items-center justify-center gap-1"
       aria-label={t('navegacion')}
     >
       <button

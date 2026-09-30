@@ -215,8 +215,17 @@ function LoginPageContent() {
 
           <p className="mt-4 text-center text-sm text-secundario">
             {t('sinCuenta')}{' '}
+            {/* Con el destino: quien pulsaba «Reservar» sin cuenta y se
+                registraba acababa en la portada. */}
             <Link
-              href="/auth/register"
+              href={
+                searchParams.get('redirect')
+                  ? {
+                      pathname: '/auth/register',
+                      query: { redirect: redirectTo },
+                    }
+                  : '/auth/register'
+              }
               className="font-medium text-acento hover:underline"
             >
               {t('registrateAqui')}

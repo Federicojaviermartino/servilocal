@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { Booking, BookingStatus } from '@/types';
 import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
@@ -26,10 +27,9 @@ export default function BookingsReceivedPage() {
 
   // Antes un fallo dejaba la lista vacía, y el profesional leía «no tienes
   // reservas» cuando lo que pasaba era que no se había podido preguntar.
-  const { datos, estado, reintentar, referencia } = useCarga<Booking[]>(
-    () => bookingsApi.getReceived(),
-    [],
-  );
+  const { datos, estado, reintentar, refrescar, referencia } = useCarga<
+    Booking[]
+  >(() => bookingsApi.getReceived(), []);
   const bookings = datos ?? [];
 
   const handleStatusChange = async (id: string, status: BookingStatus) => {
@@ -50,7 +50,11 @@ export default function BookingsReceivedPage() {
         return;
       }
       toast.success(t('actualizada'));
-      reintentar();
+      // Los botones de esa reserva desaparecen, y el foco con ellos: se
+      // lleva a su tarjeta, que se queda, porque la lista ya no vuelve a
+      // «cargando» mientras llega la nueva.
+      document.getElementById(`reserva-${id}`)?.focus();
+      refrescar();
     } catch (error) {
       avisarFallo(error, t('errorActualizar'));
     }
@@ -104,7 +108,9 @@ export default function BookingsReceivedPage() {
               return (
                 <div
                   key={b.id}
-                  className="bg-superficie rounded-lg shadow-card p-5"
+                  id={`reserva-${b.id}`}
+                  tabIndex={-1}
+                  className="bg-superficie rounded-lg shadow-card p-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-acento"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -116,8 +122,15 @@ export default function BookingsReceivedPage() {
                           #{b.id.slice(0, 8)}
                         </span>
                       </div>
+                      {/* Al detalle, donde están el teléfono del cliente y
+                          la cancelación: solo se llegaba desde un aviso. */}
                       <h3 className="font-semibold text-principal">
-                        {b.service.title}
+                        <Link
+                          href={`/dashboard/bookings/${b.id}`}
+                          className="hover:underline"
+                        >
+                          {b.service.title}
+                        </Link>
                       </h3>
                       <p className="text-sm text-secundario mt-1">
                         {/* «a las» estaba escrito aquí en castellano, y en
@@ -135,7 +148,10 @@ export default function BookingsReceivedPage() {
                         })}
                       </p>
                       {b.description && (
-                        <p className="mt-2 text-sm text-secundario bg-fondo rounded p-2">
+                        <p
+                          dir="auto"
+                          className="mt-2 text-sm text-secundario bg-fondo rounded p-2"
+                        >
                           {b.description}
                         </p>
                       )}

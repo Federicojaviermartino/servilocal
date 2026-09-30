@@ -694,7 +694,9 @@ function CategoriesSection({ onMutate }: { onMutate?: () => void }) {
 
   return (
     <div className="space-y-6">
+      {/* noValidate: lo comprueba handleCreate, en el idioma de la página. */}
       <form
+        noValidate
         onSubmit={handleCreate}
         className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end p-4 bg-fondo rounded-md border border-borde"
         aria-label={t('crearCategoriaFormulario')}

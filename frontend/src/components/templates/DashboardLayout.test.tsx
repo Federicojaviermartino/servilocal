@@ -53,7 +53,23 @@ describe('DashboardLayout', () => {
     // que volver a buscar lo que iba a hacer.
     pintar();
 
-    expect(empujar).toHaveBeenCalledWith('/auth/login?redirect=/dashboard');
+    // Con la página y su consulta: el panel mandaba siempre a /dashboard.
+    expect(empujar).toHaveBeenCalledWith({
+      pathname: '/auth/login',
+      query: { redirect: rutaActual },
+    });
+  });
+
+  it('la vuelta lleva también la consulta de la página', () => {
+    window.history.replaceState({}, '', '/dashboard/bookings?estado=pending');
+    rutaActual = '/dashboard/bookings';
+    pintar();
+
+    expect(empujar).toHaveBeenCalledWith({
+      pathname: '/auth/login',
+      query: { redirect: '/dashboard/bookings?estado=pending' },
+    });
+    window.history.replaceState({}, '', '/');
   });
 
   it('mientras no hay usuario no se pinta el panel', () => {

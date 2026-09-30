@@ -27,7 +27,10 @@ const CATALOGOS = { es, de, ar } as Record<
 const push = vi.fn();
 const noEncontrado = vi.fn();
 
+const fijarIdioma = vi.fn();
+
 vi.mock('next-intl/server', () => ({
+  setRequestLocale: (idioma: string) => fijarIdioma(idioma),
   getTranslations: async ({
     locale,
     namespace,
@@ -54,6 +57,9 @@ vi.mock('@/i18n/navigation', async () => {
   return {
     Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
       React.createElement('a', { href }, children),
+    // Como el de next-intl: la ruta, con el prefijo del idioma.
+    getPathname: ({ href, locale }: { href: string; locale: string }) =>
+      locale === 'es' ? href : `/${locale}${href}`,
     useRouter: () => ({ push }),
   };
 });
@@ -62,6 +68,14 @@ vi.mock('@/i18n/navigation', async () => {
 vi.mock('@/components/organisms/AsistenteBusqueda', () => ({
   default: () => null,
 }));
+
+/** Lo que sirve una página estática para un idioma, como hace Next. */
+const servir = (
+  Pagina: (props: {
+    params: Promise<{ locale: string }>;
+  }) => Promise<ReactElement>,
+  idioma: Idioma = 'es',
+) => Pagina({ params: Promise.resolve({ locale: idioma }) });
 
 function pintar(pagina: ReactElement, idioma: Idioma = 'es') {
   return render(
@@ -146,8 +160,8 @@ describe('Portada', () => {
 });
 
 describe('Acerca de', () => {
-  it('explica los cuatro pasos y el resto de secciones', () => {
-    pintar(<AboutPage />);
+  it('explica los cuatro pasos y el resto de secciones', async () => {
+    pintar(await servir(AboutPage));
 
     expect(
       screen.getByRole('heading', { level: 1, name: es.acercaDe.titulo }),
@@ -177,8 +191,8 @@ describe('Acerca de', () => {
     expect(screen.getByText(es.acercaDe.paso4Texto)).toBeInTheDocument();
   });
 
-  it('enlaza con los términos y la privacidad', () => {
-    pintar(<AboutPage />);
+  it('enlaza con los términos y la privacidad', async () => {
+    pintar(await servir(AboutPage));
 
     expect(
       screen.getByRole('link', { name: 'términos de uso' }),
@@ -220,8 +234,8 @@ describe.each([
 ] as const)(
   '$nombre',
   ({ nombre, Pagina, generar, ruta, titulo, descripcion }) => {
-    it('el texto legal está en español y se declara así', () => {
-      pintar(<Pagina />);
+    it('el texto legal está en español y se declara así', async () => {
+      pintar(await servir(Pagina));
 
       const articulo = screen.getByRole('article');
       expect(articulo).toHaveAttribute('lang', 'es');
@@ -231,16 +245,16 @@ describe.each([
       ).toBeInTheDocument();
     });
 
-    it('en español no avisa de nada', () => {
-      pintar(<Pagina />);
+    it('en español no avisa de nada', async () => {
+      pintar(await servir(Pagina));
 
       expect(screen.queryByText(es.legal.avisoIdioma)).toBeNull();
     });
 
-    it('en otro idioma avisa, en ese idioma, de que vale la versión española', () => {
+    it('en otro idioma avisa, en ese idioma, de que vale la versión española', async () => {
       // Traducir el articulado cambiaría su alcance jurídico: se deja en
       // español y se explica por qué.
-      pintar(<Pagina />, 'de');
+      pintar(await servir(Pagina, 'de'), 'de');
 
       const aviso = screen.getByText(de.legal.avisoIdioma);
       expect(aviso).toHaveAttribute('lang', 'de');
@@ -250,10 +264,10 @@ describe.each([
       ).toBeInTheDocument();
     });
 
-    it('en árabe, el aviso va de derecha a izquierda y el texto legal no', () => {
+    it('en árabe, el aviso va de derecha a izquierda y el texto legal no', async () => {
       // Sin el dir del artículo, el castellano heredaría la dirección del
       // documento y se leería alineado al revés.
-      pintar(<Pagina />, 'ar');
+      pintar(await servir(Pagina, 'ar'), 'ar');
 
       const aviso = screen.getByText(ar.legal.avisoIdioma);
       expect(aviso).toHaveAttribute('lang', 'ar');
@@ -279,13 +293,58 @@ describe.each([
   },
 );
 
+describe('Al compartirlas', () => {
+  it.each([
+    ['acerca de', metadatosAcercaDe, 'metaTitulo', '/de/about'],
+    ['privacidad', metadatosPrivacidad, 'privacidadTitulo', '/de/privacy'],
+    ['términos', metadatosTerminos, 'terminosTitulo', '/de/terms'],
+  ] as const)(
+    '%s dice lo suyo, con su imagen, y no lo de la portada',
+    async (_c, generar, clave, ruta) => {
+      // El openGraph de una página sustituye al del layout: las que solo
+      // ponían título se compartían con el de la portada, y sin imagen.
+      const metadatos = await generar({
+        params: Promise.resolve({ locale: 'de' }),
+      });
+      const og = metadatos.openGraph as Record<string, unknown>;
+      const seccion = clave === 'metaTitulo' ? de.acercaDe : de.meta;
+
+      expect(og.title).toBe((seccion as Record<string, string>)[clave]);
+      expect(og.url).toBe(`${SITIO_URL}${ruta}`);
+      expect(og.locale).toBe('de');
+      expect(og.images).toEqual([
+        expect.objectContaining({ width: 1200, height: 630 }),
+      ]);
+    },
+  );
+});
+
+describe('Las páginas estáticas', () => {
+  it.each([
+    ['acerca de', AboutPage],
+    ['privacidad', PrivacyPage],
+    ['términos', TermsPage],
+  ] as const)(
+    '%s fija su idioma, para generarse al compilar',
+    async (_c, Pagina) => {
+      // Sin esto, next-intl lo leía de la petición y cada visita volvía a
+      // pintar la página, sin caché.
+      fijarIdioma.mockClear();
+
+      await servir(Pagina, 'de');
+
+      expect(fijarIdioma).toHaveBeenCalledWith('de');
+    },
+  );
+});
+
 describe('Contenido de la política de privacidad', () => {
-  it('dice qué datos se tratan y para qué', () => {
-    pintar(<PrivacyPage />);
+  it('dice qué datos se tratan y para qué', async () => {
+    pintar(await servir(PrivacyPage));
 
     const tabla = screen.getByRole('table');
-    // Una fila de cabecera y nueve categorías.
-    expect(within(tabla).getAllByRole('row')).toHaveLength(10);
+    // Una fila de cabecera y diez categorías.
+    expect(within(tabla).getAllByRole('row')).toHaveLength(11);
     expect(within(tabla).getByText('Datos de cuenta')).toBeInTheDocument();
     expect(
       within(tabla).getByText('Consultas al asistente'),
@@ -295,8 +354,8 @@ describe('Contenido de la política de privacidad', () => {
     ).toBeInTheDocument();
   });
 
-  it('da un correo de contacto y dice qué ve cualquier visitante', () => {
-    pintar(<PrivacyPage />);
+  it('da un correo de contacto y dice qué ve cualquier visitante', async () => {
+    pintar(await servir(PrivacyPage));
 
     // Ejercer un derecho no puede obligar a hacerlo en público, que era lo
     // único que ofrecía la política: el repositorio.
@@ -316,8 +375,8 @@ describe('Contenido de la política de privacidad', () => {
     ).toBeInTheDocument();
   });
 
-  it('enumera los derechos y enlaza con los términos', () => {
-    pintar(<PrivacyPage />);
+  it('enumera los derechos y enlaza con los términos', async () => {
+    pintar(await servir(PrivacyPage));
 
     expect(
       within(screen.getByRole('list')).getAllByRole('listitem'),
@@ -329,8 +388,8 @@ describe('Contenido de la política de privacidad', () => {
 });
 
 describe('Contenido de los términos de uso', () => {
-  it('tiene sus diez apartados, en orden', () => {
-    pintar(<TermsPage />);
+  it('tiene sus diez apartados, en orden', async () => {
+    pintar(await servir(TermsPage));
 
     const apartados = screen.getAllByRole('heading', { level: 2 });
     expect(apartados).toHaveLength(10);
@@ -339,8 +398,8 @@ describe('Contenido de los términos de uso', () => {
     expect(apartados[9]).toHaveTextContent('10. Ley aplicable');
   });
 
-  it('enlaza con la política de privacidad', () => {
-    pintar(<TermsPage />);
+  it('enlaza con la política de privacidad', async () => {
+    pintar(await servir(TermsPage));
 
     expect(
       screen.getByRole('link', { name: 'política de privacidad' }),

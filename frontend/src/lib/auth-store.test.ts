@@ -20,10 +20,14 @@ const LAURA = {
   soloLectura: false,
 };
 
+let ultimo: Modulo | undefined;
+
 /** El módulo de cero, como en una carga de página nueva. */
 async function cargar(): Promise<Modulo> {
+  ultimo?.dejarDeEscucharPestanas();
   vi.resetModules();
-  return import('./auth-store');
+  ultimo = await import('./auth-store');
+  return ultimo;
 }
 
 /** Una promesa que se resuelve cuando lo diga la prueba. */
@@ -44,7 +48,10 @@ beforeEach(() => {
   authApi.logout.mockResolvedValue({});
 });
 
-afterEach(() => localStorage.clear());
+afterEach(() => {
+  ultimo?.dejarDeEscucharPestanas();
+  localStorage.clear();
+});
 
 describe('al entrar', () => {
   it('guarda quién es, pero ningún token', async () => {
@@ -230,6 +237,58 @@ describe('al salir', () => {
 
     await expect(useAuthStore.getState().logout()).resolves.toBeUndefined();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
+  });
+});
+
+describe('los borradores y las demás pestañas', () => {
+  afterEach(() => sessionStorage.clear());
+
+  it('salir borra los borradores de la pestaña, y nada más', async () => {
+    // La siguiente cuenta que entrara en ella recibía lo que la anterior
+    // había dejado a medias en su perfil.
+    const { useAuthStore } = await cargar();
+    sessionStorage.setItem('borrador:u1:perfil', '{"phone":"600"}');
+    sessionStorage.setItem('otra-cosa', 'se queda');
+
+    await useAuthStore.getState().logout();
+
+    expect(sessionStorage.getItem('borrador:u1:perfil')).toBeNull();
+    expect(sessionStorage.getItem('otra-cosa')).toBe('se queda');
+  });
+
+  it('antes de cargar el almacén, quien entró es el recordado', async () => {
+    localStorage.setItem('user', JSON.stringify(LAURA));
+    const { idRecordado } = await cargar();
+
+    expect(idRecordado()).toBe('u1');
+  });
+
+  it('si otra pestaña entra con otra cuenta, esta se recarga', async () => {
+    // La cookie es la misma para todas: esta seguiría enseñando a Laura y
+    // guardaría lo que se escribiera en la cuenta nueva.
+    localStorage.setItem('user', JSON.stringify(LAURA));
+    authApi.getProfile.mockReturnValue(new Promise(() => undefined));
+    const { useAuthStore, pestana } = await cargar();
+    const recargar = vi.spyOn(pestana, 'recargar').mockImplementation(() => {});
+    useAuthStore.getState().loadFromStorage();
+
+    localStorage.setItem('user', JSON.stringify({ ...LAURA, id: 'u2' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'user' }));
+
+    expect(recargar).toHaveBeenCalled();
+  });
+
+  it('si lo que cambia es otra cosa, o la misma cuenta, no', async () => {
+    localStorage.setItem('user', JSON.stringify(LAURA));
+    authApi.getProfile.mockReturnValue(new Promise(() => undefined));
+    const { useAuthStore, pestana } = await cargar();
+    const recargar = vi.spyOn(pestana, 'recargar').mockImplementation(() => {});
+    useAuthStore.getState().loadFromStorage();
+
+    window.dispatchEvent(new StorageEvent('storage', { key: 'tema' }));
+    window.dispatchEvent(new StorageEvent('storage', { key: 'user' }));
+
+    expect(recargar).not.toHaveBeenCalled();
   });
 });
 

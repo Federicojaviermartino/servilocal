@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useValidacion } from '@/lib/validacion';
 import { KeyRound } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { authApi } from '@/lib/api';
@@ -22,9 +23,11 @@ export default function RecuperarPage() {
   const [enviando, setEnviando] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState('');
+  const { errores, comprobar, alCambiar, describir } = useValidacion();
 
-  const enviar = async (e: FormEvent) => {
+  const enviar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!comprobar(e.currentTarget)) return;
     setError('');
     setEnviando(true);
     try {
@@ -61,7 +64,7 @@ export default function RecuperarPage() {
               {t('recuperarEnviado')}
             </p>
           ) : (
-            <form onSubmit={enviar}>
+            <form noValidate onSubmit={enviar} onChange={alCambiar}>
               {error && (
                 <div
                   className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"
@@ -76,6 +79,7 @@ export default function RecuperarPage() {
                 </label>
                 <input
                   id="recuperar-email"
+                  name="email"
                   type="email"
                   autoComplete="email"
                   required
@@ -83,7 +87,13 @@ export default function RecuperarPage() {
                   placeholder={t('emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  {...describir('email', 'recuperar-email')}
                 />
+                {errores.email && (
+                  <p id="recuperar-email-error" className="error-text">
+                    {errores.email}
+                  </p>
+                )}
               </div>
               <button
                 type="submit"

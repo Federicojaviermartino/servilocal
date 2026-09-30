@@ -4,11 +4,13 @@ import { test, expect, type Page } from '@playwright/test';
  * El selector aparece dos veces: en la barra en escritorio y dentro del menú
  * desplegable en móvil. Se devuelve el que esté realmente visible.
  */
-async function selectorIdioma(pagina: Page) {
-  const candidatos = pagina.getByLabel('Cambiar idioma');
-  if (await candidatos.first().isVisible()) return candidatos.first();
-  await pagina.getByRole('button', { name: 'Abrir menú' }).click();
-  return candidatos.last();
+/** Abre el selector de idioma, el de la cabecera o el del menú del móvil. */
+async function abrirIdiomas(pagina: Page) {
+  const candidatos = pagina.getByRole('button', { name: /Cambiar idioma/ });
+  if (!(await candidatos.first().isVisible())) {
+    await pagina.getByRole('button', { name: 'Abrir menú' }).click();
+  }
+  await candidatos.filter({ visible: true }).first().click();
 }
 
 test.describe('Idioma', () => {
@@ -79,8 +81,8 @@ test.describe('Idioma', () => {
   }) => {
     await page.goto('/services/search?q=fontanero');
 
-    const selector = await selectorIdioma(page);
-    await selector.selectOption('en');
+    await abrirIdiomas(page);
+    await page.getByRole('link', { name: 'English' }).click();
 
     // La ruta y la consulta sobreviven al cambio: solo cambia el prefijo.
     await expect(page).toHaveURL(/\/en\/services\/search\?q=fontanero$/);

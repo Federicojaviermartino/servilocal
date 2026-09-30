@@ -10,10 +10,12 @@ import {
 } from 'next-intl/server';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { mensajesDelNavegador } from '@/i18n/mensajes-navegador';
 import { SITIO_URL } from '@/lib/sitio';
 import { jsonParaScript } from '@/lib/seo';
 import { routing, direccionDe, type Idioma } from '@/i18n/routing';
 import '../globals.css';
+import { IMAGEN_SOCIAL } from '@/lib/seo';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -54,7 +56,10 @@ export async function generateMetadata({
       siteName: 'ServiLocal',
       title: t('titulo'),
       description: t('descripcion'),
+      images: [IMAGEN_SOCIAL],
     },
+    // La imagen, grande: con la tarjeta pequeña queda en una miniatura.
+    twitter: { card: 'summary_large_image' },
   };
 }
 
@@ -123,7 +128,7 @@ export default async function RootLayout({
             }),
           }}
         />
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={mensajesDelNavegador(messages)}>
           <Header />
           <main id="main-content" className="flex-1" role="main">
             {children}

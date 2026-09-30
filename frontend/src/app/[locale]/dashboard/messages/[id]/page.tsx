@@ -4,7 +4,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { Conversation, Message } from '@/types';
-import { messagesApi } from '@/lib/api';
+import { messagesApi, servicesApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useMensajesEnVivo, type AvisoMensaje } from '@/lib/socket-mensajes';
 import Avatar from '@/components/atoms/Avatar';
@@ -105,16 +105,38 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   // Quién es el interlocutor no se puede deducir de los mensajes: si aún no
   // ha escrito, ninguno lleva su nombre. Viene de la lista de conversaciones,
   // que sí lo trae.
+  //
+  // Una conversación nueva, abierta con «Contactar» desde una ficha, todavía
+  // no está en la lista, y no decía con quién era. La ficha pasa su servicio,
+  // y el nombre sale de él, pero solo si su profesional es de verdad el
+  // interlocutor: un enlace preparado no puede poner otro nombre.
   useEffect(() => {
+    let vigente = true;
     messagesApi
       .getConversations()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         const hilo = (data as Conversation[] | undefined)?.find(
           (c) => c.partnerId === partnerId,
         );
-        setInterlocutor(hilo?.partner);
+        if (hilo) {
+          if (vigente) setInterlocutor(hilo.partner);
+          return;
+        }
+        const servicio = new URLSearchParams(window.location.search).get(
+          'servicio',
+        );
+        if (!servicio) return;
+        const { data: publicado } = await servicesApi.getById(servicio);
+        if (vigente && publicado?.providerId === partnerId) {
+          setInterlocutor(publicado.provider);
+        }
       })
-      .catch(() => setInterlocutor(undefined));
+      .catch(() => {
+        if (vigente) setInterlocutor(undefined);
+      });
+    return () => {
+      vigente = false;
+    };
   }, [partnerId]);
 
   // Red de seguridad mientras el socket no esté conectado: en Render el
@@ -157,6 +179,9 @@ function Conversacion({ partnerId }: { partnerId: string }) {
   };
 
   const partner = interlocutor;
+  const nombre = partner
+    ? `${partner.firstName} ${partner.lastName}`
+    : undefined;
 
   return (
     <EstadoCarga
@@ -165,21 +190,23 @@ function Conversacion({ partnerId }: { partnerId: string }) {
       referencia={referencia}
     >
       <div className="bg-superficie rounded-lg shadow-card flex flex-col h-[70vh]">
-        {partner && (
-          <div className="p-4 border-b border-borde flex items-center gap-3">
-            <Avatar
-              name={`${partner.firstName} ${partner.lastName}`}
-              size="md"
-            />
-            <div>
-              <p className="font-semibold text-principal">
-                {partner.firstName} {partner.lastName}
-              </p>
-            </div>
-          </div>
-        )}
+        {/* Sin título, un lector de pantalla no sabía dónde estaba ni con
+            quién hablaba. */}
+        <div className="p-4 border-b border-borde flex items-center gap-3">
+          {nombre && <Avatar name={nombre} size="md" />}
+          <h1 className="font-semibold text-principal">
+            {nombre ?? t('conversacion')}
+          </h1>
+        </div>
 
-        <div ref={lista} className="flex-1 overflow-y-auto p-4 space-y-3">
+        {/* role="log": lo que llega por el socket se anuncia al llegar, sin
+            que haya que ir a buscarlo. */}
+        <div
+          ref={lista}
+          role="log"
+          aria-label={t('historial')}
+          className="flex-1 overflow-y-auto p-4 space-y-3"
+        >
           {messages.length === 0 ? (
             <p className="text-center text-tenue py-10">{t('sinMensajes')}</p>
           ) : (
@@ -197,6 +224,15 @@ function Conversacion({ partnerId }: { partnerId: string }) {
                         : 'bg-superficie-alt text-principal'
                     }`}
                   >
+                    {/* Quién lo dijo, que a la vista se deduce por el lado
+                        y el color. Fuera del párrafo: dentro, dir="auto"
+                        tomaría la dirección del nombre y no la del mensaje. */}
+                    <span className="sr-only">
+                      {isOwn
+                        ? t('tu')
+                        : (partner?.firstName ?? t('interlocutor'))}
+                      :
+                    </span>
                     {/* dir="auto": un mensaje en árabe se lee de derecha a
                         izquierda aunque la página esté en castellano, y al
                         revés. break-words: 2000 caracteres sin un espacio
@@ -212,10 +248,12 @@ function Conversacion({ partnerId }: { partnerId: string }) {
                         isOwn ? 'text-primary-100' : 'text-tenue'
                       }`}
                     >
-                      {new Date(m.createdAt).toLocaleTimeString(idioma, {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      <time dateTime={m.createdAt}>
+                        {new Date(m.createdAt).toLocaleTimeString(idioma, {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </time>
                     </p>
                   </div>
                 </div>
@@ -236,7 +274,7 @@ function Conversacion({ partnerId }: { partnerId: string }) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={t('escribePlaceholder')}
-            className="flex-1 rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex-1 rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
           />
           <Button
             type="submit"

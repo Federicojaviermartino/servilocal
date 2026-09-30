@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCarga } from './carga';
 
@@ -155,5 +155,43 @@ describe('useCarga', () => {
     resolver({ data: ['tarde'] });
 
     expect(result.current.estado).toBe('cargando');
+  });
+
+  it('refrescar vuelve a pedirlo sin pasar por cargando', async () => {
+    // Tras un cambio, reintentar cambiaba la lista por el indicador de carga
+    // y el foco se perdía con ella.
+    let responder!: (valor: { data: string[] }) => void;
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce({ data: ['antes'] })
+      .mockReturnValueOnce(
+        new Promise((resolver) => {
+          responder = resolver;
+        }),
+      );
+    const { result } = renderHook(() => useCarga(pedir));
+    await waitFor(() => expect(result.current.estado).toBe('listo'));
+
+    act(() => result.current.refrescar());
+
+    expect(result.current.estado).toBe('listo');
+    expect(result.current.datos).toEqual(['antes']);
+    await act(async () => responder({ data: ['después'] }));
+    expect(result.current.datos).toEqual(['después']);
+  });
+
+  it('y si el refresco falla, lo que se veía se queda', async () => {
+    const pedir = vi
+      .fn()
+      .mockResolvedValueOnce({ data: ['antes'] })
+      .mockRejectedValueOnce(fallo(503));
+    const { result } = renderHook(() => useCarga(pedir));
+    await waitFor(() => expect(result.current.estado).toBe('listo'));
+
+    await act(async () => result.current.refrescar());
+
+    expect(pedir).toHaveBeenCalledTimes(2);
+    expect(result.current.estado).toBe('listo');
+    expect(result.current.datos).toEqual(['antes']);
   });
 });

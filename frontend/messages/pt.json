@@ -300,14 +300,19 @@
     "duracion": "Duração aproximada: {duracion}",
     "errorRedTexto": "Verifique a sua ligação e tente de novo dentro de alguns segundos.",
     "errorRedTitulo": "Não foi possível contactar o servidor",
+    "errorResponder": "Não foi possível publicar a resposta. Tente novamente.",
     "noDisponibleTexto": "Tente de novo mais tarde.",
     "noDisponibleTitulo": "Serviço indisponível",
     "noEncontradoTexto": "O serviço que procura não existe ou foi removido.",
     "noEncontradoTitulo": "Serviço não encontrado",
+    "publicarRespuesta": "Publicar resposta",
     "reservar": "Reservar agora",
+    "responder": "Responder a esta avaliação",
     "respuestaProfesional": "Resposta do profissional",
+    "respuestaPublicada": "Resposta publicada.",
     "sinValoraciones": "Este serviço ainda não tem avaliações.",
     "sobreProfesional": "Sobre o profissional",
+    "tuRespuesta": "A sua resposta, visível para todos",
     "valoraciones": "Avaliações ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "Aplicar filtros",
     "categoria": "Categoria",
+    "cercaDeTi": "Perto da sua localização",
     "ciudad": "Cidade",
     "limpiar": "Limpar",
+    "localizando": "A obter a sua localização…",
     "precioMaximo": "Preço máximo (euros)",
+    "quitarUbicacion": "Remover a localização",
     "radio": "Raio de pesquisa: {km} km",
     "sinLimite": "Sem limite",
+    "sinUbicacion": "Não foi possível saber onde está. Verifique a permissão de localização do navegador, ou pesquise por cidade.",
     "todasCategorias": "Todas as categorias",
     "todasCiudades": "Todas as cidades",
+    "ubicacionAyuda": "A sua localização só serve para esta pesquisa, arredondada a um quilómetro, e não a guardamos.",
+    "usarUbicacion": "Usar a minha localização",
+    "valoracionCualquiera": "Qualquer",
     "valoracionMinima": "Avaliação mínima"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "Criar serviço",
     "descripcion": "Descrição",
     "direccion": "Morada de referência",
+    "direccionPista": "Não é publicada: só a vê você. No mapa, o serviço aparece na sua cidade.",
     "duracion": "Duração de cada reserva",
     "duracionPista": "O tempo que ocupa na sua agenda: duas reservas confirmadas não se podem sobrepor.",
     "guardarCambios": "Guardar alterações",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "Profissionais de confiança, perto de si",
-    "heroSubtitulo": "Encontre o profissional certo para qualquer serviço doméstico. Avaliações reais, orçamentos transparentes e reserva imediata.",
+    "heroSubtitulo": "Encontre o profissional certo para qualquer serviço doméstico. Avaliações reais, preços à vista e reserva online.",
     "porQueTitulo": "Porquê escolher a ServiLocal?",
     "cercanosTitulo": "Profissionais próximos",
-    "cercanosTexto": "Pesquisa por geolocalização para encontrar os melhores profissionais da sua zona.",
+    "cercanosTexto": "Pesquise por cidade, ou perto de si com a sua localização, para encontrar profissionais da sua zona.",
     "pagosTitulo": "Pagamentos seguros",
     "pagosTexto": "Plataforma de pagamento integrada com a Stripe. O seu dinheiro fica protegido até o serviço estar concluído.",
     "valoracionesTitulo": "Avaliações verificadas",
@@ -399,7 +412,7 @@
     "paso1Titulo": "Procure o serviço",
     "paso1Texto": "Indique do que precisa e onde. O nosso sistema mostra-lhe os profissionais mais próximos e mais bem avaliados.",
     "paso2Titulo": "Reserve e pague",
-    "paso2Texto": "Escolha a data, deixe o sinal e receba a confirmação de imediato.",
+    "paso2Texto": "Escolha a data e pague com cartão: o valor fica retido e só é cobrado quando o trabalho estiver feito. O profissional confirma a reserva.",
     "paso3Titulo": "Avalie a sua experiência",
     "paso3Texto": "Após o serviço, deixe a sua opinião para ajudar outros utilizadores."
   },
@@ -412,13 +425,17 @@
     "verDetalle": "Ver detalhe"
   },
   "mensajesPanel": {
+    "conversacion": "Conversa",
     "enviar": "Enviar",
     "errorEnviar": "Não foi possível enviar a mensagem. Tenta novamente.",
     "escribePlaceholder": "Escreva uma mensagem...",
+    "historial": "Mensagens da conversa",
+    "interlocutor": "A outra pessoa",
     "sinConversaciones": "Não tem conversas.",
     "sinConversacionesPista": "As conversas são criadas ao contactar um profissional a partir de um serviço ou de uma reserva.",
     "sinMensajes": "Ainda não há mensagens nesta conversa.",
-    "titulo": "Mensagens"
+    "titulo": "Mensagens",
+    "tu": "Você"
   },
   "meta": {
     "buscadorDescripcion": "Encontre canalizadores, eletricistas, pintores, limpeza, remodelações e explicações perto de si. Filtre por cidade, distância, avaliação e preço.",
@@ -508,7 +525,7 @@
     "accesosRapidos": "Acessos rápidos",
     "buscarServicio": "Procurar um serviço",
     "buscarServicioTexto": "Encontre profissionais perto de si.",
-    "demostracionAviso": "Estás numa conta de demonstração: experimenta tudo. O que alterares nos serviços, no teu perfil ou nas avaliações é desfeito ao fim de uma hora.",
+    "demostracionAviso": "Está a usar uma conta de demonstração: experimente tudo. O que alterar nos serviços, no seu perfil ou nas avaliações é desfeito ao fim de uma hora.",
     "gestionarServicios": "Gerir os meus serviços",
     "gestionarServiciosTexto": "Crie, edite ou coloque em pausa os seus serviços publicados.",
     "hola": "Olá, {nombre}",
@@ -640,7 +657,10 @@
     "sinServicios": "Ainda não publicou nenhum serviço.",
     "sinServiciosPista": "Crie o seu primeiro serviço para começar a receber reservas.",
     "titulo": "Os meus serviços",
-    "resumenValoraciones": "{total, plural, =0 {Sem avaliações} one {# avaliação} other {# avaliações}}"
+    "resumenValoraciones": "{total, plural, =0 {Sem avaliações} one {# avaliação} other {# avaliações}}",
+    "editarServicio": "Editar {nombre}",
+    "eliminarServicio": "Eliminar {nombre}",
+    "verValoraciones": "Ver e responder"
   },
   "tarjeta": {
     "precioRango": "{min} a {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "Confirme a palavra-passe",
+    "correo": "Introduza um endereço de email válido.",
+    "corto": "Tem de ter pelo menos {minimo, plural, one {# carácter} other {# caracteres}}.",
     "emailInvalido": "Introduza um e-mail válido",
     "emailObligatorio": "O e-mail é obrigatório",
+    "fechaMaxima": "A data não pode ser posterior a {fecha}.",
+    "fechaMinima": "A data não pode ser anterior a {fecha}.",
+    "formato": "O valor não é válido.",
+    "largo": "Não pode passar de {maximo, plural, one {# carácter} other {# caracteres}}.",
+    "maximo": "O valor máximo é {maximo}.",
     "maximoCaracteres": "No máximo {max} caracteres",
+    "minimo": "O valor mínimo é {minimo}.",
     "minimoCaracteres": "Mínimo de 8 caracteres",
-    "obligatorio": "Obrigatório",
+    "obligatorio": "Este campo é obrigatório.",
     "passwordObligatoria": "A palavra-passe é obrigatória",
     "passwordsNoCoinciden": "As palavras-passe não coincidem"
   },
   "valoracion": {
-    "valorar": "Avaliar com {estrellas} estrelas"
+    "estrellas": "{estrellas, plural, one {# estrela} other {# estrelas}}",
+    "nota": "{nota} de 5 estrelas",
+    "notaConTotal": "{nota} de 5 estrelas, {total, plural, one {# avaliação} other {# avaliações}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "Comentário opcional sobre o serviço...",

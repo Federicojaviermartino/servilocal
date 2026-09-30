@@ -12,7 +12,7 @@ import { ForbiddenException } from '@nestjs/common';
  * al registrarse: la fecha de su última actualización. Si cambian, cambia
  * esto, y queda constancia de a qué texto dio conformidad cada cuenta.
  */
-export const VERSION_TERMINOS = '2026-09-29';
+export const VERSION_TERMINOS = '2026-09-30';
 
 export const CODIGO_CUENTA_DEMOSTRACION = 'cuenta-de-demostracion';
 export const CODIGO_CONTRASENA_INCORRECTA = 'contrasena-incorrecta';

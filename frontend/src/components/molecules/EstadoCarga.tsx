@@ -5,7 +5,8 @@
 'use client';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, LogIn, RefreshCw } from 'lucide-react';
-import { Link } from '@/i18n/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
+import { rutaConConsulta } from '@/lib/ruta-interna';
 import type { EstadoCarga as Estado } from '@/lib/carga';
 import Button from '../atoms/Button';
 import Spinner from '../atoms/Spinner';
@@ -34,6 +35,7 @@ export default function EstadoCarga({
   children,
 }: EstadoCargaProps) {
   const t = useTranslations('carga');
+  const ruta = usePathname();
 
   if (estado === 'cargando') {
     return (
@@ -52,8 +54,12 @@ export default function EstadoCarga({
         <LogIn className="mx-auto h-8 w-8 text-secundario" aria-hidden="true" />
         <p className="mt-3 font-medium text-principal">{t('sesionCaducada')}</p>
         <p className="mt-1 text-sm text-secundario">{t('sesionTexto')}</p>
+        {/* De vuelta aquí al entrar, no a la portada. */}
         <Link
-          href="/auth/login"
+          href={{
+            pathname: '/auth/login',
+            query: { redirect: rutaConConsulta(ruta) },
+          }}
           className="mt-4 inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
         >
           {t('entrarDeNuevo')}

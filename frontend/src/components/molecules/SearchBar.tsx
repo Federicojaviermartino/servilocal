@@ -1,11 +1,12 @@
 /**
- * Nivel atomico: Molecula
- * Componente: SearchBar (input + boton + icono)
+ * Nivel atómico: Molécula
+ * Componente: SearchBar (campo, botón e icono)
  */
 'use client';
-import { useState, FormEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import type { FormEvent } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Search } from 'lucide-react';
+import { getPathname } from '@/i18n/navigation';
 import Button from '../atoms/Button';
 
 interface SearchBarProps {
@@ -21,27 +22,42 @@ export default function SearchBar({
 }: SearchBarProps) {
   const t = useTranslations('buscador');
   const tComun = useTranslations('comun');
-  const [value, setValue] = useState(initialValue);
+  const idioma = useLocale();
 
-  const handleSubmit = (e: FormEvent) => {
+  // El texto se lee del formulario al enviarlo, sin estado: con la página
+  // pintada desde el servidor, lo que alguien escribía antes de que React
+  // tomara el control se borraba al hacerlo, porque el campo controlado
+  // volvía a su valor inicial.
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSearch(value.trim());
+    const texto = new FormData(e.currentTarget).get('q');
+    onSearch(String(texto ?? '').trim());
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
+    // Un formulario de verdad: con la página ya pintada desde el servidor,
+    // quien pulsaba «Buscar» antes de que cargara el JavaScript no
+    // conseguía nada. Así, sin él, va al buscador con lo escrito.
+    <form
+      action={getPathname({ href: '/services/search', locale: idioma })}
+      method="get"
+      role="search"
+      onSubmit={handleSubmit}
+      className="w-full"
+    >
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search
             className="absolute start-3 top-1/2 -translate-y-1/2 text-tenue"
             size={20}
+            aria-hidden="true"
           />
           <input
             type="search"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
+            name="q"
+            defaultValue={initialValue}
             placeholder={placeholder ?? t('queNecesitas')}
-            className="w-full ps-10 pe-3 py-2.5 rounded-md border border-borde bg-superficie text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="w-full ps-10 pe-3 py-2.5 rounded-md border border-borde bg-superficie text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento focus:border-acento"
             aria-label={t('buscarServicios')}
           />
         </div>

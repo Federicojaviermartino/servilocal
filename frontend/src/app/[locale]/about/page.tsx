@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { useTranslations } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
-import { alternativas } from '@/lib/seo';
+import { alternativas, grafoAbierto } from '@/lib/seo';
 import { MapPin, Shield, Star, Search } from 'lucide-react';
 
 export async function generateMetadata({
@@ -17,12 +17,32 @@ export async function generateMetadata({
     title: t('metaTitulo'),
     description: t('metaDescripcion'),
     alternates: alternativas(locale, '/about'),
+    openGraph: grafoAbierto(locale, {
+      titulo: t('metaTitulo'),
+      descripcion: t('metaDescripcion'),
+      ruta: '/about',
+    }),
   };
 }
 
 const ICONOS = [Search, MapPin, Shield, Star] as const;
 
-export default function AboutPage() {
+/**
+ * Con el idioma fijado aquí, la página se genera al compilar. Sin él,
+ * next-intl lo leía de la petición y cada visita la volvía a pintar, sin
+ * caché.
+ */
+export default async function AboutPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  return <AcercaDe />;
+}
+
+function AcercaDe() {
   const t = useTranslations('acercaDe');
 
   return (

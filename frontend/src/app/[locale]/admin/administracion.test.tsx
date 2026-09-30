@@ -62,8 +62,24 @@ vi.mock('react-hot-toast', () => ({
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
-    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-      React.createElement('a', { href }, children),
+    // Como el de next-intl: la dirección puede venir como objeto.
+    Link: ({
+      href,
+      children,
+    }: {
+      href: string | { pathname: string; query?: Record<string, string> };
+      children: React.ReactNode;
+    }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+        },
+        children,
+      ),
     useRouter: () => ({ replace: reemplazar, push: vi.fn() }),
     usePathname: () => '/admin',
   };
@@ -1571,7 +1587,7 @@ describe('Panel de administración', () => {
 
       expect(
         await screen.findByRole('link', { name: es.carga.entrarDeNuevo }),
-      ).toHaveAttribute('href', '/auth/login');
+      ).toHaveAttribute('href', '/auth/login?redirect=%2Fadmin');
       expect(screen.getByText(es.carga.sesionCaducada)).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: es.carga.reintentar }),

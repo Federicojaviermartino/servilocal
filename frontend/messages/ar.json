@@ -300,14 +300,19 @@
     "duracion": "المدة التقريبية: {duracion}",
     "errorRedTexto": "تحقّق من اتصالك وأعد المحاولة بعد لحظات.",
     "errorRedTitulo": "تعذّر الاتصال بالخادم",
+    "errorResponder": "تعذّر نشر الرد. حاول مرة أخرى.",
     "noDisponibleTexto": "أعد المحاولة لاحقًا.",
     "noDisponibleTitulo": "الخدمة غير متاحة",
     "noEncontradoTexto": "الخدمة التي تبحث عنها غير موجودة أو تم حذفها.",
     "noEncontradoTitulo": "لم يتم العثور على الخدمة",
+    "publicarRespuesta": "نشر الرد",
     "reservar": "احجز الآن",
+    "responder": "الرد على هذا التقييم",
     "respuestaProfesional": "رد المحترف",
+    "respuestaPublicada": "تم نشر الرد.",
     "sinValoraciones": "لا توجد تقييمات لهذه الخدمة بعد.",
     "sobreProfesional": "عن المحترف",
+    "tuRespuesta": "ردّك، ويراه الجميع",
     "valoraciones": "التقييمات ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "تطبيق عوامل التصفية",
     "categoria": "الفئة",
+    "cercaDeTi": "بالقرب من موقعك",
     "ciudad": "المدينة",
     "limpiar": "مسح",
+    "localizando": "جارٍ تحديد موقعك…",
     "precioMaximo": "أقصى سعر (يورو)",
+    "quitarUbicacion": "إزالة الموقع",
     "radio": "نطاق البحث: {km} كم",
     "sinLimite": "بلا حد",
+    "sinUbicacion": "تعذّر تحديد موقعك. تحقّق من إذن الموقع في المتصفح، أو ابحث حسب المدينة.",
     "todasCategorias": "كل الفئات",
     "todasCiudades": "كل المدن",
+    "ubicacionAyuda": "يُستخدم موقعك لهذا البحث فقط، مقرّبًا إلى كيلومتر تقريبًا، ولا نحتفظ به.",
+    "usarUbicacion": "استخدم موقعي",
+    "valoracionCualquiera": "أي تقييم",
     "valoracionMinima": "أدنى تقييم"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "إنشاء الخدمة",
     "descripcion": "الوصف",
     "direccion": "العنوان المرجعي",
+    "direccionPista": "لا يُنشر: تراه أنت فقط. على الخريطة، تظهر الخدمة في مدينتها.",
     "duracion": "مدة كل حجز",
     "duracionPista": "الوقت الذي يشغله في جدولك: لا يمكن أن يتداخل حجزان مؤكدان.",
     "guardarCambios": "حفظ التغييرات",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "محترفون موثوقون بالقرب منك",
-    "heroSubtitulo": "اعثر على المحترف المناسب لأي خدمة منزلية. تقييمات حقيقية وعروض أسعار واضحة وحجز فوري.",
+    "heroSubtitulo": "اعثر على المحترف المناسب لأي خدمة منزلية. تقييمات حقيقية وأسعار واضحة وحجز عبر الإنترنت.",
     "porQueTitulo": "لماذا تختار سيرفي لوكال؟",
     "cercanosTitulo": "محترفون قريبون",
-    "cercanosTexto": "بحث بتحديد الموقع للعثور على أفضل المحترفين في منطقتك.",
+    "cercanosTexto": "ابحث حسب المدينة، أو بالقرب منك باستخدام موقعك، للعثور على محترفين في منطقتك.",
     "pagosTitulo": "مدفوعات آمنة",
     "pagosTexto": "منصة دفع متكاملة مع سترايب. أموالك محمية حتى اكتمال الخدمة.",
     "valoracionesTitulo": "تقييمات موثقة",
@@ -399,7 +412,7 @@
     "paso1Titulo": "ابحث عن الخدمة",
     "paso1Texto": "حدد ما تحتاجه وأين. يعرض لك نظامنا أقرب المحترفين وأفضلهم تقييمًا.",
     "paso2Titulo": "احجز وادفع",
-    "paso2Texto": "اختر التاريخ وادفع العربون واحصل على التأكيد فورًا.",
+    "paso2Texto": "اختر التاريخ وادفع بالبطاقة: يُحجز المبلغ ولا يُخصم إلا بعد إنجاز العمل. ويؤكد المحترف الحجز.",
     "paso3Titulo": "قيّم تجربتك",
     "paso3Texto": "بعد الخدمة، اترك تقييمك لمساعدة المستخدمين الآخرين."
   },
@@ -412,13 +425,17 @@
     "verDetalle": "عرض التفاصيل"
   },
   "mensajesPanel": {
+    "conversacion": "محادثة",
     "enviar": "إرسال",
     "errorEnviar": "تعذّر إرسال الرسالة. حاول مرة أخرى.",
     "escribePlaceholder": "اكتب رسالة...",
+    "historial": "رسائل المحادثة",
+    "interlocutor": "الطرف الآخر",
     "sinConversaciones": "لا توجد لديك محادثات.",
     "sinConversacionesPista": "تبدأ المحادثات عند التواصل مع محترف من خلال خدمة أو حجز.",
     "sinMensajes": "لا توجد رسائل في هذه المحادثة بعد.",
-    "titulo": "الرسائل"
+    "titulo": "الرسائل",
+    "tu": "أنت"
   },
   "meta": {
     "buscadorDescripcion": "اعثر على سبّاكين وكهربائيين ودهّانين وخدمات تنظيف وتجديد ودروس خصوصية بالقرب منك. صفِّ النتائج حسب المدينة والمسافة والتقييم والسعر.",
@@ -640,7 +657,10 @@
     "sinServicios": "لم تنشر أي خدمة بعد.",
     "sinServiciosPista": "أنشئ خدمتك الأولى لتبدأ في استقبال الحجوزات.",
     "titulo": "خدماتي",
-    "resumenValoraciones": "{total, plural, =0 {لا توجد تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}"
+    "resumenValoraciones": "{total, plural, =0 {لا توجد تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}",
+    "editarServicio": "تعديل {nombre}",
+    "eliminarServicio": "حذف {nombre}",
+    "verValoraciones": "عرض والرد"
   },
   "tarjeta": {
     "precioRango": "{min} إلى {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "أكّد كلمة المرور",
+    "correo": "أدخل بريدًا إلكترونيًا صالحًا.",
+    "corto": "يجب ألا يقل عن {minimo, plural, zero {# حرف} one {حرف واحد} two {حرفين} few {# أحرف} many {# حرفًا} other {# حرف}}.",
     "emailInvalido": "أدخل بريدًا إلكترونيًا صالحًا",
     "emailObligatorio": "البريد الإلكتروني مطلوب",
+    "fechaMaxima": "لا يمكن أن يكون التاريخ بعد {fecha}.",
+    "fechaMinima": "لا يمكن أن يكون التاريخ قبل {fecha}.",
+    "formato": "هذه القيمة غير صالحة.",
+    "largo": "يجب ألا يزيد عن {maximo, plural, zero {# حرف} one {حرف واحد} two {حرفين} few {# أحرف} many {# حرفًا} other {# حرف}}.",
+    "maximo": "الحد الأقصى هو {maximo}.",
     "maximoCaracteres": "{max} حرفًا على الأكثر",
+    "minimo": "الحد الأدنى هو {minimo}.",
     "minimoCaracteres": "8 أحرف على الأقل",
-    "obligatorio": "مطلوب",
+    "obligatorio": "هذا الحقل مطلوب.",
     "passwordObligatoria": "كلمة المرور مطلوبة",
     "passwordsNoCoinciden": "كلمتا المرور غير متطابقتين"
   },
   "valoracion": {
-    "valorar": "قيّم بـ {estrellas} نجوم"
+    "estrellas": "{estrellas, plural, zero {بلا نجوم} one {نجمة واحدة} two {نجمتان} few {# نجوم} many {# نجمة} other {# نجمة}}",
+    "nota": "{nota} من 5 نجوم",
+    "notaConTotal": "{nota} من 5 نجوم، {total, plural, zero {بلا تقييمات} one {تقييم واحد} two {تقييمان} few {# تقييمات} many {# تقييمًا} other {# تقييم}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "تعليق اختياري عن الخدمة...",

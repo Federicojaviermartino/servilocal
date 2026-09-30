@@ -5,6 +5,7 @@
 'use client';
 import { useState, useEffect, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useValidacion } from '@/lib/validacion';
 import { Category, Service } from '@/types';
 import { categoriesApi } from '@/lib/api';
 import { CIUDADES } from '@/lib/ciudades';
@@ -36,6 +37,7 @@ export default function ServiceForm({
 }: ServiceFormProps) {
   const t = useTranslations('formularioServicio');
   const tComun = useTranslations('comun');
+  const { errores, comprobar, alCambiar, describir } = useValidacion();
   const idioma = useLocale();
   const nombreUnidad = useNombreUnidad();
   const nombreCategoria = useNombreCategoria();
@@ -73,8 +75,17 @@ export default function ServiceForm({
     ? DURACIONES
     : [...DURACIONES, form.durationMinutes].sort((a, b) => a - b);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const bajoMinimo = { rangeUnderflow: t('precioMinimoStripe') };
+    if (
+      !comprobar(e.currentTarget, {
+        priceMin: bajoMinimo,
+        priceMax: bajoMinimo,
+      })
+    ) {
+      return;
+    }
 
     // Un máximo por debajo del mínimo deja el servicio sin ningún importe
     // válido, y quien lo publica no tiene forma de enterarse: la ficha se ve
@@ -101,11 +112,19 @@ export default function ServiceForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      noValidate
+      onSubmit={handleSubmit}
+      onChange={alCambiar}
+      className="space-y-4"
+    >
       <Input
+        id="servicio-titulo"
+        name="title"
         label={t('titulo')}
         value={form.title}
         onChange={(e) => setForm({ ...form, title: e.target.value })}
+        error={errores.title}
         required
         maxLength={100}
       />
@@ -118,12 +137,22 @@ export default function ServiceForm({
         </label>
         <textarea
           id="servicio-descripcion"
+          name="description"
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           rows={4}
           required
-          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+          {...describir('description', 'servicio-descripcion')}
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
         />
+        {errores.description && (
+          <p
+            id="servicio-descripcion-error"
+            className="mt-1 text-sm text-error"
+          >
+            {errores.description}
+          </p>
+        )}
       </div>
       <div>
         <label
@@ -134,10 +163,12 @@ export default function ServiceForm({
         </label>
         <select
           id="servicio-categoria"
+          name="categoryId"
           value={form.categoryId}
           onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
           required
-          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+          {...describir('categoryId', 'servicio-categoria')}
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
         >
           <option value="">{t('seleccionaCategoria')}</option>
           {categories.map((c) => (
@@ -146,29 +177,40 @@ export default function ServiceForm({
             </option>
           ))}
         </select>
+        {errores.categoryId && (
+          <p id="servicio-categoria-error" className="mt-1 text-sm text-error">
+            {errores.categoryId}
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* En céntimos: con un paso de 0,5, un precio de 42,30 no valía. */}
         <Input
+          id="servicio-precio-minimo"
+          name="priceMin"
           label={t('precioMinimo')}
           type="number"
           min={PRECIO_MINIMO}
-          step={PRECIO_MINIMO}
+          step={0.01}
           value={form.priceMin}
           onChange={(e) =>
             setForm({ ...form, priceMin: Number(e.target.value) })
           }
+          error={errores.priceMin}
           required
         />
         <Input
+          id="servicio-precio-maximo"
+          name="priceMax"
           label={t('precioMaximo')}
           type="number"
           min={PRECIO_MINIMO}
-          step={PRECIO_MINIMO}
+          step={0.01}
           value={form.priceMax || ''}
           onChange={(e) =>
             setForm({ ...form, priceMax: Number(e.target.value) })
           }
-          error={errorPrecio}
+          error={errores.priceMax ?? errorPrecio}
         />
         <div>
           <label
@@ -181,7 +223,7 @@ export default function ServiceForm({
             id="servicio-unidad"
             value={form.priceUnit}
             onChange={(e) => setForm({ ...form, priceUnit: e.target.value })}
-            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
           >
             <option value="por hora">{nombreUnidad('por hora')}</option>
             <option value="por servicio">{nombreUnidad('por servicio')}</option>
@@ -204,7 +246,7 @@ export default function ServiceForm({
             setForm({ ...form, durationMinutes: Number(e.target.value) })
           }
           aria-describedby="servicio-duracion-pista"
-          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
         >
           {duracionesDisponibles.map((minutos) => (
             <option key={minutos} value={minutos}>
@@ -217,9 +259,13 @@ export default function ServiceForm({
         </p>
       </div>
       <Input
+        id="servicio-direccion"
+        name="address"
         label={t('direccion')}
         value={form.address}
         onChange={(e) => setForm({ ...form, address: e.target.value })}
+        error={errores.address}
+        hint={t('direccionPista')}
         required
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -232,10 +278,12 @@ export default function ServiceForm({
           </label>
           <select
             id="servicio-ciudad"
+            name="city"
             value={form.city}
             onChange={(e) => setForm({ ...form, city: e.target.value })}
             required
-            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+            {...describir('city', 'servicio-ciudad')}
+            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
           >
             <option value="">{t('seleccionaCiudad')}</option>
             {ciudadesDisponibles.map((ciudad) => (
@@ -244,8 +292,15 @@ export default function ServiceForm({
               </option>
             ))}
           </select>
+          {errores.city && (
+            <p id="servicio-ciudad-error" className="mt-1 text-sm text-error">
+              {errores.city}
+            </p>
+          )}
         </div>
         <Input
+          id="servicio-radio"
+          name="coverageRadiusKm"
           label={t('radio')}
           type="number"
           min={1}
@@ -254,6 +309,7 @@ export default function ServiceForm({
           onChange={(e) =>
             setForm({ ...form, coverageRadiusKm: Number(e.target.value) })
           }
+          error={errores.coverageRadiusKm}
           required
         />
       </div>

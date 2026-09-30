@@ -50,17 +50,17 @@ const COMPLETO: Partial<Service> = {
 };
 
 /**
- * Enviar saltándose la validación del navegador, que es anterior y corta
- * antes de que llegue el turno de la comprobación propia. Aquí hace falta
- * porque lo que se comprueba —que el máximo no quede por debajo del mínimo—
- * no se puede expresar con un atributo: depende de otro campo.
+ * Enviar el formulario. Antes hay que esperar a las categorías: la elegida
+ * no cuenta como elegida hasta que existe su opción.
  */
-const enviarSaltandoAlNavegador = () =>
+const enviar = async () => {
+  await screen.findByRole('option', { name: 'Fontanería' });
   fireEvent.submit(
     screen
       .getByRole('button', { name: es.formularioServicio.crearServicio })
       .closest('form')!,
   );
+};
 
 describe('ServiceForm', () => {
   beforeEach(() => {
@@ -102,7 +102,7 @@ describe('ServiceForm', () => {
     // podía reservar de ninguna manera y la ficha no lo delataba.
     const { alEnviar } = pintar({ ...COMPLETO, priceMin: 90, priceMax: 40 });
 
-    enviarSaltandoAlNavegador();
+    await enviar();
 
     expect(alEnviar).not.toHaveBeenCalled();
     expect(
@@ -113,7 +113,7 @@ describe('ServiceForm', () => {
   it('con la horquilla en orden, publica', async () => {
     const { alEnviar } = pintar(COMPLETO);
 
-    enviarSaltandoAlNavegador();
+    await enviar();
 
     expect(alEnviar).toHaveBeenCalledWith(
       expect.objectContaining({ priceMin: 40, priceMax: 90 }),
@@ -125,7 +125,7 @@ describe('ServiceForm', () => {
     // otro nombre. Lo que espera el servidor es que no venga el campo.
     const { alEnviar } = pintar({ ...COMPLETO, priceMax: undefined });
 
-    enviarSaltandoAlNavegador();
+    await enviar();
 
     expect(alEnviar).toHaveBeenCalledWith(
       expect.objectContaining({ priceMax: undefined }),
@@ -137,7 +137,7 @@ describe('ServiceForm', () => {
     // arregló.
     const { alEnviar } = pintar({ ...COMPLETO, priceMin: 90, priceMax: 40 });
 
-    enviarSaltandoAlNavegador();
+    await enviar();
     expect(
       screen.getByText(es.formularioServicio.rangoInvertido),
     ).toBeInTheDocument();
@@ -145,12 +145,59 @@ describe('ServiceForm', () => {
     const maximo = screen.getByLabelText(es.formularioServicio.precioMaximo);
     await userEvent.clear(maximo);
     await userEvent.type(maximo, '150');
-    enviarSaltandoAlNavegador();
+    await enviar();
 
     expect(alEnviar).toHaveBeenCalledTimes(1);
     expect(
       screen.queryByText(es.formularioServicio.rangoInvertido),
     ).not.toBeInTheDocument();
+  });
+
+  describe('lo que falta o no vale', () => {
+    it('lo dice junto al campo, en el idioma de la página, y lleva el foco allí', async () => {
+      // Era la validación del navegador: en su idioma, en un globo que
+      // desaparece y que no todos los lectores anuncian.
+      const { alEnviar } = pintar({ ...COMPLETO, title: '' });
+
+      await enviar();
+
+      const titulo = screen.getByLabelText(es.formularioServicio.titulo);
+      expect(alEnviar).not.toHaveBeenCalled();
+      expect(titulo).toHaveAccessibleDescription(es.validacion.obligatorio);
+      expect(titulo).toHaveAttribute('aria-invalid', 'true');
+      expect(titulo).toHaveFocus();
+    });
+
+    it('al escribir, el aviso de ese campo se va', async () => {
+      pintar({ ...COMPLETO, title: '' });
+      await enviar();
+
+      await userEvent.type(
+        screen.getByLabelText(es.formularioServicio.titulo),
+        'Grifos',
+      );
+
+      expect(screen.queryByText(es.validacion.obligatorio)).toBeNull();
+    });
+
+    it('un precio con céntimos vale', async () => {
+      // Con un paso de 0,5, un precio de 42,30 no se podía publicar.
+      const { alEnviar } = pintar({ ...COMPLETO, priceMin: 42.3 });
+
+      await enviar();
+
+      expect(alEnviar).toHaveBeenCalledWith(
+        expect.objectContaining({ priceMin: 42.3 }),
+      );
+    });
+
+    it('la dirección avisa de que no se publica', () => {
+      pintar(COMPLETO);
+
+      expect(
+        screen.getByLabelText(es.formularioServicio.direccion),
+      ).toHaveAccessibleDescription(es.formularioServicio.direccionPista);
+    });
   });
 
   it('al editar, conserva una ciudad que ya no está en la lista', async () => {
@@ -174,7 +221,7 @@ describe('ServiceForm', () => {
 
     expect(duracion).toHaveValue('60');
     await userEvent.selectOptions(duracion, '90');
-    enviarSaltandoAlNavegador();
+    await enviar();
 
     expect(alEnviar).toHaveBeenCalledWith(
       expect.objectContaining({ durationMinutes: 90 }),
@@ -209,7 +256,7 @@ describe('ServiceForm', () => {
     expect(
       screen.getByLabelText(es.formularioServicio.precioMinimo),
     ).toHaveAttribute('min', '0.5');
-    enviarSaltandoAlNavegador();
+    await enviar();
 
     expect(
       screen.getByText(es.formularioServicio.precioMinimoStripe),

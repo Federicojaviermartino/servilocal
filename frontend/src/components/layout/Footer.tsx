@@ -16,17 +16,17 @@ export default function Footer() {
           <nav aria-label={t('enlaces')}>
             <ul className="flex gap-6 text-sm text-tenue">
               <li>
-                <Link href="/about" className="hover:text-primary-500">
+                <Link href="/about" className="hover:text-acento">
                   {t('acercaDe')}
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="hover:text-primary-500">
+                <Link href="/terms" className="hover:text-acento">
                   {t('terminos')}
                 </Link>
               </li>
               <li>
-                <Link href="/privacy" className="hover:text-primary-500">
+                <Link href="/privacy" className="hover:text-acento">
                   {t('privacidad')}
                 </Link>
               </li>

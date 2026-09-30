@@ -61,7 +61,7 @@ export default function AsistenteBusqueda() {
         type="button"
         onClick={() => setAbierto(true)}
         aria-label={t('abrir')}
-        className="fixed bottom-5 end-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="fixed bottom-5 end-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary-600 text-white shadow-lg transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-acento focus:ring-offset-2"
       >
         <Sparkles className="h-6 w-6" aria-hidden="true" />
       </button>

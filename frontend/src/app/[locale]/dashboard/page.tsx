@@ -102,7 +102,7 @@ export default function DashboardHomePage() {
                 <>
                   <Link
                     href="/dashboard/services"
-                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-acento hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
                     <p className="font-medium text-principal">
                       {t('gestionarServicios')}
@@ -113,7 +113,7 @@ export default function DashboardHomePage() {
                   </Link>
                   <Link
                     href="/dashboard/bookings-received"
-                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-acento hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
                     <p className="font-medium text-principal">
                       {tReservas('reservasRecibidas')}
@@ -127,7 +127,7 @@ export default function DashboardHomePage() {
                 <>
                   <Link
                     href="/services/search"
-                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-acento hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
                     <p className="font-medium text-principal">
                       {t('buscarServicio')}
@@ -138,7 +138,7 @@ export default function DashboardHomePage() {
                   </Link>
                   <Link
                     href="/dashboard/bookings"
-                    className="block p-4 rounded-md border border-borde hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
+                    className="block p-4 rounded-md border border-borde hover:border-acento hover:bg-primary-50 dark:hover:bg-primary-900/30 transition-colors"
                   >
                     <p className="font-medium text-principal">
                       {t('verReservas')}

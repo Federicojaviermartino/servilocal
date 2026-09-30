@@ -1,7 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
 
 /**
- * 375 px de ancho: iPhone SE y los iPhone anteriores al 12.
+ * 320 px de ancho, que es lo que pide WCAG (1.4.10): lo que ocupa una
+ * página de 1280 ampliada al 400 %. Se medía a 375, el del iPhone SE, y a
+ * 320 una paginación de siete páginas se salía.
  *
  * El proyecto «movil» usa un Pixel 5, que son 393, así que este ancho no
  * estaba cubierto por nada. Y no se comprueba a ojo: se mide. Un desborde
@@ -9,7 +11,7 @@ import { test, expect, Page } from '@playwright/test';
  * para leer— y es de lo poco de maquetación que una máquina puede afirmar
  * con certeza.
  */
-const ANCHO = 375;
+const ANCHO = 320;
 
 const RUTAS = [
   ['portada', '/'],
@@ -75,7 +77,7 @@ function ancho() {
 
 test.use({ viewport: { width: ANCHO, height: 667 } });
 
-test.describe('Pantalla estrecha, 375 px', () => {
+test.describe('Pantalla estrecha, 320 px', () => {
   for (const [nombre, ruta] of RUTAS) {
     test(`${nombre} no obliga a desplazarse de lado`, async ({ page }) => {
       await page.goto(ruta);
@@ -90,7 +92,7 @@ test.describe('Pantalla estrecha, 375 px', () => {
 
   test('el panel de administración tampoco', async ({ page }) => {
     // El más expuesto: tablas, gráficas y filas de métricas. Es donde un
-    // ancho de 375 se nota antes.
+    // ancho de 320 se nota antes.
     await page.goto('/auth/login');
     await page.getByRole('button', { name: /demo@servilocal[.]com/ }).click();
     await page.waitForURL((url) => !url.pathname.includes('/auth/login'));

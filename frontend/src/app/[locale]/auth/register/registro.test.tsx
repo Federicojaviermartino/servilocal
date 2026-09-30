@@ -15,14 +15,26 @@ vi.mock('@/lib/auth-store', () => ({
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
+    // Como el de next-intl: la dirección puede venir como objeto.
     Link: ({
       href,
       children,
       ...resto
     }: {
-      href: string;
+      href: string | { pathname: string; query?: Record<string, string> };
       children: React.ReactNode;
-    }) => React.createElement('a', { href, ...resto }, children),
+    }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+          ...resto,
+        },
+        children,
+      ),
     useRouter: () => ({ push: empujar }),
   };
 });
@@ -56,6 +68,54 @@ describe('El registro', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     registrar.mockResolvedValue(undefined);
+    window.history.replaceState({}, '', '/auth/register');
+  });
+
+  describe('adónde lleva después', () => {
+    it('a la página que lo pidió, no a la portada', async () => {
+      // Quien pulsaba «Reservar» sin cuenta y se registraba acababa en la
+      // portada, y tenía que volver a buscar el servicio.
+      window.history.replaceState(
+        {},
+        '',
+        '/auth/register?redirect=%2Fservices%2Fs1%2Fbook',
+      );
+      await rellenar();
+      await userEvent.click(screen.getByRole('checkbox'));
+
+      await crear();
+
+      await waitFor(() =>
+        expect(empujar).toHaveBeenCalledWith('/services/s1/book'),
+      );
+    });
+
+    it('nunca a otro sitio', async () => {
+      window.history.replaceState(
+        {},
+        '',
+        '/auth/register?redirect=https%3A%2F%2Fotro.example',
+      );
+      await rellenar();
+      await userEvent.click(screen.getByRole('checkbox'));
+
+      await crear();
+
+      await waitFor(() => expect(empujar).toHaveBeenCalledWith('/'));
+    });
+
+    it('el enlace para entrar conserva el destino', async () => {
+      window.history.replaceState(
+        {},
+        '',
+        '/auth/register?redirect=%2Fservices%2Fs1%2Fbook',
+      );
+      await rellenar();
+
+      expect(
+        screen.getByRole('link', { name: es.acceso.iniciaSesion }),
+      ).toHaveAttribute('href', '/auth/login?redirect=%2Fservices%2Fs1%2Fbook');
+    });
   });
 
   it('sin aceptar los términos no se crea la cuenta, y dice por qué', async () => {

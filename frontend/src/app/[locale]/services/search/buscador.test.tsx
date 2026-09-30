@@ -1,16 +1,26 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
+import type { ReactElement } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../../../messages/es.json';
 import type { Service } from '@/types';
+import {
+  filtrosDeUrl,
+  paginaDeUrl,
+  urlDeBusqueda,
+  vistaDeUrl,
+  type ResultadoBusqueda,
+} from '@/lib/busqueda';
+import Buscador from './buscador';
 import SearchPage from './page';
 
 const buscar = vi.fn();
+const buscarEnServidor = vi.fn();
 const reemplazar = vi.fn();
+const empujar = vi.fn();
 const desplazar = vi.fn((): ScrollBehavior => 'smooth');
 const desplazarVentana = vi.fn();
-let parametros = new URLSearchParams();
 
 vi.mock('@/lib/api', () => ({
   servicesApi: { search: (filtros: unknown) => buscar(filtros) },
@@ -18,8 +28,8 @@ vi.mock('@/lib/api', () => ({
   categoriesApi: { getAll: async () => ({ data: [] }) },
 }));
 
-vi.mock('next/navigation', () => ({
-  useSearchParams: () => parametros,
+vi.mock('@/lib/busqueda-servidor', () => ({
+  buscarEnServidor: (peticion: unknown) => buscarEnServidor(peticion),
 }));
 
 vi.mock('@/i18n/navigation', async () => {
@@ -27,7 +37,10 @@ vi.mock('@/i18n/navigation', async () => {
   return {
     Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
       React.createElement('a', { href }, children),
-    useRouter: () => ({ replace: reemplazar, push: vi.fn() }),
+    // Como el de next-intl: la ruta, con el prefijo del idioma.
+    getPathname: ({ href, locale }: { href: string; locale: string }) =>
+      locale === 'es' ? href : `/${locale}${href}`,
+    useRouter: () => ({ replace: reemplazar, push: empujar }),
     usePathname: () => '/services/search',
   };
 });
@@ -73,43 +86,88 @@ const servicio = (id: string, title: string) =>
 const GRIFO = servicio('s1', 'Reparación de grifos');
 const LUZ = servicio('s2', 'Instalación de enchufes');
 
-/** La respuesta paginada de la API, como la envuelve axios. */
-const pagina = (servicios: Service[], meta: object = {}) => ({
+const resultado = (
+  services: Service[],
+  extra: Partial<ResultadoBusqueda> = {},
+): ResultadoBusqueda => ({
+  services,
+  total: services.length,
+  totalEsParcial: false,
+  totalPages: 1,
+  ...extra,
+});
+
+/** La respuesta de la API desde el navegador, como la envuelve axios. */
+const respuestaApi = (services: Service[], meta: object = {}) => ({
   data: {
-    data: servicios,
-    meta: { total: servicios.length, totalPages: 1, ...meta },
+    data: services,
+    meta: { total: services.length, totalPages: 1, ...meta },
   },
 });
 
 /** Una respuesta que llega cuando la prueba quiere. */
-function aplazada() {
-  let responder!: (valor: unknown) => void;
-  const promesa = new Promise((resolver) => {
+function aplazada<T>() {
+  let responder!: (valor: T) => void;
+  const promesa = new Promise<T>((resolver) => {
     responder = resolver;
   });
   return { promesa, responder };
 }
 
-const arbol = () => (
-  <NextIntlClientProvider locale="es" messages={es as never}>
-    <SearchPage />
-  </NextIntlClientProvider>
-);
+/** El buscador como lo sirve la página para una dirección. */
+function buscadorPara(
+  url: string,
+  primera: Promise<ResultadoBusqueda | null>,
+): ReactElement {
+  const parametros = new URLSearchParams(url);
+  const filtros = filtrosDeUrl(parametros);
+  const vista = vistaDeUrl(parametros);
+  const pagina = vista === 'map' ? 1 : paginaDeUrl(parametros);
+  const claveUrl = urlDeBusqueda(filtros, vista, pagina);
+  return (
+    <NextIntlClientProvider locale="es" messages={es as never}>
+      <Buscador
+        key={claveUrl}
+        claveUrl={claveUrl}
+        filtros={filtros}
+        vista={vista}
+        pagina={pagina}
+        primera={primera}
+      />
+    </NextIntlClientProvider>
+  );
+}
 
 let pintado: ReturnType<typeof render>;
-const pintar = () => {
-  pintado = render(arbol());
+
+/**
+ * Dentro de un act asíncrono: los resultados llegan en una promesa, y un
+ * componente que la espera solo vuelve a pintarse si act la ve resolverse.
+ */
+const pintar = async (
+  url = '',
+  primera: Promise<ResultadoBusqueda | null> = Promise.resolve(
+    resultado([GRIFO]),
+  ),
+) => {
+  await act(async () => {
+    pintado = render(buscadorPara(url, primera));
+  });
   return pintado;
 };
 
 /**
- * Lo que haría el enrutador tras un replace: la dirección cambia y la página
- * se vuelve a pintar con ella.
+ * Lo que haría el enrutador tras cambiar la dirección: la página se vuelve
+ * a servir con ella.
  */
-const navegarA = async (url: string) => {
-  parametros = new URLSearchParams(url.split('?')[1] ?? '');
+const navegarA = async (
+  url: string,
+  primera: Promise<ResultadoBusqueda | null> = Promise.resolve(
+    resultado([GRIFO]),
+  ),
+) => {
   await act(async () => {
-    pintado.rerender(arbol());
+    pintado.rerender(buscadorPara(url.split('?')[1] ?? '', primera));
   });
 };
 
@@ -122,12 +180,16 @@ const irAPagina = (numero: number) =>
 const navegacion = () =>
   screen.queryByRole('navigation', { name: es.paginacion.navegacion });
 
+const titulo = () =>
+  screen.getByRole('heading', { level: 1, name: es.resultados.titulo });
+
 beforeEach(() => {
   buscar.mockReset();
+  buscarEnServidor.mockReset();
   reemplazar.mockReset();
+  empujar.mockReset();
   desplazar.mockClear();
   desplazarVentana.mockReset();
-  parametros = new URLSearchParams();
   // jsdom no se desplaza: solo se comprueba que se pide.
   window.scrollTo = desplazarVentana as unknown as typeof window.scrollTo;
 });
@@ -136,91 +198,113 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('El buscador', () => {
-  it('busca con lo que trae la URL, y el buscador y los filtros lo reflejan', async () => {
-    // Un enlace compartido o una recarga tienen que dar la misma búsqueda.
-    parametros = new URLSearchParams({
-      q: 'grifo',
-      category: 'c1',
+describe('La página del servidor', () => {
+  /** El buscador que devuelve la página, con sus props. */
+  async function servir(recibidos: Record<string, string | string[]>) {
+    buscarEnServidor.mockResolvedValue(resultado([GRIFO]));
+    const arbol = (await SearchPage({
+      searchParams: Promise.resolve(recibidos),
+    })) as ReactElement<{ children: ReactElement[] }>;
+    return arbol.props.children[0] as ReactElement<{
+      claveUrl: string;
+      filtros: object;
+      pagina: number;
+    }>;
+  }
+
+  it('lee la dirección y pide ya la primera página, sin esperarla', async () => {
+    // El HTML llegaba sin título, sin filtros y sin un enlace a una ficha.
+    const buscador = await servir({ q: 'grifo', city: 'Sevilla', page: '2' });
+
+    expect(buscador.props.filtros).toMatchObject({
+      query: 'grifo',
       city: 'Sevilla',
     });
-    buscar.mockResolvedValue(pagina([GRIFO]));
+    expect(buscador.props.pagina).toBe(2);
+    expect(buscador.key).toBe('q=grifo&city=Sevilla&page=2');
+    expect(buscarEnServidor).toHaveBeenCalledWith(
+      expect.objectContaining({ query: 'grifo', city: 'Sevilla', page: 2 }),
+    );
+  });
 
-    pintar();
+  it('un parámetro repetido cuenta una vez, el primero', async () => {
+    const buscador = await servir({ city: ['Sevilla', 'Málaga'] });
+
+    expect(buscador.props.filtros).toMatchObject({ city: 'Sevilla' });
+  });
+
+  it('el mapa no se pagina, aunque la dirección traiga página', async () => {
+    const buscador = await servir({ view: 'map', page: '3' });
+
+    expect(buscador.props.pagina).toBe(1);
+    expect(buscarEnServidor).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, limit: 50 }),
+    );
+  });
+});
+
+describe('El buscador', () => {
+  it('pinta lo que trajo el servidor, sin buscar desde el navegador', async () => {
+    await pintar(
+      'q=grifo&city=Sevilla',
+      Promise.resolve(resultado([GRIFO, LUZ], { total: 25, totalPages: 3 })),
+    );
 
     expect(await screen.findByText(GRIFO.title)).toBeInTheDocument();
-    expect(buscar).toHaveBeenCalledWith({
-      query: 'grifo',
-      categoryId: 'c1',
-      city: 'Sevilla',
-      page: 1,
-    });
+    expect(screen.getByText(LUZ.title)).toBeInTheDocument();
+    expect(screen.getByText('25 resultados encontrados')).toBeInTheDocument();
+    expect(navegacion()).toBeInTheDocument();
+    expect(buscar).not.toHaveBeenCalled();
+  });
+
+  it('la barra y los filtros reflejan lo que trae la URL', async () => {
+    // Un enlace compartido o una recarga tienen que dar la misma búsqueda.
+    await pintar('q=grifo&category=c1&city=Sevilla');
+    await screen.findByText(GRIFO.title);
+
     expect(
       screen.getByRole('searchbox', { name: es.buscador.buscarServicios }),
     ).toHaveValue('grifo');
     expect(screen.getByLabelText(es.filtros.ciudad)).toHaveValue('Sevilla');
   });
 
-  it('sin nada en la URL, pide la primera página sin filtros', async () => {
-    buscar.mockResolvedValue(pagina([GRIFO]));
+  it('si el servidor no obtuvo respuesta, busca el navegador con lo de la URL', async () => {
+    buscar.mockResolvedValue(respuestaApi([GRIFO]));
 
-    pintar();
-
-    await screen.findByText(GRIFO.title);
-    expect(buscar).toHaveBeenCalledWith({ page: 1 });
-  });
-
-  it('pinta los resultados y cuántos hay en total, no solo en la página', async () => {
-    buscar.mockResolvedValue(
-      pagina([GRIFO, LUZ], { total: 25, totalPages: 3 }),
-    );
-
-    pintar();
+    await pintar('city=Sevilla&maxPrice=50&page=2', Promise.resolve(null));
 
     expect(await screen.findByText(GRIFO.title)).toBeInTheDocument();
-    expect(screen.getByText(LUZ.title)).toBeInTheDocument();
-    expect(screen.getByText('25 resultados encontrados')).toBeInTheDocument();
-    expect(navegacion()).toBeInTheDocument();
+    expect(buscar).toHaveBeenCalledWith({
+      city: 'Sevilla',
+      maxPrice: 50,
+      page: 2,
+    });
   });
 
   it('si el servidor dejó de contar, no da el total por exacto', async () => {
-    buscar.mockResolvedValue(
-      pagina([GRIFO], { total: 1000, totalPages: 84, totalEsParcial: true }),
+    await pintar(
+      '',
+      Promise.resolve(
+        resultado([GRIFO], {
+          total: 1000,
+          totalPages: 84,
+          totalEsParcial: true,
+        }),
+      ),
     );
-
-    pintar();
 
     expect(
       await screen.findByText('Más de 1000 resultados encontrados'),
     ).toBeInTheDocument();
   });
 
-  it.each([
-    ['una lista sin paginar', [GRIFO, LUZ], '2 resultados encontrados'],
-    [
-      'un total fuera de meta',
-      { data: [GRIFO], total: 7 },
-      '7 resultados encontrados',
-    ],
-    ['solo la lista, sin total', { data: [GRIFO] }, '1 resultado encontrado'],
-  ])('entiende %s como respuesta', async (_forma, respuesta, cuenta) => {
-    buscar.mockResolvedValue({ data: respuesta });
-
-    pintar();
-
-    expect(await screen.findByText(cuenta)).toBeInTheDocument();
-    // Sin meta no hay más páginas que ofrecer.
-    expect(navegacion()).toBeNull();
-  });
-
-  it('sin resultados lo dice, y un vacío sin lista cuenta como tal', async () => {
-    buscar.mockResolvedValue({ data: {} });
-
-    pintar();
+  it('sin resultados lo dice, y no ofrece páginas', async () => {
+    await pintar('', Promise.resolve(resultado([])));
 
     expect(
       await screen.findByText(es.resultados.sinResultados),
     ).toBeInTheDocument();
+    expect(navegacion()).toBeNull();
   });
 
   describe('si la búsqueda falla', () => {
@@ -236,9 +320,9 @@ describe('El buscador', () => {
       // Una lista vacía diría «no hay servicios», que es otra cosa.
       buscar
         .mockRejectedValueOnce(fallo)
-        .mockResolvedValueOnce(pagina([GRIFO]));
+        .mockResolvedValueOnce(respuestaApi([GRIFO]));
 
-      pintar();
+      await pintar('', Promise.resolve(null));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(texto);
       expect(screen.queryByText(es.resultados.sinResultados)).toBeNull();
@@ -252,15 +336,16 @@ describe('El buscador', () => {
     });
   });
 
-  it('mientras carga lo anuncia, y si tarda explica que el servidor está despertando', async () => {
+  it('mientras llegan los resultados lo anuncia, y si tardan explica que el servidor está despertando', async () => {
     // La instancia gratuita tarda en arrancar tras un rato sin uso. Mejor
-    // decirlo que dejar a nadie mirando un indicador mudo.
+    // decirlo que dejar a nadie mirando un indicador mudo. La página ya
+    // está en pantalla: solo esperan los resultados.
     vi.useFakeTimers();
-    const respuesta = aplazada();
-    buscar.mockReturnValue(respuesta.promesa);
+    const respuesta = aplazada<ResultadoBusqueda | null>();
 
-    pintar();
+    await pintar('', respuesta.promesa);
 
+    expect(titulo()).toBeInTheDocument();
     expect(
       screen.getByRole('status', { name: es.resultados.cargando }),
     ).toBeInTheDocument();
@@ -268,43 +353,68 @@ describe('El buscador', () => {
       vi.advanceTimersByTime(5999);
     });
     expect(screen.queryByText(es.resultados.despertando)).toBeNull();
-
     act(() => {
       vi.advanceTimersByTime(1);
     });
     expect(screen.getByText(es.resultados.despertando)).toBeInTheDocument();
 
     await act(async () => {
-      respuesta.responder(pagina([GRIFO]));
+      respuesta.responder(resultado([GRIFO]));
     });
     expect(screen.getByText(GRIFO.title)).toBeInTheDocument();
     expect(screen.queryByText(es.resultados.despertando)).toBeNull();
   });
 
   describe('la paginación', () => {
-    it('pide la página elegida, sube al principio y lleva el foco al título', async () => {
-      // Con teclado o lector de pantalla, el foco se quedaba en el botón del
-      // pie y nada decía que la lista había cambiado.
-      buscar.mockResolvedValue(pagina([GRIFO], { total: 30, totalPages: 3 }));
-      pintar();
+    it('la página va en la URL, como una entrada más del historial', async () => {
+      // Quien volvía atrás desde una ficha abierta en la página 3
+      // aterrizaba en la 1.
+      await pintar(
+        'q=grifo',
+        Promise.resolve(resultado([GRIFO], { total: 30, totalPages: 3 })),
+      );
       await screen.findByText(GRIFO.title);
 
       await irAPagina(2);
 
-      expect(buscar).toHaveBeenLastCalledWith({ page: 2 });
+      expect(empujar).toHaveBeenCalledWith('/services/search?q=grifo&page=2', {
+        scroll: false,
+      });
       expect(desplazar).toHaveBeenCalled();
       expect(desplazarVentana).toHaveBeenCalledWith({
         top: 0,
         behavior: 'smooth',
       });
+    });
+
+    it('la página nueva llega con el foco en el título', async () => {
+      // Con teclado o lector de pantalla, el foco se quedaba en el botón del
+      // pie y nada decía que la lista había cambiado.
+      const tres = () =>
+        Promise.resolve(resultado([GRIFO], { total: 30, totalPages: 3 }));
+      await pintar('', tres());
+      await screen.findByText(GRIFO.title);
+
+      await irAPagina(2);
+      await navegarA('/services/search?page=2', tres());
+      await screen.findByText(GRIFO.title);
+
+      expect(titulo()).toHaveFocus();
       expect(
-        screen.getByRole('heading', { level: 1, name: es.resultados.titulo }),
-      ).toHaveFocus();
-      expect(
-        await screen.findByRole('button', {
+        screen.getByRole('button', {
           name: es.paginacion.pagina.replace('{numero}', '2'),
         }),
       ).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('llegar por un enlace no roba el foco', async () => {
+      await pintar(
+        'page=2',
+        Promise.resolve(resultado([GRIFO], { totalPages: 3 })),
+      );
+      await screen.findByText(GRIFO.title);
+
+      expect(titulo()).not.toHaveFocus();
     });
   });
 
@@ -314,16 +424,15 @@ describe('El buscador', () => {
     const mapa = () =>
       screen.getByRole('button', { name: es.resultados.vistaMapa });
 
-    it('la vista activa se anuncia, no solo con el color', async () => {
-      buscar.mockResolvedValue(pagina([GRIFO]));
-      pintar();
+    it('la vista activa se anuncia, no solo con el color, y va en la URL', async () => {
+      await pintar();
       await screen.findByText(GRIFO.title);
 
       expect(lista()).toHaveAttribute('aria-pressed', 'true');
       expect(mapa()).toHaveAttribute('aria-pressed', 'false');
 
       await userEvent.click(mapa());
-      // La vista va en la dirección: un enlace abre la misma que se veía.
+      // Un enlace abre la misma vista que se veía.
       expect(reemplazar).toHaveBeenLastCalledWith('/services/search?view=map');
       await navegarA('/services/search?view=map');
 
@@ -331,20 +440,12 @@ describe('El buscador', () => {
       expect(mapa()).toHaveAttribute('aria-pressed', 'true');
     });
 
-    it('el mapa pide todo lo que admite la API, desde la primera página y sin paginar', async () => {
-      // Quien abre un mapa espera ver todo lo del área, no doce resultados.
-      buscar.mockResolvedValue(
-        pagina([GRIFO, LUZ], { total: 30, totalPages: 3 }),
+    it('el mapa enseña todo lo que llegó, sin paginar', async () => {
+      await pintar(
+        'view=map',
+        Promise.resolve(resultado([GRIFO, LUZ], { totalPages: 3 })),
       );
-      pintar();
-      await screen.findByText(GRIFO.title);
-      await irAPagina(3);
-      await screen.findByText(GRIFO.title);
 
-      await userEvent.click(mapa());
-      await navegarA('/services/search?view=map');
-
-      expect(buscar).toHaveBeenLastCalledWith({ page: 1, limit: 50 });
       expect(await screen.findByTestId('mapa')).toHaveTextContent(
         '2 en el mapa',
       );
@@ -352,61 +453,46 @@ describe('El buscador', () => {
       expect(navegacion()).toBeNull();
     });
 
-    it('al volver a la lista, vuelve a paginar', async () => {
-      parametros = new URLSearchParams({ view: 'map' });
-      buscar.mockResolvedValue(pagina([GRIFO], { total: 30, totalPages: 3 }));
-      pintar();
+    it('desde el navegador, el mapa pide todo lo que admite la API', async () => {
+      // Quien abre un mapa espera ver todo lo del área, no doce resultados.
+      buscar.mockResolvedValue(respuestaApi([GRIFO, LUZ]));
+
+      await pintar('view=map', Promise.resolve(null));
+
       await screen.findByTestId('mapa');
-
-      await userEvent.click(lista());
-      expect(reemplazar).toHaveBeenLastCalledWith('/services/search');
-      await navegarA('/services/search');
-
-      expect(buscar).toHaveBeenLastCalledWith({ page: 1 });
-      expect(await screen.findByText(GRIFO.title)).toBeInTheDocument();
-      expect(navegacion()).toBeInTheDocument();
+      expect(buscar).toHaveBeenCalledWith({ page: 1, limit: 50 });
     });
 
-    it('pulsar la vista que ya está activa no vuelve a buscar', async () => {
-      buscar.mockResolvedValue(pagina([GRIFO]));
-      pintar();
+    it('cambiar de vista vuelve a la primera página', async () => {
+      await pintar(
+        'page=3',
+        Promise.resolve(resultado([GRIFO], { totalPages: 3 })),
+      );
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.click(mapa());
+
+      expect(reemplazar).toHaveBeenLastCalledWith('/services/search?view=map');
+    });
+
+    it('pulsar la vista que ya está activa no hace nada', async () => {
+      await pintar();
       await screen.findByText(GRIFO.title);
 
       await userEvent.click(lista());
 
-      expect(buscar).toHaveBeenCalledTimes(1);
-    });
-
-    it('una respuesta que llega tarde, de una consulta descartada, no pisa la vigente', async () => {
-      // Ganaba la que respondía la última, no la que se pidió la última.
-      const inicial = aplazada();
-      const delMapa = aplazada();
-      buscar
-        .mockReturnValueOnce(inicial.promesa)
-        .mockReturnValueOnce(delMapa.promesa);
-      pintar();
-
-      await userEvent.click(mapa());
-      await navegarA('/services/search?view=map');
-      await act(async () => {
-        delMapa.responder(pagina([LUZ]));
-      });
-      await act(async () => {
-        inicial.responder(pagina([GRIFO, LUZ]));
-      });
-
-      expect(screen.getByTestId('mapa')).toHaveTextContent('1 en el mapa');
+      expect(reemplazar).not.toHaveBeenCalled();
+      expect(buscar).not.toHaveBeenCalled();
     });
   });
 
   it('aplicar filtros los lleva a la URL, con el texto buscado, desde la primera página', async () => {
     // Los del panel no se escribían nunca en la dirección: se perdían al
     // recargar o al volver atrás, y un enlace no los llevaba.
-    parametros = new URLSearchParams({ q: 'grifo' });
-    buscar.mockResolvedValue(pagina([GRIFO], { total: 30, totalPages: 3 }));
-    pintar();
-    await screen.findByText(GRIFO.title);
-    await irAPagina(3);
+    await pintar(
+      'q=grifo&page=3',
+      Promise.resolve(resultado([GRIFO], { totalPages: 3 })),
+    );
     await screen.findByText(GRIFO.title);
 
     await userEvent.selectOptions(
@@ -415,26 +501,16 @@ describe('El buscador', () => {
     );
     await pulsar(es.filtros.aplicar);
 
+    // Sin radio: sin un punto, no filtraba nada.
     expect(reemplazar).toHaveBeenLastCalledWith(
-      '/services/search?q=grifo&city=Sevilla&radius=10',
-    );
-    await navegarA('/services/search?q=grifo&city=Sevilla&radius=10');
-    expect(buscar).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        query: 'grifo',
-        city: 'Sevilla',
-        radiusKm: 10,
-        page: 1,
-      }),
+      '/services/search?q=grifo&city=Sevilla',
     );
   });
 
   it('buscar un texto nuevo conserva los filtros que había', async () => {
     // Solo se escribía el texto: con «?q=grifo&city=Sevilla», buscar
     // «enchufe» llevaba a «?q=enchufe» y la ciudad se perdía.
-    parametros = new URLSearchParams({ q: 'grifo', city: 'Sevilla' });
-    buscar.mockResolvedValue(pagina([GRIFO]));
-    pintar();
+    await pintar('q=grifo&city=Sevilla');
     await screen.findByText(GRIFO.title);
 
     const texto = screen.getByRole('searchbox', {
@@ -448,26 +524,58 @@ describe('El buscador', () => {
     );
   });
 
-  it('dos direcciones con los mismos filtros en otro orden son la misma búsqueda', async () => {
-    parametros = new URLSearchParams({
-      radius: '10',
-      city: 'Sevilla',
-      q: 'grifo',
-    });
-    buscar.mockResolvedValue(pagina([GRIFO]));
-    pintar();
+  it('la misma búsqueda en otro orden no navega: se vuelve a pedir', async () => {
+    buscar.mockResolvedValue(respuestaApi([LUZ]));
+    await pintar('city=Sevilla&q=grifo');
     await screen.findByText(GRIFO.title);
 
     await pulsar(es.filtros.aplicar);
 
-    // Mismos filtros: no se navega, se vuelve a pedir desde la primera.
     expect(reemplazar).not.toHaveBeenCalled();
-    expect(buscar).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText(LUZ.title)).toBeInTheDocument();
+    expect(buscar).toHaveBeenCalledWith({
+      query: 'grifo',
+      city: 'Sevilla',
+      page: 1,
+    });
+  });
+
+  it('repetir la búsqueda desde la página 3 vuelve a la primera', async () => {
+    await pintar(
+      'q=grifo&page=3',
+      Promise.resolve(resultado([GRIFO], { totalPages: 3 })),
+    );
+    await screen.findByText(GRIFO.title);
+
+    await pulsar(es.comun.buscar);
+
+    expect(reemplazar).toHaveBeenLastCalledWith('/services/search?q=grifo');
+  });
+
+  it('una respuesta que llega tarde, de una búsqueda repetida, no pisa la vigente', async () => {
+    // Ganaba la que respondía la última, no la que se pidió la última.
+    const primera = aplazada<unknown>();
+    const segunda = aplazada<unknown>();
+    buscar
+      .mockReturnValueOnce(primera.promesa)
+      .mockReturnValueOnce(segunda.promesa);
+    await pintar('', Promise.resolve(null));
+    await act(async () => {});
+
+    await pulsar(es.comun.buscar);
+    await act(async () => {
+      segunda.responder(respuestaApi([LUZ]));
+    });
+    await act(async () => {
+      primera.responder(respuestaApi([GRIFO]));
+    });
+
+    expect(screen.getByText(LUZ.title)).toBeInTheDocument();
+    expect(screen.queryByText(GRIFO.title)).toBeNull();
   });
 
   it('en móvil los filtros se despliegan tras un botón que dice si están abiertos', async () => {
-    buscar.mockResolvedValue(pagina([GRIFO]));
-    pintar();
+    await pintar();
     await screen.findByText(GRIFO.title);
     const desplegar = screen.getByRole('button', {
       name: es.resultados.filtros,
@@ -480,76 +588,18 @@ describe('El buscador', () => {
     expect(desplegar).toHaveAttribute('aria-controls', 'panel-filtros');
   });
 
-  describe('el buscador de texto', () => {
-    const buscador = () =>
-      screen.getByRole('searchbox', { name: es.buscador.buscarServicios });
-
-    it('un texto nuevo va a la URL, que es la que manda', async () => {
-      buscar.mockResolvedValue(pagina([GRIFO]));
-      pintar();
-      await screen.findByText(GRIFO.title);
-
-      await userEvent.type(buscador(), 'enchufe');
-      await pulsar(es.comun.buscar);
-
-      expect(reemplazar).toHaveBeenCalledWith('/services/search?q=enchufe');
-      // La búsqueda la lanza la URL nueva, no esta pantalla: pedirla aquí
-      // también era hacerla dos veces.
-      expect(buscar).toHaveBeenCalledTimes(1);
-    });
-
-    it('repetir el mismo texto lo vuelve a pedir desde la primera página', async () => {
-      // La URL ya es esa: cambiarla no haría nada, así que se pide aquí.
-      parametros = new URLSearchParams({ q: 'grifo' });
-      buscar.mockResolvedValue(pagina([GRIFO], { total: 30, totalPages: 3 }));
-      pintar();
-      await screen.findByText(GRIFO.title);
-      await irAPagina(2);
-      await screen.findByText(GRIFO.title);
-
-      await pulsar(es.comun.buscar);
-
-      expect(reemplazar).not.toHaveBeenCalled();
-      expect(buscar).toHaveBeenCalledTimes(3);
-      expect(buscar).toHaveBeenLastCalledWith({ query: 'grifo', page: 1 });
-      expect(await screen.findByText(GRIFO.title)).toBeInTheDocument();
-    });
-
-    it('vaciarlo sin nada en la URL busca sin texto, sin tocar la URL', async () => {
-      buscar.mockResolvedValue(pagina([GRIFO]));
-      pintar();
-      await screen.findByText(GRIFO.title);
-
-      await pulsar(es.comun.buscar);
-
-      expect(reemplazar).not.toHaveBeenCalled();
-      expect(buscar).toHaveBeenCalledTimes(2);
-      expect(buscar).toHaveBeenLastCalledWith({ page: 1 });
-    });
-  });
-
-  it('si cambia la URL, empieza de cero con lo que trae', async () => {
-    // Un enlace, el botón de atrás o el asistente: la búsqueda anterior no
-    // se arrastra, ni su página.
-    buscar.mockResolvedValue(pagina([GRIFO], { total: 30, totalPages: 3 }));
-    const { rerender } = pintar();
-    await screen.findByText(GRIFO.title);
-    await irAPagina(2);
+  it('un texto nuevo va a la URL, que es la que manda', async () => {
+    await pintar();
     await screen.findByText(GRIFO.title);
 
-    parametros = new URLSearchParams({ q: 'enchufe', city: 'Málaga' });
-    rerender(
-      <NextIntlClientProvider locale="es" messages={es as never}>
-        <SearchPage />
-      </NextIntlClientProvider>,
+    await userEvent.type(
+      screen.getByRole('searchbox', { name: es.buscador.buscarServicios }),
+      'enchufe',
     );
+    await pulsar(es.comun.buscar);
 
-    expect(buscar).toHaveBeenLastCalledWith({
-      query: 'enchufe',
-      city: 'Málaga',
-      page: 1,
-    });
-    expect(await screen.findByText(GRIFO.title)).toBeInTheDocument();
-    expect(buscar).toHaveBeenCalledTimes(3);
+    expect(reemplazar).toHaveBeenCalledWith('/services/search?q=enchufe');
+    // La búsqueda la lanza la dirección nueva, no esta pantalla.
+    expect(buscar).not.toHaveBeenCalled();
   });
 });

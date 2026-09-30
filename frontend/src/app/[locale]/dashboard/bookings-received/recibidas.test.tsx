@@ -158,6 +158,35 @@ describe('Reservas recibidas', () => {
       preguntar.mockRestore();
     });
 
+    it('al aceptar, la lista se queda y el foco va a su tarjeta', async () => {
+      // Volvía al indicador de carga, y el foco se perdía con los botones.
+      updateStatus.mockResolvedValue({ data: {} });
+      await pintar([reserva(BookingStatus.PENDING)]);
+      getReceived.mockResolvedValue({
+        data: [reserva(BookingStatus.CONFIRMED)],
+      });
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.reservasPanel.aceptar }),
+      );
+
+      await waitFor(() =>
+        expect(document.getElementById('reserva-b1')).toHaveFocus(),
+      );
+      expect(screen.getByText('Fontanería urgente')).toBeInTheDocument();
+      await waitFor(() => expect(getReceived).toHaveBeenCalledTimes(2));
+    });
+
+    it('el título lleva al detalle de la reserva', async () => {
+      // Solo se llegaba desde un aviso: ni el teléfono del cliente ni la
+      // cancelación estaban a mano.
+      await pintar([reserva(BookingStatus.CONFIRMED)]);
+
+      expect(
+        screen.getByRole('link', { name: 'Fontanería urgente' }),
+      ).toHaveAttribute('href', '/dashboard/bookings/b1');
+    });
+
     it('aceptar no pregunta nada', async () => {
       updateStatus.mockResolvedValue({ data: {} });
       const preguntar = vi.spyOn(window, 'prompt');

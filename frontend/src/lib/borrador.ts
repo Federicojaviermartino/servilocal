@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { idRecordado, PREFIJO_BORRADOR } from './auth-store';
 
 /**
  * Lo que alguien estaba escribiendo cuando la sesión caducó.
@@ -7,13 +8,18 @@ import { useCallback, useEffect, useState } from 'react';
  * valoración pulsaba enviar, recibía un error y, para volver a entrar, tenía
  * que salir de la página y perder lo escrito. Ahora se guarda al recibir el
  * 401 y la página lo recupera al volver. En sessionStorage: se queda en esa
- * pestaña y se borra al cerrarla.
+ * pestaña y se borra al cerrarla, o al salir.
+ *
+ * Con la cuenta en la clave: sin ella, la siguiente que entrara en la
+ * pestaña recibía lo que la anterior había dejado a medias.
  */
-const PREFIJO = 'borrador:';
+function claveDe(clave: string): string {
+  return `${PREFIJO_BORRADOR}${idRecordado() ?? 'anonimo'}:${clave}`;
+}
 
 export function guardarBorrador(clave: string, datos: unknown): void {
   try {
-    sessionStorage.setItem(PREFIJO + clave, JSON.stringify(datos));
+    sessionStorage.setItem(claveDe(clave), JSON.stringify(datos));
   } catch {
     // Sin almacenamiento, en privado o lleno: se pierde, como antes.
   }
@@ -23,7 +29,7 @@ export function guardarBorrador(clave: string, datos: unknown): void {
 export function leerBorrador<T>(clave: string): T | null {
   if (typeof window === 'undefined') return null;
   try {
-    const guardado = sessionStorage.getItem(PREFIJO + clave);
+    const guardado = sessionStorage.getItem(claveDe(clave));
     return guardado === null ? null : (JSON.parse(guardado) as T);
   } catch {
     return null;
@@ -32,7 +38,7 @@ export function leerBorrador<T>(clave: string): T | null {
 
 export function olvidarBorrador(clave: string): void {
   try {
-    sessionStorage.removeItem(PREFIJO + clave);
+    sessionStorage.removeItem(claveDe(clave));
   } catch {
     // Nada que olvidar.
   }

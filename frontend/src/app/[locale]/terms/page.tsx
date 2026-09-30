@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { useLocale, useTranslations } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import { alternativas } from '@/lib/seo';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { alternativas, grafoAbierto } from '@/lib/seo';
 import { direccionDe, type Idioma } from '@/i18n/routing';
 import { Link } from '@/i18n/navigation';
 
@@ -20,6 +20,11 @@ export async function generateMetadata({
     title: t('terminosTitulo'),
     description: t('terminosDescripcion'),
     alternates: alternativas(locale, '/terms'),
+    openGraph: grafoAbierto(locale, {
+      titulo: t('terminosTitulo'),
+      descripcion: t('terminosDescripcion'),
+      ruta: '/terms',
+    }),
   };
 }
 
@@ -92,7 +97,22 @@ const secciones = [
   },
 ];
 
-export default function TermsPage() {
+/**
+ * Con el idioma fijado aquí, la página se genera al compilar. Sin él,
+ * next-intl lo leía de la petición y cada visita la volvía a pintar, sin
+ * caché.
+ */
+export default async function TermsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  return <Terminos />;
+}
+
+function Terminos() {
   // El articulado solo existe en español: traducirlo cambiaría su alcance
   // jurídico, así que se avisa en el idioma del visitante.
   const tLegal = useTranslations('legal');

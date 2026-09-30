@@ -80,7 +80,6 @@ describe('rutas del cliente HTTP', () => {
     ],
 
     ['usuarios', () => api.usersApi.getAll(), 'get', '/users'],
-    ['un usuario', () => api.usersApi.getById('u1'), 'get', '/users/u1'],
     [
       'cambiar estado de cuenta',
       () => api.usersApi.toggleActive('u1'),
@@ -273,12 +272,6 @@ describe('rutas del cliente HTTP', () => {
       'post',
       '/payments/confirm/pi_1',
     ],
-    [
-      'una categoría',
-      () => api.categoriesApi.getById('c1'),
-      'get',
-      '/categories/c1',
-    ],
 
     ['métricas', () => api.adminApi.metricas(), 'get', '/admin/metricas'],
     ['reputación', () => api.adminApi.reputacion(), 'get', '/admin/reputacion'],
@@ -320,6 +313,20 @@ describe('rutas del cliente HTTP', () => {
     await api.adminApi.auditoria(3);
 
     expect(llamadas[0][1]).toBe('/admin/auditoria');
+  });
+
+  it('la búsqueda manda el precio máximo con el nombre que entiende la API', async () => {
+    // Con maxPrice la API respondía 400: filtrar por precio dejaba el
+    // buscador en error.
+    const respuesta = (await api.servicesApi.search({
+      city: 'Sevilla',
+      maxPrice: 50,
+    })) as unknown as { opciones: Array<{ params: object }> };
+
+    expect(respuesta.opciones[0].params).toEqual({
+      city: 'Sevilla',
+      priceMax: 50,
+    });
   });
 
   it('pide al propio frontend, no a la API directamente', () => {

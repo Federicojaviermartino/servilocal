@@ -15,6 +15,12 @@ const CLAVE_USUARIO = 'user';
 /** Donde vivía el token antes de la cookie. Se borra allí donde quede. */
 const CLAVE_ANTIGUA = 'accessToken';
 
+/**
+ * Lo que se estaba escribiendo cuando caducó la sesión (ver borrador.ts).
+ * Vive aquí porque salir lo borra.
+ */
+export const PREFIJO_BORRADOR = 'borrador:';
+
 interface AuthState {
   user: UsuarioSesion | null;
   isLoading: boolean;
@@ -51,6 +57,60 @@ function guardar(usuario: UsuarioSesion): void {
 function olvidar(): void {
   localStorage.removeItem(CLAVE_USUARIO);
   localStorage.removeItem(CLAVE_ANTIGUA);
+}
+
+/**
+ * Los borradores de la pestaña, de quien fuera. Al salir: la siguiente
+ * cuenta que entrara en ella recibía el teléfono y la dirección que la
+ * anterior había dejado a medias en su perfil.
+ */
+function olvidarBorradores(): void {
+  try {
+    for (const clave of Object.keys(sessionStorage)) {
+      if (clave.startsWith(PREFIJO_BORRADOR)) sessionStorage.removeItem(clave);
+    }
+  } catch {
+    // Sin almacenamiento no hay nada que olvidar.
+  }
+}
+
+/**
+ * Quién ha entrado en este navegador: el del almacén o, antes de que se
+ * cargue, el recordado. Los borradores se guardan con él.
+ */
+export function idRecordado(): string | null {
+  const enElAlmacen = useAuthStore.getState().user?.id;
+  if (enElAlmacen) return enElAlmacen;
+  return typeof window === 'undefined' ? null : (leerGuardado()?.id ?? null);
+}
+
+/**
+ * Otra pestaña entró con otra cuenta, o salió. La cookie es la misma para
+ * todas, así que esta seguiría enseñando a la persona anterior y guardaría
+ * lo que se escribiera en ella en la cuenta nueva: se recarga.
+ */
+/** Aparte, para poder comprobarlo: jsdom no deja sustituir location. */
+export const pestana = { recargar: () => window.location.reload() };
+
+function alCambiarOtraPestana(evento: StorageEvent): void {
+  if (evento.key !== CLAVE_USUARIO && evento.key !== null) return;
+  const aqui = useAuthStore.getState().user?.id ?? null;
+  const alli = leerGuardado()?.id ?? null;
+  if (aqui !== alli) pestana.recargar();
+}
+
+let escuchando = false;
+
+function escucharOtrasPestanas(): void {
+  if (escuchando) return;
+  escuchando = true;
+  window.addEventListener('storage', alCambiarOtraPestana);
+}
+
+/** Para las pruebas, que cargan el módulo de cero en cada una. */
+export function dejarDeEscucharPestanas(): void {
+  escuchando = false;
+  window.removeEventListener('storage', alCambiarOtraPestana);
 }
 
 /**
@@ -121,8 +181,10 @@ export const useAuthStore = create<AuthState>((set) => {
 
     logout: async () => {
       // Primero aquí, para que la pantalla cambie en el acto aunque la API
-      // tarde en contestar. La cookie la borra ella.
+      // tarde en contestar. La cookie la borra ella. Los borradores, solo
+      // al salir a propósito: con la sesión caducada es cuando hacen falta.
       salir();
+      olvidarBorradores();
       try {
         await authApi.logout();
       } catch {
@@ -134,6 +196,7 @@ export const useAuthStore = create<AuthState>((set) => {
     loadFromStorage: () => {
       if (typeof window === 'undefined') return;
       localStorage.removeItem(CLAVE_ANTIGUA);
+      escucharOtrasPestanas();
 
       const guardado = leerGuardado();
       if (!guardado) return;

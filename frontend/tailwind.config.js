@@ -17,6 +17,7 @@ module.exports = {
         secundario: 'rgb(var(--color-secundario) / <alpha-value>)',
         tenue: 'rgb(var(--color-tenue) / <alpha-value>)',
         acento: 'rgb(var(--color-acento) / <alpha-value>)',
+        error: 'rgb(var(--color-error) / <alpha-value>)',
         borde: 'rgb(var(--color-borde) / <alpha-value>)',
         primary: {
           50: '#eff6ff',

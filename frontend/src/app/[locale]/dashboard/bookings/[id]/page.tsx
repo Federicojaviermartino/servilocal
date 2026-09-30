@@ -202,7 +202,7 @@ export default function BookingDetailPage() {
           <h2 className="text-sm font-semibold text-principal mb-2">
             {t('descripcion')}
           </h2>
-          <p className="text-secundario whitespace-pre-line">
+          <p dir="auto" className="text-secundario whitespace-pre-line">
             {booking.description || t('sinDescripcion')}
           </p>
         </div>
@@ -214,7 +214,7 @@ export default function BookingDetailPage() {
               <h2 className="text-sm font-semibold text-principal mb-2">
                 {t('motivo')}
               </h2>
-              <p className="text-secundario whitespace-pre-line">
+              <p dir="auto" className="text-secundario whitespace-pre-line">
                 {booking.cancellationReason}
               </p>
             </div>

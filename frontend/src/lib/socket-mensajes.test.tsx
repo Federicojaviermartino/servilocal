@@ -61,6 +61,15 @@ async function cargar(conSesion = true): Promise<Modulo> {
   return import('./socket-mensajes');
 }
 
+/**
+ * La biblioteca del socket se descarga al abrirlo: hasta que llega, no hay
+ * socket.
+ */
+const descargado = () =>
+  act(async () => {
+    await vi.dynamicImportSettled();
+  });
+
 /** Lo que el socket manda en el apretón de manos de un intento. */
 function apretonDeManos(): Promise<{ token?: string }> {
   const [, opciones] = io.mock.calls.at(-1) as unknown as [
@@ -88,6 +97,7 @@ describe('socket compartido', () => {
     const { useAvisosEnVivo } = await cargar(false);
 
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     expect(io).not.toHaveBeenCalled();
   });
@@ -98,6 +108,7 @@ describe('socket compartido', () => {
     const { useAvisosEnVivo } = await cargar();
 
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     const [url] = io.mock.calls[0] as unknown as [string];
     expect(await apretonDeManos()).toEqual({ token: 'pase-de-prueba' });
@@ -109,6 +120,7 @@ describe('socket compartido', () => {
     // socket no podría volver nunca.
     const { useAvisosEnVivo } = await cargar();
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
     socketTicket.mockResolvedValueOnce({ data: { ticket: 'primero' } });
     socketTicket.mockResolvedValueOnce({ data: { ticket: 'segundo' } });
 
@@ -123,6 +135,7 @@ describe('socket compartido', () => {
     socketTicket.mockRejectedValue(new Error('401'));
     const { useAvisosEnVivo } = await cargar();
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     expect(await apretonDeManos()).toEqual({});
   });
@@ -130,6 +143,7 @@ describe('socket compartido', () => {
   it('al salir de la sesión se cierra', async () => {
     const { useAvisosEnVivo } = await cargar();
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     act(() => almacen.useAuthStore.setState({ isAuthenticated: false }));
 
@@ -140,6 +154,7 @@ describe('socket compartido', () => {
     const { useAvisosEnVivo } = await cargar();
 
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     const [url] = io.mock.calls[0] as unknown as [string];
     expect(url.endsWith('/mensajes')).toBe(true);
@@ -152,7 +167,9 @@ describe('socket compartido', () => {
     const { useAvisosEnVivo, useMensajesEnVivo } = await cargar();
 
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
     renderHook(() => useMensajesEnVivo(() => undefined));
+    await descargado();
 
     expect(io).toHaveBeenCalledTimes(1);
   });
@@ -160,7 +177,9 @@ describe('socket compartido', () => {
   it('con un suscriptor todavía escuchando, no se cierra', async () => {
     const { useAvisosEnVivo, useMensajesEnVivo } = await cargar();
     const primero = renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
     renderHook(() => useMensajesEnVivo(() => undefined));
+    await descargado();
 
     primero.unmount();
 
@@ -170,10 +189,25 @@ describe('socket compartido', () => {
   it('al marcharse el último se cierra', async () => {
     const { useAvisosEnVivo } = await cargar();
     const vista = renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     vista.unmount();
 
     expect(sockets[0].disconnect).toHaveBeenCalled();
+  });
+
+  it('quien se va antes de que llegue la biblioteca no deja un socket abierto', async () => {
+    // Se descarga al abrirlo: si la pantalla se cierra mientras tanto, el
+    // socket que se abre después no tiene a nadie escuchando.
+    const { useAvisosEnVivo } = await cargar();
+    const vista = renderHook(() => useAvisosEnVivo(() => undefined));
+    vista.unmount();
+
+    await descargado();
+
+    expect(sockets[0]?.disconnect ?? vi.fn()).toHaveBeenCalledTimes(
+      sockets.length,
+    );
   });
 
   it('una sesión inválida deja de intentarlo', async () => {
@@ -181,6 +215,7 @@ describe('socket compartido', () => {
     // vez, contra un servidor que ya ha dicho que no.
     const { useAvisosEnVivo } = await cargar();
     renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     act(() => sockets[0].emitir('sesion-invalida'));
 
@@ -193,6 +228,7 @@ describe('lo que llega por el socket', () => {
     const { useAvisosEnVivo } = await cargar();
     const recibido = vi.fn();
     renderHook(() => useAvisosEnVivo(recibido));
+    await descargado();
 
     act(() => sockets[0].emitir('aviso-nuevo', { id: 'a1', type: 'system' }));
 
@@ -203,6 +239,7 @@ describe('lo que llega por el socket', () => {
     const { useMensajesEnVivo } = await cargar();
     const recibido = vi.fn();
     renderHook(() => useMensajesEnVivo(recibido));
+    await descargado();
 
     act(() => sockets[0].emitir('mensaje-nuevo', { interlocutorId: 'u2' }));
 
@@ -216,6 +253,7 @@ describe('lo que llega por el socket', () => {
     const vista = renderHook(({ fn }) => useAvisosEnVivo(fn), {
       initialProps: { fn: vi.fn() },
     });
+    await descargado();
 
     const segundo = vi.fn();
     vista.rerender({ fn: segundo });
@@ -230,6 +268,7 @@ describe('lo que llega por el socket', () => {
     // socket: en Render el servicio se duerme y hay redes que los cortan.
     const { useAvisosEnVivo } = await cargar();
     const vista = renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
 
     expect(vista.result.current.conectado).toBe(false);
 

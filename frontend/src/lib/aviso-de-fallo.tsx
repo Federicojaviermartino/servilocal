@@ -9,6 +9,7 @@ import {
   codigoDeError,
   textoDeError,
 } from './errores-api';
+import { rutaConConsulta } from './ruta-interna';
 
 /**
  * Qué decir cuando falla un envío: una reserva, un perfil, una valoración.
@@ -36,7 +37,10 @@ export function useAvisoDeFallo() {
             <span>
               {tErrores(CODIGO_SESION_CADUCADA)}{' '}
               <Link
-                href={{ pathname: '/auth/login', query: { redirect: ruta } }}
+                href={{
+                  pathname: '/auth/login',
+                  query: { redirect: rutaConConsulta(ruta) },
+                }}
                 className="font-medium underline"
                 onClick={() => toast.dismiss(aviso.id)}
               >

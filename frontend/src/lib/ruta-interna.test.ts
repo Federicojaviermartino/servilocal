@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rutaInterna } from './ruta-interna';
+import { rutaConConsulta, rutaInterna } from './ruta-interna';
 
 describe('rutaInterna', () => {
   it.each(['/dashboard', '/services/abc/book', '/services/search?q=pintor'])(
@@ -25,5 +25,21 @@ describe('rutaInterna', () => {
   it('sin parámetro, a la portada', () => {
     expect(rutaInterna(null)).toBe('/');
     expect(rutaInterna('')).toBe('/');
+  });
+});
+
+describe('rutaConConsulta', () => {
+  it('añade la consulta de la página, que se perdía', () => {
+    window.history.replaceState({}, '', '/de/services/search?q=grifo');
+
+    // La ruta llega ya sin el prefijo de idioma: el enrutador lo repone.
+    expect(rutaConConsulta('/services/search')).toBe(
+      '/services/search?q=grifo',
+    );
+    window.history.replaceState({}, '', '/');
+  });
+
+  it('sin consulta, la ruta tal cual', () => {
+    expect(rutaConConsulta('/dashboard')).toBe('/dashboard');
   });
 });

@@ -61,9 +61,10 @@ test.describe('Cuando la API no contesta', () => {
     await page.goto('/dashboard/bookings');
 
     await expect(page.getByText('Tu sesión ha caducado')).toBeVisible();
+    // Y con la vuelta a esta misma página, no a la portada.
     await expect(
       page.getByRole('link', { name: 'Volver a entrar' }),
-    ).toHaveAttribute('href', '/auth/login');
+    ).toHaveAttribute('href', '/auth/login?redirect=%2Fdashboard%2Fbookings');
     await expect(page.getByRole('button', { name: /Reintentar/ })).toBeHidden();
   });
 

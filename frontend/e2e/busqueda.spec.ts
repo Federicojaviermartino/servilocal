@@ -62,9 +62,13 @@ test.describe('Búsqueda de servicios', () => {
     expect(segundoTitulo).not.toBe(primerTitulo);
   });
 
-  test('buscar un texto pide los resultados una sola vez', async ({ page }) => {
+  test('buscar un texto cambia la dirección y los resultados llegan del servidor', async ({
+    page,
+  }) => {
     // Antes se pedía al pulsar y otra vez al cambiar la URL, y la segunda
     // petición, que era la que se quedaba, perdía los filtros del panel.
+    // Ahora la búsqueda la hace el servidor al servir la dirección nueva: el
+    // navegador no pide nada a la API mientras el servidor conteste.
     await page.goto('/services/search');
     await expect(page.locator(TARJETA).first()).toBeVisible();
 
@@ -80,8 +84,33 @@ test.describe('Búsqueda de servicios', () => {
 
     await expect(page).toHaveURL(/q=pintura/);
     await expect(page.locator(TARJETA).first()).toBeVisible();
-    expect(pedidas).toHaveLength(1);
-    expect(pedidas[0]).toContain('query=pintura');
+    expect(pedidas).toEqual([]);
+  });
+
+  test('el buscador llega ya pintado del servidor', async ({ request }) => {
+    // El HTML llegaba sin título, sin filtros y sin un solo enlace a una
+    // ficha: un buscador veía una página vacía.
+    const html = await (await request.get('/services/search')).text();
+
+    expect(html).toContain('Resultados de la búsqueda');
+    expect(html).toMatch(/href="\/services\/[0-9a-f-]{36}"/);
+  });
+
+  test('la página de resultados va en la dirección', async ({ page }) => {
+    // Quien volvía atrás desde una ficha abierta en la página 2 aterrizaba
+    // en la 1.
+    await page.goto('/services/search?page=2');
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Paginación de resultados' })
+        .getByRole('button', { name: 'Página 2' }),
+    ).toHaveAttribute('aria-current', 'page');
+
+    await page.locator(TARJETA).first().click();
+    await page.waitForURL(/\/services\/[0-9a-f-]{36}$/);
+    await page.goBack();
+
+    await expect(page).toHaveURL(/page=2/);
   });
 
   test('filtrar por ciudad acota los resultados y Limpiar los restaura', async ({

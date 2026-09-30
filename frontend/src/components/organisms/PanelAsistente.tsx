@@ -108,7 +108,7 @@ export default function PanelAsistente({
           placeholder={t('placeholder')}
           maxLength={500}
           aria-label={t('titulo')}
-          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-sm text-principal placeholder-tenue focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-sm text-principal placeholder-tenue focus:border-acento focus:outline-none focus:ring-2 focus:ring-acento"
         />
         <Button
           type="submit"

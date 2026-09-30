@@ -23,6 +23,9 @@ export function paginaPrivada(seccion: string, clave: string) {
     return {
       title: t(clave as never),
       robots: { index: false, follow: false },
+      // Sin canónica: heredaban la de la portada, que es decir que son la
+      // misma página. No se indexan, pero tampoco tienen por qué mentir.
+      alternates: null,
     };
   };
 }

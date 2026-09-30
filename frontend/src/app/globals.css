@@ -44,6 +44,10 @@
        pide el nivel AA. El resto de la interfaz ya nombraba el papel del
        color en vez del color; este se había quedado fuera. */
     --color-acento: 30 64 175;
+    /* El rojo de los errores, también por tema: el danger-600 que usaban
+       daba 4,83 sobre blanco pero 3,71 sobre la superficie oscura, y quien
+       se equivocaba en un formulario apenas leía el aviso. 6,47 y 6,48. */
+    --color-error: 185 28 28;
   }
 
   .dark {
@@ -57,6 +61,7 @@
     /* En oscuro, el mismo papel lo cumple un azul mucho más claro: 7,05 de
        contraste sobre la superficie, frente a los 2,06 del anterior. */
     --color-acento: 96 165 250;
+    --color-error: 248 113 113;
   }
 
   html {
@@ -67,31 +72,48 @@
     @apply bg-fondo text-principal antialiased;
   }
 
-  /* Foco visible para navegación por teclado (WCAG 2.1 AA) */
+  /* Foco visible para navegación por teclado (WCAG 2.1 AA). Con el acento
+     y no con primary-500, que sobre la superficie oscura se quedaba en 2,90
+     y el contorno necesita 3. */
   *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-primary-500;
+    @apply outline-2 outline-offset-2 outline-acento;
+  }
+
+  /* Los globos del mapa traen el fondo blanco de leaflet.css, y en oscuro
+     el texto del tema, casi blanco, quedaba encima: 2,5 de contraste. */
+  .dark .leaflet-popup-content-wrapper,
+  .dark .leaflet-popup-tip {
+    background: rgb(var(--color-superficie));
+    color: rgb(var(--color-principal));
+  }
+
+  .dark .leaflet-container a.leaflet-popup-close-button {
+    color: rgb(var(--color-secundario));
   }
 }
 
 @layer components {
+  /* Para lo que parece un botón sin serlo, como un enlace: igual que las
+     variantes del componente Button. Eran otro azul, otras esquinas y otro
+     tamaño, y en la misma pantalla se veían dos botones principales. */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-primary-500 px-5 py-2.5
-           text-sm font-medium text-white transition-colors
-           hover:bg-primary-600 focus-visible:ring-2 focus-visible:ring-primary-500
-           focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-md bg-primary-600 px-4 py-2
+           text-base font-medium text-white transition-colors
+           hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-acento
+           focus-visible:ring-offset-2 disabled:bg-primary-300 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg border border-borde
-           bg-superficie px-5 py-2.5 text-sm font-medium text-secundario transition-colors
-           hover:bg-superficie-alt focus-visible:ring-2 focus-visible:ring-primary-500
+    @apply inline-flex items-center justify-center rounded-md border border-acento
+           bg-superficie px-4 py-2 text-base font-medium text-acento transition-colors
+           hover:bg-superficie-alt focus-visible:ring-2 focus-visible:ring-acento
            focus-visible:ring-offset-2;
   }
 
   .input-field {
     @apply block w-full rounded-lg border border-borde bg-superficie px-4 py-2.5
            text-sm text-principal placeholder-tenue transition-colors
-           focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
+           focus:border-acento focus:ring-1 focus:ring-acento;
   }
 
   .card {
@@ -103,6 +125,6 @@
   }
 
   .error-text {
-    @apply mt-1 text-sm text-danger-600;
+    @apply mt-1 text-sm text-error;
   }
 }

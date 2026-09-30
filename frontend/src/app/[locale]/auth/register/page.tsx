@@ -7,6 +7,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useForm, useWatch } from 'react-hook-form';
 import { useAuthStore } from '@/lib/auth-store';
 import { textoDeError } from '@/lib/errores-api';
+import { rutaInterna, useParametroDeLaDireccion } from '@/lib/ruta-interna';
 import { MapPin, Eye, EyeOff, User, Briefcase } from 'lucide-react';
 
 /** Lo que admite la API: bcrypt ignora lo que pase de 72. */
@@ -31,6 +32,10 @@ export default function RegisterPage() {
   const { register: registerUser, isLoading } = useAuthStore();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  // Adónde ir tras registrarse, si se llegó desde una página que lo pedía:
+  // se ignoraba, y quien pulsaba «Reservar» sin cuenta acababa en la
+  // portada.
+  const destino = useParametroDeLaDireccion('redirect');
 
   const {
     register,
@@ -50,7 +55,7 @@ export default function RegisterPage() {
     try {
       const { confirmPassword, ...registerData } = data;
       await registerUser(registerData);
-      router.push('/');
+      router.push(rutaInterna(destino));
     } catch (err) {
       // Antes se pegaban los mensajes de la API, en castellano o en inglés
       // según de dónde vinieran, fuera cual fuera el idioma de la página.
@@ -88,9 +93,9 @@ export default function RegisterPage() {
               <legend className="label mb-2">{t('queQuieres')}</legend>
               <div className="grid grid-cols-2 gap-3">
                 <label
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 ${
+                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-acento focus-within:ring-offset-2 ${
                     selectedRole === 'client'
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                      ? 'border-acento bg-primary-50 dark:bg-primary-900/30'
                       : 'border-borde hover:border-borde'
                   }`}
                 >
@@ -107,9 +112,9 @@ export default function RegisterPage() {
                   <span className="text-sm font-medium">{t('rolCliente')}</span>
                 </label>
                 <label
-                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-primary-500 focus-within:ring-offset-2 ${
+                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-acento focus-within:ring-offset-2 ${
                     selectedRole === 'provider'
-                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                      ? 'border-acento bg-primary-50 dark:bg-primary-900/30'
                       : 'border-borde hover:border-borde'
                   }`}
                 >
@@ -355,7 +360,14 @@ export default function RegisterPage() {
           <p className="mt-4 text-center text-sm text-secundario">
             {t('yaTienesCuenta')}{' '}
             <Link
-              href="/auth/login"
+              href={
+                destino
+                  ? {
+                      pathname: '/auth/login',
+                      query: { redirect: rutaInterna(destino) },
+                    }
+                  : '/auth/login'
+              }
               className="font-medium text-acento hover:underline"
             >
               {t('iniciaSesion')}

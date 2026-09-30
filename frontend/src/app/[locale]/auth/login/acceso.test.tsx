@@ -20,8 +20,24 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
-    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-      React.createElement('a', { href }, children),
+    // Como el de next-intl: la dirección puede venir como objeto.
+    Link: ({
+      href,
+      children,
+    }: {
+      href: string | { pathname: string; query?: Record<string, string> };
+      children: React.ReactNode;
+    }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+        },
+        children,
+      ),
     useRouter: () => ({ replace: reemplazar }),
   };
 });
@@ -124,6 +140,36 @@ describe('El acceso', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(
         es.acceso.errorRed,
       );
+    });
+  });
+
+  describe('el enlace para registrarse', () => {
+    it('conserva el destino, si lo había', () => {
+      parametros = new URLSearchParams({ redirect: '/services/s1/book' });
+      render(
+        <NextIntlClientProvider locale="es" messages={es as never}>
+          <LoginPage />
+        </NextIntlClientProvider>,
+      );
+
+      expect(
+        screen.getByRole('link', { name: es.acceso.registrateAqui }),
+      ).toHaveAttribute(
+        'href',
+        '/auth/register?redirect=%2Fservices%2Fs1%2Fbook',
+      );
+    });
+
+    it('sin destino, el registro a secas', () => {
+      render(
+        <NextIntlClientProvider locale="es" messages={es as never}>
+          <LoginPage />
+        </NextIntlClientProvider>,
+      );
+
+      expect(
+        screen.getByRole('link', { name: es.acceso.registrateAqui }),
+      ).toHaveAttribute('href', '/auth/register');
     });
   });
 });

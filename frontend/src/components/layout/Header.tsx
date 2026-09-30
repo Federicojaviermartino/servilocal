@@ -54,7 +54,7 @@ export default function Header() {
           <Link
             href="/services/search"
             aria-current={actual('/services/search')}
-            className="flex items-center gap-1 text-sm text-secundario transition-colors hover:text-primary-500"
+            className="flex items-center gap-1 text-sm text-secundario transition-colors hover:text-acento"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             {t('buscarServicios')}
@@ -73,7 +73,7 @@ export default function Header() {
                     ? '/dashboard/bookings-received'
                     : '/dashboard/bookings',
                 )}
-                className="text-sm text-secundario hover:text-primary-500"
+                className="text-sm text-secundario hover:text-acento"
               >
                 {user.role === 'provider'
                   ? t('reservasRecibidas')
@@ -82,7 +82,7 @@ export default function Header() {
               <Link
                 href="/dashboard/messages"
                 aria-current={actual('/dashboard/messages')}
-                className="text-sm text-secundario hover:text-primary-500"
+                className="text-sm text-secundario hover:text-acento"
               >
                 {t('mensajes')}
               </Link>
@@ -90,22 +90,25 @@ export default function Header() {
                 <Link
                   href="/admin"
                   aria-current={actual('/admin')}
-                  className="text-sm text-secundario hover:text-primary-500"
+                  className="text-sm text-secundario hover:text-acento"
                 >
                   {t('administracion')}
                 </Link>
               )}
               <Link
                 href="/dashboard/profile"
-                className="flex items-center gap-1 text-sm text-secundario hover:text-primary-500"
+                className="flex items-center gap-1 text-sm text-secundario hover:text-acento"
               >
                 <User className="h-4 w-4" aria-hidden="true" />
                 {user.firstName}
               </Link>
+              {/* Sin aria-label: con «Cerrar sesión» sobre un botón que
+                  dice «Salir», quien lo maneja por voz no lo encontraba
+                  diciendo lo que ve (WCAG 2.5.3). */}
               <button
+                type="button"
                 onClick={logout}
-                className="flex items-center gap-1 text-sm text-secundario hover:text-red-500"
-                aria-label={t('cerrarSesion')}
+                className="flex items-center gap-1 text-sm text-secundario hover:text-error"
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
                 {t('salir')}
@@ -200,7 +203,7 @@ export default function Header() {
                     logout();
                     setMenuOpen(false);
                   }}
-                  className="text-start text-sm text-red-500"
+                  className="text-start text-sm text-error"
                 >
                   {t('cerrarSesion')}
                 </button>
@@ -209,14 +212,14 @@ export default function Header() {
               <>
                 <Link
                   href="/auth/login"
-                  className="text-sm text-primary-500"
+                  className="text-sm text-acento"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t('iniciarSesion')}
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="text-sm text-primary-500"
+                  className="text-sm text-acento"
                   onClick={() => setMenuOpen(false)}
                 >
                   {t('registrarse')}

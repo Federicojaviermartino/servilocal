@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { Service } from '@/types';
@@ -181,7 +182,12 @@ export default function ProviderServicesPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-principal truncate">
-                      {s.title}
+                      <Link
+                        href={`/services/${s.id}`}
+                        className="hover:underline"
+                      >
+                        {s.title}
+                      </Link>
                     </h3>
                     <Badge variant={s.isActive ? 'success' : 'default'}>
                       {s.isActive ? tEstados('activo') : tEstados('pausado')}
@@ -204,20 +210,30 @@ export default function ProviderServicesPage() {
                           maximumFractionDigits: 1,
                         })}`}
                     </span>
+                    {/* Las valoraciones se responden en la ficha: el
+                        profesional no tenía por dónde llegar a ellas. */}
+                    {s.totalReviews > 0 && (
+                      <Link
+                        href={`/services/${s.id}#valoraciones`}
+                        className="text-acento underline hover:no-underline"
+                      >
+                        {t('verValoraciones')}
+                      </Link>
+                    )}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setEditing(s)}
                     className="p-2 rounded-md hover:bg-superficie-alt text-secundario"
-                    aria-label={tComun('editar')}
+                    aria-label={t('editarServicio', { nombre: s.title })}
                   >
                     <Pencil size={18} />
                   </button>
                   <button
                     onClick={() => handleDelete(s.id)}
                     className="p-2 rounded-md hover:bg-danger-50 text-danger-600"
-                    aria-label={tComun('eliminar')}
+                    aria-label={t('eliminarServicio', { nombre: s.title })}
                   >
                     <Trash2 size={18} />
                   </button>

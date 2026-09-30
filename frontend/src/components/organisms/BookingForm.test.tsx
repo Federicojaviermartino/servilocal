@@ -44,14 +44,11 @@ function diaLocal(dentroDe: number): string {
 }
 
 /**
- * Enviar saltándose la validación del navegador.
+ * Enviar el formulario sin pulsar el botón.
  *
- * Los campos declaran `required`, `min` y `max`, así que pulsar el botón con
- * algo fuera de rango no llega nunca a la comprobación en JS: corta antes el
- * navegador. Eso deja sin mirar la segunda red, que es la que escribe el
- * mensaje que se lee al lado del campo y la que sigue ahí si alguien quita
- * los atributos desde el inspector. Disparar el evento a mano es la forma de
- * llegar a ella.
+ * El formulario va con noValidate: la comprobación es la de aquí, con los
+ * mensajes en el idioma de la página. Antes cortaba primero el navegador,
+ * en el suyo, y el aviso junto al campo no llegaba a salir.
  */
 const enviarSaltandoAlNavegador = () =>
   fireEvent.submit(
@@ -293,6 +290,43 @@ describe('BookingForm', () => {
       'Gotea el grifo del baño',
     );
     expect(screen.getByRole('spinbutton')).toHaveValue(55);
+  });
+
+  it('la validación es la de la página, no la del navegador', () => {
+    pintar();
+
+    expect(
+      screen
+        .getByRole('button', { name: es.reserva.continuar })
+        .closest('form'),
+    ).toHaveAttribute('novalidate');
+  });
+
+  it('cualquier importe de la horquilla vale, con céntimos', async () => {
+    // Con un paso de 5 contado desde el mínimo, 42 euros en un servicio
+    // «desde 40» no se podía reservar.
+    const alEnviar = pintar();
+    const importe = screen.getByRole('spinbutton');
+    await userEvent.clear(importe);
+    await userEvent.type(importe, '42.5');
+    await describir('Gotea el grifo del baño desde ayer');
+
+    await enviar();
+
+    expect(alEnviar).toHaveBeenCalledWith(
+      expect.objectContaining({ totalPrice: 42.5 }),
+    );
+  });
+
+  it('el resumen dice la fecha en el idioma de la página, no en crudo', () => {
+    pintar();
+
+    const manana = new Date(`${diaLocal(1)}T00:00:00`).toLocaleDateString(
+      'es',
+      { day: 'numeric', month: 'long', year: 'numeric' },
+    );
+    expect(screen.getByText(new RegExp(manana))).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(diaLocal(1)))).toBeNull();
   });
 
   it('el error de la descripción está asociado al campo', async () => {

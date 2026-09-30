@@ -61,7 +61,7 @@
     "academicoTitulo": "Proxecto académico",
     "comoFunciona": "Como funciona",
     "dudas": "Tes dúbidas? Consulta os <terminos>termos de uso</terminos> e a <privacidad>política de privacidade</privacidad>.",
-    "intro": "ServiLocal conecta persoas que precisan un servizo na casa con profesionais da súa zona: fontanería, electricidade, reformas, limpeza ou clases particulares, entre outras categorías.",
+    "intro": "ServiLocal conecta persoas que precisan un servizo na casa con profesionais da súa zona: fontanaría, electricidade, reformas, limpeza ou clases particulares, entre outras categorías.",
     "metaDescripcion": "Que é ServiLocal, como conecta clientes con profesionais de servizos do fogar e que tecnoloxía hai detrás.",
     "metaTitulo": "Acerca de",
     "paso1Texto": "Indica que precisas e onde. Filtramos por categoría, cidade, distancia, valoración e prezo máximo.",
@@ -152,7 +152,7 @@
     "metricas": "Métricas da plataforma",
     "noDesactivarte": "Non podes desactivar a túa propia conta de administración.",
     "nombre": "Nome",
-    "nombrePlaceholder": "Fontanería",
+    "nombrePlaceholder": "Fontanaría",
     "nombreYSlugObligatorios": "O nome e o slug son obrigatorios.",
     "proveedor": "Provedor",
     "proveedores": "Provedores",
@@ -300,14 +300,19 @@
     "duracion": "Duración aproximada: {duracion}",
     "errorRedTexto": "Comproba a túa conexión e téntao de novo nuns segundos.",
     "errorRedTitulo": "Non se puido contactar co servidor",
+    "errorResponder": "Non se puido publicar a resposta. Téntao de novo.",
     "noDisponibleTexto": "Téntao de novo máis tarde.",
     "noDisponibleTitulo": "Servizo non dispoñible",
     "noEncontradoTexto": "O servizo que buscas non existe ou foi eliminado.",
     "noEncontradoTitulo": "Servizo non atopado",
+    "publicarRespuesta": "Publicar a resposta",
     "reservar": "Reservar agora",
+    "responder": "Responder a esta valoración",
     "respuestaProfesional": "Resposta do profesional",
+    "respuestaPublicada": "Resposta publicada.",
     "sinValoraciones": "Este servizo aínda non ten valoracións.",
     "sobreProfesional": "Sobre o profesional",
+    "tuRespuesta": "A túa resposta, que verá calquera",
     "valoraciones": "Valoracións ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "Aplicar filtros",
     "categoria": "Categoría",
+    "cercaDeTi": "Preto da túa localización",
     "ciudad": "Cidade",
     "limpiar": "Limpar",
+    "localizando": "Buscando a túa localización…",
     "precioMaximo": "Prezo máximo (euros)",
+    "quitarUbicacion": "Quitar a localización",
     "radio": "Radio de busca: {km} km",
     "sinLimite": "Sen límite",
+    "sinUbicacion": "Non se puido saber onde estás. Revisa o permiso de localización do navegador, ou busca por cidade.",
     "todasCategorias": "Todas as categorías",
     "todasCiudades": "Todas as cidades",
+    "ubicacionAyuda": "A túa localización só serve para esta busca, arredondada a un quilómetro, e non a gardamos.",
+    "usarUbicacion": "Usar a miña localización",
+    "valoracionCualquiera": "Calquera",
     "valoracionMinima": "Valoración mínima"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "Crear servizo",
     "descripcion": "Descrición",
     "direccion": "Enderezo de referencia",
+    "direccionPista": "Non se publica: só a ves ti. No mapa, o servizo sae na súa cidade.",
     "duracion": "Duración de cada reserva",
     "duracionPista": "O que ocupa na túa axenda: dúas reservas confirmadas non se poden solapar.",
     "guardarCambios": "Gardar cambios",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "Profesionais de confianza, preto de ti",
-    "heroSubtitulo": "Atopa o profesional axeitado para calquera servizo do fogar. Valoracións reais, orzamentos transparentes e reserva inmediata.",
+    "heroSubtitulo": "Atopa o profesional axeitado para calquera servizo do fogar. Valoracións reais, prezos á vista e reserva en liña.",
     "porQueTitulo": "Por que elixir ServiLocal?",
     "cercanosTitulo": "Profesionais próximos",
-    "cercanosTexto": "Busca por xeolocalización para atopar os mellores profesionais da túa zona.",
+    "cercanosTexto": "Busca por cidade, ou preto de ti coa túa localización, para atopar profesionais da túa zona.",
     "pagosTitulo": "Pagamentos seguros",
     "pagosTexto": "Plataforma de pagamento integrada con Stripe. O teu diñeiro está protexido ata que o servizo se complete.",
     "valoracionesTitulo": "Valoracións verificadas",
@@ -399,7 +412,7 @@
     "paso1Titulo": "Busca o servizo",
     "paso1Texto": "Indica que necesitas e onde. O noso sistema amósache os profesionais máis próximos e mellor valorados.",
     "paso2Titulo": "Reserva e paga",
-    "paso2Texto": "Elixe a data, deixa o sinal e recibe a confirmación ao instante.",
+    "paso2Texto": "Elixe a data e paga con tarxeta: o importe queda retido e só se cobra cando o traballo está feito. O profesional confirma a reserva.",
     "paso3Titulo": "Valora a túa experiencia",
     "paso3Texto": "Tras o servizo, deixa a túa opinión para axudar a outros usuarios."
   },
@@ -412,19 +425,23 @@
     "verDetalle": "Ver detalle"
   },
   "mensajesPanel": {
+    "conversacion": "Conversa",
     "enviar": "Enviar",
     "errorEnviar": "Non se puido enviar a mensaxe. Téntao de novo.",
     "escribePlaceholder": "Escribe unha mensaxe...",
+    "historial": "Mensaxes da conversa",
+    "interlocutor": "A outra persoa",
     "sinConversaciones": "Non tes conversas.",
     "sinConversacionesPista": "As conversas créanse ao contactar cun profesional desde un servizo ou unha reserva.",
     "sinMensajes": "Aínda non hai mensaxes nesta conversa.",
-    "titulo": "Mensaxes"
+    "titulo": "Mensaxes",
+    "tu": "Ti"
   },
   "meta": {
     "buscadorDescripcion": "Atopa fontaneiros, electricistas, pintores, limpeza, reformas e clases particulares preto de ti. Filtra por cidade, distancia, valoración e prezo.",
     "buscadorTitulo": "Buscar servizos",
     "conversacionTitulo": "Conversa",
-    "descripcion": "Atopa profesionais de confianza na túa zona. Fontanería, electricidade, clases particulares e máis. Reserva, paga e valora con seguridade.",
+    "descripcion": "Atopa profesionais de confianza na túa zona. Fontanaría, electricidade, clases particulares e máis. Reserva, paga e valora con seguridade.",
     "panelTitulo": "O meu panel",
     "privacidadDescripcion": "Que datos persoais trata ServiLocal, con que finalidade e como podes exercer os teus dereitos.",
     "privacidadTitulo": "Política de privacidade",
@@ -640,7 +657,10 @@
     "sinServicios": "Aínda non publicaches ningún servizo.",
     "sinServiciosPista": "Crea o teu primeiro servizo para empezar a recibir reservas.",
     "titulo": "Os meus servizos",
-    "resumenValoraciones": "{total, plural, =0 {Sen valoracións} one {# valoración} other {# valoracións}}"
+    "resumenValoraciones": "{total, plural, =0 {Sen valoracións} one {# valoración} other {# valoracións}}",
+    "editarServicio": "Editar {nombre}",
+    "eliminarServicio": "Eliminar {nombre}",
+    "verValoraciones": "Ver e responder"
   },
   "tarjeta": {
     "precioRango": "{min} a {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "Confirma o contrasinal",
+    "correo": "Escribe un enderezo de correo válido.",
+    "corto": "Ten que ter polo menos {minimo, plural, one {# carácter} other {# caracteres}}.",
     "emailInvalido": "Introduce un correo válido",
     "emailObligatorio": "O correo é obrigatorio",
+    "fechaMaxima": "A data non pode ser posterior a {fecha}.",
+    "fechaMinima": "A data non pode ser anterior a {fecha}.",
+    "formato": "O valor non é válido.",
+    "largo": "Non pode pasar de {maximo, plural, one {# carácter} other {# caracteres}}.",
+    "maximo": "O valor máximo é {maximo}.",
     "maximoCaracteres": "Como moito {max} caracteres",
+    "minimo": "O valor mínimo é {minimo}.",
     "minimoCaracteres": "Mínimo 8 caracteres",
-    "obligatorio": "Obrigatorio",
+    "obligatorio": "Este campo é obrigatorio.",
     "passwordObligatoria": "O contrasinal é obrigatorio",
     "passwordsNoCoinciden": "Os contrasinais non coinciden"
   },
   "valoracion": {
-    "valorar": "Valorar con {estrellas} estrelas"
+    "estrellas": "{estrellas, plural, one {# estrela} other {# estrelas}}",
+    "nota": "{nota} de 5 estrelas",
+    "notaConTotal": "{nota} de 5 estrelas, {total, plural, one {# valoración} other {# valoracións}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "Comentario opcional sobre o servizo...",

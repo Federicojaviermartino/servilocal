@@ -61,7 +61,10 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
         })}
       </p>
       <div className="mt-3">
-        <p className="text-sm font-medium text-secundario mb-2">
+        <p
+          id={`valoracion-${booking.id}`}
+          className="text-sm font-medium text-secundario mb-2"
+        >
           {t('tuValoracion')}
         </p>
         <RatingStars
@@ -69,6 +72,7 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
           size="lg"
           interactive
           onChange={setRating}
+          idEtiqueta={`valoracion-${booking.id}`}
         />
       </div>
       {borrador.recuperado && (
@@ -84,7 +88,7 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
         rows={3}
         aria-label={t('comentarioPlaceholder')}
         placeholder={t('comentarioPlaceholder')}
-        className="mt-3 w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+        className="mt-3 w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
       />
       <div className="mt-3 flex justify-end">
         <Button onClick={handleSubmit} isLoading={isSubmitting}>

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import type { StripeElementLocale } from '@stripe/stripe-js';
+import type { Idioma } from '@/i18n/routing';
 import { ShieldCheck } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -19,6 +20,24 @@ import { formatearImporte } from '@/lib/importes';
 import { useTemaOscuro } from '@/lib/tema';
 import CheckoutForm from '@/components/organisms/CheckoutForm';
 import Spinner from '@/components/atoms/Spinner';
+
+/**
+ * El idioma del formulario de Stripe, que es un iframe ajeno. No tiene
+ * catalán, gallego ni euskera: sin decirle nada, elegía él, y en el
+ * castellano se entiende quien lee cualquiera de los tres.
+ */
+const LOCALE_STRIPE: Record<Idioma, StripeElementLocale> = {
+  es: 'es',
+  en: 'en',
+  ca: 'es',
+  gl: 'es',
+  eu: 'es',
+  fr: 'fr',
+  de: 'de',
+  it: 'it',
+  pt: 'pt',
+  ar: 'ar',
+};
 
 export default function PaymentPage() {
   const t = useTranslations('pago');
@@ -166,7 +185,7 @@ export default function PaymentPage() {
               // oscuro salía un bloque blanco en mitad de la tarjeta. Y en
               // castellano aunque la página estuviera en otro idioma: es un
               // iframe ajeno, hay que decirle las dos cosas.
-              locale: idioma as StripeElementLocale,
+              locale: LOCALE_STRIPE[idioma as Idioma] ?? 'auto',
               appearance: { theme: oscuro ? 'night' : 'stripe' },
             }}
           >

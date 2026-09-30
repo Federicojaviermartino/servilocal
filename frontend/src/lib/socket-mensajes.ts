@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useEffectEvent, useSyncExternalStore } from 'react';
-import { io, Socket } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { Message } from '@/types';
@@ -18,6 +18,7 @@ const SOCKET_URL = API_URL.replace(/\/api\/?$/, '');
  * lista y una conversación, y cada una consume una ranura del servidor.
  */
 let socket: Socket | null = null;
+let abriendo: Promise<Socket> | null = null;
 let suscriptores = 0;
 
 /**
@@ -60,9 +61,16 @@ function pedirPase(entregar: (datos: { token?: string }) => void): void {
   );
 }
 
-function abrir(): Socket {
-  if (!socket) {
-    socket = io(`${SOCKET_URL}/mensajes`, {
+/**
+ * La biblioteca del socket se descarga al abrirlo, no con la página: son
+ * 42 KB que iban en todas, también para quien no ha entrado y no tiene
+ * nada que escuchar.
+ */
+function abrir(): Promise<Socket> {
+  if (socket) return Promise.resolve(socket);
+  abriendo ??= import('socket.io-client').then(({ io }) => {
+    abriendo = null;
+    socket ??= io(`${SOCKET_URL}/mensajes`, {
       // El pase va en el apretón de manos y no en la URL: las cadenas de
       // consulta acaban escritas en los registros del servidor.
       auth: pedirPase,
@@ -72,8 +80,9 @@ function abrir(): Socket {
     });
     socket.on('connect', () => fijarConexion(true));
     socket.on('disconnect', () => fijarConexion(false));
-  }
-  return socket;
+    return socket;
+  });
+  return abriendo;
 }
 
 function cerrar() {
@@ -122,22 +131,33 @@ function useEvento<T>(evento: string, alRecibir: (dato: T) => void) {
   useEffect(() => {
     if (!conSesion) return;
 
-    const s = abrir();
     suscriptores += 1;
+    let vigente = true;
+    let s: Socket | null = null;
 
     const alDato = (dato: T) => recibirUltimo(dato);
     // El servidor cierra la conexión cuando el token no vale. Reintentar
     // sería insistir con la misma credencial: se deja de intentar.
-    const alSesionInvalida = () => s.disconnect();
+    const alSesionInvalida = () => s?.disconnect();
 
-    s.on(evento, alDato);
-    s.on('sesion-invalida', alSesionInvalida);
+    abrir().then((abierto) => {
+      // Quien se fue mientras se descargaba no se suscribe, y si era el
+      // último, el socket recién abierto se cierra.
+      if (!vigente) {
+        cerrar();
+        return;
+      }
+      s = abierto;
+      s.on(evento, alDato);
+      s.on('sesion-invalida', alSesionInvalida);
+    });
 
     return () => {
-      s.off(evento, alDato);
+      vigente = false;
+      s?.off(evento, alDato);
       // Antes no se quitaba: con el socket compartido, cada suscripción
       // dejaba uno más colgado.
-      s.off('sesion-invalida', alSesionInvalida);
+      s?.off('sesion-invalida', alSesionInvalida);
       suscriptores -= 1;
       cerrar();
     };

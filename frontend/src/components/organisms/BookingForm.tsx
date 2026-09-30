@@ -107,7 +107,9 @@ export default function BookingForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    // noValidate: la validación es la de aquí, con los mensajes en el idioma
+    // de la página. La del navegador se adelantaba, en el suyo.
+    <form noValidate onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           type="date"
@@ -143,7 +145,7 @@ export default function BookingForm({
           rows={4}
           maxLength={2000}
           placeholder={t('descripcionPlaceholder')}
-          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
           required
           aria-invalid={!!errors.description}
           aria-describedby={
@@ -151,10 +153,7 @@ export default function BookingForm({
           }
         />
         {errors.description && (
-          <p
-            id="reserva-descripcion-error"
-            className="mt-1 text-sm text-danger-600"
-          >
+          <p id="reserva-descripcion-error" className="mt-1 text-sm text-error">
             {errors.description}
           </p>
         )}
@@ -172,7 +171,9 @@ export default function BookingForm({
         }
         min={service.priceMin}
         max={service.priceMax}
-        step={5}
+        // En céntimos: con un paso de 5 contado desde el mínimo, una reserva
+        // de 42 euros en un servicio «desde 40» no se podía hacer.
+        step={0.01}
         value={price}
         onChange={(e) => setPrice(Number(e.target.value))}
         error={errors.price}
@@ -186,7 +187,18 @@ export default function BookingForm({
           {t('resumenServicio', { titulo: service.title })}
         </p>
         <p className="text-secundario">
-          {t('resumenFecha', { fecha: date, hora: time })}
+          {/* La fecha en el formato de cada idioma, no en crudo: salía
+              «2026-10-01». */}
+          {t('resumenFecha', {
+            fecha: date
+              ? new Date(`${date}T00:00:00`).toLocaleDateString(idioma, {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              : '',
+            hora: time,
+          })}
         </p>
         <p className="text-secundario">
           {t('resumenDuracion', {

@@ -1,5 +1,44 @@
+import type { Metadata } from 'next';
 import { routing, type Idioma } from '@/i18n/routing';
 import { SITIO_URL } from '@/lib/sitio';
+import imagenSocial from '@/assets/imagen-social.png';
+
+/**
+ * La imagen de un enlace compartido, para lo que no tiene una propia: solo
+ * las fichas con foto llevaban. Se genera con scripts/imagen-social.mjs.
+ */
+export const IMAGEN_SOCIAL = {
+  url: typeof imagenSocial === 'string' ? imagenSocial : imagenSocial.src,
+  width: 1200,
+  height: 630,
+  alt: 'ServiLocal',
+};
+
+/**
+ * Lo que enseña una red social al compartir una página.
+ *
+ * El openGraph de una página **sustituye** al del layout, como alternates:
+ * las que solo ponían título y descripción se compartían con los de la
+ * portada. Va entero, con su imagen, su dirección y su idioma.
+ */
+export function grafoAbierto(
+  locale: string,
+  {
+    titulo,
+    descripcion,
+    ruta,
+  }: { titulo: string; descripcion: string; ruta: string },
+): NonNullable<Metadata['openGraph']> {
+  return {
+    type: 'website',
+    siteName: 'ServiLocal',
+    locale,
+    title: titulo,
+    description: descripcion,
+    url: urlDe(locale, ruta),
+    images: [IMAGEN_SOCIAL],
+  };
+}
 
 /**
  * Dirección absoluta de una ruta en un idioma.

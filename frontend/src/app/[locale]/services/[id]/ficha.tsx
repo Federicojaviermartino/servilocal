@@ -16,6 +16,7 @@ import { useNombreCategoria } from '@/lib/categorias';
 import { usePrecioServicio } from '@/lib/importes';
 import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
 import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
+import RespuestaValoracion from '@/components/molecules/RespuestaValoracion';
 
 /**
  * La ficha pública de un servicio.
@@ -34,11 +35,12 @@ export default function FichaServicio({
   inicial?: { servicio: Service; valoraciones: Review[] };
 }) {
   const t = useTranslations('detalle');
+  const tComun = useTranslations('comun');
   const idioma = useLocale();
   const nombreCategoria = useNombreCategoria();
   const precio = usePrecioServicio();
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const [service, setService] = useState<Service | null>(
     inicial?.servicio ?? null,
@@ -48,9 +50,11 @@ export default function FichaServicio({
   const [loadError, setLoadError] = useState<
     'not-found' | 'unavailable' | 'network' | null
   >(null);
+  // Volver a pedirla sin recargar: sin red, la ficha se quedaba en el aviso.
+  const [intento, setIntento] = useState(0);
 
   useEffect(() => {
-    if (inicial) return;
+    if (inicial && intento === 0) return;
     async function load() {
       setIsLoading(true);
       setLoadError(null);
@@ -72,7 +76,7 @@ export default function FichaServicio({
       }
     }
     if (serviceId) load();
-  }, [serviceId, inicial]);
+  }, [serviceId, inicial, intento]);
 
   const handleBook = () => {
     if (!isAuthenticated) {
@@ -88,7 +92,11 @@ export default function FichaServicio({
       router.push(`/auth/login?redirect=/services/${serviceId}`);
       return;
     }
-    router.push(`/dashboard/messages/${service?.providerId}`);
+    // Con el servicio: si aún no hay mensajes, la conversación saca de él
+    // con quién es.
+    router.push(
+      `/dashboard/messages/${service?.providerId}?servicio=${serviceId}`,
+    );
   };
 
   if (isLoading) {
@@ -157,6 +165,15 @@ export default function FichaServicio({
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
         <h1 className="text-2xl font-semibold text-principal">{title}</h1>
         <p className="mt-2 text-secundario">{message}</p>
+        {loadError !== 'not-found' && (
+          <Button
+            variant="secondary"
+            className="mt-6"
+            onClick={() => setIntento((i) => i + 1)}
+          >
+            {tComun('reintentar')}
+          </Button>
+        )}
       </div>
     );
   }
@@ -167,110 +184,59 @@ export default function FichaServicio({
     <div className="bg-fondo min-h-screen py-8">
       <div className="max-w-5xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Columna principal */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-superficie rounded-lg shadow-card overflow-hidden">
-              <div className="aspect-video bg-superficie-alt relative">
-                <ServiceImage
-                  src={service.images?.[0]}
-                  alt={service.title}
-                  categoryIcon={service.category?.icon}
-                  sizes="(max-width: 1024px) 100vw, 66vw"
-                  priority
-                  iconSize={72}
+          {/* En el móvil la rejilla es una columna, y el orden es el del
+              código: la reserva va tras la descripción, no después de todas
+              las reseñas, donde nadie veía el precio. En escritorio, cada
+              bloque en su sitio. */}
+          <div className="bg-superficie rounded-lg shadow-card overflow-hidden lg:col-span-2 lg:row-start-1">
+            <div className="aspect-video bg-superficie-alt relative">
+              <ServiceImage
+                src={service.images?.[0]}
+                alt={service.title}
+                categoryIcon={service.category?.icon}
+                sizes="(max-width: 1024px) 100vw, 66vw"
+                priority
+                iconSize={72}
+              />
+            </div>
+            <div className="p-6">
+              {service.category && (
+                <Badge variant="info" className="mb-3">
+                  {nombreCategoria(service.category)}
+                </Badge>
+              )}
+              {/* Lo que escribe el profesional toma su propia dirección:
+                    en árabe, un texto en castellano se leía al revés. */}
+              <h1 dir="auto" className="text-2xl font-bold text-principal">
+                {service.title}
+              </h1>
+              <div className="mt-3 flex items-center gap-4 text-sm text-secundario">
+                <div className="flex items-center gap-1">
+                  <MapPin size={16} />
+                  <span>{service.city}</span>
+                </div>
+                <RatingStars
+                  rating={service.averageRating || 0}
+                  total={service.totalReviews}
+                  showNumber
                 />
               </div>
-              <div className="p-6">
-                {service.category && (
-                  <Badge variant="info" className="mb-3">
-                    {nombreCategoria(service.category)}
-                  </Badge>
-                )}
-                {/* Lo que escribe el profesional toma su propia dirección:
-                    en árabe, un texto en castellano se leía al revés. */}
-                <h1 dir="auto" className="text-2xl font-bold text-principal">
-                  {service.title}
-                </h1>
-                <div className="mt-3 flex items-center gap-4 text-sm text-secundario">
-                  <div className="flex items-center gap-1">
-                    <MapPin size={16} />
-                    <span>{service.city}</span>
-                  </div>
-                  <RatingStars
-                    rating={service.averageRating || 0}
-                    total={service.totalReviews}
-                    showNumber
-                  />
-                </div>
-                <div className="mt-6 prose prose-neutral max-w-none">
-                  <h2 className="text-lg font-semibold text-principal">
-                    {t('descripcion')}
-                  </h2>
-                  <p dir="auto" className="text-secundario whitespace-pre-line">
-                    {service.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Reseñas */}
-            <div className="bg-superficie rounded-lg shadow-card p-6">
-              <h2 className="text-lg font-semibold text-principal mb-4">
-                {t('valoraciones', { total: reviews.length })}
-              </h2>
-              {reviews.length === 0 ? (
-                <p className="text-secundario text-sm">
-                  {t('sinValoraciones')}
+              <div className="mt-6 prose prose-neutral max-w-none">
+                <h2 className="text-lg font-semibold text-principal">
+                  {t('descripcion')}
+                </h2>
+                <p dir="auto" className="text-secundario whitespace-pre-line">
+                  {service.description}
                 </p>
-              ) : (
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div
-                      key={review.id}
-                      className="border-b border-borde pb-4 last:border-0"
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar
-                          name={`${review.client.firstName} ${review.client.lastName}`}
-                          size="sm"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-principal text-sm">
-                              {review.client.firstName} {review.client.lastName}
-                            </p>
-                            <RatingStars rating={review.rating} size="sm" />
-                          </div>
-                          {review.comment && (
-                            <p
-                              dir="auto"
-                              className="mt-2 text-secundario text-sm"
-                            >
-                              {review.comment}
-                            </p>
-                          )}
-                          {review.providerResponse && (
-                            <div className="mt-3 ms-4 ps-3 border-s-2 border-primary-200">
-                              <p className="text-xs font-medium text-tenue mb-1">
-                                {t('respuestaProfesional')}
-                              </p>
-                              <p dir="auto" className="text-sm text-secundario">
-                                {review.providerResponse}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
           {/* Columna lateral: reserva y proveedor */}
-          <aside className="space-y-6">
-            <div className="bg-superficie rounded-lg shadow-card p-6 sticky top-4">
+          <aside className="space-y-6 lg:col-start-3 lg:row-start-1 lg:row-span-2">
+            {/* Por debajo de la cabecera, que también es fija: con top-4 la
+                tarjeta se metía debajo de ella. */}
+            <div className="bg-superficie rounded-lg shadow-card p-6 lg:sticky lg:top-20">
               <p className="mb-4 text-2xl font-bold text-principal">
                 {priceLabel}
               </p>
@@ -323,6 +289,76 @@ export default function FichaServicio({
               )}
             </div>
           </aside>
+
+          {/* Reseñas */}
+          <div
+            id="valoraciones"
+            className="bg-superficie rounded-lg shadow-card p-6 lg:col-span-2 lg:row-start-2"
+          >
+            <h2 className="text-lg font-semibold text-principal mb-4">
+              {t('valoraciones', { total: reviews.length })}
+            </h2>
+            {reviews.length === 0 ? (
+              <p className="text-secundario text-sm">{t('sinValoraciones')}</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="border-b border-borde pb-4 last:border-0"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar
+                        name={`${review.client.firstName} ${review.client.lastName}`}
+                        size="sm"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-principal text-sm">
+                            {review.client.firstName} {review.client.lastName}
+                          </p>
+                          <RatingStars rating={review.rating} size="sm" />
+                        </div>
+                        {review.comment && (
+                          <p
+                            dir="auto"
+                            className="mt-2 text-secundario text-sm"
+                          >
+                            {review.comment}
+                          </p>
+                        )}
+                        {!review.providerResponse &&
+                          user?.id === service.providerId && (
+                            <RespuestaValoracion
+                              reviewId={review.id}
+                              onRespondida={(respuesta) =>
+                                setReviews((actuales) =>
+                                  actuales.map((r) =>
+                                    r.id === review.id
+                                      ? { ...r, providerResponse: respuesta }
+                                      : r,
+                                  ),
+                                )
+                              }
+                            />
+                          )}
+                        {review.providerResponse && (
+                          <div className="mt-3 ms-4 ps-3 border-s-2 border-primary-200">
+                            <p className="text-xs font-medium text-tenue mb-1">
+                              {t('respuestaProfesional')}
+                            </p>
+                            <p dir="auto" className="text-sm text-secundario">
+                              {review.providerResponse}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <AsistenteBusqueda />

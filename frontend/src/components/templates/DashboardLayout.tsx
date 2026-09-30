@@ -18,6 +18,7 @@ import {
 import clsx from 'clsx';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import { UserRole } from '@/types';
+import { rutaConConsulta } from '@/lib/ruta-interna';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -37,9 +38,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     if (!isAuthenticated && !haySesionRecordada()) {
-      router.push('/auth/login?redirect=/dashboard');
+      router.push({
+        pathname: '/auth/login',
+        query: { redirect: rutaConConsulta(pathname) },
+      });
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, pathname]);
 
   const isProvider = user?.role === UserRole.PROVIDER;
 
@@ -84,7 +88,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <aside className="lg:col-span-1">
-            <nav className="bg-superficie rounded-lg shadow-card p-2 sticky top-4">
+            <nav className="bg-superficie rounded-lg shadow-card p-2 lg:sticky lg:top-20">
               {items.map((item) => {
                 const Icon = item.icon;
                 const active =

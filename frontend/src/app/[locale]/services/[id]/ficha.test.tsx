@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../../../messages/es.json';
@@ -8,16 +9,31 @@ import FichaServicio from './ficha';
 const getById = vi.fn();
 const getByService = vi.fn();
 
+const responder = vi.fn();
+let sesion: { isAuthenticated: boolean; user?: { id: string } } = {
+  isAuthenticated: false,
+};
+
 vi.mock('@/lib/api', () => ({
   servicesApi: { getById: (id: string) => getById(id) },
-  reviewsApi: { getByService: (id: string) => getByService(id) },
+  reviewsApi: {
+    getByService: (id: string) => getByService(id),
+    respond: (id: string, texto: string) => responder(id, texto),
+  },
 }));
 
 vi.mock('@/lib/auth-store', () => ({
-  useAuthStore: () => ({ isAuthenticated: false }),
+  useAuthStore: () => sesion,
 }));
 
-vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('react-hot-toast', () => ({
+  default: { success: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock('@/i18n/navigation', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => '/services/s1',
+}));
 
 // El asistente tiene sus propias pruebas.
 vi.mock('@/components/organisms/AsistenteBusqueda', () => ({
@@ -53,6 +69,7 @@ const pintar = (inicial?: { servicio: Service; valoraciones: Review[] }) =>
 describe('La ficha de un servicio', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sesion = { isAuthenticated: false };
   });
 
   it('con lo que trae el servidor, se pinta entera de entrada y no pide nada', () => {
@@ -111,5 +128,97 @@ describe('La ficha de un servicio', () => {
     expect(
       await screen.findByText(es.detalle.noEncontradoTitulo),
     ).toBeInTheDocument();
+    // Lo que no existe no aparece por reintentar.
+    expect(
+      screen.queryByRole('button', { name: es.comun.reintentar }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('sin red, deja reintentar sin recargar la página', async () => {
+    getById
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockResolvedValueOnce({ data: SERVICIO });
+    getByService.mockResolvedValue({ data: [] });
+
+    pintar();
+    await userEvent.click(
+      await screen.findByRole('button', { name: es.comun.reintentar }),
+    );
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: SERVICIO.title }),
+    ).toBeInTheDocument();
+    expect(getById).toHaveBeenCalledTimes(2);
+  });
+
+  describe('responder a una valoración', () => {
+    const conProveedor = {
+      ...SERVICIO,
+      providerId: 'p1',
+    } as unknown as Service;
+
+    it('el profesional responde desde la ficha de su servicio', async () => {
+      // La API lo permitía, pero ninguna pantalla lo ofrecía.
+      sesion = { isAuthenticated: true, user: { id: 'p1' } };
+      responder.mockResolvedValue({ data: {} });
+      pintar({ servicio: conProveedor, valoraciones: [VALORACION] });
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.detalle.responder }),
+      );
+      await userEvent.type(
+        screen.getByLabelText(es.detalle.tuRespuesta),
+        'Gracias, Ana.',
+      );
+      await userEvent.click(
+        screen.getByRole('button', { name: es.detalle.publicarRespuesta }),
+      );
+
+      expect(responder).toHaveBeenCalledWith('r1', 'Gracias, Ana.');
+      expect(await screen.findByText('Gracias, Ana.')).toHaveAttribute(
+        'dir',
+        'auto',
+      );
+      expect(
+        screen.queryByRole('button', { name: es.detalle.responder }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('nadie más lo ve', () => {
+      sesion = { isAuthenticated: true, user: { id: 'otro' } };
+      pintar({ servicio: conProveedor, valoraciones: [VALORACION] });
+
+      expect(
+        screen.queryByRole('button', { name: es.detalle.responder }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('lo ya respondido no se vuelve a ofrecer', () => {
+      sesion = { isAuthenticated: true, user: { id: 'p1' } };
+      pintar({
+        servicio: conProveedor,
+        valoraciones: [{ ...VALORACION, providerResponse: 'Gracias.' }],
+      });
+
+      expect(
+        screen.queryByRole('button', { name: es.detalle.responder }),
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  it('la reserva va antes que las reseñas, que es el orden en el móvil', () => {
+    // En una columna, el precio y «Reservar» quedaban al final de todas las
+    // reseñas, y nadie veía cuánto costaba.
+    pintar({ servicio: SERVICIO, valoraciones: [VALORACION] });
+
+    const reservar = screen.getByRole('button', { name: es.detalle.reservar });
+    const resenas = screen.getByRole('heading', {
+      level: 2,
+      name: es.detalle.valoraciones.replace('{total}', '1'),
+    });
+    expect(
+      reservar.compareDocumentPosition(resenas) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

@@ -42,4 +42,15 @@ describe('paginaPrivada', () => {
 
     expect(metadatos.robots).toEqual({ index: false, follow: false });
   });
+
+  it('sin la canónica de la portada, que heredaba', async () => {
+    const metadatos = await paginaPrivada(
+      'meta',
+      'panelTitulo',
+    )({
+      params: Promise.resolve({ locale: 'es' }),
+    });
+
+    expect(metadatos.alternates).toBeNull();
+  });
 });

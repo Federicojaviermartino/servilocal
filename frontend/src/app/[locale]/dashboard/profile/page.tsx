@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { textoDeError } from '@/lib/errores-api';
 import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
 import { useBorrador } from '@/lib/borrador';
+import { useValidacion } from '@/lib/validacion';
 import { useRouter } from '@/i18n/navigation';
 import Input from '@/components/atoms/Input';
 import Button from '@/components/atoms/Button';
@@ -95,6 +96,7 @@ function FormularioPerfil({
   const t = useTranslations('perfilPanel');
   const tAcceso = useTranslations('acceso');
   const tComun = useTranslations('comun');
+  const { errores, comprobar, alCambiar } = useValidacion();
   const avisarFallo = useAvisoDeFallo();
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Si la sesión caducó al guardar, vuelve lo que se había escrito.
@@ -112,8 +114,9 @@ function FormularioPerfil({
       },
   );
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!comprobar(e.currentTarget)) return;
     setIsSubmitting(true);
     try {
       await usersApi.updateProfile(form);
@@ -143,20 +146,31 @@ function FormularioPerfil({
         </p>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form
+        noValidate
+        onSubmit={handleSubmit}
+        onChange={alCambiar}
+        className="space-y-4"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
+            id="perfil-nombre"
+            name="firstName"
             label={tAcceso('nombre')}
             value={form.firstName}
             onChange={(e) => setForm({ ...form, firstName: e.target.value })}
             maxLength={100}
+            error={errores.firstName}
             required
           />
           <Input
+            id="perfil-apellidos"
+            name="lastName"
             label={tAcceso('apellidos')}
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             maxLength={100}
+            error={errores.lastName}
             required
           />
         </div>
@@ -180,7 +194,7 @@ function FormularioPerfil({
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
             rows={3}
             maxLength={2000}
-            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full rounded-md border border-borde bg-superficie px-3 py-2 text-principal placeholder-tenue focus:outline-none focus:ring-2 focus:ring-acento"
             placeholder={t('biografiaPlaceholder')}
           />
         </div>
@@ -224,14 +238,16 @@ function CambiarContrasena() {
   const t = useTranslations('perfilPanel');
   const tValidacion = useTranslations('validacion');
   const tErrores = useTranslations('erroresApi');
+  const { errores, comprobar, alCambiar } = useValidacion();
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [repetida, setRepetida] = useState('');
   const [error, setError] = useState('');
   const [guardando, setGuardando] = useState(false);
 
-  const cambiar = async (e: FormEvent) => {
+  const cambiar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!comprobar(e.currentTarget)) return;
     setError('');
     if (nueva !== repetida) {
       setError(tValidacion('passwordsNoCoinciden'));
@@ -262,7 +278,12 @@ function CambiarContrasena() {
       >
         {t('seguridadTitulo')}
       </h2>
-      <form onSubmit={cambiar} className="space-y-4">
+      <form
+        noValidate
+        onSubmit={cambiar}
+        onChange={alCambiar}
+        className="space-y-4"
+      >
         {error && (
           <p
             className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
@@ -272,15 +293,20 @@ function CambiarContrasena() {
           </p>
         )}
         <Input
+          id="seguridad-actual"
+          name="actual"
           label={t('contrasenaActual')}
           type="password"
           autoComplete="current-password"
           value={actual}
           onChange={(e) => setActual(e.target.value)}
+          error={errores.actual}
           required
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
+            id="seguridad-nueva"
+            name="nueva"
             label={t('contrasenaNueva')}
             type="password"
             autoComplete="new-password"
@@ -288,14 +314,18 @@ function CambiarContrasena() {
             maxLength={72}
             value={nueva}
             onChange={(e) => setNueva(e.target.value)}
+            error={errores.nueva}
             required
           />
           <Input
+            id="seguridad-repetida"
+            name="repetida"
             label={t('contrasenaRepetir')}
             type="password"
             autoComplete="new-password"
             value={repetida}
             onChange={(e) => setRepetida(e.target.value)}
+            error={errores.repetida}
             required
           />
         </div>
@@ -360,14 +390,16 @@ function DescargarDatos() {
 function EliminarCuenta() {
   const t = useTranslations('perfilPanel');
   const tErrores = useTranslations('erroresApi');
+  const { errores, comprobar, alCambiar } = useValidacion();
   const { logout } = useAuthStore();
   const router = useRouter();
   const [contrasena, setContrasena] = useState('');
   const [error, setError] = useState('');
   const [eliminando, setEliminando] = useState(false);
 
-  const eliminar = async (e: FormEvent) => {
+  const eliminar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!comprobar(e.currentTarget)) return;
     if (!window.confirm(t('eliminarPregunta'))) return;
     setError('');
     setEliminando(true);
@@ -394,7 +426,12 @@ function EliminarCuenta() {
         {t('eliminarTitulo')}
       </h2>
       <p className="text-sm text-secundario mb-4">{t('eliminarTexto')}</p>
-      <form onSubmit={eliminar} className="space-y-4">
+      <form
+        noValidate
+        onSubmit={eliminar}
+        onChange={alCambiar}
+        className="space-y-4"
+      >
         {error && (
           <p
             className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
@@ -404,11 +441,14 @@ function EliminarCuenta() {
           </p>
         )}
         <Input
+          id="eliminar-contrasena"
+          name="contrasena"
           label={t('eliminarContrasena')}
           type="password"
           autoComplete="current-password"
           value={contrasena}
           onChange={(e) => setContrasena(e.target.value)}
+          error={errores.contrasena}
           required
         />
         <div className="flex justify-end">

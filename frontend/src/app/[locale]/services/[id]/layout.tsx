@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 import { SITIO_URL } from '@/lib/sitio';
-import { urlDe, jsonParaScript } from '@/lib/seo';
+import { IMAGEN_SOCIAL, urlDe, jsonParaScript } from '@/lib/seo';
 import { routing } from '@/i18n/routing';
 import { claveUnidad } from '@/lib/unidad-clave';
 import { formatearImporte } from '@/lib/importes';
@@ -80,10 +80,14 @@ export async function generateMetadata({
     },
     openGraph: {
       type: 'article',
+      siteName: 'ServiLocal',
+      locale,
       title: titulo,
       description: descripcion,
       url: `${SITIO_URL}/services/${servicio.id}`,
-      images: imagen ? [{ url: imagen }] : undefined,
+      // La foto del servicio o, sin ella, la del sitio: las fichas sin foto
+      // se compartían sin imagen.
+      images: imagen ? [{ url: imagen }] : [IMAGEN_SOCIAL],
     },
   };
 }

@@ -40,7 +40,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-describedby={error ? errorId : hint ? hintId : undefined}
           className={clsx(
             'w-full rounded-md border px-3 py-2 text-base text-principal placeholder-tenue',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
+            'focus:outline-none focus:ring-2 focus:ring-acento focus:border-acento',
             error
               ? 'border-danger-500 focus:ring-danger-500 focus:border-danger-500'
               : 'border-borde',
@@ -49,7 +49,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {...rest}
         />
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-danger-600">
+          <p id={errorId} className="mt-1 text-sm text-error">
             {error}
           </p>
         )}

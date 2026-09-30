@@ -139,6 +139,46 @@ test.describe('Accesibilidad', () => {
     expect(resumir((await analizar(page)).violations)).toEqual([]);
   });
 
+  // Lo que no se veía en su estado inicial: la ficha, que es donde está el
+  // botón secundario de «Contactar», los errores de un formulario y el
+  // panel de quien reserva. En oscuro, el botón daba 2,06 de contraste y
+  // los errores 3,71, y ninguna comprobación pasaba por ahí.
+  for (const tema of ['light', 'dark'] as const) {
+    test(`una ficha cumple en tema ${tema === 'dark' ? 'oscuro' : 'claro'}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: tema });
+      await page.goto('/services/search');
+      await page
+        .locator('a[href*="/services/"]:not([href*="search"])')
+        .first()
+        .click();
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await page.waitForLoadState('networkidle');
+
+      expect(resumir((await analizar(page)).violations)).toEqual([]);
+    });
+  }
+
+  test('los errores de un formulario se leen en oscuro', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/auth/register');
+    await page.getByRole('button', { name: 'Crear cuenta' }).click();
+    await expect(page.getByText(/obligatori/i).first()).toBeVisible();
+
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
+  });
+
+  test('el panel de quien reserva cumple en oscuro', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await entrarComo(page, 'cliente');
+    await page.goto('/dashboard/bookings');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
+  });
+
   test('el asistente abierto cumple WCAG 2.1 AA', async ({ page }) => {
     // Un diálogo es donde más fácil se cuelan los fallos de foco y de nombre
     // accesible, y este se monta entero al pulsar.

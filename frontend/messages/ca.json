@@ -300,14 +300,19 @@
     "duracion": "Durada aproximada: {duracion}",
     "errorRedTexto": "Comprova la connexió i torna-ho a provar d'aquí a uns segons.",
     "errorRedTitulo": "No s'ha pogut contactar amb el servidor",
+    "errorResponder": "No s'ha pogut publicar la resposta. Torna-ho a provar.",
     "noDisponibleTexto": "Torna-ho a provar més tard.",
     "noDisponibleTitulo": "Servei no disponible",
     "noEncontradoTexto": "El servei que busques no existeix o s'ha eliminat.",
     "noEncontradoTitulo": "Servei no trobat",
+    "publicarRespuesta": "Publica la resposta",
     "reservar": "Reserva ara",
+    "responder": "Respon a aquesta valoració",
     "respuestaProfesional": "Resposta del professional",
+    "respuestaPublicada": "Resposta publicada.",
     "sinValoraciones": "Aquest servei encara no té valoracions.",
     "sobreProfesional": "Sobre el professional",
+    "tuRespuesta": "La teva resposta, que veurà tothom",
     "valoraciones": "Valoracions ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "Aplica els filtres",
     "categoria": "Categoria",
+    "cercaDeTi": "A prop de la teva ubicació",
     "ciudad": "Ciutat",
     "limpiar": "Neteja",
+    "localizando": "Cercant la teva ubicació…",
     "precioMaximo": "Preu màxim (euros)",
+    "quitarUbicacion": "Treu la ubicació",
     "radio": "Radi de cerca: {km} km",
     "sinLimite": "Sense límit",
+    "sinUbicacion": "No s'ha pogut saber on ets. Revisa el permís d'ubicació del navegador, o cerca per ciutat.",
     "todasCategorias": "Totes les categories",
     "todasCiudades": "Totes les ciutats",
+    "ubicacionAyuda": "La teva ubicació només serveix per a aquesta cerca, arrodonida a un quilòmetre, i no la desem.",
+    "usarUbicacion": "Fes servir la meva ubicació",
+    "valoracionCualquiera": "Qualsevol",
     "valoracionMinima": "Valoració mínima"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "Crea el servei",
     "descripcion": "Descripció",
     "direccion": "Adreça de referència",
+    "direccionPista": "No es publica: només la veus tu. Al mapa, el servei surt a la seva ciutat.",
     "duracion": "Durada de cada reserva",
     "duracionPista": "El temps que ocupa a la teva agenda: dues reserves confirmades no es poden solapar.",
     "guardarCambios": "Desa els canvis",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "Professionals de confiança, a prop teu",
-    "heroSubtitulo": "Troba el professional adequat per a qualsevol servei de la llar. Valoracions reals, pressupostos transparents i reserva immediata.",
+    "heroSubtitulo": "Troba el professional adequat per a qualsevol servei de la llar. Valoracions reals, preus a la vista i reserva en línia.",
     "porQueTitulo": "Per què triar ServiLocal?",
     "cercanosTitulo": "Professionals propers",
-    "cercanosTexto": "Cerca per geolocalització per trobar els millors professionals de la teva zona.",
+    "cercanosTexto": "Cerca per ciutat, o a prop teu amb la teva ubicació, per trobar professionals de la teva zona.",
     "pagosTitulo": "Pagaments segurs",
     "pagosTexto": "Plataforma de pagament integrada amb Stripe. Els teus diners estan protegits fins que el servei es completi.",
     "valoracionesTitulo": "Valoracions verificades",
@@ -399,7 +412,7 @@
     "paso1Titulo": "Cerca el servei",
     "paso1Texto": "Indica què necessites i on. El nostre sistema et mostra els professionals més propers i més ben valorats.",
     "paso2Titulo": "Reserva i paga",
-    "paso2Texto": "Tria la data, deixa el senyal i rep la confirmació a l'instant.",
+    "paso2Texto": "Tria la data i paga amb targeta: l'import queda retingut i només es cobra quan la feina està feta. El professional confirma la reserva.",
     "paso3Titulo": "Valora la teva experiència",
     "paso3Texto": "Després del servei, deixa la teva opinió per ajudar altres usuaris."
   },
@@ -412,13 +425,17 @@
     "verDetalle": "Veure detall"
   },
   "mensajesPanel": {
+    "conversacion": "Conversa",
     "enviar": "Envia",
     "errorEnviar": "No s'ha pogut enviar el missatge. Torna-ho a provar.",
     "escribePlaceholder": "Escriu un missatge...",
+    "historial": "Missatges de la conversa",
+    "interlocutor": "L'altra persona",
     "sinConversaciones": "No tens converses.",
     "sinConversacionesPista": "Les converses es creen en contactar amb un professional des d'un servei o una reserva.",
     "sinMensajes": "Encara no hi ha missatges en aquesta conversa.",
-    "titulo": "Missatges"
+    "titulo": "Missatges",
+    "tu": "Tu"
   },
   "meta": {
     "buscadorDescripcion": "Troba lampistes, electricistes, pintors, neteja, reformes i classes particulars a prop teu. Filtra per ciutat, distància, valoració i preu.",
@@ -640,7 +657,10 @@
     "sinServicios": "Encara no has publicat cap servei.",
     "sinServiciosPista": "Crea el teu primer servei per començar a rebre reserves.",
     "titulo": "Els meus serveis",
-    "resumenValoraciones": "{total, plural, =0 {Sense valoracions} one {# valoració} other {# valoracions}}"
+    "resumenValoraciones": "{total, plural, =0 {Sense valoracions} one {# valoració} other {# valoracions}}",
+    "editarServicio": "Edita {nombre}",
+    "eliminarServicio": "Elimina {nombre}",
+    "verValoraciones": "Mira-les i respon"
   },
   "tarjeta": {
     "precioRango": "{min} a {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "Confirma la contrasenya",
+    "correo": "Escriu una adreça electrònica vàlida.",
+    "corto": "Ha de tenir almenys {minimo, plural, one {# caràcter} other {# caràcters}}.",
     "emailInvalido": "Introdueix un correu vàlid",
     "emailObligatorio": "El correu és obligatori",
+    "fechaMaxima": "La data no pot ser posterior a {fecha}.",
+    "fechaMinima": "La data no pot ser anterior a {fecha}.",
+    "formato": "El valor no és vàlid.",
+    "largo": "No pot passar de {maximo, plural, one {# caràcter} other {# caràcters}}.",
+    "maximo": "El valor màxim és {maximo}.",
     "maximoCaracteres": "Com a màxim {max} caràcters",
+    "minimo": "El valor mínim és {minimo}.",
     "minimoCaracteres": "Mínim 8 caràcters",
-    "obligatorio": "Obligatori",
+    "obligatorio": "Aquest camp és obligatori.",
     "passwordObligatoria": "La contrasenya és obligatòria",
     "passwordsNoCoinciden": "Les contrasenyes no coincideixen"
   },
   "valoracion": {
-    "valorar": "Valora amb {estrellas} estrelles"
+    "estrellas": "{estrellas, plural, one {# estrella} other {# estrelles}}",
+    "nota": "{nota} de 5 estrelles",
+    "notaConTotal": "{nota} de 5 estrelles, {total, plural, one {# valoració} other {# valoracions}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "Comentari opcional sobre el servei...",

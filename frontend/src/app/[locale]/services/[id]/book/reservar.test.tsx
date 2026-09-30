@@ -42,6 +42,9 @@ vi.mock('@/lib/auth-store', () => ({
     loadFromStorage: cargarSesion,
   }),
   haySesionRecordada: () => recordada,
+  // Los borradores se guardan con quien entró: ver borrador.ts.
+  idRecordado: () => 'c1',
+  PREFIJO_BORRADOR: 'borrador:',
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -60,7 +63,7 @@ const SERVICIO = {
   priceUnit: 'por hora',
 } as unknown as Service;
 
-const CLAVE_BORRADOR = 'borrador:reserva:s1';
+const CLAVE_BORRADOR = 'borrador:c1:reserva:s1';
 const DESCRIPCION = 'Gotea el grifo de la cocina desde ayer.';
 
 /** Un día contado desde hoy, en la fecha local, como la pide el campo. */
@@ -341,7 +344,7 @@ describe('Reservar un servicio', () => {
 
   it('el borrador de otro servicio no se mezcla', async () => {
     sessionStorage.setItem(
-      'borrador:reserva:s2',
+      'borrador:c1:reserva:s2',
       JSON.stringify({
         scheduledDate: new Date().toISOString(),
         description: 'Pintar el salón entero',
@@ -356,6 +359,6 @@ describe('Reservar un servicio', () => {
     expect(screen.getByLabelText(es.reserva.descripcionTrabajo)).toHaveValue(
       '',
     );
-    expect(sessionStorage.getItem('borrador:reserva:s2')).not.toBeNull();
+    expect(sessionStorage.getItem('borrador:c1:reserva:s2')).not.toBeNull();
   });
 });

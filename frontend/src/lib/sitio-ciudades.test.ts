@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CIUDADES } from './ciudades';
-import { SITIO_URL, urlAbsoluta } from './sitio';
+import { SITIO_URL } from './sitio';
 
 describe('ciudades con cobertura', () => {
   it('la misma lista alimenta el filtro y el alta', () => {
@@ -32,19 +32,5 @@ describe('URL del sitio', () => {
   it('es absoluta y con esquema', () => {
     // El sitemap, robots.txt y las etiquetas Open Graph las exigen así.
     expect(SITIO_URL).toMatch(/^https?:\/\//);
-  });
-
-  it('una ruta interna se convierte en absoluta', () => {
-    expect(urlAbsoluta('/services/search')).toBe(
-      `${SITIO_URL}/services/search`,
-    );
-  });
-
-  it('la raíz no deja doble barra', () => {
-    expect(urlAbsoluta('/')).toBe(`${SITIO_URL}/`);
-  });
-
-  it('conserva la cadena de consulta', () => {
-    expect(urlAbsoluta('/services/search?city=Málaga')).toContain('city=');
   });
 });

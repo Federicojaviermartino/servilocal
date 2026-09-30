@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { useLocale, useTranslations } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
-import { alternativas } from '@/lib/seo';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { alternativas, grafoAbierto } from '@/lib/seo';
 import { direccionDe, type Idioma } from '@/i18n/routing';
 import { Link } from '@/i18n/navigation';
 
@@ -20,6 +20,11 @@ export async function generateMetadata({
     title: t('privacidadTitulo'),
     description: t('privacidadDescripcion'),
     alternates: alternativas(locale, '/privacy'),
+    openGraph: grafoAbierto(locale, {
+      titulo: t('privacidadTitulo'),
+      descripcion: t('privacidadDescripcion'),
+      ruta: '/privacy',
+    }),
   };
 }
 
@@ -72,6 +77,12 @@ const datos = [
       'Interpretar lo que necesitas y traducirlo a filtros de búsqueda sobre nuestro propio catálogo.',
   },
   {
+    categoria: 'Ubicación al buscar',
+    detalle:
+      'Si pides buscar cerca de ti, tu navegador nos da tu posición, redondeada a algo más de un kilómetro. No la guardamos: solo filtra esa búsqueda y queda en la dirección de la página.',
+    finalidad: 'Enseñarte los profesionales que hay cerca de ti.',
+  },
+  {
     categoria: 'Historial de moderación',
     detalle:
       'Cuando la administración desactiva o reactiva una cuenta, retira una valoración o un servicio, descarta una denuncia o actúa sobre una reserva o un pago ajenos, anotamos quién lo hizo, cuándo y sobre qué. De una cuenta se anota su correo; de una valoración retirada, la nota y el comienzo del texto.',
@@ -94,7 +105,22 @@ const derechos = [
   'Presentar una reclamación ante la Agencia Española de Protección de Datos.',
 ];
 
-export default function PrivacyPage() {
+/**
+ * Con el idioma fijado aquí, la página se genera al compilar. Sin él,
+ * next-intl lo leía de la petición y cada visita la volvía a pintar, sin
+ * caché.
+ */
+export default async function PrivacyPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  return <Politica />;
+}
+
+function Politica() {
   // El texto solo existe en español: traducirlo cambiaría su alcance
   // jurídico, así que se avisa en el idioma del visitante.
   const tLegal = useTranslations('legal');
@@ -108,7 +134,7 @@ export default function PrivacyPage() {
         Política de privacidad
       </h1>
       <p className="mt-2 text-sm text-tenue">
-        Última actualización: 29 de septiembre de 2026
+        Última actualización: 30 de septiembre de 2026
       </p>
       {idiomaActual !== 'es' && (
         <p

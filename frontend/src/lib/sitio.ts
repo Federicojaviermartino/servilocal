@@ -7,7 +7,3 @@
  */
 export const SITIO_URL =
   process.env.NEXT_PUBLIC_SITE_URL || 'https://servilocal-web.onrender.com';
-
-/** URL absoluta a partir de una ruta interna. */
-export const urlAbsoluta = (ruta: string): string =>
-  new URL(ruta, SITIO_URL).toString();

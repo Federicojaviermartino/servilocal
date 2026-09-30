@@ -21,8 +21,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const variantStyles: Record<Variant, string> = {
   primary:
     'bg-primary-600 text-white hover:bg-primary-700 disabled:bg-primary-300',
+  // Con el acento: primary-600 sobre la superficie oscura daba 2,06, y esta
+  // variante está en «Contactar», «Reintentar», «Cancelar» y «Rechazar».
   secondary:
-    'bg-superficie text-primary-600 border border-primary-600 hover:bg-primary-50',
+    'bg-superficie text-acento border border-acento hover:bg-superficie-alt',
   ghost: 'bg-transparent text-secundario hover:bg-superficie-alt',
   danger: 'bg-danger-600 text-white hover:bg-danger-700 disabled:bg-danger-300',
 };
@@ -50,7 +52,7 @@ export default function Button({
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
       className={clsx(
-        'rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed',
+        'rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-acento focus:ring-offset-2 disabled:cursor-not-allowed',
         variantStyles[variant],
         sizeStyles[size],
         fullWidth && 'w-full',

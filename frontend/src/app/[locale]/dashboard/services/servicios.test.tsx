@@ -22,6 +22,9 @@ vi.mock('@/lib/api', () => ({
 
 vi.mock('@/lib/auth-store', () => ({
   useAuthStore: () => ({ user: { id: 'p1', role: 'provider' } }),
+  // Los borradores se guardan con quien entró: ver borrador.ts.
+  idRecordado: () => 'p1',
+  PREFIJO_BORRADOR: 'borrador:',
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -98,7 +101,7 @@ describe('Mis servicios', () => {
 
     it('al volver, el formulario se abre con lo que se había escrito', async () => {
       sessionStorage.setItem(
-        'borrador:servicio',
+        'borrador:p1:servicio',
         JSON.stringify({
           servicio: null,
           datos: { title: 'Pintura de interiores' },
@@ -120,7 +123,7 @@ describe('Mis servicios', () => {
 
     it('y si se editaba uno, vuelve a ese, con los cambios', async () => {
       sessionStorage.setItem(
-        'borrador:servicio',
+        'borrador:p1:servicio',
         JSON.stringify({
           servicio: SERVICIO,
           datos: { title: 'Grifos y cisternas' },

@@ -2,6 +2,7 @@
 
 import { useState, Suspense, FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
+import { useValidacion } from '@/lib/validacion';
 import { useSearchParams } from 'next/navigation';
 import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -20,6 +21,7 @@ function Restablecer() {
   const t = useTranslations('acceso');
   const tValidacion = useTranslations('validacion');
   const tErrores = useTranslations('erroresApi');
+  const { errores, comprobar, alCambiar, describir } = useValidacion();
   const router = useRouter();
   const token = useSearchParams().get('token') ?? '';
 
@@ -28,8 +30,9 @@ function Restablecer() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
 
-  const guardar = async (e: FormEvent) => {
+  const guardar = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!comprobar(e.currentTarget)) return;
     setError('');
     if (nueva !== repetida) {
       setError(tValidacion('passwordsNoCoinciden'));
@@ -71,7 +74,7 @@ function Restablecer() {
               {t('enlaceIncompleto')}
             </p>
           ) : (
-            <form onSubmit={guardar}>
+            <form noValidate onSubmit={guardar} onChange={alCambiar}>
               {error && (
                 <div
                   className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"
@@ -86,6 +89,7 @@ function Restablecer() {
                 </label>
                 <input
                   id="restablecer-nueva"
+                  name="nueva"
                   type="password"
                   autoComplete="new-password"
                   required
@@ -95,7 +99,13 @@ function Restablecer() {
                   placeholder={t('passwordMinimo')}
                   value={nueva}
                   onChange={(e) => setNueva(e.target.value)}
+                  {...describir('nueva', 'restablecer-nueva')}
                 />
+                {errores.nueva && (
+                  <p id="restablecer-nueva-error" className="error-text">
+                    {errores.nueva}
+                  </p>
+                )}
               </div>
               <div className="mb-6">
                 <label htmlFor="restablecer-repetida" className="label">
@@ -103,13 +113,20 @@ function Restablecer() {
                 </label>
                 <input
                   id="restablecer-repetida"
+                  name="repetida"
                   type="password"
                   autoComplete="new-password"
                   required
                   className="input-field"
                   value={repetida}
                   onChange={(e) => setRepetida(e.target.value)}
+                  {...describir('repetida', 'restablecer-repetida')}
                 />
+                {errores.repetida && (
+                  <p id="restablecer-repetida-error" className="error-text">
+                    {errores.repetida}
+                  </p>
+                )}
               </div>
               <button
                 type="submit"

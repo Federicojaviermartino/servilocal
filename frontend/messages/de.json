@@ -300,14 +300,19 @@
     "duracion": "Ungefähre Dauer: {duracion}",
     "errorRedTexto": "Prüfen Sie Ihre Verbindung und versuchen Sie es in ein paar Sekunden erneut.",
     "errorRedTitulo": "Der Server war nicht erreichbar",
+    "errorResponder": "Die Antwort konnte nicht veröffentlicht werden. Bitte versuchen Sie es erneut.",
     "noDisponibleTexto": "Bitte versuchen Sie es später erneut.",
     "noDisponibleTitulo": "Dienst nicht verfügbar",
     "noEncontradoTexto": "Die gesuchte Dienstleistung existiert nicht oder wurde entfernt.",
     "noEncontradoTitulo": "Dienstleistung nicht gefunden",
+    "publicarRespuesta": "Antwort veröffentlichen",
     "reservar": "Jetzt buchen",
+    "responder": "Auf diese Bewertung antworten",
     "respuestaProfesional": "Antwort der Fachkraft",
+    "respuestaPublicada": "Antwort veröffentlicht.",
     "sinValoraciones": "Für diese Dienstleistung gibt es noch keine Bewertungen.",
     "sobreProfesional": "Über die Fachkraft",
+    "tuRespuesta": "Ihre Antwort, für alle sichtbar",
     "valoraciones": "Bewertungen ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "Filter anwenden",
     "categoria": "Kategorie",
+    "cercaDeTi": "In der Nähe Ihres Standorts",
     "ciudad": "Stadt",
     "limpiar": "Zurücksetzen",
+    "localizando": "Ihr Standort wird ermittelt…",
     "precioMaximo": "Höchstpreis (Euro)",
+    "quitarUbicacion": "Standort entfernen",
     "radio": "Suchradius: {km} km",
     "sinLimite": "Ohne Limit",
+    "sinUbicacion": "Ihr Standort konnte nicht ermittelt werden. Prüfen Sie die Standortfreigabe des Browsers oder suchen Sie nach Stadt.",
     "todasCategorias": "Alle Kategorien",
     "todasCiudades": "Alle Städte",
+    "ubicacionAyuda": "Ihr Standort dient nur dieser Suche, auf etwa einen Kilometer gerundet, und wir speichern ihn nicht.",
+    "usarUbicacion": "Meinen Standort verwenden",
+    "valoracionCualquiera": "Alle",
     "valoracionMinima": "Mindestbewertung"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "Dienstleistung anlegen",
     "descripcion": "Beschreibung",
     "direccion": "Referenzadresse",
+    "direccionPista": "Wird nicht veröffentlicht: Nur Sie sehen sie. Auf der Karte erscheint die Dienstleistung in ihrer Stadt.",
     "duracion": "Dauer jeder Buchung",
     "duracionPista": "So viel Zeit belegt sie in Ihrem Kalender: Zwei bestätigte Buchungen dürfen sich nicht überschneiden.",
     "guardarCambios": "Änderungen speichern",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "Vertrauenswürdige Fachleute in Ihrer Nähe",
-    "heroSubtitulo": "Finden Sie die passende Fachkraft für jede Dienstleistung rund ums Haus. Echte Bewertungen, transparente Angebote und sofortige Buchung.",
+    "heroSubtitulo": "Finden Sie die passende Fachkraft für jede Dienstleistung rund ums Haus. Echte Bewertungen, klare Preise und Online-Buchung.",
     "porQueTitulo": "Warum ServiLocal?",
     "cercanosTitulo": "Fachleute in der Nähe",
-    "cercanosTexto": "Suche per Standort, um die besten Fachleute in Ihrer Umgebung zu finden.",
+    "cercanosTexto": "Suchen Sie nach Stadt oder mit Ihrem Standort in Ihrer Nähe, um Fachleute in Ihrer Umgebung zu finden.",
     "pagosTitulo": "Sichere Zahlungen",
     "pagosTexto": "Zahlungsabwicklung über Stripe. Ihr Geld ist geschützt, bis die Leistung erbracht ist.",
     "valoracionesTitulo": "Geprüfte Bewertungen",
@@ -399,7 +412,7 @@
     "paso1Titulo": "Dienstleistung suchen",
     "paso1Texto": "Sagen Sie uns, was Sie brauchen und wo. Wir zeigen Ihnen die nächstgelegenen und bestbewerteten Fachleute.",
     "paso2Titulo": "Buchen und bezahlen",
-    "paso2Texto": "Datum wählen, Anzahlung leisten und sofort die Bestätigung erhalten.",
+    "paso2Texto": "Wählen Sie ein Datum und zahlen Sie per Karte: Der Betrag wird reserviert und erst abgebucht, wenn die Arbeit erledigt ist. Die Fachkraft bestätigt die Buchung.",
     "paso3Titulo": "Bewerten Sie Ihre Erfahrung",
     "paso3Texto": "Hinterlassen Sie nach der Leistung eine Bewertung, um anderen zu helfen."
   },
@@ -412,13 +425,17 @@
     "verDetalle": "Details ansehen"
   },
   "mensajesPanel": {
+    "conversacion": "Unterhaltung",
     "enviar": "Senden",
     "errorEnviar": "Die Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
     "escribePlaceholder": "Nachricht schreiben...",
+    "historial": "Nachrichten der Unterhaltung",
+    "interlocutor": "Ihr Gegenüber",
     "sinConversaciones": "Sie haben keine Unterhaltungen.",
     "sinConversacionesPista": "Unterhaltungen entstehen, wenn Sie eine Fachkraft über eine Dienstleistung oder eine Buchung kontaktieren.",
     "sinMensajes": "In dieser Unterhaltung gibt es noch keine Nachrichten.",
-    "titulo": "Nachrichten"
+    "titulo": "Nachrichten",
+    "tu": "Sie"
   },
   "meta": {
     "buscadorDescripcion": "Finden Sie Installateure, Elektriker, Maler, Reinigung, Renovierungen und Nachhilfe in Ihrer Nähe. Filtern Sie nach Stadt, Entfernung, Bewertung und Preis.",
@@ -508,7 +525,7 @@
     "accesosRapidos": "Schnellzugriff",
     "buscarServicio": "Dienstleistung suchen",
     "buscarServicioTexto": "Finden Sie Fachleute in Ihrer Nähe.",
-    "demostracionAviso": "Du nutzt ein Demokonto: Probier alles aus. Was du an Dienstleistungen, deinem Profil oder Bewertungen änderst, wird nach einer Stunde zurückgesetzt.",
+    "demostracionAviso": "Sie nutzen ein Demokonto: Probieren Sie alles aus. Was Sie an Dienstleistungen, Ihrem Profil oder Bewertungen ändern, wird nach einer Stunde zurückgesetzt.",
     "gestionarServicios": "Meine Dienstleistungen verwalten",
     "gestionarServiciosTexto": "Erstellen, bearbeiten oder pausieren Sie Ihre Dienstleistungen.",
     "hola": "Hallo, {nombre}",
@@ -640,7 +657,10 @@
     "sinServicios": "Sie haben noch keine Dienstleistung veröffentlicht.",
     "sinServiciosPista": "Erstellen Sie Ihre erste Dienstleistung, um Buchungen zu erhalten.",
     "titulo": "Meine Dienstleistungen",
-    "resumenValoraciones": "{total, plural, =0 {Keine Bewertungen} one {# Bewertung} other {# Bewertungen}}"
+    "resumenValoraciones": "{total, plural, =0 {Keine Bewertungen} one {# Bewertung} other {# Bewertungen}}",
+    "editarServicio": "{nombre} bearbeiten",
+    "eliminarServicio": "{nombre} löschen",
+    "verValoraciones": "Ansehen und antworten"
   },
   "tarjeta": {
     "precioRango": "{min} bis {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "Bestätigen Sie das Passwort",
+    "correo": "Geben Sie eine gültige E-Mail-Adresse ein.",
+    "corto": "Es müssen mindestens {minimo, plural, one {# Zeichen} other {# Zeichen}} sein.",
     "emailInvalido": "Geben Sie eine gültige E-Mail-Adresse ein",
     "emailObligatorio": "Die E-Mail-Adresse ist erforderlich",
+    "fechaMaxima": "Das Datum darf nicht nach dem {fecha} liegen.",
+    "fechaMinima": "Das Datum darf nicht vor dem {fecha} liegen.",
+    "formato": "Dieser Wert ist ungültig.",
+    "largo": "Es dürfen höchstens {maximo, plural, one {# Zeichen} other {# Zeichen}} sein.",
+    "maximo": "Der Höchstwert ist {maximo}.",
     "maximoCaracteres": "Höchstens {max} Zeichen",
+    "minimo": "Der Mindestwert ist {minimo}.",
     "minimoCaracteres": "Mindestens 8 Zeichen",
-    "obligatorio": "Pflichtfeld",
+    "obligatorio": "Dieses Feld ist erforderlich.",
     "passwordObligatoria": "Das Passwort ist erforderlich",
     "passwordsNoCoinciden": "Die Passwörter stimmen nicht überein"
   },
   "valoracion": {
-    "valorar": "Mit {estrellas} Sternen bewerten"
+    "estrellas": "{estrellas, plural, one {# Stern} other {# Sterne}}",
+    "nota": "{nota} von 5 Sternen",
+    "notaConTotal": "{nota} von 5 Sternen, {total, plural, one {# Bewertung} other {# Bewertungen}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "Optionaler Kommentar zur Dienstleistung...",

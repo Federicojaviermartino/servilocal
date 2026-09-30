@@ -10,15 +10,18 @@ const markRead = vi.fn(async (_partnerId: string) => ({
   data: { marcados: 1 },
 }));
 const toastError = vi.fn();
+const getConversations = vi.fn();
+const getServicio = vi.fn();
 const desplazar = vi.fn();
 
 vi.mock('@/lib/api', () => ({
   messagesApi: {
     getConversation: (id: string) => getConversation(id),
-    getConversations: async () => ({ data: [] }),
+    getConversations: () => getConversations(),
     send: (datos: unknown) => send(datos),
     markRead: (id: string) => markRead(id),
   },
+  servicesApi: { getById: (id: string) => getServicio(id) },
 }));
 
 vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'u2' }) }));
@@ -29,6 +32,9 @@ vi.mock('react-hot-toast', () => ({
 
 vi.mock('@/lib/auth-store', () => ({
   useAuthStore: () => ({ user: { id: 'u1' } }),
+  // Los borradores se guardan con quien entró: ver borrador.ts.
+  idRecordado: () => 'u1',
+  PREFIJO_BORRADOR: 'borrador:',
 }));
 
 // Sin socket: la conversación se refresca sola cada diez segundos.
@@ -39,8 +45,24 @@ vi.mock('@/lib/socket-mensajes', () => ({
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
-    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-      React.createElement('a', { href }, children),
+    // Como el de next-intl: la dirección puede venir como objeto.
+    Link: ({
+      href,
+      children,
+    }: {
+      href: string | { pathname: string; query?: Record<string, string> };
+      children: React.ReactNode;
+    }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+        },
+        children,
+      ),
     usePathname: () => '/dashboard/messages/p1',
   };
 });
@@ -71,6 +93,10 @@ beforeEach(() => {
   getConversation.mockReset();
   send.mockReset();
   markRead.mockClear();
+  getConversations.mockReset();
+  getConversations.mockResolvedValue({ data: [] });
+  getServicio.mockReset();
+  window.history.replaceState({}, '', '/dashboard/messages/u2');
   toastError.mockReset();
   desplazar.mockReset();
   // jsdom no desplaza nada: se anota a quién se le pide.
@@ -82,7 +108,80 @@ beforeEach(() => {
 
 afterEach(() => vi.useRealTimers());
 
+const LUIS = { firstName: 'Luis', lastName: 'Gómez' };
+
 describe('Conversación', () => {
+  describe('para un lector de pantalla', () => {
+    it('el título dice con quién es', async () => {
+      getConversations.mockResolvedValue({
+        data: [{ partnerId: 'u2', partner: LUIS }],
+      });
+      getConversation.mockResolvedValue({ data: [mensaje] });
+      pintar();
+      await esperar();
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Luis Gómez' }),
+      ).toBeInTheDocument();
+    });
+
+    it('una conversación nueva, abierta desde una ficha, también', async () => {
+      // Aún no está en la lista de conversaciones: el nombre sale del
+      // servicio desde el que se pulsó «Contactar».
+      window.history.replaceState({}, '', '/dashboard/messages/u2?servicio=s1');
+      getServicio.mockResolvedValue({
+        data: { id: 's1', providerId: 'u2', provider: LUIS },
+      });
+      getConversation.mockResolvedValue({ data: [] });
+      pintar();
+      await esperar();
+
+      expect(getServicio).toHaveBeenCalledWith('s1');
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Luis Gómez' }),
+      ).toBeInTheDocument();
+    });
+
+    it('un servicio de otro profesional no pone su nombre', async () => {
+      // Un enlace preparado podría hacer pasar a cualquiera por otro.
+      window.history.replaceState({}, '', '/dashboard/messages/u2?servicio=s9');
+      getServicio.mockResolvedValue({
+        data: { id: 's9', providerId: 'u9', provider: LUIS },
+      });
+      getConversation.mockResolvedValue({ data: [] });
+      pintar();
+      await esperar();
+
+      expect(
+        screen.getByRole('heading', {
+          level: 1,
+          name: es.mensajesPanel.conversacion,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it('cada mensaje dice quién lo escribió, y lo que llega se anuncia', async () => {
+      // A la vista, el autor se deduce por el lado y el color.
+      getConversations.mockResolvedValue({
+        data: [{ partnerId: 'u2', partner: LUIS }],
+      });
+      getConversation.mockResolvedValue({
+        data: [
+          mensaje,
+          { ...mensaje, id: 'm2', senderId: 'u1', content: 'Sí' },
+        ],
+      });
+      pintar();
+      await esperar();
+
+      const historial = screen.getByRole('log', {
+        name: es.mensajesPanel.historial,
+      });
+      expect(historial).toHaveTextContent(`Luis:${mensaje.content}`);
+      expect(historial).toHaveTextContent(`${es.mensajesPanel.tu}:Sí`);
+    });
+  });
+
   it('si un refresco falla, lo que ya se veía se queda', async () => {
     // Antes el fallo vaciaba la conversación: un corte de un segundo en uno
     // de los refrescos hacía desaparecer todos los mensajes.
@@ -200,7 +299,7 @@ describe('Conversación', () => {
 
     expect(screen.getByRole('link', { name: /entrar/i })).toHaveAttribute(
       'href',
-      '/auth/login',
+      '/auth/login?redirect=%2Fdashboard%2Fmessages%2Fp1',
     );
   });
 

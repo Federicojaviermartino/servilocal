@@ -217,7 +217,7 @@ export default function CampanaAvisos() {
           aria-label={t('titulo')}
           ref={panel}
           tabIndex={-1}
-          className="absolute end-0 z-50 mt-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-borde bg-superficie shadow-card-hover"
+          className="absolute end-0 z-50 mt-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-acento w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-borde bg-superficie shadow-card-hover"
         >
           <div className="flex items-center justify-between border-b border-borde px-4 py-3">
             <p className="text-sm font-semibold text-principal">

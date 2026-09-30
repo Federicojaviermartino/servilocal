@@ -300,14 +300,19 @@
     "duracion": "Gutxi gorabeherako iraupena: {duracion}",
     "errorRedTexto": "Egiaztatu zure konexioa eta saiatu berriro segundo batzuk barru.",
     "errorRedTitulo": "Ezin izan da zerbitzariarekin harremanetan jarri",
+    "errorResponder": "Ezin izan da erantzuna argitaratu. Saiatu berriro.",
     "noDisponibleTexto": "Saiatu berriro geroago.",
     "noDisponibleTitulo": "Zerbitzua ez dago erabilgarri",
     "noEncontradoTexto": "Bilatzen ari zaren zerbitzua ez da existitzen edo ezabatu da.",
     "noEncontradoTitulo": "Zerbitzua ez da aurkitu",
+    "publicarRespuesta": "Argitaratu erantzuna",
     "reservar": "Erreserbatu orain",
+    "responder": "Erantzun balorazio honi",
     "respuestaProfesional": "Profesionalaren erantzuna",
+    "respuestaPublicada": "Erantzuna argitaratu da.",
     "sinValoraciones": "Zerbitzu honek ez du baloraziorik oraindik.",
     "sobreProfesional": "Profesionalari buruz",
+    "tuRespuesta": "Zure erantzuna, edonork ikusiko duena",
     "valoraciones": "Balorazioak ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "Aplikatu iragazkiak",
     "categoria": "Kategoria",
+    "cercaDeTi": "Zure kokapenetik gertu",
     "ciudad": "Hiria",
     "limpiar": "Garbitu",
+    "localizando": "Zure kokapena bilatzen…",
     "precioMaximo": "Gehieneko prezioa (euroak)",
+    "quitarUbicacion": "Kendu kokapena",
     "radio": "Bilaketa-erradioa: {km} km",
     "sinLimite": "Mugarik gabe",
+    "sinUbicacion": "Ezin izan da jakin non zauden. Begiratu nabigatzailearen kokapen-baimena, edo bilatu hiriaren arabera.",
     "todasCategorias": "Kategoria guztiak",
     "todasCiudades": "Hiri guztiak",
+    "ubicacionAyuda": "Zure kokapena bilaketa honetarako bakarrik erabiltzen da, kilometro batera biribilduta, eta ez dugu gordetzen.",
+    "usarUbicacion": "Erabili nire kokapena",
+    "valoracionCualquiera": "Edozein",
     "valoracionMinima": "Gutxieneko balorazioa"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "Sortu zerbitzua",
     "descripcion": "Deskribapena",
     "direccion": "Erreferentziazko helbidea",
+    "direccionPista": "Ez da argitaratzen: zuk bakarrik ikusten duzu. Mapan, zerbitzua bere hirian agertzen da.",
     "duracion": "Erreserba bakoitzaren iraupena",
     "duracionPista": "Zure agendan hartzen duen denbora: berretsitako bi erreserba ezin dira gainjarri.",
     "guardarCambios": "Gorde aldaketak",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "Profesional fidagarriak, zure ondoan",
-    "heroSubtitulo": "Aurkitu etxeko edozein zerbitzutarako profesional egokia. Benetako balorazioak, aurrekontu gardenak eta berehalako erreserba.",
+    "heroSubtitulo": "Aurkitu etxeko edozein zerbitzutarako profesional egokia. Benetako balorazioak, prezio argiak eta sareko erreserba.",
     "porQueTitulo": "Zergatik aukeratu ServiLocal?",
     "cercanosTitulo": "Inguruko profesionalak",
-    "cercanosTexto": "Geolokalizazio bidezko bilaketa zure inguruko profesional onenak aurkitzeko.",
+    "cercanosTexto": "Bilatu hiriaren arabera, edo zure ondoan zure kokapenarekin, zure inguruko profesionalak aurkitzeko.",
     "pagosTitulo": "Ordainketa seguruak",
     "pagosTexto": "Stripe-rekin bateratutako ordainketa plataforma. Zure dirua babestuta dago zerbitzua amaitu arte.",
     "valoracionesTitulo": "Egiaztatutako balorazioak",
@@ -399,7 +412,7 @@
     "paso1Titulo": "Bilatu zerbitzua",
     "paso1Texto": "Adierazi zer behar duzun eta non. Gure sistemak inguruko eta ondoen baloratutako profesionalak erakusten dizkizu.",
     "paso2Titulo": "Erreserbatu eta ordaindu",
-    "paso2Texto": "Aukeratu eguna, utzi seinalea eta jaso berrespena berehala.",
+    "paso2Texto": "Aukeratu eguna eta ordaindu txartelarekin: zenbatekoa atxikita geratzen da, eta lana egindakoan bakarrik kobratzen da. Profesionalak berresten du erreserba.",
     "paso3Titulo": "Balioetsi zure esperientzia",
     "paso3Texto": "Zerbitzuaren ondoren, utzi zure iritzia beste erabiltzaileei laguntzeko."
   },
@@ -412,13 +425,17 @@
     "verDetalle": "Ikusi xehetasuna"
   },
   "mensajesPanel": {
+    "conversacion": "Elkarrizketa",
     "enviar": "Bidali",
     "errorEnviar": "Ezin izan da mezua bidali. Saiatu berriro.",
     "escribePlaceholder": "Idatzi mezu bat...",
+    "historial": "Elkarrizketako mezuak",
+    "interlocutor": "Beste pertsona",
     "sinConversaciones": "Ez duzu elkarrizketarik.",
     "sinConversacionesPista": "Elkarrizketak profesional batekin harremanetan jartzean sortzen dira, zerbitzu edo erreserba batetik.",
     "sinMensajes": "Ez dago mezurik elkarrizketa honetan oraindik.",
-    "titulo": "Mezuak"
+    "titulo": "Mezuak",
+    "tu": "Zu"
   },
   "meta": {
     "buscadorDescripcion": "Aurkitu iturginak, elektrikariak, margolariak, garbiketa, erreformak eta eskola partikularrak zure inguruan. Iragazi hiriaren, distantziaren, balorazioaren eta prezioaren arabera.",
@@ -640,7 +657,10 @@
     "sinServicios": "Oraindik ez duzu zerbitzurik argitaratu.",
     "sinServiciosPista": "Sortu zure lehen zerbitzua erreserbak jasotzen hasteko.",
     "titulo": "Nire zerbitzuak",
-    "resumenValoraciones": "{total, plural, =0 {Baloraziorik ez} one {# balorazio} other {# balorazio}}"
+    "resumenValoraciones": "{total, plural, =0 {Baloraziorik ez} one {# balorazio} other {# balorazio}}",
+    "editarServicio": "Editatu: {nombre}",
+    "eliminarServicio": "Ezabatu: {nombre}",
+    "verValoraciones": "Ikusi eta erantzun"
   },
   "tarjeta": {
     "precioRango": "{min} - {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "Berretsi pasahitza",
+    "correo": "Idatzi baliozko helbide elektroniko bat.",
+    "corto": "Gutxienez {minimo, plural, one {karaktere bat} other {# karaktere}} izan behar ditu.",
     "emailInvalido": "Sartu baliozko helbide elektroniko bat",
     "emailObligatorio": "Helbide elektronikoa derrigorrezkoa da",
+    "fechaMaxima": "Data ezin da {fecha} baino geroagokoa izan.",
+    "fechaMinima": "Data ezin da {fecha} baino lehenagokoa izan.",
+    "formato": "Balioa ez da baliozkoa.",
+    "largo": "Ezin ditu {maximo, plural, one {karaktere bat} other {# karaktere}} baino gehiago izan.",
+    "maximo": "Gehieneko balioa {maximo} da.",
     "maximoCaracteres": "Gehienez {max} karaktere",
+    "minimo": "Gutxieneko balioa {minimo} da.",
     "minimoCaracteres": "Gutxienez 8 karaktere",
-    "obligatorio": "Derrigorrezkoa",
+    "obligatorio": "Eremu hau derrigorrezkoa da.",
     "passwordObligatoria": "Pasahitza derrigorrezkoa da",
     "passwordsNoCoinciden": "Pasahitzak ez datoz bat"
   },
   "valoracion": {
-    "valorar": "Baloratu {estrellas} izarrekin"
+    "estrellas": "{estrellas, plural, one {izar bat} other {# izar}}",
+    "nota": "{nota} izar (5etik)",
+    "notaConTotal": "{nota} izar (5etik), {total, plural, one {balorazio bat} other {# balorazio}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "Zerbitzuari buruzko iruzkin aukerakoa...",

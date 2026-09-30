@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import es from '../../../messages/es.json';
 import { CIUDADES } from '@/lib/ciudades';
 import FilterPanel from './FilterPanel';
@@ -28,9 +28,29 @@ function pintar(initial: ServiceSearchParams = {}) {
   return alAplicar;
 }
 
+/** Lo que respondería el navegador al pedirle la ubicación. */
+function ubicacion(respuesta: { latitude: number; longitude: number } | null) {
+  const getCurrentPosition = vi.fn(
+    (bien: PositionCallback, mal?: PositionErrorCallback | null) => {
+      if (respuesta) bien({ coords: respuesta } as GeolocationPosition);
+      else mal?.({ code: 1 } as GeolocationPositionError);
+    },
+  );
+  Object.defineProperty(navigator, 'geolocation', {
+    value: { getCurrentPosition },
+    configurable: true,
+  });
+  return getCurrentPosition;
+}
+
 describe('FilterPanel', () => {
   beforeEach(() => {
     getAll.mockClear();
+  });
+
+  afterEach(() => {
+    // jsdom no tiene geolocalización: cada prueba pone la suya.
+    Reflect.deleteProperty(navigator, 'geolocation');
   });
 
   it('las categorías llegan del servidor', async () => {
@@ -68,7 +88,12 @@ describe('FilterPanel', () => {
   it('arranca con los filtros que ya venían en la URL', () => {
     // Al recargar o compartir el enlace, el panel tiene que decir lo mismo
     // que los resultados.
-    pintar({ city: 'Sevilla', radiusKm: 25 });
+    pintar({
+      city: 'Sevilla',
+      latitude: 37.39,
+      longitude: -5.98,
+      radiusKm: 25,
+    });
 
     expect(screen.getByLabelText(es.filtros.ciudad)).toHaveValue('Sevilla');
     expect(
@@ -117,9 +142,138 @@ describe('FilterPanel', () => {
     expect(alAplicar).toHaveBeenCalledWith({
       categoryId: undefined,
       city: undefined,
+      latitude: undefined,
+      longitude: undefined,
       radiusKm: undefined,
       minRating: undefined,
       maxPrice: undefined,
+    });
+  });
+
+  describe('cerca de ti', () => {
+    it('sin ubicación no hay radio, ni viaja', async () => {
+      // Se mandaba sin coordenadas y la API lo ignoraba: alguien en Valencia
+      // ponía 5 km y recibía resultados de toda España.
+      const alAplicar = pintar({ city: 'Sevilla', radiusKm: 25 });
+
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.aplicar }),
+      );
+
+      expect(alAplicar).toHaveBeenCalledWith(
+        expect.objectContaining({ latitude: undefined, radiusKm: undefined }),
+      );
+    });
+
+    it('con la ubicación aparece el radio, y viaja con el punto redondeado', async () => {
+      // Dos decimales, algo más de un kilómetro: ni la dirección ni el
+      // historial guardan dónde está la casa de quien busca.
+      ubicacion({ latitude: 39.46975, longitude: -0.37739 });
+      const alAplicar = pintar();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.usarUbicacion }),
+      );
+      expect(screen.getByText(es.filtros.cercaDeTi)).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(es.filtros.radio.replace('{km}', '10')),
+      ).toHaveValue('10');
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.aplicar }),
+      );
+
+      expect(alAplicar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: 39.47,
+          longitude: -0.38,
+          radiusKm: 10,
+        }),
+      );
+    });
+
+    it('si el navegador no la da, lo explica y ofrece la ciudad', async () => {
+      ubicacion(null);
+      pintar();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.usarUbicacion }),
+      );
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        es.filtros.sinUbicacion,
+      );
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+    });
+
+    it('un navegador sin geolocalización, también', async () => {
+      pintar();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.usarUbicacion }),
+      );
+
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        es.filtros.sinUbicacion,
+      );
+    });
+
+    it('quitar la ubicación quita también el radio', async () => {
+      const alAplicar = pintar({
+        latitude: 39.47,
+        longitude: -0.38,
+        radiusKm: 5,
+      });
+
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.quitarUbicacion }),
+      );
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.aplicar }),
+      );
+
+      expect(screen.queryByRole('slider')).not.toBeInTheDocument();
+      expect(alAplicar).toHaveBeenCalledWith(
+        expect.objectContaining({
+          latitude: undefined,
+          longitude: undefined,
+          radiusKm: undefined,
+        }),
+      );
+    });
+  });
+
+  describe('valoración mínima', () => {
+    it('es un grupo con su nombre, y se elige una nota', async () => {
+      // La etiqueta no estaba asociada al control.
+      const alAplicar = pintar();
+
+      expect(
+        screen.getByRole('radiogroup', { name: es.filtros.valoracionMinima }),
+      ).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('radio', { name: '4 estrellas' }));
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.aplicar }),
+      );
+
+      expect(alAplicar).toHaveBeenCalledWith(
+        expect.objectContaining({ minRating: 4 }),
+      );
+    });
+
+    it('«Cualquiera» la quita', async () => {
+      const alAplicar = pintar({ minRating: 4 });
+
+      await userEvent.click(
+        screen.getByRole('radio', { name: es.filtros.valoracionCualquiera }),
+      );
+      await userEvent.click(
+        screen.getByRole('button', { name: es.filtros.aplicar }),
+      );
+
+      expect(alAplicar).toHaveBeenCalledWith(
+        expect.objectContaining({ minRating: undefined }),
+      );
     });
   });
 

@@ -187,10 +187,9 @@ describe('Header', () => {
     entrarComo('client');
     pintar(<Header />);
 
+    // Por lo que dice: su nombre es el texto que se ve (WCAG 2.5.3).
     await userEvent.click(
-      screen.getAllByRole('button', {
-        name: es.navegacion.cerrarSesion,
-      })[0],
+      screen.getByRole('button', { name: es.navegacion.salir }),
     );
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);

@@ -32,8 +32,24 @@ const enrutador = { replace: (ruta: string) => replace(ruta), push: vi.fn() };
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
   return {
-    Link: ({ href, children }: { href: string; children: React.ReactNode }) =>
-      React.createElement('a', { href }, children),
+    // Como el de next-intl: la dirección puede venir como objeto.
+    Link: ({
+      href,
+      children,
+    }: {
+      href: string | { pathname: string; query?: Record<string, string> };
+      children: React.ReactNode;
+    }) =>
+      React.createElement(
+        'a',
+        {
+          href:
+            typeof href === 'string'
+              ? href
+              : `${href.pathname}?${new URLSearchParams(href.query)}`,
+        },
+        children,
+      ),
     useRouter: () => enrutador,
     usePathname: () => '/dashboard',
   };
@@ -202,7 +218,7 @@ describe('Resumen del panel', () => {
     expect(aviso).toHaveTextContent(es.carga.sesionCaducada);
     expect(
       within(aviso).getByRole('link', { name: es.carga.entrarDeNuevo }),
-    ).toHaveAttribute('href', '/auth/login');
+    ).toHaveAttribute('href', '/auth/login?redirect=%2Fdashboard');
   });
 
   it('a la administración la manda a su panel', async () => {
@@ -321,7 +337,7 @@ describe('Mis reservas', () => {
     expect(aviso).toHaveTextContent(es.carga.sesionCaducada);
     expect(
       within(aviso).getByRole('link', { name: es.carga.entrarDeNuevo }),
-    ).toHaveAttribute('href', '/auth/login');
+    ).toHaveAttribute('href', '/auth/login?redirect=%2Fdashboard');
     expect(screen.queryByText(es.reservasPanel.sinReservas)).toBeNull();
   });
 });
@@ -439,6 +455,6 @@ describe('Mensajes', () => {
     expect(aviso).toHaveTextContent(es.carga.sesionCaducada);
     expect(
       within(aviso).getByRole('link', { name: es.carga.entrarDeNuevo }),
-    ).toHaveAttribute('href', '/auth/login');
+    ).toHaveAttribute('href', '/auth/login?redirect=%2Fdashboard');
   });
 });

@@ -66,7 +66,13 @@ const valoracion = (bookingId: string, extra = {}) => ({
   ...extra,
 });
 
-const CLAVE_BORRADOR = 'borrador:valoracion:b1';
+// Los borradores se guardan con quien entró: ver borrador.ts.
+vi.mock('@/lib/auth-store', async (original) => ({
+  ...(await original<typeof import('@/lib/auth-store')>()),
+  idRecordado: () => 'c1',
+}));
+
+const CLAVE_BORRADOR = 'borrador:c1:valoracion:b1';
 
 const pintar = () =>
   render(
@@ -226,9 +232,7 @@ describe('Mis valoraciones', () => {
       crear.mockResolvedValue({ data: valoracion('b1') });
       await pintada();
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Valorar con 4 estrellas' }),
-      );
+      await userEvent.click(screen.getByRole('radio', { name: '4 estrellas' }));
       await userEvent.type(comentario(), 'Muy puntual y limpio');
       await enviar();
 
@@ -341,9 +345,7 @@ describe('Mis valoraciones', () => {
       crear.mockRejectedValue({ response: { status: 401, data: {} } });
       await pintada();
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Valorar con 3 estrellas' }),
-      );
+      await userEvent.click(screen.getByRole('radio', { name: '3 estrellas' }));
       await userEvent.type(comentario(), 'Bien, aunque llegó tarde');
       await enviar();
 
@@ -366,9 +368,7 @@ describe('Mis valoraciones', () => {
       getMyReviews.mockResolvedValue({ data: [] });
       crear.mockRejectedValueOnce({ response: { status: 401, data: {} } });
       const { unmount } = await pintada();
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Valorar con 3 estrellas' }),
-      );
+      await userEvent.click(screen.getByRole('radio', { name: '3 estrellas' }));
       await userEvent.type(comentario(), 'Bien, aunque llegó tarde');
       await enviar();
       await waitFor(() => expect(avisoError).toHaveBeenCalled());
@@ -398,7 +398,7 @@ describe('Mis valoraciones', () => {
 
     it('el borrador de otra reserva no se mezcla', async () => {
       sessionStorage.setItem(
-        'borrador:valoracion:b2',
+        'borrador:c1:valoracion:b2',
         JSON.stringify({ rating: 1, comment: 'De otra reserva' }),
       );
       getMyBookings.mockResolvedValue({ data: [GRIFO] });

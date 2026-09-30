@@ -300,14 +300,19 @@
     "duracion": "Approximate duration: {duracion}",
     "errorRedTexto": "Check your connection and try again in a few seconds.",
     "errorRedTitulo": "The server could not be reached",
+    "errorResponder": "The reply could not be posted. Please try again.",
     "noDisponibleTexto": "Please try again later.",
     "noDisponibleTitulo": "Service unavailable",
     "noEncontradoTexto": "The service you are looking for does not exist or has been removed.",
     "noEncontradoTitulo": "Service not found",
+    "publicarRespuesta": "Post reply",
     "reservar": "Book now",
+    "responder": "Reply to this review",
     "respuestaProfesional": "Reply from the professional",
+    "respuestaPublicada": "Reply posted.",
     "sinValoraciones": "This service has no reviews yet.",
     "sobreProfesional": "About the professional",
+    "tuRespuesta": "Your reply, visible to everyone",
     "valoraciones": "Reviews ({total})"
   },
   "error": {
@@ -355,13 +360,20 @@
   "filtros": {
     "aplicar": "Apply filters",
     "categoria": "Category",
+    "cercaDeTi": "Near your location",
     "ciudad": "City",
     "limpiar": "Clear",
+    "localizando": "Finding your location…",
     "precioMaximo": "Maximum price (euros)",
+    "quitarUbicacion": "Remove location",
     "radio": "Search radius: {km} km",
     "sinLimite": "No limit",
+    "sinUbicacion": "Your location could not be found. Check the browser's location permission, or search by city.",
     "todasCategorias": "All categories",
     "todasCiudades": "All cities",
+    "ubicacionAyuda": "Your location is only used for this search, rounded to about a kilometre, and we do not store it.",
+    "usarUbicacion": "Use my location",
+    "valoracionCualquiera": "Any",
     "valoracionMinima": "Minimum rating"
   },
   "formularioServicio": {
@@ -369,6 +381,7 @@
     "crearServicio": "Create service",
     "descripcion": "Description",
     "direccion": "Reference address",
+    "direccionPista": "Not published: only you can see it. On the map, the service appears in its city.",
     "duracion": "Duration of each booking",
     "duracionPista": "The time it takes in your schedule: two confirmed bookings cannot overlap.",
     "guardarCambios": "Save changes",
@@ -387,10 +400,10 @@
   },
   "inicio": {
     "heroTitulo": "Trusted professionals, close to you",
-    "heroSubtitulo": "Find the right professional for any home service. Real reviews, transparent quotes and instant booking.",
+    "heroSubtitulo": "Find the right professional for any home service. Real reviews, upfront prices and online booking.",
     "porQueTitulo": "Why choose ServiLocal?",
     "cercanosTitulo": "Nearby professionals",
-    "cercanosTexto": "Location-based search to find the best professionals in your area.",
+    "cercanosTexto": "Search by city, or near you with your location, to find professionals in your area.",
     "pagosTitulo": "Secure payments",
     "pagosTexto": "Payments handled by Stripe. Your money is held safely until the job is complete.",
     "valoracionesTitulo": "Verified reviews",
@@ -399,7 +412,7 @@
     "paso1Titulo": "Search for a service",
     "paso1Texto": "Tell us what you need and where. We show you the closest and best rated professionals.",
     "paso2Titulo": "Book and pay",
-    "paso2Texto": "Pick a date, pay the deposit and get instant confirmation.",
+    "paso2Texto": "Pick a date and pay by card: the amount is held and only charged once the job is done. The professional confirms the booking.",
     "paso3Titulo": "Rate your experience",
     "paso3Texto": "After the job, leave a review to help other customers."
   },
@@ -412,13 +425,17 @@
     "verDetalle": "View details"
   },
   "mensajesPanel": {
+    "conversacion": "Conversation",
     "enviar": "Send",
     "errorEnviar": "The message could not be sent. Please try again.",
     "escribePlaceholder": "Write a message...",
+    "historial": "Conversation messages",
+    "interlocutor": "The other person",
     "sinConversaciones": "You have no conversations.",
     "sinConversacionesPista": "Conversations start when you contact a professional from a service or a booking.",
     "sinMensajes": "There are no messages in this conversation yet.",
-    "titulo": "Messages"
+    "titulo": "Messages",
+    "tu": "You"
   },
   "meta": {
     "buscadorDescripcion": "Find plumbers, electricians, painters, cleaning, renovations and private tuition near you. Filter by city, distance, rating and price.",
@@ -640,7 +657,10 @@
     "sinServicios": "You have not published any services yet.",
     "sinServiciosPista": "Create your first service to start receiving bookings.",
     "titulo": "My services",
-    "resumenValoraciones": "{total, plural, =0 {No reviews} one {# review} other {# reviews}}"
+    "resumenValoraciones": "{total, plural, =0 {No reviews} one {# review} other {# reviews}}",
+    "editarServicio": "Edit {nombre}",
+    "eliminarServicio": "Delete {nombre}",
+    "verValoraciones": "View and reply"
   },
   "tarjeta": {
     "precioRango": "{min} to {max} {unidad}",
@@ -658,16 +678,26 @@
   },
   "validacion": {
     "confirmaPassword": "Confirm the password",
+    "correo": "Enter a valid email address.",
+    "corto": "It must be at least {minimo, plural, one {# character} other {# characters}} long.",
     "emailInvalido": "Enter a valid email address",
     "emailObligatorio": "Email is required",
+    "fechaMaxima": "The date cannot be after {fecha}.",
+    "fechaMinima": "The date cannot be before {fecha}.",
+    "formato": "This value is not valid.",
+    "largo": "It cannot be longer than {maximo, plural, one {# character} other {# characters}}.",
+    "maximo": "The maximum is {maximo}.",
     "maximoCaracteres": "At most {max} characters",
+    "minimo": "The minimum is {minimo}.",
     "minimoCaracteres": "At least 8 characters",
-    "obligatorio": "Required",
+    "obligatorio": "This field is required.",
     "passwordObligatoria": "Password is required",
     "passwordsNoCoinciden": "The passwords do not match"
   },
   "valoracion": {
-    "valorar": "Rate {estrellas} stars"
+    "estrellas": "{estrellas, plural, one {# star} other {# stars}}",
+    "nota": "{nota} out of 5 stars",
+    "notaConTotal": "{nota} out of 5 stars, {total, plural, one {# review} other {# reviews}}"
   },
   "valoracionesPanel": {
     "comentarioPlaceholder": "Optional comment about the service...",

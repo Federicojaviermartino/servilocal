@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AxiosError } from 'axios';
 
 /**
@@ -27,6 +27,13 @@ interface Resultado<T> {
   estado: EstadoCarga;
   /** Vuelve a pedirlo. Lo usa el botón de reintentar. */
   reintentar: () => void;
+  /**
+   * Vuelve a pedirlo sin pasar por «cargando»: lo que se ve se queda hasta
+   * que llega lo nuevo, y si falla, se queda también. Para después de un
+   * cambio, cuando reintentar cambiaba la lista por un indicador de carga y
+   * el foco se perdía con ella.
+   */
+  refrescar: () => void;
   /**
    * El identificador de la petición que falló, si fue un error del servidor.
    * Es lo que aparece en su registro: la pantalla lo enseña como código de
@@ -60,6 +67,8 @@ export function useCarga<T>(
   const [datos, setDatos] = useState<T | null>(null);
   const [respuesta, setRespuesta] = useState<Respuesta<T> | null>(null);
   const [intento, setIntento] = useState(0);
+  const [refresco, setRefresco] = useState(0);
+  const refrescando = useRef(false);
 
   // La función llega nueva en cada render; guardarla como dependencia
   // dispararía una petición por render. Las dependencias las da quien llama,
@@ -71,6 +80,8 @@ export function useCarga<T>(
 
   useEffect(() => {
     let vigente = true;
+    const esRefresco = refrescando.current;
+    refrescando.current = false;
 
     ejecutar()
       .then(({ data }) => {
@@ -79,7 +90,7 @@ export function useCarga<T>(
         setRespuesta({ ejecutar, intento, estado: 'listo' });
       })
       .catch((error: AxiosError) => {
-        if (!vigente) return;
+        if (!vigente || esRefresco) return;
         setRespuesta({
           ejecutar,
           intento,
@@ -91,9 +102,13 @@ export function useCarga<T>(
     return () => {
       vigente = false;
     };
-  }, [ejecutar, intento]);
+  }, [ejecutar, intento, refresco]);
 
   const reintentar = useCallback(() => setIntento((n) => n + 1), []);
+  const refrescar = useCallback(() => {
+    refrescando.current = true;
+    setRefresco((n) => n + 1);
+  }, []);
 
   // «Cargando» no se guarda: es que la última respuesta no corresponde a lo
   // último que se ha pedido. Antes se ponía a mano al empezar cada petición,
@@ -109,6 +124,7 @@ export function useCarga<T>(
     datos,
     estado: alDia ? respuesta.estado : 'cargando',
     reintentar,
+    refrescar,
     referencia: alDia ? respuesta.referencia : undefined,
   };
 }
