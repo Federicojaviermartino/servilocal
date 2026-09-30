@@ -55,11 +55,13 @@ test.describe('Búsqueda de servicios', () => {
       paginacion.getByRole('button', { name: 'Página 2' }),
     ).toHaveAttribute('aria-current', 'page');
 
-    const segundoTitulo = await page
-      .locator(TARJETA + ' h3')
-      .first()
-      .textContent();
-    expect(segundoTitulo).not.toBe(primerTitulo);
+    // Esperando a que cambie, no leyéndolo una vez: la página 2 puede estar
+    // marcada un instante antes de que lleguen sus resultados, y entonces se
+    // comparaba la primera tarjeta de la página 1 consigo misma.
+    expect(primerTitulo).toBeTruthy();
+    await expect(page.locator(TARJETA + ' h3').first()).not.toHaveText(
+      primerTitulo!,
+    );
   });
 
   test('buscar un texto cambia la dirección y los resultados llegan del servidor', async ({

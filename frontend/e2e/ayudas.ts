@@ -11,6 +11,11 @@ import { Page } from '@playwright/test';
  * El botón redirige a la portada, y hay que esperar a que llegue: ir a una
  * ruta protegida antes de tiempo rebota a la pantalla de acceso y deja el
  * test mirando la página equivocada.
+ *
+ * Y a que termine de cargar, no solo a que cambie la dirección: ese cambio
+ * lo hace el enrutador en el navegador, y la portada sigue pidiéndose
+ * después. Un page.goto encima de esa carga hacía fallar a WebKit con un
+ * «internal error» de vez en cuando, y la prueba pasaba al reintentarla.
  */
 export const CUENTAS_DEMO = {
   administracion: 'demo@servilocal.com',
@@ -26,6 +31,7 @@ export async function entrarComo(page: Page, papel: PapelDemo): Promise<void> {
     .getByRole('button', { name: new RegExp(CUENTAS_DEMO[papel]) })
     .click();
   await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
+  await page.waitForLoadState('networkidle');
 }
 
 /** Entre un hueco y otro: más de lo que dura cualquier reserva de las pruebas. */

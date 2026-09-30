@@ -54,7 +54,10 @@ the project, and carry that commit's date.
   adapter.
 - A flaky end-to-end test fails the run instead of leaving a warning, and a `.only` left
   behind is rejected by ESLint and, in CI, by Playwright. There had been no flaky test in
-  the last 25 runs.
+  the last 25 runs, and the rule caught two in its first: signing in with a demo account
+  moved on while the home page was still loading, and WebKit sometimes failed on the next
+  navigation; and the pagination check read the first result once instead of waiting for
+  it to change.
 - The payment test is skipped only when the Stripe test keys are missing, decided before
   it starts. With them, a form that does not appear is a failure rather than a skip, and
   the test checks through the API that the money ends up held.
