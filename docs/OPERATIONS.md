@@ -11,7 +11,7 @@ steps, not an explanation.
 | API (`servilocal-api`) | Render, Frankfurt, free plan, Docker from `backend/` | Runs pending migrations when it boots |
 | Front end (`servilocal-web`) | Render, Frankfurt, free plan, Docker from `frontend/` | Relays `/api/*` to the API |
 | Database | Neon, PostgreSQL 16 with PostGIS | Free plan: compute suspends after five idle minutes |
-| CI, smoke test, keep-awake ping | GitHub Actions | See `.github/workflows/` |
+| CI, smoke test, keep-awake ping, weekly database copy | GitHub Actions | See `.github/workflows/` |
 | Payments | Stripe, test mode | Webhook at `/api/payments/webhook` |
 | Email | Brevo | Password recovery only; without a key, recovery answers 503 |
 | Errors | Sentry, optional | Off without `SENTRY_DSN` |
@@ -116,8 +116,10 @@ run against a schema it does not know.
 ## Restoring the database
 
 Neon keeps a history of the database and can restore it to a point in time, within
-the window that the plan keeps. **Confirm that window in the Neon console
-(*Settings → Storage*) and rehearse a restore once**, before it is needed.
+the window that the plan keeps. On the free plan that window is **six hours**
+(September 2026): damage noticed the next morning can no longer be undone from Neon,
+and the weekly copy below is what is left. **Rehearse a restore once**, before it is
+needed.
 
 1. In Neon, create a branch from the main branch at a moment before the damage
    (*Branches → Create branch → Past point in time*).
@@ -129,9 +131,39 @@ the window that the plan keeps. **Confirm that window in the Neon console
    payments and messages created in between are gone from the database, but
    payments still exist in Stripe.
 
-There are no dumps of our own. If they are ever added, encrypt them before they
-leave the runner: this repository is public, and anyone signed in to GitHub can
-download a workflow's artifacts.
+### Weekly copy
+
+Every Monday at 03:41 UTC, `.github/workflows/copia-base.yml` dumps the database with
+`pg_dump` and keeps it for 90 days as a workflow artifact named `copia-YYYY-MM-DD`.
+The plain dump only ever exists in the runner's memory: it is encrypted with
+[age](https://age-encryption.org) before it is written anywhere, because this repository
+is public and anyone signed in to GitHub can download a workflow's artifacts. Only the
+public key is in GitHub.
+
+It does nothing, and says so in the run, until two things are set up:
+
+1. A key pair, kept outside GitHub: `age-keygen -o servilocal-copias.txt`. The file
+   holds the private key; store it in a password manager. The line starting with
+   `# public key:` is the public one.
+2. In GitHub, *Settings → Secrets and variables → Actions*: the variable
+   `COPIA_CLAVE_AGE` with the public key (`age1…`), and the secret
+   `COPIA_DATABASE_URL` with a connection string to Neon. Better with a role that can
+   only read: in Neon's SQL editor, `CREATE ROLE copias WITH LOGIN PASSWORD '…';
+   GRANT pg_read_all_data TO copias;`.
+3. Run it once by hand (*Actions → Copia semanal de la base → Run workflow*) and check
+   that the artifact appears.
+
+To restore one, into a new Neon branch rather than over the live one:
+
+```bash
+gh run download <run id> -n copia-2026-10-05
+age -d -i servilocal-copias.txt copia-2026-10-05.dump.age \
+  | pg_restore --no-owner --no-privileges --dbname='<URL of the new branch>'
+```
+
+Then check the data and point `DATABASE_URL` at that branch, as in the point-in-time
+restore above.
+Everything created after the copy is gone; payments still exist in Stripe.
 
 ## Seeding
 
@@ -170,7 +202,14 @@ and what they publish is deleted, or withdrawn if it already has bookings. So:
 - **Request log**: one JSON line per request in the API's log in Render, with
   method, path (no query string), status, milliseconds and the request id. Anyone
   reporting an error screen can read out its reference code, which is that id:
-  search the log for it.
+  search the log for it. A request the client gave up on is logged too, with
+  `"abortada":true` and no status if nothing was sent: the slow ones are exactly
+  those.
+- **Shutdown**: the API logs the signal it received (`SIGTERM: se cierran…`) and,
+  last, the code it exits with (`Proceso terminado con código 0`). An exit with 1
+  between those two lines failed while closing; without the first line it was not a
+  shutdown. Redis gets three seconds to acknowledge its `QUIT`, then the connection
+  is cut.
 - **Instances**: every time a service wakes up, Render gives it a new instance id.
   Search the log by service, not by instance, or a search from before the last
   wake-up comes back empty. Going to sleep leaves no event in Render's event list,
@@ -198,7 +237,13 @@ hours a month; checking both services every hour would use up the quota.
 - **Render**: 750 hours a month for the whole workspace, which has four services.
   The keep-awake window costs about 510 of them. When the quota runs out, Render
   suspends every free service until the next month.
-- **Neon**: compute suspends after five idle minutes; the next query waits for it
-  to resume.
+- **Neon** (free plan, September 2026): 100 CU-hours of compute a month per project,
+  0.5 GB of storage and six hours of history. Compute suspends after five idle
+  minutes, and the next query waits for it to resume. The keep-awake ping only
+  touches the database at the start of each run, so compute suspends between runs;
+  the hourly jobs and real visits wake it too. Even awake the whole window, at the
+  minimum size of 0.25 CU, it would be about 64 CU-hours a month; if autoscaling lets
+  it grow, that multiplies. When the hours run out, Neon suspends the database until
+  the next month. Check *Usage* in the Neon console once a week, as well as Render's.
 - **GitHub**: scheduled workflows stop after 60 days without activity in the
   repository, and scheduled runs are sometimes late or skipped.

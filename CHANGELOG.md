@@ -10,6 +10,69 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.11.0] — 2026-09-30
+
+### Fixed
+
+- A shutdown could hang until Render killed the process. Node runs as process 1 in the
+  container, where the signal Nest re-raises after closing is ignored, so the process
+  only ended once nothing was left pending, and a Redis connection waiting to reconnect
+  kept it alive. The API now exits as soon as everything is closed, and Redis gets three
+  seconds to acknowledge its `QUIT` before the connection is cut. Measured on the image
+  with Redis stopped just before the shutdown: the previous version was killed after 30
+  seconds with code 137; this one exits in four with 0.
+- The smoke test waited up to twenty minutes for each service, one after the other,
+  inside a thirty-minute job: with both deploys late, GitHub cut the job before it could
+  open the issue. Both waits now share one deadline.
+- Nest's log lines reached Render with their colour codes as text.
+
+### Changed
+
+- A request the client gave up on is logged too, marked `abortada`, and without a status
+  if nothing was sent. Only finished responses used to leave a line, which left out the
+  slow ones.
+- The API logs the signal it received when it starts shutting down and, last, the code
+  it exits with.
+- A weekly copy of the database, kept for 90 days as a workflow artifact and encrypted
+  with age before it touches the runner's disk. It does nothing until its secret and its
+  public key are set up; how to, and how to restore a copy, is in `docs/OPERATIONS.md`.
+  Neon's free plan keeps six hours of history.
+- CI's service images are pinned by digest as well as by tag.
+
+### Tests
+
+- Who may call each route is checked with the whole application booted as in
+  production: every route, called as an anonymous visitor, a client, a provider, an
+  administrator and the read-only demo administrator, 336 checks. The routes come from
+  the application itself, so a new one without a row in the table fails. Removing the
+  administrator role from refunds and the read-only interceptor from the application
+  module turns 22 of them red; before, everything stayed green.
+- Coverage on the API is measured over all of `src` instead of a fixed list of files,
+  with floors of its own for payments, bookings, account data, guards and interceptors;
+  on the front end, for the redirect check, the error texts and the payment page. Every
+  controller now has unit tests, and so do the Anthropic provider and the socket
+  adapter.
+- A flaky end-to-end test fails the run instead of leaving a warning, and a `.only` left
+  behind is rejected by ESLint and, in CI, by Playwright. There had been no flaky test in
+  the last 25 runs.
+- The payment test is skipped only when the Stripe test keys are missing, decided before
+  it starts. With them, a form that does not appear is a failure rather than a skip, and
+  the test checks through the API that the money ends up held.
+- Privacy: the data export is checked against the database for the other party's email,
+  phone, address and surname, from the client's side and the provider's; a booking as
+  `GET /bookings/:id` returns it is tested for each state; and deleting the Stripe
+  customer runs against `stripe-mock`, including when Stripe does not answer.
+- The payment page's error states, the provider's services dashboard (from 54% to 97%)
+  and the URL parameter hook on the server have unit tests.
+- Weaker checks made stronger: the control test for error states waits for the bookings
+  to arrive, completing an unaccepted booking checks that the state machine refused it,
+  the live message has to arrive with no polling request in between, a wrong password
+  shows its own message, the retry test checks that the request was repeated, the test
+  service is checked to be withdrawn, test bookings never share a slot within a run, and
+  a date a few seconds ahead gets fifteen rather than five.
+- Front-end unit tests get fifteen seconds each and three for `findBy`: on a loaded
+  machine, two full local runs had failed, each on different tests.
+
 ## [2.10.0] — 2026-09-30
 
 ### Fixed

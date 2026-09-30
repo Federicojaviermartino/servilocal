@@ -58,6 +58,12 @@ dependencies of either the API or the front end.
   `SameSite`. No `GET` changes anything: opening a conversation used to mark
   it as read, which a link from another site could trigger, and that is now
   a `PATCH` of its own.
+- Who may call each route is tested as a whole, not guard by guard: an
+  integration test boots the application as it runs in production and calls
+  every route as an anonymous visitor, a client, a provider, an administrator
+  and the read-only demo administrator. The list of routes comes from the
+  application itself, so a new route without a row in that table fails the
+  build until someone decides who may call it.
 - What someone was typing when their session expired is kept in the tab under
   their account and cleared when they sign out, so the next person to sign in
   there does not inherit a half-typed phone number. If another tab signs in with
@@ -139,6 +145,10 @@ dependencies of either the API or the front end.
   most.
 - The seed script empties the database before filling it, so it refuses any
   host that is not local unless the database is named in `SEMILLA_CONFIRMAR`.
+- The weekly copy of the database, once it is set up, is encrypted with age
+  before it touches the runner's disk: the repository is public, and so are
+  its workflow artifacts to anyone signed in to GitHub. Only the public key is
+  there; the private one is kept outside.
 
 ## Known gaps
 

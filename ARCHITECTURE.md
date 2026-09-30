@@ -81,11 +81,18 @@ is not exactly `true` or `false` or an origin with a path stops it, with every p
 listed at once. A deploy that does not start never replaces the running one. On the way
 down, shutdown hooks let Nest close the database pool, Redis and the hold scheduler when
 Render sends `SIGTERM`, and both images run their server directly as the main process so
-that the signal reaches it.
+that the signal reaches it. That makes Node process 1 in the container, where a re-raised
+signal is ignored, so once everything is closed the API exits explicitly; and Redis gets
+three seconds to acknowledge its `QUIT` before the connection is cut, so a Redis
+restarting at that moment cannot keep the process alive until Render kills it. The log
+says which signal arrived and, last, the code the process exits with.
 
 **Logs.** One JSON line per request — method, path without the query string, status,
 milliseconds and request id — besides the formatted lines Nest writes. The request id is
-the reference code an error screen shows, so a report can be traced to its line.
+the reference code an error screen shows, so a report can be traced to its line. The line
+is written when the connection closes, not when the response finishes, so a request the
+client gave up on is logged too, marked `abortada`: those are the slow ones. Nest's own
+lines carry colour codes only in a terminal; in Render's log they arrived as text.
 
 The API sits behind Cloudflare, which sits in front of Render. That chain is the reason
 the rate limiter does not trust `req.ip` — see [Decisions](#decisions). The front end sits
@@ -602,8 +609,8 @@ Stated here rather than discovered later.
 
 | Layer | Tool | What it protects |
 |-------|------|------------------|
-| Back end | Vitest + SWC | Services and controllers, including the money paths and the guard metadata that keeps admin routes admin-only |
-| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, and that shutting down closes the sockets before Redis |
+| Back end | Vitest + SWC | Services and every controller, including the money paths, and that whoever acts is taken from the session, never from the address or the body |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that shutting down closes the sockets before Redis, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it |
 | Front end | Vitest | Library helpers, components, pages, and catalogue parity across the ten locales |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
@@ -620,9 +627,14 @@ Two habits, learned the hard way, apply to the tests themselves: a test must be 
 fail before it is trusted, and a test that asserts on the wrong side of a condition
 passes just as green as one that works.
 
-Coverage floors sit a few points below what is measured, and the measurement includes the
-pages, the JWT strategy, the real-time gateway and the hold scheduler: with the floors far
-below and those files left out, a whole untested service fitted under the minimum. In CI,
-Playwright retries a failed test twice, and a test that only passes on a retry is listed
-by name in the job summary and flagged as a warning, with its trace kept, instead of
-disappearing into a green run.
+Coverage on the API is measured over all of `src`, leaving out only what is tested
+another way: entities and migrations, which integration compares and runs; module
+declarations and `main.ts`, which the permission matrix and CI's image job boot; and the
+seed. It used to be a fixed list of files, and whatever was not on it did not count: the
+controllers, or the rules for what each party of a booking sees. Floors sit a couple of
+points below what is measured. Payments, bookings, account data, guards and interceptors
+have floors of their own, and so do the front end's redirect check, its error texts and
+the payment page: a global figure is an average, and an average hides an untested branch
+in a small file. In CI, Playwright retries a failed test twice, to tell a flaky test from
+a broken one and to keep its trace, but either fails the run, and the summary lists them
+apart by name. A stray `.only` is rejected by ESLint and, in CI, by both runners.
