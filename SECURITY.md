@@ -58,6 +58,11 @@ dependencies of either the API or the front end.
   `SameSite`. No `GET` changes anything: opening a conversation used to mark
   it as read, which a link from another site could trigger, and that is now
   a `PATCH` of its own.
+- What someone was typing when their session expired is kept in the tab under
+  their account and cleared when they sign out, so the next person to sign in
+  there does not inherit a half-typed phone number. If another tab signs in with
+  another account, or signs out, this one reloads: the cookie is shared, and it
+  would otherwise save into the new account.
 - Signing out revokes the session on the server, not just the cookie: each
   token carries its own id, which goes on a revocation list until the token
   would have expired anyway. Only that session is closed — the demo accounts

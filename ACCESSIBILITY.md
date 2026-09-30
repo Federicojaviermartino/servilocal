@@ -9,7 +9,7 @@ practice here, how it is verified, and — just as importantly — what is not c
 |---|---|
 | Target | WCAG 2.1 level AA |
 | Status | Partially conformant. No known level A or AA failure; the gaps below are level AAA or untested |
-| Verified on | Chromium desktop (1440×900) and a Pixel 5 viewport (393 px), light and dark themes, with reflow checked at 375 px |
+| Verified on | Chromium desktop (1440×900) and a Pixel 5 viewport (393 px), light and dark themes, with reflow checked at 320 px |
 | Last checked | Every push — the checks run in CI |
 
 "Partially conformant" is the honest label. Automated tooling catches roughly a
@@ -29,6 +29,19 @@ axe run would be the kind of statement this project tries not to make.
   on the dark surface. It is now a token too. That one hid because the dark-mode
   check only ever looked at the home page, which has no forms, tables or status
   badges; it now covers every page that the light check does.
+- The same check missed what only appears on some pages or after an action. In
+  dark mode the secondary button ("Contact", "Retry", "Cancel") sat at 2.06:1,
+  form errors at 3.71:1, the focus outline at 2.45–2.90:1 and the map pop-ups,
+  white from Leaflet's stylesheet with the theme's near-white text, at 2.5:1.
+  Errors now have their own token per theme (6.47:1 and 6.48:1), the button and
+  the outline use the accent, and the pop-ups take the theme's surface. The
+  dark-mode check now also covers a service page, a form showing its errors and
+  the client dashboard.
+- A rating is read, not just seen. The stars were five disabled buttons named
+  "Rate with N stars", even when they only showed a score, so a screen reader
+  heard five buttons per review and never the score. Showing one is now an image
+  named after it ("4.5 out of 5 stars, 3 reviews"); choosing one is a group of
+  radio buttons, which announces the one selected and moves with the arrow keys.
 - No information is carried by colour alone. Booking states pair a colour with a
   word; an invalid field gets `aria-invalid` and a message tied to it with
   `aria-describedby`, not just a red border. This claim was false for one chart
@@ -40,8 +53,10 @@ axe run would be the kind of statement this project tries not to make.
 - Images carry alternative text; decorative icons are `aria-hidden`. Map markers
   are named after their service, and the admin charts carry their data in a table
   for screen readers, next to the drawing.
-- Text reflows at 375 px without horizontal scrolling. Tables and charts, which
-  cannot reflow, sit in their own focusable scroll containers.
+- Text reflows at 320 px, the width WCAG asks for, without horizontal
+  scrolling. It used to be checked at 375, and at 320 a seven-page pagination
+  did not fit. Tables and charts, which cannot reflow, sit in their own
+  focusable scroll containers.
 
 **Operable**
 
@@ -58,6 +73,14 @@ axe run would be the kind of statement this project tries not to make.
   collapse to a near-instant change for anyone who has asked their system for less
   movement, and so does scrolling requested from a script.
 - No time limits, no content that flashes.
+- Nothing changes on its own when a control changes. The language selector was a
+  drop-down that loaded the page on change, so moving through it with the
+  keyboard jumped to the next language; it is now a button that opens a list of
+  links, and only choosing one navigates.
+- Controls are named by what they show. "Sign out" in the header was labelled
+  "Close session" in six of the ten languages, so someone driving the page by voice could
+  not reach it by saying what they saw. After accepting a booking, focus moves
+  to its card instead of being lost with the buttons that disappear.
 
 **Understandable**
 
@@ -69,7 +92,11 @@ axe run would be the kind of statement this project tries not to make.
 - Every page has its own title in its language, so the route announcer speaks when
   moving between sections of the dashboard.
 - Form errors say what is wrong in words, next to the field, and are tied to it with
-  `aria-describedby`, so a screen reader says why a field is invalid.
+  `aria-describedby`, so a screen reader says why a field is invalid. Forms no
+  longer rely on the browser's own validation, whose messages come in the
+  browser's language rather than the page's and vanish in a bubble: the rules the
+  fields declare are checked on submit, each error appears next to its field in
+  the page's language, and focus goes to the first one.
 - Navigation is in the same place on every page, and the current section is marked
   with `aria-current`, not only with colour.
 
@@ -83,6 +110,9 @@ axe run would be the kind of statement this project tries not to make.
   including focus management, which is the part most often skipped.
 - Events that only happen visually are announced: an incoming notification updates
   a polite live region, because otherwise its only trace is a ten-pixel red badge.
+  A conversation is a `log`, so a reply that arrives over the socket is read out;
+  it has a heading with the other person's name, and each message says who wrote
+  it, which on screen is only the side and the colour.
 
 ## How it is verified
 
@@ -91,9 +121,10 @@ axe run would be the kind of statement this project tries not to make.
 | WCAG 2.1 A and AA rules on key pages | `@axe-core/playwright` | Every push |
 | Landmark rules: one `main`, at the top level | `@axe-core/playwright` | Every push |
 | The same rules in dark mode, on every page and the admin panel | `@axe-core/playwright` | Every push |
+| A service page in both themes, form errors and the client dashboard in dark mode | `@axe-core/playwright` | Every push |
 | The admin panel, tab by tab | `@axe-core/playwright` | Every push |
 | Keyboard operation, focus return, ARIA tab pattern | Playwright | Every push |
-| Reflow at 375 px with no horizontal scroll | Playwright | Every push |
+| Reflow at 320 px with no horizontal scroll | Playwright | Every push |
 | Right-to-left rendering in Arabic | Playwright | Every push |
 | Components in isolation, in any locale and theme | Storybook | Built in CI |
 
@@ -116,8 +147,9 @@ Listed rather than discovered.
   outside our control and untested by us.
 - **Cognitive load has not been formally assessed.** WCAG 2.2 criteria such as
   accessible authentication and consistent help are not addressed.
-- **No AAA criteria are claimed**, including enhanced contrast (1.4.6) and text
-  spacing overrides (1.4.12).
+- **Text spacing overrides (1.4.12, level AA) are untested.** Nothing checks the
+  layout with increased line, letter and word spacing.
+- **No AAA criteria are claimed**, including enhanced contrast (1.4.6).
 
 ## Reporting a problem
 

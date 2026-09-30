@@ -10,6 +10,77 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.10.0] — 2026-09-30
+
+### Fixed
+
+- Filtering by maximum price answered 400 and left the search in error: the front end
+  sent `maxPrice`, and the API only knows `priceMax`.
+- The radius filter filtered nothing. It went without coordinates, and the API ignores
+  it without them: someone in Valencia set 5 km and got results from all over Spain.
+  Searching near you now uses the browser's location, rounded to about a kilometre and
+  never stored, and the radius only appears with it. The home page no longer promises a
+  deposit and an instant confirmation: the whole amount is held, and the provider
+  confirms.
+- The results page was not in the address, so coming back from a service opened on
+  page 3 landed on page 1.
+- On a phone, a service's price and "Book" came after all its reviews. On a desktop,
+  the sticky booking card and the dashboard navigation slid under the fixed header.
+- A booking of 42 € on a service "from 40 €" could not be made, because the amount went
+  in steps of 5 from the minimum. Service prices now take cents too.
+- Signing in again went to the dashboard's home or the home page instead of back where
+  the person was, and registering ignored where they had come from.
+- The booking summary showed the date as `2026-10-01`.
+- Stripe's card form has no Catalan, Galician or Basque and picked a language of its
+  own; those three now get Spanish.
+- A service page that failed to load for lack of network offered no way to retry.
+- Galician mixed "fontanería" with the category's normative "fontanaría".
+
+### Accessibility
+
+- Dark-mode contrast: the secondary button (2.06:1), form errors (3.71:1), the focus
+  outline (2.45–2.90:1) and the map pop-ups (2.5:1). Errors have their own token per
+  theme.
+- A rating showed as five disabled buttons named "Rate with N stars", and the score only
+  by colour. Showing one is now an image named after it, and choosing one is a group of
+  radio buttons.
+- The language selector no longer navigates while the keyboard moves through it: it is a
+  button that opens a list of links.
+- A conversation has a heading with the other person's name, says who wrote each message
+  and announces new ones as they arrive.
+- Forms validate in the page's language, next to each field, instead of in the
+  browser's bubbles and in the browser's language.
+- "Sign out" is named by what it shows, and the edit and delete buttons of a service
+  name the service.
+- After accepting a booking, the list stays and focus goes to its card.
+- A booking's description and cancellation reason take their own text direction.
+- Reflow is checked at 320 px, where a seven-page pagination did not fit.
+
+### Changed
+
+- The search page arrives with its heading, search bar and filters, and the results
+  stream in from the server. It used to arrive empty until the browser had run. The
+  search bar is a real form, so pressing "Search" before the JavaScript has loaded, or
+  without it, still searches.
+- Providers can reply to reviews from their service's page, and reach the detail of a
+  received booking from the list.
+- Drafts kept when a session expires belong to the account and are cleared on sign-out,
+  and a tab reloads when another signs in with another account.
+- Pages carry their own Open Graph title and a default image, and private pages no
+  longer claim the home page as their canonical URL.
+- The about, privacy and terms pages are generated at build time.
+- The socket client loads when the socket opens instead of on every page, and the
+  message catalogue sent to the browser leaves out what only the server uses.
+- The privacy policy declares the location used to search near you. New accounts
+  record their acceptance of the version of 30 September.
+
+### Tests
+
+- The search is tested as the server serves it — a promise read with `use()` — and the
+  address, the API parameter names and the server request each have their own tests.
+- Accessibility checks cover a service page in both themes, form errors and the client
+  dashboard in dark mode, and reflow is measured at 320 px.
+
 ## [2.9.0] — 2026-09-29
 
 ### Security

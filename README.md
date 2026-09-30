@@ -3,7 +3,7 @@
 # ServiLocal
 
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
-![Version](https://img.shields.io/badge/VERSION-2.9.0-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/badge/VERSION-2.10.0-2563eb?style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-12-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
@@ -22,7 +22,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-1671%20unit%20%2B%2086%20integration%20%2B%2098%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-1759%20unit%20%2B%2086%20integration%20%2B%20104%20e2e-475569)
 
 </div>
 
@@ -128,10 +128,10 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 ## Features
 
 **Anyone**
-- Geolocated search with filters: category, city, radius, minimum rating, maximum price
+- Search near you, from the browser's location, or by city, with filters: category, radius, minimum rating, maximum price. Filters, view and page live in the address, so the back button and a shared link give the same search, and the page arrives rendered from the server
 - Results as a list or on a Leaflet map with markers
 - Accent- and case-insensitive search that also matches trade names, so "fontaneria" finds *Fontanería*
-- Service detail with verified reviews, price range and provider profile
+- Service detail with verified reviews, price range and provider profile; on a phone, the price and "Book" come before the reviews
 - Light and dark themes: follows the system preference, and remembers an explicit choice
 - Available in 10 languages, picked from the browser and switchable at any time, right-to-left layout included; amounts are written as each language writes them
 
@@ -147,6 +147,7 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 - Full CRUD over published services, including coverage radius, price unit and how long each booking takes; a service with booking history is withdrawn rather than deleted
 - Incoming bookings with confirm, reject, complete and cancel actions. Two confirmed bookings never overlap, a booking is completed once its date has arrived, and completing one with nothing held asks whether to wait for the payment or complete it without charge
 - Messaging with clients
+- Replies to reviews, from the service's own page
 
 **Everyone with an account**
 - Change the password from the profile, which closes every other session, or recover it by email with a one-hour link
@@ -181,7 +182,7 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 945 unit tests on the API with doubles, plus 86 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey, and 726 in the browser. Playwright for 98 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 945 unit tests on the API with doubles, plus 86 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey, and 814 in the browser. Playwright for 104 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -543,7 +544,7 @@ Register `https://servilocal-api.onrender.com/api/payments/webhook` in the Strip
 
 WCAG 2.1 level AA, verified on every push with `@axe-core/playwright` in both
 themes, plus Playwright tests for what automated tooling cannot check: keyboard
-operation, focus return, the ARIA tab pattern, and reflow at 375 px.
+operation, focus return, the ARIA tab pattern, and reflow at 320 px.
 
 [`ACCESSIBILITY.md`](ACCESSIBILITY.md) states what is implemented, how it is
 verified and — deliberately — the known gaps, including that no audit with a real
@@ -588,7 +589,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 726 unit tests (Vitest)
+npm run test          # 814 unit tests (Vitest)
 npm run test:cov      # fails below 89% statements / 87% branches
 npm run build
 
@@ -605,7 +606,7 @@ npm run storybook
 npm run lock
 ```
 
-98 end-to-end tests run on four projects — Chrome on desktop and on a Pixel 5 phone (393 px), Firefox, and Safari's WebKit, with the narrowest layouts checked at 375 px — for 392 executions per run. They cover search with accent-insensitive matching, publishing a service from the provider's dashboard, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so a copied cookie stops working, registering only after accepting the terms, changing the password, deleting the account, theme switching, language detection and switching, a service page that arrives rendered, a title and a canonical URL on every page, the admin panel including its charts, moderation queue and audit log, the booking state machine — a booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge —, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, landmarks included, and a full booking paid with a Stripe test card.
+104 end-to-end tests run on four projects — Chrome on desktop and on a Pixel 5 phone (393 px), Firefox, and Safari's WebKit, with the narrowest layouts checked at 320 px — for 416 executions per run. They cover search with accent-insensitive matching, a search page that arrives rendered from the server and keeps its page in the address, publishing a service from the provider's dashboard, pagination, city filtering, the collapsible mobile filter panel, the map, demo login, failed login, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so a copied cookie stops working, registering only after accepting the terms, changing the password, deleting the account, theme switching, language detection and switching, a service page that arrives rendered, a title and a canonical URL on every page, the admin panel including its charts, moderation queue and audit log, the booking state machine — a booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge —, live notifications, WCAG 2.1 AA checks with axe in both light and dark themes, landmarks included, and in dark mode on a service page, a form showing its errors and the client dashboard, and a full booking paid with a Stripe test card.
 
 The payment test skips itself, with an explicit reason, when Stripe keys are not configured — the booking is still created, but there is nothing to charge. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 
@@ -619,6 +620,7 @@ All of these run in CI on every push, to any branch. The end-to-end job spins up
 |--------|------|
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
+| Done | Front end: search rendered on the server with its page in the address, search near you, ratings and conversations that a screen reader can follow, forms that validate in the page's language, and drafts kept per account |
 | Done | The demo resets itself every hour, and its administrator only sees the demo's accounts. Public pages show reviewers by first name and initial, and services without their reference address |
 | Done | Redis in production: rate-limit counters survive a deploy and sockets span instances. The application still runs without it, by design |
 | Done | Payments follow Stripe's own state: a card declined and replaced in the same form ends held, not failed, and payments left pending or failed are reconciled every hour |
