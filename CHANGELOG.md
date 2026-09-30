@@ -10,6 +10,37 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.11.1] — 2026-09-30
+
+### Documentation
+
+- The header no longer promises "Real Payments": payments run on Stripe in test mode. A
+  table lists what is live in the demo and what is off for lack of a key: the model
+  behind the assistant, recovery emails, error reporting and per-visitor rate limits.
+- The README opens with a screenshot and a five-line summary that links to the code, and
+  explains how to run the integration and end-to-end suites locally, with what CI starts
+  for them.
+- GitHub now draws the thesis diagrams from their Mermaid source, in
+  `diagrams/README.md`. Before, they opened as raw HTML.
+- The version badge reads the version from `main` instead of being written by hand.
+- Corrected against the code:
+  - `@swc/helpers` no longer clashes between Windows and Linux; `ajv` still does.
+  - Seeding under Docker Compose needs no confirmation, because `db` counts as a local
+    host, and the API image can seed.
+  - `npm ci` rather than `npm install`.
+  - Stripe keys are optional.
+  - The PostGIS image is built for amd64 only.
+- Screenshots retaken: the map at city scale, the provider's inbox with its pending
+  requests and their buttons, the search in English, and the phone layout with the price
+  and "Book" before the reviews.
+- Missing accents added to code comments and to the thesis schedule.
+
+### Tests
+
+- On every push, each migration is undone and applied again, in a database of its own.
+  The runbook's rollback depends on `down()`, and nothing had ever run one. With the
+  last migration's `down()` emptied, the test turns red.
+
 ## [2.11.0] — 2026-09-30
 
 ### Fixed

@@ -3,26 +3,28 @@
 # ServiLocal
 
 ![ServiLocal](https://img.shields.io/badge/SERVILOCAL-MARKETPLACE-1e293b?style=for-the-badge)
-![Version](https://img.shields.io/badge/VERSION-2.11.0-2563eb?style=for-the-badge)
+![Version](https://img.shields.io/github/package-json/v/Federicojaviermartino/servilocal?filename=backend%2Fpackage.json&label=VERSION&color=2563eb&style=for-the-badge)
 ![License](https://img.shields.io/badge/LICENSE-MIT-16a34a?style=for-the-badge)
 ![Next.js](https://img.shields.io/badge/NEXT.JS-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NESTJS-12-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
 ![PostGIS](https://img.shields.io/badge/POSTGRESQL-POSTGIS-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 
-**Local Services Marketplace with Geospatial Search and Real Payments**
+**Local Services Marketplace with Geospatial Search, Bookings and Stripe Payments**
 
 [Live Demo](https://servilocal-web.onrender.com) ·
 [API Reference](https://servilocal-api.onrender.com/api/docs) ·
 [Architecture](ARCHITECTURE.md) ·
 [Accessibility](ACCESSIBILITY.md) ·
 [Changelog](CHANGELOG.md) ·
-[Diagrams](diagrams/) ·
+[Diagrams](diagrams/README.md) ·
 [Wireframes](wireframes/)
 
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-1856%20unit%20%2B%20426%20integration%20%2B%20104%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-1856%20unit%20%2B%20427%20integration%20%2B%20104%20e2e-475569)
+
+<img src="docs/screenshots/search-en.png" alt="Search results in English, with filters, prices and ratings" width="820">
 
 </div>
 
@@ -55,7 +57,15 @@
 
 ServiLocal connects people who need work done at home — plumbing, electrical, cleaning, painting, renovations, private tutoring — with professionals in their area. It handles the full journey: proximity search, booking, payment, messaging and reviews.
 
-The stack is a Next.js front end, a NestJS REST API, PostgreSQL with PostGIS for spatial queries, and Stripe for payments. Everything described below is deployed and reachable from the live demo — there is no mock layer.
+The stack is a Next.js front end, a NestJS REST API, PostgreSQL with PostGIS for spatial queries, and Stripe for payments. Everything described below is deployed and runs against the real services — PostgreSQL, Redis and Stripe in test mode — with no mock layer. The few features that need a key the demo does not have are listed under [What is live in the demo](#what-is-live-in-the-demo).
+
+### At a glance
+
+- **Search near you**: PostGIS `ST_DWithin` over a spatial index, accent-insensitive text matching, and a results page rendered on the server with its filters and page in the address — [`services.service.ts`](backend/src/services/services.service.ts), [`search/page.tsx`](frontend/src/app/%5Blocale%5D/services/search/page.tsx).
+- **Money that follows Stripe**: the whole amount is held when the client books, captured when the provider completes, released on cancellation, and reconciled with Stripe every hour — [`payments.service.ts`](backend/src/payments/payments.service.ts).
+- **Who may do what**: roles, a read-only demo administrator and demo accounts kept apart from real ones, checked by booting the whole application and calling every route as every kind of account — [`permisos.integracion.ts`](backend/test/integracion/permisos.integracion.ts).
+- **Tested in depth**: 1856 unit tests, 427 against a real database, Stripe's emulator and Valkey, and 104 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
+- **Ten languages**, Arabic right to left included, and an operations runbook for deploying, rolling back and restoring — [`OPERATIONS.md`](docs/OPERATIONS.md).
 
 ---
 
@@ -84,6 +94,17 @@ they change goes back to the seeded state an hour later, so the demo survives th
 next visitor.
 
 > **Note on the first load.** Both services run on Render's free tier and sleep after 15 minutes without traffic. The first request can take up to a minute while they wake up; after that it is fast. A scheduled job pings them during working hours to reduce the chance of a cold start.
+
+### What is live in the demo
+
+| Feature | In the demo |
+|---|---|
+| Search, bookings, messaging, reviews, notifications, the admin panel, ten languages | Live |
+| Payments | Live, in Stripe's test mode: pay with the card `4242 4242 4242 4242`, any future date and any CVC. No money moves |
+| Natural-language assistant | The model is off, with no API key; the assistant answers from its own dictionary of trades and cities instead |
+| Password recovery by email | Off, with no email provider configured; the page says so |
+| Error reporting | Off, with no Sentry DSN |
+| Rate limits per visitor | Shared: without `PROXY_SECRETO`, everyone reaching the API through the front end counts as one visitor. See [SECURITY.md](SECURITY.md#known-gaps) |
 
 ---
 
@@ -182,7 +203,7 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1021 unit tests on the API with doubles, plus 426 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 835 in the browser. Playwright for 104 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1021 unit tests on the API with doubles, plus 427 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 835 in the browser. Playwright for 104 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -207,7 +228,7 @@ Three-tier client–server. The front end consumes the REST API; the API persist
 └──────────────────┘                          └──────────────────┘
 ```
 
-The UML diagrams in [`diagrams/`](diagrams/) are the ones submitted with the thesis (1.0.0) and are kept as they were; the data model has grown since, and its current shape is in [`ARCHITECTURE.md`](ARCHITECTURE.md#data-model). Responsive wireframes live in [`wireframes/`](wireframes/). Both are standalone HTML.
+The UML diagrams in [`diagrams/`](diagrams/README.md) are the ones submitted with the thesis (1.0.0), drawn by GitHub from their Mermaid source, and are kept as they were; the data model has grown since, and its current shape is in [`ARCHITECTURE.md`](ARCHITECTURE.md#data-model). Responsive wireframes live in [`wireframes/`](wireframes/). Both are standalone HTML.
 
 **[`ARCHITECTURE.md`](ARCHITECTURE.md)** goes further: the request lifecycle, the module and data maps, the decisions behind each fork in the road, and the limitations that were accepted on purpose.
 
@@ -230,7 +251,7 @@ The UML diagrams in [`diagrams/`](diagrams/) are the ones submitted with the the
 - **No API key means no AI, not no application.** The provider is chosen once, by injection: with a key it is the real one, without it a null provider that fails immediately with a typed cause so the caller takes its deterministic path. The app logs which one it got, next to the equivalent line for Sentry. Nothing in the layer throws at boot.
 - **The assistant is measured, not assumed.** A set of 48 messages in the ten interface languages — trades named outright, symptoms instead of trades, no accents, cities with no coverage, a negation and two prompt injections — each with the category and city it should yield. The dictionary path runs against it on every push and must resolve every case it is meant to, inventing nothing beyond one known confusion; the model path goes through the same prompt and the same catalogue validation as production, and is run by hand (`npm run evaluar:ia`, or from the Actions tab) because every case is a paid call. Getting it wrong is scored apart from coming up short: a wrong category narrows the search onto something nobody asked for.
 - **The rate limiter keys on the visitor, and it was measured rather than assumed.** `trust proxy: 1` made `req.ip` the last entry of `X-Forwarded-For`, which on Render is an internal load balancer — and it changes between requests, so one visitor landed in two counters while everyone behind the same balancer shared a third. Reading `X-Forwarded-For` directly is worse: Cloudflare **concatenates** rather than sanitises, so position 0 is whatever the client claims. The key is `CF-Connecting-IP`, which cannot be forged — send it yourself and Cloudflare answers 403 at the edge. Raising `trust proxy` to 3 also works today, and was rejected: it depends on there being exactly two infrastructure hops, which Render documents nowhere.
-- **Lock files are generated on Linux, not on the development machine.** npm resolves peer dependencies differently per operating system: `next-intl` pulls in `@swc/core`, which declares `@swc/helpers >=0.5.17` as an optional peer while Next pins `0.5.5` exactly, and Storybook brings the same clash with `ajv`. Linux resolves each into two entries, Windows into one, and `npm ci` rejects the Windows tree outright. `npm run lock` rebuilds the tree inside a `node:22` container and refuses to write the file until `npm ci` accepts it. The images install with `npm ci` too — they used to run `npm install`, which can resolve a different tree, so all of that work stopped at the CI boundary and never reached what actually gets deployed. CI now builds both images on every push and checks three things about the API one: that it does not run as root, that the source tree is not inside it, and that the build tooling was left behind.
+- **Lock files are generated on Linux, not on the development machine.** npm resolves peer dependencies differently per operating system. ESLint needs `ajv` 6 and the webpack tooling that Storybook brings needs `ajv` 8, each with its own `ajv-keywords` declared as a peer, and where each copy lands depends on how those peers are resolved: a lock written on Windows was rejected outright by `npm ci` on Linux. `@swc/helpers` used to clash the same way, until Next moved to a release that satisfies both sides. `npm run lock` rebuilds the tree inside a `node:22` container and refuses to write the file until `npm ci` accepts it. The images install with `npm ci` too — they used to run `npm install`, which can resolve a different tree, so all of that work stopped at the CI boundary and never reached what actually gets deployed. CI now builds both images on every push and checks three things about the API one: that it does not run as root, that the source tree is not inside it, and that the build tooling was left behind.
 
 ---
 
@@ -240,7 +261,7 @@ The UML diagrams in [`diagrams/`](diagrams/) are the ones submitted with the the
 
 - Node.js 22.22.3 or newer. The API itself runs on 22.12+, but the NestJS 12 CLI used to build it needs the later release
 - Docker and Docker Compose
-- A Stripe account in test mode (publishable and secret keys)
+- Optional: a Stripe account in test mode, to try payments. Without one, the placeholder keys in the example files are enough for everything else
 
 ### Everything in Docker
 
@@ -251,13 +272,15 @@ their own Dockerfiles exactly as they are deployed.
 git clone https://github.com/Federicojaviermartino/servilocal.git
 cd servilocal
 docker compose up --build
-docker compose exec -e SEMILLA_CONFIRMAR=servilocal api node dist/database/seeds/run-seed.js
+docker compose exec api node dist/database/seeds/run-seed.js
 ```
 
 Then open http://localhost:3000 and use the demo buttons on the sign-in page. The API runs
-its migrations on start; the seed empties the database before filling it, which is why it
-asks for the database name. Payments need your own Stripe test keys. Compose and CI use
-PostgreSQL 16 with PostGIS 3.4.
+its migrations on start. The seed empties the database before filling it; it asks for the
+database name only when the host looks remote, and `db` does not. Payments need your own
+Stripe test keys. Compose and CI use PostgreSQL 16 with PostGIS 3.4: the
+`postgis/postgis:16-3.4` image is built for amd64 only, so on Apple silicon Docker runs
+it under emulation, which works but starts more slowly.
 
 To work on the code with hot reload, run only the database in Docker and each app with npm:
 
@@ -283,7 +306,7 @@ defaults work against the database above. Add your Stripe test key to try paymen
 
 ```bash
 cd backend
-npm install
+npm ci
 npm run migration:run   # creates the schema, including the PostGIS extension
 npm run seed            # 16 users, 10 categories, 25 services, 79 reviews
 npm run start:dev
@@ -311,7 +334,7 @@ publishable one — never the secret.
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 
@@ -581,7 +604,7 @@ npm run lint
 npm run test          # 1021 unit tests across 72 files, all with doubles (Vitest)
 npm run test:cov      # all of src; fails below 96% statements / 89% branches,
                       # or below its own floor for payments, bookings, account data and guards
-npm run test:integracion   # 426 tests against a real database, stripe-mock and Valkey
+npm run test:integracion   # 427 tests against a real database, stripe-mock and Valkey
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run build
 
@@ -612,6 +635,49 @@ npm run lock
 The payment test runs only where both Stripe test keys are present, and is skipped from the start otherwise, with the reason. With the keys set it has to pass: a payment form that does not appear is a failure, not a skip, and the test checks through the API that the money ends up held. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 
 All of these run in CI on every push, to any branch. The end-to-end job spins up the whole stack: a PostGIS container, migrations, the seed, the API and the built front end. A test that fails and then passes on a retry fails the run as well, and a stray `.only` is rejected by ESLint and, in CI, by both runners.
+
+### Running the heavier suites locally
+
+The unit tests need nothing but `npm ci`. The other two need what CI starts for them.
+
+**Integration** (`backend/`): a migrated and seeded database, and Stripe's emulator.
+
+```bash
+docker compose up -d db
+docker run -d --rm -p 12111:12111 stripe/stripe-mock:v0.205.0
+cd backend
+npm run migration:run && npm run seed
+STRIPE_MOCK_URL=http://localhost:12111 npm run test:integracion
+```
+
+The shutdown test also needs a Valkey or Redis, and skips itself locally without one:
+`docker run -d --rm -p 6379:6379 valkey/valkey:8.1.10` and
+`REDIS_INTEGRACION_URL=redis://localhost:6379`. One test creates and drops a database of
+its own, so the database user needs `CREATEDB`; the one Compose creates has it.
+
+**End to end** (`frontend/`): the API running against a seeded database, and the front
+end built against it. Playwright starts the front end on port 3000, the one the API
+accepts by default.
+
+```bash
+# In backend/, with the database seeded as above.
+npm run build
+NODE_ENV=production JWT_SECRET=a-local-secret-for-the-end-to-end-suite \
+THROTTLE_LIMIT=1000 THROTTLE_AUTH_LIMIT=100 THROTTLE_RESERVAS_LIMIT=100 \
+THROTTLE_MENSAJES_LIMIT=100 THROTTLE_SERVICIOS_LIMIT=100 npm run start:prod
+
+# In frontend/, in another terminal.
+NEXT_PUBLIC_API_URL=http://localhost:3001/api npm run build
+npx playwright install chromium firefox webkit   # first run only
+npm run e2e
+```
+
+The API runs as it is deployed, in production mode: one test expects what production
+answers when no email provider is set up, and outside production the API writes the email
+to its log instead. Production mode refuses the example `JWT_SECRET`, hence the one on the
+command line. The limits go up because the suite signs in dozens of times from one
+address, and with the defaults it would be answering 429. Run it against a fresh seed:
+some tests count the seeded services, and a run leaves bookings and messages behind.
 
 ---
 

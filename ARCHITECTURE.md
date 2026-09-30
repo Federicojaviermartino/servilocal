@@ -471,10 +471,12 @@ records the action name, the interface translates it, and an unknown name is sho
 instead of leaving a blank label.
 
 **5 · Lock files are generated on Linux, in a container.**
-npm resolves peer dependencies differently per operating system: `next-intl` pulls in
-`@swc/core`, which declares `@swc/helpers >=0.5.17` as an optional peer while Next pins
-`0.5.5` exactly, and Storybook brings the same clash with `ajv`. Linux resolves each into
-two entries, Windows into one, and `npm ci` rejects the Windows tree outright.
+npm resolves peer dependencies differently per operating system. ESLint needs `ajv` 6
+and the webpack tooling that Storybook brings needs `ajv` 8, each with its own
+`ajv-keywords` declared as a peer, and where each copy lands depends on how those peers
+are resolved: a lock written on Windows was rejected outright by `npm ci` on Linux.
+`@swc/helpers` used to clash the same way, until Next moved to a release that satisfies
+both sides.
 `npm run lock` rebuilds the tree inside a `node:22` container and refuses to write the
 file until `npm ci` accepts it.
 
@@ -610,7 +612,7 @@ Stated here rather than discovered later.
 | Layer | Tool | What it protects |
 |-------|------|------------------|
 | Back end | Vitest + SWC | Services and every controller, including the money paths, and that whoever acts is taken from the session, never from the address or the body |
-| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that shutting down closes the sockets before Redis, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that every migration can be undone and applied again, that shutting down closes the sockets before Redis, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it |
 | Front end | Vitest | Library helpers, components, pages, and catalogue parity across the ten locales |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |

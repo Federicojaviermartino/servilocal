@@ -68,8 +68,9 @@ serving.
 
 Rules for writing them:
 
-- **Every migration has a working `down()`**, and the integration suite runs the
-  whole chain from an empty database on every push.
+- **Every migration has a working `down()`.** On every push, the integration suite
+  applies the whole chain to an empty database, undoes it one migration at a time until
+  nothing is left, and applies it again.
 - **Expand, then contract.** Renaming or dropping a column that the running code
   uses breaks it during the deploy, while the old instance still serves, and makes
   rolling back impossible. Do it in two releases: first add the new column and
