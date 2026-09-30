@@ -131,12 +131,20 @@ await capturar(
 );
 
 await capturar('search-map', async (p) => {
-  await p.goto(`${BASE}/services/search?view=map`);
+  // Una ciudad y no el país entero: con todos los servicios, el mapa se
+  // encuadraba a escala de la Península y los marcadores se amontonaban.
+  await p.goto(`${BASE}/services/search?view=map&city=Madrid`);
   await p.locator('.leaflet-marker-icon').first().waitFor();
   // Los mosaicos del mapa llegan de fuera: se les da tiempo.
   await p.waitForTimeout(2500);
 });
 
+// La de la cabecera del README, que está en inglés. Los servicios siguen en
+// castellano: son los que escribieron los profesionales de la semilla.
+await capturar('search-en', async (p) => {
+  await p.goto(`${BASE}/en/services/search`);
+  await p.getByRole('heading', { level: 1 }).waitFor();
+});
 await capturar('search-arabic', async (p) => {
   await p.goto(`${BASE}/ar/services/search`);
   await p.getByRole('heading', { level: 1 }).waitFor();
@@ -183,6 +191,11 @@ await capturar(
   async (p) => {
     await p.goto(`${BASE}/dashboard/bookings-received`);
     await p.getByRole('heading', { level: 1 }).waitFor();
+    // Las pendientes, que son las que tienen «Aceptar» y «Rechazar»: con
+    // todas, arriba salían las ya cerradas y la bandeja no enseñaba qué
+    // decide el profesional.
+    await p.getByRole('button', { name: 'Pendientes' }).click();
+    await p.getByRole('button', { name: 'Aceptar' }).first().waitFor();
   },
   { cuenta: 'profesional' },
 );

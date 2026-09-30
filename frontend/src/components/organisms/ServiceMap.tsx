@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Organismo
+ * Nivel atómico: Organismo
  * Componente: ServiceMap (mapa Leaflet con marcadores de servicios)
  *
  * Se carga dinamicamente para evitar problemas de SSR con Leaflet.

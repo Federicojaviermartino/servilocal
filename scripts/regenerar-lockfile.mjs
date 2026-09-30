@@ -4,12 +4,13 @@
  * que npm ci lo acepta.
  *
  * Por qué hace falta: npm resuelve las dependencias de pares de forma distinta
- * según el sistema operativo. Con las mismas versiones de npm y de paquetes,
- * Windows produce un árbol con una sola copia de @swc/helpers y Linux produce
- * dos, y ese desajuste hace que npm ci rechace el lockfile con EUSAGE antes
- * siquiera de descargar nada. Lo mismo pasa con ajv-keywords al instalar
- * Storybook. Como aquí se desarrolla en Windows y se despliega en Linux, el
- * lockfile tiene que generarse donde se va a consumir.
+ * según el sistema operativo. ESLint necesita ajv 6 y las herramientas de
+ * webpack que trae Storybook, ajv 8, cada uno con su ajv-keywords como par, y
+ * dónde acaba cada copia depende de cómo se resuelvan esos pares: un lockfile
+ * escrito en Windows lo rechazaba npm ci en Linux con EUSAGE, antes siquiera
+ * de descargar nada. Con @swc/helpers pasaba lo mismo hasta que Next pasó a
+ * una versión que satisface a los dos. Como aquí se desarrolla en Windows y se
+ * despliega en Linux, el lockfile tiene que generarse donde se va a consumir.
  *
  * Las banderas --os y --cpu de npm no sirven: solo filtran las dependencias
  * opcionales por plataforma, no cambian cómo se resuelven los pares.

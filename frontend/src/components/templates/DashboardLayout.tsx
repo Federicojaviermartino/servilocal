@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Plantilla
+ * Nivel atómico: Plantilla
  * Componente: DashboardLayout (layout del panel de usuario)
  */
 'use client';

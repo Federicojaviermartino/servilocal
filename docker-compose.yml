@@ -2,11 +2,12 @@
 # la API y el frontend, construidos con sus propios Dockerfile.
 #
 #   docker compose up --build
-#   docker compose exec -e SEMILLA_CONFIRMAR=servilocal api node dist/database/seeds/run-seed.js
+#   docker compose exec api node dist/database/seeds/run-seed.js
 #
-# y después http://localhost:3000. La API corre las migraciones al arrancar;
-# la semilla, que vacía la base antes de sembrarla, pide que se confirme el
-# nombre de la base porque «db» no es un host local.
+# y después http://localhost:3000. La API corre las migraciones al arrancar.
+# La semilla vacía la base antes de sembrarla, y fuera de una base local pide
+# que se confirme su nombre; aquí no hace falta, porque «db» es un nombre sin
+# puntos, como los de Docker, y la cuenta como local (ver barrera.ts).
 #
 # Para desarrollar con recarga en caliente basta con la base
 # (`docker compose up -d db`) y npm en cada carpeta: ver el README.

@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Atomo
+ * Nivel atómico: Átomo
  * Componente: Button
  * Uso: <Button variant="primary" size="md" onClick={fn}>Texto</Button>
  */

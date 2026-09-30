@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Organismo
+ * Nivel atómico: Organismo
  * Componente: ResultsList (listado paginado de servicios)
  */
 import { useTranslations } from 'next-intl';

@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Atomo
+ * Nivel atómico: Átomo
  * Componente: Spinner (indicador de carga)
  */
 'use client';

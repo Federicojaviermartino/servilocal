@@ -1,6 +1,6 @@
 /**
- * Nivel atomico: Atomo
- * Componente: Badge (etiqueta de estado o categoria)
+ * Nivel atómico: Átomo
+ * Componente: Badge (etiqueta de estado o categoría)
  */
 import { ReactNode } from 'react';
 import clsx from 'clsx';

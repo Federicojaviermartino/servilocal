@@ -1,6 +1,6 @@
 /**
- * Nivel atomico: Organismo
- * Componente: ServiceForm (formulario de creacion/edicion de servicio)
+ * Nivel atómico: Organismo
+ * Componente: ServiceForm (formulario de creación y edición de servicio)
  */
 'use client';
 import { useState, useEffect, FormEvent } from 'react';

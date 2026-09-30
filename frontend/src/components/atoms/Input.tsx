@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Atomo
+ * Nivel atómico: Átomo
  * Componente: Input
  */
 import { InputHTMLAttributes, forwardRef, useId } from 'react';

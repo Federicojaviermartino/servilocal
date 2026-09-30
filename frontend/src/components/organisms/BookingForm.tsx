@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Organismo
+ * Nivel atómico: Organismo
  * Componente: BookingForm (formulario de solicitud de reserva)
  */
 'use client';

@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Molecula
+ * Nivel atómico: Molécula
  * Componente: BookingCard (tarjeta de reserva)
  */
 'use client';

@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Organismo
+ * Nivel atómico: Organismo
  * Componente: CheckoutForm (Stripe Elements)
  */
 'use client';

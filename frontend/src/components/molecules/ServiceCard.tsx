@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Molecula
+ * Nivel atómico: Molécula
  * Componente: ServiceCard (tarjeta de resultado)
  */
 'use client';

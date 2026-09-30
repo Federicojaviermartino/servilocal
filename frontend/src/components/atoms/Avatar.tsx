@@ -1,5 +1,5 @@
 /**
- * Nivel atomico: Atomo
+ * Nivel atómico: Átomo
  * Componente: Avatar
  */
 import clsx from 'clsx';

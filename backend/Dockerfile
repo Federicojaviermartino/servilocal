@@ -23,9 +23,9 @@ RUN npm run build
 # todo suma superficie de ataque y tamaño.
 #
 # Las migraciones se resuelven contra dist/database/migrations, así que la
-# aplicación arranca y migra sin necesitar el fuente. Sembrar sí lo necesita,
-# y por eso no se hace desde aquí: se ejecuta desde una máquina con el
-# repositorio, que es como está documentado.
+# aplicación arranca y migra sin necesitar el fuente. La semilla también va
+# compilada, en dist/database/seeds/run-seed.js, y se puede lanzar dentro del
+# contenedor: es lo que hace el README con Docker Compose.
 FROM node:22.23.3-alpine3.24@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runner
 WORKDIR /app
 ENV NODE_ENV=production

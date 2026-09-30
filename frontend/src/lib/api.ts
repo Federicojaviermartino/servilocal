@@ -37,10 +37,10 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    // El 401 se maneja en el llamador: cada pagina decide si redirigir
-    // a /auth/login o mostrar un toast. Evitamos que una peticion en
-    // segundo plano borre la sesion o interrumpa un flujo en curso con
-    // una navegacion dura (window.location.href).
+    // El 401 se maneja en el llamador: cada página decide si redirigir
+    // a /auth/login o mostrar un toast. Evitamos que una petición en
+    // segundo plano borre la sesión o interrumpa un flujo en curso con
+    // una navegación dura (window.location.href).
     const peticion = error.config as PeticionConReintento | undefined;
     const agotadoOSinRespuesta =
       error.code === 'ECONNABORTED' || !error.response;
