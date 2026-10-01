@@ -74,7 +74,13 @@ function Restablecer() {
               {t('enlaceIncompleto')}
             </p>
           ) : (
-            <form noValidate onSubmit={guardar} onChange={alCambiar}>
+            <form
+              method="post"
+              noValidate
+              onSubmit={guardar}
+              onChange={alCambiar}
+            >
+              {/* POST, como el registro: ver register/page.tsx. */}
               {error && (
                 <div
                   className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"

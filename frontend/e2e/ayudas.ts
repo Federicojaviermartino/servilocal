@@ -1,4 +1,4 @@
-import { Page } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 
 /**
  * Entrar con una de las cuentas de demostración.
@@ -16,6 +16,9 @@ import { Page } from '@playwright/test';
  * lo hace el enrutador en el navegador, y la portada sigue pidiéndose
  * después. Un page.goto encima de esa carga hacía fallar a WebKit con un
  * «internal error» de vez en cuando, y la prueba pasaba al reintentarla.
+ *
+ * El clic se repite hasta que la dirección cambia: en Firefox, alguna vez
+ * no llevó a ninguna parte, y la prueba esperaba hasta agotar su tiempo.
  */
 export const CUENTAS_DEMO = {
   administracion: 'demo@servilocal.com',
@@ -27,10 +30,16 @@ export type PapelDemo = keyof typeof CUENTAS_DEMO;
 
 export async function entrarComo(page: Page, papel: PapelDemo): Promise<void> {
   await page.goto('/auth/login');
-  await page
-    .getByRole('button', { name: new RegExp(CUENTAS_DEMO[papel]) })
-    .click();
-  await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
+  const boton = page.getByRole('button', {
+    name: new RegExp(CUENTAS_DEMO[papel]),
+  });
+  const fuera = (url: URL) => !url.pathname.includes('/auth/login');
+  await expect(async () => {
+    // Si el clic anterior entró, no se vuelve a pulsar: el botón ya no está.
+    if (fuera(new URL(page.url()))) return;
+    await boton.click({ timeout: 5000 });
+    await page.waitForURL(fuera, { timeout: 5000 });
+  }).toPass({ timeout: 60000 });
   await page.waitForLoadState('networkidle');
 }
 

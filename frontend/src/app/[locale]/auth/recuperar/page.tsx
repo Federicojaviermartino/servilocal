@@ -64,7 +64,15 @@ export default function RecuperarPage() {
               {t('recuperarEnviado')}
             </p>
           ) : (
-            <form noValidate onSubmit={enviar} onChange={alCambiar}>
+            <form
+              method="post"
+              noValidate
+              onSubmit={enviar}
+              onChange={alCambiar}
+            >
+              {/* POST, para que el correo no acabe en la dirección si se
+                  envía antes de que cargue el JavaScript: ver
+                  register/page.tsx. */}
               {error && (
                 <div
                   className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700"

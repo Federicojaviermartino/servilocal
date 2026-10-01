@@ -149,3 +149,49 @@ test.describe('Acceso a la aplicación', () => {
     await expect(page).toHaveURL(/\/auth\/login/);
   });
 });
+
+/**
+ * El registro y la recuperación llegan pintados del servidor, y antes de que
+ * cargue el JavaScript quien envía el formulario es el navegador, por su
+ * cuenta. Sin método lo mandaba por GET, y el correo y la contraseña acababan
+ * en la dirección: en el historial y en los registros de cualquier servidor
+ * por el que pasara. Aquí se envían sin JavaScript, que es ese mismo momento
+ * alargado.
+ */
+test.describe('Sin JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('enviar el registro no deja la contraseña en la dirección', async ({
+    page,
+  }) => {
+    await page.goto('/auth/register');
+    await page.getByLabel('Correo electrónico').fill('nadie@ejemplo.com');
+    await page.getByLabel('Contraseña', { exact: true }).fill('Secreta123!');
+
+    // Con Intro y no pulsando el botón: sin JavaScript, en el móvil el botón
+    // queda fuera de la pantalla y Playwright no llegaba a pulsarlo. Y se
+    // mira la petición que sale, no la dirección de después, que podía
+    // leerse antes de que saliera.
+    const envio = page.waitForRequest((r) => r.isNavigationRequest());
+    await page.getByLabel('Contraseña', { exact: true }).press('Enter');
+    const peticion = await envio;
+
+    expect(peticion.method()).toBe('POST');
+    expect(peticion.url()).not.toContain('Secreta123');
+    expect(peticion.url()).not.toContain('ejemplo.com');
+  });
+
+  test('pedir la recuperación no deja el correo en la dirección', async ({
+    page,
+  }) => {
+    await page.goto('/auth/recuperar');
+    await page.getByLabel('Correo electrónico').fill('nadie@ejemplo.com');
+
+    const envio = page.waitForRequest((r) => r.isNavigationRequest());
+    await page.getByLabel('Correo electrónico').press('Enter');
+    const peticion = await envio;
+
+    expect(peticion.method()).toBe('POST');
+    expect(peticion.url()).not.toContain('ejemplo.com');
+  });
+});

@@ -91,7 +91,11 @@ function LoginPageContent() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {/* POST, como el registro. Este formulario solo se pinta en el
+              navegador, pero si un día llegara del servidor, enviado antes de
+              que cargue el JavaScript iría por GET, con la contraseña en la
+              dirección: ver register/page.tsx. */}
+          <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
             <div className="mb-4">
               <label htmlFor="email" className="label">
                 {t('email')}

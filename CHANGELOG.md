@@ -12,6 +12,14 @@ the project, and carry that commit's date.
 
 ## [2.11.1] — 2026-09-30
 
+### Fixed
+
+- Registering, or asking for a recovery link, before the page's JavaScript had loaded
+  sent the form by GET: the email and the password ended up in the address, and so in
+  the browser's history and in the logs of every server on the way. Both forms arrive
+  rendered from the server, so there was such a moment. They now post, and so do the
+  sign-in and reset forms, which only render in the browser.
+
 ### Documentation
 
 - The header no longer promises "Real Payments": payments run on Stripe in test mode. A
@@ -40,6 +48,13 @@ the project, and carry that commit's date.
 - On every push, each migration is undone and applied again, in a database of its own.
   The runbook's rollback depends on `down()`, and nothing had ever run one. With the
   last migration's `down()` emptied, the test turns red.
+- Registering and asking for a recovery link are submitted with JavaScript turned off,
+  and the address must carry neither the password nor the email. Against the previous
+  build, it carried `password=Secreta123%21`.
+- Two more flaky tests that the new rule caught: a click on a tab of the admin panel
+  that could land elsewhere as the charts above pushed the tabs down, and a demo
+  sign-in click in Firefox that sometimes led nowhere. Both now click until the
+  result shows.
 
 ## [2.11.0] — 2026-09-30
 

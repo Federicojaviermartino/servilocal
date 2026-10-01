@@ -87,7 +87,11 @@ export default function RegisterPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          {/* POST aunque lo envíe React. El formulario llega pintado del
+              servidor, y si se envía antes de que cargue el JavaScript lo
+              manda el navegador por su cuenta: sin método iba por GET, con
+              el correo y la contraseña en la dirección. */}
+          <form method="post" onSubmit={handleSubmit(onSubmit)} noValidate>
             {/* Selector de rol */}
             <fieldset className="mb-5">
               <legend className="label mb-2">{t('queQuieres')}</legend>

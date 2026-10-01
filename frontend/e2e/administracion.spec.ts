@@ -1,5 +1,28 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { entrarComo } from './ayudas';
+
+/**
+ * Abre una pestaña del panel y espera a que de verdad quede abierta.
+ *
+ * En Safari, alguna vez la pestaña no cambiaba: en la captura del fallo
+ * seguía abierta «Usuarios», y la prueba esperaba veinte segundos un
+ * contenido que no iba a llegar. Las gráficas de encima llegan después que
+ * las pestañas y las empujan hacia abajo, así que un clic que sale justo
+ * entonces cae en otro sitio. Se pulsa hasta que queda seleccionada.
+ */
+async function abrirPestana(
+  page: Page,
+  nombre: string | RegExp,
+  exacto = false,
+): Promise<void> {
+  const pestana = page.getByRole('tab', { name: nombre, exact: exacto });
+  await expect(async () => {
+    await pestana.click({ timeout: 5000 });
+    await expect(pestana).toHaveAttribute('aria-selected', 'true', {
+      timeout: 1000,
+    });
+  }).toPass({ timeout: 30000 });
+}
 
 /**
  * El botón de demostración entra y redirige a la portada. Hay que esperar a
@@ -84,7 +107,7 @@ test.describe('Panel de administración', () => {
     await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
-    await page.getByRole('tab', { name: 'IA', exact: true }).click();
+    await abrirPestana(page, 'IA', true);
     await expect(page.getByText('Consumo del modelo')).toBeVisible();
 
     // La barra dice cuánto del tope se lleva gastado. Es la cifra que evita
@@ -114,7 +137,7 @@ test.describe('Panel de administración', () => {
     await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
-    await page.getByRole('tab', { name: /Valoraciones/i }).click();
+    await abrirPestana(page, /Valoraciones/i);
 
     // La semilla crea tres denuncias con su alegación. Una cola vacía no se
     // puede enseñar, y una llena que no se pudiera resolver sería una
@@ -138,7 +161,7 @@ test.describe('Panel de administración', () => {
     await entrarComo(page, 'administracion');
     await page.goto('/admin');
 
-    await page.getByRole('tab', { name: 'Auditoría' }).click();
+    await abrirPestana(page, 'Auditoría');
 
     const tabla = page.getByRole('table', {
       name: 'Historial de acciones de administración',

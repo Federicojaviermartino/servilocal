@@ -53,6 +53,9 @@ dependencies of either the API or the front end.
   a cookie set by the API's host would be third-party and Safari would drop
   it. Scripts and API clients get a bearer token from `POST /auth/token`
   instead.
+- Forms that carry a password or an email are sent by POST, also before the
+  page's JavaScript has loaded, when the browser sends them on its own: the
+  registration form used to go by GET then, with the password in the address.
 - Requests that change state are rejected when their `Origin` is not the
   front end, which covers cross-site request forgery and login CSRF on top of
   `SameSite`. No `GET` changes anything: opening a conversation used to mark
