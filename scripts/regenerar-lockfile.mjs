@@ -17,6 +17,7 @@
  *
  * Uso, desde frontend/ o desde backend/:
  *   npm run lock
+ *   npm run lock -- sharp source-map-js   (además, sube esos paquetes)
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -24,6 +25,18 @@ import { basename, resolve } from 'node:path';
 
 const IMAGEN = 'node:22';
 const paquete = process.cwd();
+
+// Paquetes que subir a lo último que admitan sus rangos, también los que
+// llegan de rebote. Con el lockfile copiado, npm no toca lo que ya cumple, y
+// un aviso de seguridad en una dependencia transitiva —sharp, que trae Next;
+// source-map-js, que trae PostCSS— necesita subirla sin cambiar nada más.
+const subir = process.argv.slice(2);
+const NOMBRE_NPM = /^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/;
+const raro = subir.find((nombre) => !NOMBRE_NPM.test(nombre));
+if (raro) {
+  console.error(`«${raro}» no es el nombre de un paquete de npm.`);
+  process.exit(1);
+}
 
 if (!existsSync(resolve(paquete, 'package.json'))) {
   console.error(
@@ -69,6 +82,12 @@ const guion = [
   'cd /tmp/lock',
   'echo "== resolviendo el árbol =="',
   'npm install --package-lock-only --loglevel=error',
+  ...(subir.length > 0
+    ? [
+        `echo "== subiendo ${subir.join(' ')} =="`,
+        `npm update ${subir.join(' ')} --package-lock-only --loglevel=error`,
+      ]
+    : []),
   'echo "== comprobando que npm ci lo acepta =="',
   'npm ci --loglevel=error >/dev/null',
   'cp /tmp/lock/package-lock.json /paquete/package-lock.json',
