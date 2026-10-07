@@ -150,6 +150,30 @@ describe('TiempoRealGateway', () => {
     });
   });
 
+  describe('desconectar', () => {
+    it('cierra todas las conexiones de la sala de esa persona, y solo esas', async () => {
+      // El apretón de manos es lo único que comprueba quién es: sin esto, un
+      // socket abierto con una sesión robada seguía recibiendo los mensajes
+      // después de cambiar la contraseña.
+      const { gateway } = await construir({});
+      const disconnectSockets = vi.fn();
+      const enSala = vi.fn((_sala: string) => ({ disconnectSockets }));
+      (gateway as unknown as { server: unknown }).server = { in: enSala };
+
+      gateway.desconectar(YO);
+
+      expect(enSala.mock.calls).toEqual([[`usuario:${YO}`]]);
+      // true: cierra la conexión entera, no solo este espacio de nombres.
+      expect(disconnectSockets).toHaveBeenCalledWith(true);
+    });
+
+    it('sin ningún socket abierto todavía, no hay nada que cerrar', async () => {
+      const { gateway } = await construir({});
+
+      expect(() => gateway.desconectar(YO)).not.toThrow();
+    });
+  });
+
   describe('notificarMensaje', () => {
     function conServidor(gateway: TiempoRealGateway) {
       const emit = vi.fn(

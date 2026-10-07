@@ -47,6 +47,19 @@ describe('HealthController', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('solo la de vida queda fuera del límite de peticiones', () => {
+    // La completa lanza una consulta a la base en cada llamada: fuera del
+    // límite, pedirla en bucle ocupaba las conexiones y gastaba el cupo.
+    const fueraDelLimite = (destino: object) =>
+      Reflect.getMetadata('THROTTLER:SKIPdefault', destino);
+
+    expect(fueraDelLimite(HealthController.prototype.vivo)).toBe(true);
+    expect(
+      fueraDelLimite(HealthController.prototype.comprobar),
+    ).toBeUndefined();
+    expect(fueraDelLimite(HealthController)).toBeUndefined();
+  });
+
   it('dice qué commit está sirviendo', async () => {
     // La prueba de humo espera a verlo para saber que el despliegue nuevo
     // ya atiende, y no el anterior.

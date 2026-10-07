@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactElement } from 'react';
@@ -13,7 +13,7 @@ import {
   type ResultadoBusqueda,
 } from '@/lib/busqueda';
 import Buscador from './buscador';
-import SearchPage from './page';
+import SearchPage, { generateMetadata } from './page';
 
 const buscar = vi.fn();
 const buscarEnServidor = vi.fn();
@@ -26,6 +26,15 @@ vi.mock('@/lib/api', () => ({
   servicesApi: { search: (filtros: unknown) => buscar(filtros) },
   // El panel de filtros pide las categorías al montarse; aquí no cuentan.
   categoriesApi: { getAll: async () => ({ data: [] }) },
+}));
+
+// Los textos, del catálogo en castellano: el servidor de next-intl no existe
+// en estas pruebas.
+vi.mock('next-intl/server', () => ({
+  getTranslations:
+    async ({ namespace }: { namespace: 'meta' }) =>
+    (clave: string) =>
+      (es[namespace] as Record<string, string>)[clave],
 }));
 
 vi.mock('@/lib/busqueda-servidor', () => ({
@@ -183,6 +192,16 @@ const navegacion = () =>
 const titulo = () =>
   screen.getByRole('heading', { level: 1, name: es.resultados.titulo });
 
+/** El recuento que se ve junto a la lista. */
+const visible = (texto: string) =>
+  screen.getByText(texto, { ignore: '.sr-only' });
+
+/** Y el que oye quien usa un lector de pantalla. */
+const anunciado = () =>
+  screen
+    .getAllByRole('status')
+    .find((region) => region.classList.contains('sr-only')) as HTMLElement;
+
 beforeEach(() => {
   buscar.mockReset();
   buscarEnServidor.mockReset();
@@ -196,6 +215,39 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+});
+
+describe('El título de la pestaña', () => {
+  const tituloDe = async (recibidos: Record<string, string>) =>
+    (
+      await generateMetadata({
+        params: Promise.resolve({ locale: 'es' }),
+        searchParams: Promise.resolve(recibidos),
+      })
+    ).title;
+
+  it('lleva lo que se busca y dónde, delante', async () => {
+    // Era siempre «Buscar servicios»: tres búsquedas abiertas eran tres
+    // pestañas iguales, y al cambiar de búsqueda Next no anunciaba nada,
+    // porque solo habla cuando el título cambia.
+    expect(await tituloDe({ q: 'fontanero', city: 'Valencia' })).toBe(
+      'fontanero · Valencia · Buscar servicios',
+    );
+    expect(await tituloDe({ city: 'Valencia' })).toBe(
+      'Valencia · Buscar servicios',
+    );
+  });
+
+  it('sin nada que buscar, el de siempre', async () => {
+    expect(await tituloDe({})).toBe('Buscar servicios');
+  });
+
+  it('una búsqueda larguísima no se come el nombre de la página', async () => {
+    const titulo = String(await tituloDe({ q: 'a'.repeat(500) }));
+
+    expect(titulo.length).toBeLessThan(100);
+    expect(titulo.endsWith('Buscar servicios')).toBe(true);
+  });
 });
 
 describe('La página del servidor', () => {
@@ -252,9 +304,34 @@ describe('El buscador', () => {
 
     expect(await screen.findByText(GRIFO.title)).toBeInTheDocument();
     expect(screen.getByText(LUZ.title)).toBeInTheDocument();
-    expect(screen.getByText('25 resultados encontrados')).toBeInTheDocument();
+    expect(visible('25 resultados encontrados')).toBeInTheDocument();
     expect(navegacion()).toBeInTheDocument();
     expect(buscar).not.toHaveBeenCalled();
+  });
+
+  it('cuántos hay se le dice también a quien no ve la pantalla', async () => {
+    // El recuento que se ve aparece ya escrito, con la lista, y así no se
+    // anuncia. El que se anuncia está en la página desde el principio,
+    // vacío, y se escribe cuando llegan los resultados.
+    const respuesta = aplazada<ResultadoBusqueda | null>();
+    await pintar('q=grifo', respuesta.promesa);
+    expect(anunciado()).toBeEmptyDOMElement();
+
+    await act(async () => {
+      respuesta.responder(resultado([GRIFO, LUZ], { total: 25 }));
+    });
+
+    await waitFor(() =>
+      expect(anunciado()).toHaveTextContent('25 resultados encontrados'),
+    );
+  });
+
+  it('y si no hay ninguno, también', async () => {
+    await pintar('q=nada', Promise.resolve(resultado([], { total: 0 })));
+
+    await waitFor(() =>
+      expect(anunciado()).toHaveTextContent('Ningún resultado'),
+    );
   });
 
   it('la barra y los filtros reflejan lo que trae la URL', async () => {
@@ -293,9 +370,9 @@ describe('El buscador', () => {
       ),
     );
 
-    expect(
-      await screen.findByText('Más de 1000 resultados encontrados'),
-    ).toBeInTheDocument();
+    await screen.findByText(GRIFO.title);
+    expect(visible('Más de 1000 resultados encontrados')).toBeInTheDocument();
+    expect(anunciado()).toHaveTextContent('Más de 1000 resultados encontrados');
   });
 
   it('sin resultados lo dice, y no ofrece páginas', async () => {
@@ -407,6 +484,24 @@ describe('El buscador', () => {
       ).toHaveAttribute('aria-current', 'page');
     });
 
+    it('aplicar un filtro también lo lleva al título', async () => {
+      // La búsqueda nueva es otro componente: sin esto el foco caía en el
+      // documento, y el siguiente tabulador empezaba desde lo alto de la
+      // página.
+      await pintar('q=grifo');
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.selectOptions(
+        screen.getByLabelText(es.filtros.ciudad),
+        'Sevilla',
+      );
+      await pulsar(es.filtros.aplicar);
+      await navegarA('/services/search?q=grifo&city=Sevilla');
+      await screen.findByText(GRIFO.title);
+
+      expect(titulo()).toHaveFocus();
+    });
+
     it('llegar por un enlace no roba el foco', async () => {
       await pintar(
         'page=2',
@@ -438,6 +533,18 @@ describe('El buscador', () => {
 
       expect(lista()).toHaveAttribute('aria-pressed', 'false');
       expect(mapa()).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('tras cambiar de vista, el foco sigue en el botón que se pulsó', async () => {
+      // Llevárselo al título obligaría a volver hasta aquí para probar la
+      // otra vista; dejarlo caer en el documento, a recorrer la página.
+      await pintar();
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.click(mapa());
+      await navegarA('/services/search?view=map');
+
+      expect(mapa()).toHaveFocus();
     });
 
     it('el mapa enseña todo lo que llegó, sin paginar', async () => {

@@ -230,6 +230,7 @@
     "titulo": "Auditoría",
     "usuario_activado": "Conta activada",
     "usuario_desactivado": "Conta desactivada",
+    "vacioEnDemostracion": "Na demostración o historial está baleiro: aquí anótase a moderación de contas reais, e esta conta só pode mirar.",
     "valoracion_eliminada": "Valoración eliminada"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Resposta publicada.",
     "sinValoraciones": "Este servizo aínda non ten valoracións.",
     "sobreProfesional": "Sobre o profesional",
+    "soloClientes": "Para reservar cómpre unha conta de cliente.",
     "tuRespuesta": "A túa resposta, que verá calquera",
     "valoraciones": "Valoracións ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Activo",
     "cancelada": "Cancelada",
+    "canceladas": "Canceladas",
     "completada": "Completada",
     "completadas": "Completadas",
     "confirmada": "Confirmada",
     "confirmadas": "Confirmadas",
+    "filtrar": "Filtrar por estado",
     "pausado": "Pausado",
     "pendiente": "Pendente",
     "pendientes": "Pendentes",
     "rechazada": "Rexeitada",
+    "rechazadas": "Rexeitadas",
     "todas": "Todas"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "Non tes permiso para pagar esta reserva.",
     "sinServidor": "Non se puido contactar co servidor.",
     "tarjetaCaducada": "A túa tarxeta caducou.",
+    "tarjetaDePrueba": "Isto é unha demostración e non se cobra nada: paga coa tarxeta de proba 4242 4242 4242 4242, calquera data futura e calquera CVC.",
     "tarjetaGuardada": "A túa tarxeta queda gardada en Stripe, non en ServiLocal, para poder renovar a retención se a reserva é para dentro de máis dunha semana. Bórrase se eliminas a túa conta.",
     "titulo": "Confirmar o pagamento",
     "totalPagar": "Total a pagar",

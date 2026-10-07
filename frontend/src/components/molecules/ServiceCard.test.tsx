@@ -42,6 +42,34 @@ describe('ServiceCard', () => {
     expect(screen.queryByText(/40 a 40/)).not.toBeInTheDocument();
   });
 
+  it('en otro idioma, lo que escribió el profesional dice que está en castellano', () => {
+    // El catálogo está en castellano y la interfaz en diez idiomas. Sin
+    // marcarlo, un lector de pantalla en alemán leía el título con voz
+    // alemana, y no se entendía. axe no lo ve: no sabe en qué idioma está.
+    const servicio = otroServicio('idioma', {
+      title: 'Fontanería urgente',
+      description: 'Reparación de fugas y grifos',
+    }) as Service;
+
+    pintar(servicio, de, 'de');
+
+    expect(
+      screen.getByRole('heading', { name: 'Fontanería urgente' }),
+    ).toHaveAttribute('lang', 'es');
+    expect(screen.getByText('Reparación de fugas y grifos')).toHaveAttribute(
+      'lang',
+      'es',
+    );
+  });
+
+  it('en la página en castellano no hace falta decirlo', () => {
+    pintar(otroServicio('idioma', { title: 'Fontanería urgente' }) as Service);
+
+    expect(
+      screen.getByRole('heading', { name: 'Fontanería urgente' }),
+    ).not.toHaveAttribute('lang');
+  });
+
   it('traduce la categoría y la unidad, no el título', () => {
     // El título lo escribe el profesional: es contenido y sigue como está.
     pintar(SERVICIO_EJEMPLO, de, 'de');

@@ -230,6 +230,7 @@
     "titulo": "Auditoria",
     "usuario_activado": "Kontua aktibatuta",
     "usuario_desactivado": "Kontua desaktibatuta",
+    "vacioEnDemostracion": "Demostrazioan historia hutsik dago: hemen benetako kontuen moderazioa jasotzen da, eta kontu honek begiratu baino ezin du egin.",
     "valoracion_eliminada": "Balorazioa ezabatuta"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Erantzuna argitaratu da.",
     "sinValoraciones": "Zerbitzu honek ez du baloraziorik oraindik.",
     "sobreProfesional": "Profesionalari buruz",
+    "soloClientes": "Erreserbatzeko bezero-kontu bat behar da.",
     "tuRespuesta": "Zure erantzuna, edonork ikusiko duena",
     "valoraciones": "Balorazioak ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Aktibo",
     "cancelada": "Bertan behera",
+    "canceladas": "Bertan behera utzitakoak",
     "completada": "Osatuta",
     "completadas": "Osatuak",
     "confirmada": "Berretsita",
     "confirmadas": "Berretsiak",
+    "filtrar": "Iragazi egoeraren arabera",
     "pausado": "Etenda",
     "pendiente": "Zain",
     "pendientes": "Zain",
     "rechazada": "Ukatuta",
+    "rechazadas": "Ukatutakoak",
     "todas": "Guztiak"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "Ez duzu erreserba hau ordaintzeko baimenik.",
     "sinServidor": "Ezin izan da zerbitzariarekin harremanetan jarri.",
     "tarjetaCaducada": "Zure txartela iraungi da.",
+    "tarjetaDePrueba": "Hau demostrazio bat da eta ez da ezer kobratzen: ordaindu 4242 4242 4242 4242 proba-txartelarekin, etorkizuneko edozein datarekin eta edozein CVCrekin.",
     "tarjetaGuardada": "Zure txartela Stripe-n gordetzen da, ez ServiLocal-en, erreserba astebete baino gehiagora bada atxikipena berritu ahal izateko. Kontua ezabatzen baduzu, ezabatu egiten da.",
     "titulo": "Berretsi ordainketa",
     "totalPagar": "Ordaindu beharrekoa",

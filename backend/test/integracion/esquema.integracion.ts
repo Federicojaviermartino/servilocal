@@ -35,6 +35,77 @@ describe('Esquema real', () => {
     fuente = await crearFuente().initialize();
   });
 
+  /**
+   * La consulta que lanza de verdad la búsqueda con esos filtros, capturada
+   * al vuelo y con sus parámetros ya escritos.
+   *
+   * Y no una escrita a mano: la del índice espacial lo estaba, con un radio
+   * fijo, y pasaba en verde mientras la real, con el radio de cada
+   * profesional, no podía usar el índice. La prueba de carga lo destapó.
+   */
+  async function consultaDeLaBusqueda(
+    filtros: Record<string, unknown>,
+  ): Promise<string> {
+    const capturadas: Array<{ sql: string; parametros: unknown[] }> = [];
+    const espia = await new DataSource({
+      ...opcionesDeLaBase(),
+      logging: ['query'],
+      logger: {
+        logQuery: (sql: string, parametros?: unknown[]) => {
+          capturadas.push({ sql, parametros: parametros ?? [] });
+        },
+        logQueryError: () => undefined,
+        logQuerySlow: () => undefined,
+        logSchemaBuild: () => undefined,
+        logMigration: () => undefined,
+        log: () => undefined,
+      },
+    } as DataSourceOptions).initialize();
+    try {
+      const servicios = new ServicesService(
+        espia.getRepository(Service),
+        espia.getRepository(Booking),
+        { anotar: async () => undefined } as never,
+      );
+      await servicios.search(filtros as never);
+    } finally {
+      await espia.destroy();
+    }
+
+    const busqueda = capturadas.find(
+      (c) => c.sql.includes('FROM "services"') && !c.sql.includes('COUNT('),
+    );
+    expect(busqueda, 'la búsqueda lanzó su consulta').toBeTruthy();
+
+    const escribir = (valor: unknown) =>
+      typeof valor === 'number'
+        ? String(valor)
+        : `'${String(valor).replace(/'/g, "''")}'`;
+    return busqueda!.sql.replace(/\$(\d+)/g, (_, n: string) =>
+      escribir(busqueda!.parametros[Number(n) - 1]),
+    );
+  }
+
+  /**
+   * El plan de una consulta sobre los servicios solos.
+   *
+   * Se fuerza al planificador porque con las pocas filas de la semilla
+   * prefiere recorrer la tabla, y hace bien: lo que se comprueba es que el
+   * índice se puede usar, no cuál elige hoy. Y sin las uniones de la
+   * consulta entera, con las que puede preferir otro índice igual de bueno.
+   */
+  async function planDe(resto: string): Promise<string> {
+    await fuente.query('SET enable_seqscan = off');
+    try {
+      const plan: { 'QUERY PLAN': string }[] = await fuente.query(
+        `EXPLAIN SELECT "service"."id" FROM "services" "service" ${resto}`,
+      );
+      return plan.map((f) => f['QUERY PLAN']).join(' ');
+    } finally {
+      await fuente.query('SET enable_seqscan = on');
+    }
+  }
+
   afterAll(async () => {
     if (fuente?.isInitialized) await fuente.destroy();
   });
@@ -59,84 +130,81 @@ describe('Esquema real', () => {
     // Había un índice GiST sobre la columna geometry y la consulta filtra
     // sobre su conversión a geography, que para PostgreSQL es otra expresión:
     // el plan real era un escaneo secuencial mientras el README presumía de
-    // búsqueda indexada. Se fuerza al planificador porque con pocas filas
-    // prefiere el escaneo, y hace bien; lo que se comprueba es que el índice
-    // está disponible, no cuál elige hoy.
-    //
-    // Y sobre la consulta que lanza de verdad la búsqueda, capturada al
-    // vuelo, no sobre una escrita a mano. La escrita a mano usaba un radio
-    // fijo y pasaba en verde mientras la real, con el radio de cada
-    // profesional, no podía usar el índice: la prueba de carga lo destapó.
-    const capturadas: Array<{ sql: string; parametros: unknown[] }> = [];
-    const espia = await new DataSource({
-      ...opcionesDeLaBase(),
-      logging: ['query'],
-      logger: {
-        logQuery: (sql: string, parametros?: unknown[]) => {
-          capturadas.push({ sql, parametros: parametros ?? [] });
-        },
-        logQueryError: () => undefined,
-        logQuerySlow: () => undefined,
-        logSchemaBuild: () => undefined,
-        logMigration: () => undefined,
-        log: () => undefined,
-      },
-    } as DataSourceOptions).initialize();
-    try {
-      const servicios = new ServicesService(
-        espia.getRepository(Service),
-        espia.getRepository(Booking),
-        { anotar: async () => undefined } as never,
-      );
-      await servicios.search({
-        latitude: 40.4168,
-        longitude: -3.7038,
-        radiusKm: 15,
-        sortBy: 'distance',
-      } as never);
-    } finally {
-      await espia.destroy();
-    }
+    // búsqueda indexada.
+    const consulta = await consultaDeLaBusqueda({
+      latitude: 40.4168,
+      longitude: -3.7038,
+      radiusKm: 15,
+      sortBy: 'distance',
+    });
 
-    const busqueda = capturadas.find(
-      (c) => c.sql.includes('ST_DWithin') && !c.sql.includes('COUNT('),
-    );
-    expect(busqueda, 'la búsqueda lanzó su consulta').toBeTruthy();
-
-    // Sus condiciones de cercanía, tal cual, sobre la tabla de servicios
-    // sola: con la consulta entera y 25 servicios, el planificador puede
-    // preferir otro índice igual de bueno, y lo que se comprueba es que el
-    // espacial se puede usar. Los parámetros van escritos: son números.
-    const condiciones = extraerLlamadas(busqueda!.sql, 'ST_DWithin').map(
-      (llamada) =>
-        llamada.replace(/\$(\d+)/g, (_, n: string) =>
-          String(busqueda!.parametros[Number(n) - 1]),
-        ),
-    );
+    // Sus condiciones de cercanía, tal cual.
+    const condiciones = extraerLlamadas(consulta, 'ST_DWithin');
     expect(condiciones).toHaveLength(2);
 
-    await fuente.query('SET enable_seqscan = off');
-    const plan: { 'QUERY PLAN': string }[] = await fuente.query(
-      `EXPLAIN SELECT service.id FROM services service
-       WHERE ${condiciones.join(' AND ')}`,
+    expect(await planDe(`WHERE ${condiciones.join(' AND ')}`)).toContain(
+      'IDX_services_location_geography',
     );
-    await fuente.query('SET enable_seqscan = on');
-
-    const texto = plan.map((f) => f['QUERY PLAN']).join(' ');
-    expect(texto).toContain('IDX_services_location_geography');
   });
 
-  it('la comparación de ciudad sin acentos también', async () => {
-    await fuente.query('SET enable_seqscan = off');
-    const plan: { 'QUERY PLAN': string }[] = await fuente.query(
-      `EXPLAIN SELECT id FROM services
-       WHERE translate(lower(city), 'áàäâéèëêíìïîóòöôúùüûñç', 'aaaaeeeeiiiioooouuuunc')
-           = 'malaga'`,
+  /** Las comparaciones sobre una columna normalizada: sin acentos ni mayúsculas. */
+  const sobre = (consulta: string, columna: string) =>
+    extraerLlamadas(consulta, 'translate').filter((llamada) =>
+      llamada.startsWith(`translate(lower("service"."${columna}")`),
     );
-    await fuente.query('SET enable_seqscan = on');
 
-    const texto = plan.map((f) => f['QUERY PLAN']).join(' ');
-    expect(texto).toContain('IDX_services_ciudad_normalizada');
+  it('la comparación de ciudad sin acentos también', async () => {
+    const consulta = await consultaDeLaBusqueda({ city: 'Málaga' });
+    const [expresion] = sobre(consulta, 'city');
+    expect(expresion, 'la búsqueda compara la ciudad').toBeTruthy();
+
+    // La expresión de la consulta real y lo que le sigue: con qué la compara.
+    const desde = consulta.indexOf(expresion);
+    const comparacion = /^\s*=\s*'[^']*'/.exec(
+      consulta.slice(desde + expresion.length),
+    );
+    expect(comparacion, 'compara por igualdad').toBeTruthy();
+
+    expect(await planDe(`WHERE ${expresion}${comparacion![0]}`)).toContain(
+      'IDX_services_ciudad_normalizada',
+    );
+  });
+
+  it.each([
+    ['title', 'IDX_services_titulo_trigramas'],
+    ['description', 'IDX_services_descripcion_trigramas'],
+  ])('la búsqueda por texto en %s puede usar %s', async (columna, indice) => {
+    // Un LIKE con comodín delante no lo sirve un índice normal: lo sirven
+    // los de trigramas, y solo si la expresión es letra por letra la suya.
+    const consulta = await consultaDeLaBusqueda({ query: 'grifo' });
+    const [expresion] = sobre(consulta, columna);
+    expect(expresion, `la búsqueda mira ${columna}`).toBeTruthy();
+
+    const desde = consulta.indexOf(expresion);
+    const comparacion = /^\s*LIKE\s*'[^']*'/.exec(
+      consulta.slice(desde + expresion.length),
+    );
+    expect(comparacion, 'compara con LIKE').toBeTruthy();
+
+    expect(await planDe(`WHERE ${expresion}${comparacion![0]}`)).toContain(
+      indice,
+    );
+  });
+
+  it('el orden por defecto se lee del índice, sin ordenar nada', async () => {
+    // Los más recientes primero, con su desempate. El índice sobre la fecha
+    // y el identificador los da ya en ese orden, y PostgreSQL para en el
+    // duodécimo. Con el desempate en el otro sentido, o sin el
+    // identificador en el índice, tendría que ordenar: con 50.000 servicios
+    // era la diferencia entre 12 milisegundos y 41.
+    const consulta = await consultaDeLaBusqueda({});
+    const orden = /ORDER BY (.+?) LIMIT/.exec(consulta);
+    expect(orden, 'la búsqueda ordena').toBeTruthy();
+
+    const plan = await planDe(`ORDER BY ${orden![1]} LIMIT 12`);
+
+    expect(plan).toContain('IDX_services_creados');
+    expect(plan).not.toContain('Sort');
   });
 
   it('una reserva no puede tener dos valoraciones', async () => {

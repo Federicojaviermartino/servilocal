@@ -7,7 +7,7 @@ import { useState, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Service } from '@/types';
 import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
-import { useImporte } from '@/lib/importes';
+import { aCentimos, useImporte } from '@/lib/importes';
 import Button from '../atoms/Button';
 import Input from '../atoms/Input';
 
@@ -102,7 +102,7 @@ export default function BookingForm({
     onSubmit({
       scheduledDate: new Date(`${date}T${time}:00`).toISOString(),
       description,
-      totalPrice: price,
+      totalPrice: aCentimos(price),
     });
   };
 

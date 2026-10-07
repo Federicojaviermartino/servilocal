@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatearImporte, textoDelPrecio } from './importes';
+import { aCentimos, formatearImporte, textoDelPrecio } from './importes';
 
 // El formato de moneda separa con un espacio duro, que se ve igual que uno
 // normal: se compara sin distinguirlos.
@@ -50,5 +50,18 @@ describe('textoDelPrecio', () => {
     expect(
       plano(textoDelPrecio({ priceMin: 40, priceMax: '40' }, t, 'es', 'x')),
     ).toBe('40 € x');
+  });
+});
+
+describe('aCentimos', () => {
+  it.each([
+    [45.555, 45.56],
+    [45.554, 45.55],
+    [40, 40],
+    [0.5, 0.5],
+    // La suma de siempre en coma flotante: 0,1 + 0,2 no es 0,3.
+    [0.1 + 0.2, 0.3],
+  ])('%f se envía como %f', (escrito, enviado) => {
+    expect(aCentimos(escrito)).toBe(enviado);
   });
 });

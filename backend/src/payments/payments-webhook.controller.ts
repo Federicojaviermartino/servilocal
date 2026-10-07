@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { SkipThrottle } from '@nestjs/throttler';
 import Stripe from 'stripe';
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
@@ -32,6 +33,11 @@ export class PaymentsWebhookController {
     );
   }
 
+  // Fuera del límite de peticiones: quien llama es Stripe, desde unas pocas
+  // direcciones, y lo que lo autentica es la firma. Con el límite general,
+  // una ráfaga de avisos recibía un 429 y Stripe los reintentaba cada vez
+  // más tarde: los pagos se anotaban con retraso.
+  @SkipThrottle()
   @Post('webhook')
   @ApiExcludeEndpoint()
   @ApiOperation({ summary: 'Recibe eventos de Stripe (verificados por firma)' })

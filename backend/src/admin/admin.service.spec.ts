@@ -26,6 +26,7 @@ function consultaFalsa(resultado: {
     'groupBy',
     'orderBy',
     'leftJoin',
+    'innerJoin',
   ]) {
     qb[metodo] = vi.fn(() => qb);
   }
@@ -230,6 +231,107 @@ describe('AdminService', () => {
 
       expect(m.servicios.porCiudad).toEqual([{ clave: 'Madrid', total: 5 }]);
     });
+  });
+
+  describe('las métricas de la administración de demostración', () => {
+    // Su contraseña está en la pantalla de acceso. Veía los agregados de
+    // toda la plataforma: lo cobrado de verdad y cuántas cuentas reales hay.
+    const consultas = (cuantas: number) =>
+      Array.from({ length: cuantas }, () => consultaFalsa({}));
+
+    async function medir(soloDemostracion?: boolean) {
+      const repos = {
+        usuarios: repositorioFalso(consultas(1)),
+        servicios: repositorioFalso(consultas(3)),
+        reservas: repositorioFalso(consultas(3)),
+        valoraciones: repositorioFalso(consultas(3)),
+        categorias: repositorioFalso(consultas(1)),
+      };
+      const servicio = await construir(repos);
+      await servicio.metricas(
+        soloDemostracion === undefined ? undefined : { soloDemostracion },
+      );
+      return repos;
+    }
+
+    /** Las consultas a mano que un repositorio llegó a construir. */
+    const construidas = (repo: ReturnType<typeof repositorioFalso>) =>
+      repo.createQueryBuilder.mock.results.map(
+        (r) => r.value as ReturnType<typeof consultaFalsa>,
+      );
+
+    it('cuenta solo las cuentas, los servicios, las reservas y las valoraciones de su mundo', async () => {
+      const repos = await medir(true);
+      const suyo = { esDemostracion: true };
+
+      expect(repos.usuarios.count.mock.calls).toEqual([
+        [{ where: suyo }],
+        [{ where: { isActive: false, ...suyo } }],
+      ]);
+      expect(repos.servicios.count.mock.calls).toEqual([
+        [{ where: { provider: suyo } }],
+        [{ where: { isActive: true, provider: suyo } }],
+      ]);
+      expect(repos.reservas.count.mock.calls).toEqual([
+        [{ where: { client: suyo } }],
+      ]);
+      expect(repos.valoraciones.count.mock.calls).toEqual([
+        [{ where: { client: suyo } }],
+        [{ where: { isReported: true, client: suyo } }],
+      ]);
+
+      // Y las que se construyen a mano, unidas a quien es de cada cosa.
+      for (const [repo, relacion] of [
+        [repos.servicios, 's.provider'],
+        [repos.reservas, 'b.client'],
+        [repos.valoraciones, 'r.client'],
+      ] as const) {
+        const hechas = construidas(repo);
+        expect(hechas).toHaveLength(3);
+        for (const consulta of hechas) {
+          expect(consulta.innerJoin).toHaveBeenCalledWith(
+            relacion,
+            'mundo',
+            'mundo.esDemostracion = true',
+          );
+        }
+      }
+      expect(construidas(repos.usuarios)[0].where).toHaveBeenCalledWith(
+        'u.esDemostracion = true',
+      );
+    });
+
+    it('las categorías son las de todos', async () => {
+      const repos = await medir(true);
+
+      expect(repos.categorias.count).toHaveBeenCalledWith();
+      expect(construidas(repos.categorias)[0].innerJoin).not.toHaveBeenCalled();
+    });
+
+    it.each([[false], [undefined]])(
+      'la administración de verdad (%s) lo cuenta todo',
+      async (soloDemostracion) => {
+        const repos = await medir(soloDemostracion);
+
+        expect(repos.usuarios.count.mock.calls).toEqual([
+          [{ where: {} }],
+          [{ where: { isActive: false } }],
+        ]);
+        expect(repos.reservas.count.mock.calls).toEqual([[{ where: {} }]]);
+        for (const repo of [
+          repos.servicios,
+          repos.reservas,
+          repos.valoraciones,
+        ]) {
+          for (const consulta of construidas(repo)) {
+            expect(consulta.innerJoin).not.toHaveBeenCalled();
+          }
+        }
+        expect(construidas(repos.usuarios)[0].where).toHaveBeenCalledWith(
+          '1 = 1',
+        );
+      },
+    );
   });
 
   describe('reputacion', () => {

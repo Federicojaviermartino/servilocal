@@ -230,6 +230,7 @@
     "titulo": "Prüfprotokoll",
     "usuario_activado": "Konto aktiviert",
     "usuario_desactivado": "Konto deaktiviert",
+    "vacioEnDemostracion": "In der Demo ist der Verlauf leer: Hier wird die Moderation echter Konten festgehalten, und dieses Konto kann nur lesen.",
     "valoracion_eliminada": "Bewertung gelöscht"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Antwort veröffentlicht.",
     "sinValoraciones": "Für diese Dienstleistung gibt es noch keine Bewertungen.",
     "sobreProfesional": "Über die Fachkraft",
+    "soloClientes": "Zum Buchen benötigen Sie ein Kundenkonto.",
     "tuRespuesta": "Ihre Antwort, für alle sichtbar",
     "valoraciones": "Bewertungen ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Aktiv",
     "cancelada": "Storniert",
+    "canceladas": "Storniert",
     "completada": "Abgeschlossen",
     "completadas": "Abgeschlossen",
     "confirmada": "Bestätigt",
     "confirmadas": "Bestätigt",
+    "filtrar": "Nach Status filtern",
     "pausado": "Pausiert",
     "pendiente": "Offen",
     "pendientes": "Offen",
     "rechazada": "Abgelehnt",
+    "rechazadas": "Abgelehnt",
     "todas": "Alle"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "Sie haben keine Berechtigung, diese Buchung zu bezahlen.",
     "sinServidor": "Der Server war nicht erreichbar.",
     "tarjetaCaducada": "Ihre Karte ist abgelaufen.",
+    "tarjetaDePrueba": "Dies ist eine Demo, es wird nichts abgebucht: Zahlen Sie mit der Testkarte 4242 4242 4242 4242, einem beliebigen künftigen Datum und einer beliebigen CVC.",
     "tarjetaGuardada": "Ihre Karte wird bei Stripe gespeichert, nicht bei ServiLocal, damit die Reservierung erneuert werden kann, wenn die Buchung mehr als eine Woche entfernt ist. Sie wird gelöscht, wenn Sie Ihr Konto löschen.",
     "titulo": "Zahlung bestätigen",
     "totalPagar": "Zu zahlender Betrag",

@@ -59,6 +59,31 @@ async function pedir(ejecutar: () => unknown): Promise<[string, string]> {
   return llamadas[0];
 }
 
+describe('un identificador que trae una ruta dentro', () => {
+  // Next entrega los parámetros de la dirección ya descodificados: con
+  // /services/..%2Fusers%2Fme, lo que llega es ../users/me. Pegado tal cual,
+  // la petición iba a /users/me con la cookie de quien miraba.
+  it.each<[string, () => unknown, string]>([
+    [
+      'la ficha',
+      () => api.servicesApi.getById('../users/me'),
+      '/services/..%2Fusers%2Fme',
+    ],
+    [
+      'las valoraciones',
+      () => api.reviewsApi.getByService('../../auth/profile'),
+      '/reviews/service/..%2F..%2Fauth%2Fprofile',
+    ],
+    [
+      'la conversación',
+      () => api.messagesApi.markRead('../../notifications/read-all'),
+      '/messages/conversation/..%2F..%2Fnotifications%2Fread-all/read',
+    ],
+  ])('%s lo escapa y no cambia de ruta', async (_caso, ejecutar, ruta) => {
+    expect((await pedir(ejecutar))[1]).toBe(ruta);
+  });
+});
+
 describe('rutas del cliente HTTP', () => {
   const CASOS: Array<[string, () => unknown, string, string]> = [
     [

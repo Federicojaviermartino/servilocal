@@ -14,6 +14,7 @@ import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
 import { paymentsApi } from '@/lib/api';
 import { useImporte } from '@/lib/importes';
+import { PAGOS_DE_PRUEBA } from '@/lib/stripe';
 import { BookingStatus } from '@/types';
 import Button from '../atoms/Button';
 
@@ -116,6 +117,11 @@ export default function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {PAGOS_DE_PRUEBA && (
+        <p className="rounded-md bg-superficie-alt p-3 text-sm text-secundario">
+          {t('tarjetaDePrueba')}
+        </p>
+      )}
       <PaymentElement />
       <div className="bg-fondo rounded-md p-4 flex justify-between items-center">
         {/* «Total a pagar» cuando no se cobra nada: se retiene. */}

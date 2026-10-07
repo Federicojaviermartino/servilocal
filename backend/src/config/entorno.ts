@@ -116,6 +116,11 @@ export function validarEntorno(
         'Falta PROXY_SECRETO: el límite de peticiones cuenta como uno solo a todos los visitantes que llegan por la web.',
       );
     }
+    if (!texto('STRIPE_WEBHOOK_SECRET')) {
+      avisar(
+        'Falta STRIPE_WEBHOOK_SECRET: los avisos de Stripe se contestan con un 503, y un pago que el navegador no llegue a confirmar no se anota hasta la revisión horaria.',
+      );
+    }
   }
 
   for (const clave of ENTEROS) {

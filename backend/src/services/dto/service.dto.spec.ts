@@ -6,9 +6,7 @@ async function rechazadas(
   clase: new () => object,
   datos: Record<string, unknown>,
 ): Promise<string[]> {
-  const errores = await validate(
-    plainToInstance(clase, datos, { enableImplicitConversion: true }),
-  );
+  const errores = await validate(plainToInstance(clase, datos));
   return errores.map((error) => error.property).sort();
 }
 
@@ -58,6 +56,30 @@ describe('Las imágenes de un servicio', () => {
     expect(
       await rechazadas(UpdateServiceDto, {
         images: ['https://images.pexels.com/photos/1/grifo.jpeg'],
+      }),
+    ).toEqual([]);
+  });
+});
+
+describe('La tarifa de un servicio', () => {
+  it.each([
+    ['con milésimas', 45.555],
+    ['por encima de lo que Stripe puede cobrar', 1_000_000],
+    ['por debajo de lo que Stripe puede cobrar', 0.49],
+  ])('un precio %s se rechaza', async (_caso, precio) => {
+    expect(
+      await rechazadas(UpdateServiceDto, {
+        priceMin: precio,
+        priceMax: precio,
+      }),
+    ).toEqual(['priceMax', 'priceMin']);
+  });
+
+  it('en los extremos entra', async () => {
+    expect(
+      await rechazadas(UpdateServiceDto, {
+        priceMin: 0.5,
+        priceMax: 999_999.99,
       }),
     ).toEqual([]);
   });

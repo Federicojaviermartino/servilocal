@@ -10,6 +10,7 @@ import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 import { useAvisoDeFallo } from '@/lib/aviso-de-fallo';
 import { useBorrador } from '@/lib/borrador';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
 
 interface PendingReviewFormProps {
   booking: Booking;
@@ -19,6 +20,7 @@ interface PendingReviewFormProps {
 
 function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
   const t = useTranslations('valoracionesPanel');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const tComun = useTranslations('comun');
   const avisarFallo = useAvisoDeFallo();
   const borrador = useBorrador<{ rating: number; comment: string }>(
@@ -54,7 +56,9 @@ function PendingReviewForm({ booking, onSubmit }: PendingReviewFormProps) {
 
   return (
     <div className="bg-superficie rounded-lg shadow-card p-5">
-      <p className="font-medium text-principal">{booking.service.title}</p>
+      <p lang={idiomaDelCatalogo} className="font-medium text-principal">
+        {booking.service.title}
+      </p>
       <p className="text-sm text-secundario mt-1">
         {t('con', {
           nombre: `${booking.provider.firstName} ${booking.provider.lastName}`,
@@ -121,6 +125,7 @@ async function pedirValoraciones(): Promise<{ data: Valoraciones }> {
 
 export default function MyReviewsPage() {
   const t = useTranslations('valoracionesPanel');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const idioma = useLocale();
   // Antes un fallo vaciaba las dos listas, y quien tenía valoraciones
   // pendientes leía que no le quedaba ninguna.
@@ -184,7 +189,13 @@ export default function MyReviewsPage() {
                     </span>
                   </div>
                   {r.comment && (
-                    <p className="text-sm text-secundario">{r.comment}</p>
+                    <p
+                      dir="auto"
+                      lang={idiomaDelCatalogo}
+                      className="text-sm text-secundario"
+                    >
+                      {r.comment}
+                    </p>
                   )}
                 </div>
               ))}

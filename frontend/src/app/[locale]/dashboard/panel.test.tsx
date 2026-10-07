@@ -244,8 +244,11 @@ describe('Resumen del panel', () => {
 });
 
 describe('Mis reservas', () => {
+  // Cada filtro lleva detrás cuántas reservas tiene: «Pendientes 2».
   const pestaña = (nombre: string) =>
-    userEvent.click(screen.getByRole('button', { name: nombre }));
+    userEvent.click(
+      screen.getByRole('button', { name: new RegExp(`^${nombre} [0-9]+$`) }),
+    );
 
   const titulos = () =>
     screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
@@ -283,6 +286,11 @@ describe('Mis reservas', () => {
 
     await pestaña(es.estados.completadas);
     expect(titulos()).toEqual(['Limpieza a fondo']);
+
+    // Las canceladas y las rechazadas no tenían filtro: solo se llegaba a
+    // ellas buscándolas entre todas.
+    await pestaña(es.estados.canceladas);
+    expect(titulos()).toEqual(['Montar un armario']);
 
     await pestaña(es.estados.todas);
     expect(titulos()).toHaveLength(RESERVAS.length);

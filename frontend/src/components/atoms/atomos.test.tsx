@@ -61,31 +61,40 @@ describe('Avatar', () => {
   it('sin foto enseña las iniciales', () => {
     render(<Avatar name="Federico Martino" />);
 
-    expect(screen.getByLabelText('Federico Martino')).toHaveTextContent('FM');
+    expect(screen.getByText('FM')).toBeInTheDocument();
   });
 
   it('con más de dos nombres se queda en dos iniciales', () => {
     // «MJGL» dentro de un círculo de cuarenta píxeles no se lee.
     render(<Avatar name="María José García López" />);
 
-    expect(screen.getByLabelText('María José García López')).toHaveTextContent(
-      'MJ',
-    );
+    expect(screen.getByText('MJ')).toBeInTheDocument();
   });
 
   it('con un solo nombre no se rompe', () => {
     render(<Avatar name="Laura" />);
 
-    expect(screen.getByLabelText('Laura')).toHaveTextContent('L');
+    expect(screen.getByText('L')).toBeInTheDocument();
   });
 
-  it('con foto, el nombre queda como texto alternativo', () => {
-    render(<Avatar name="Laura Gil" src="https://ejemplo.com/laura.png" />);
+  it('las iniciales no se le leen a nadie: el nombre va escrito al lado', () => {
+    // Llevaban un aria-label en un elemento sin función, que no vale, y un
+    // lector de pantalla leía «efe, eme» antes de cada nombre.
+    render(<Avatar name="Federico Martino" />);
 
-    expect(screen.getByAltText('Laura Gil')).toHaveAttribute(
-      'src',
-      'https://ejemplo.com/laura.png',
+    const iniciales = screen.getByText('FM');
+    expect(iniciales).toHaveAttribute('aria-hidden', 'true');
+    expect(iniciales).not.toHaveAttribute('aria-label');
+  });
+
+  it('con foto, tampoco repite el nombre en su texto alternativo', () => {
+    const { container } = render(
+      <Avatar name="Laura Gil" src="https://ejemplo.com/laura.png" />,
     );
+
+    const foto = container.querySelector('img');
+    expect(foto).toHaveAttribute('src', 'https://ejemplo.com/laura.png');
+    expect(foto).toHaveAttribute('alt', '');
   });
 });
 

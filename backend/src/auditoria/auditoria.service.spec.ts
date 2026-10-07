@@ -135,6 +135,18 @@ describe('AuditoriaService', () => {
       expect(registros.findAndCount.mock.calls[0][0]?.skip).toBe(0);
     });
 
+    it('para la administración de demostración está vacío, sin consultar nada', async () => {
+      // No puede moderar, así que nada de lo anotado es suyo: son los
+      // motivos de denuncia, los comentarios borrados y los títulos
+      // retirados de cuentas reales, y su contraseña está publicada.
+      const { servicio, registros } = await construir({ total: 120 });
+
+      const resultado = await servicio.listar(2, { soloDemostracion: true });
+
+      expect(resultado).toEqual({ datos: [], total: 0, pagina: 1, paginas: 1 });
+      expect(registros.findAndCount).not.toHaveBeenCalled();
+    });
+
     it('sin nada anotado devuelve una página, no cero', async () => {
       const { servicio } = await construir({ total: 0 });
 

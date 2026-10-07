@@ -44,6 +44,15 @@ vi.mock('@/lib/api', () => ({
   paymentsApi: { confirm: (id: string) => confirmar(id) },
 }));
 
+// Si los pagos son de prueba lo dice la clave publicable, al cargar el
+// módulo: aquí lo decide cada prueba.
+let dePrueba = false;
+vi.mock('@/lib/stripe', () => ({
+  get PAGOS_DE_PRUEBA() {
+    return dePrueba;
+  },
+}));
+
 function pintar(
   alCaducar?: () => Promise<void>,
   estadoReserva?: BookingStatus,
@@ -68,6 +77,24 @@ describe('CheckoutForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     confirmar.mockResolvedValue({ data: {} });
+    dePrueba = false;
+  });
+
+  it('con pagos de prueba, dice con qué tarjeta se paga', () => {
+    // La demostración cobra contra Stripe en modo de prueba, y quien
+    // llegaba aquí no tenía cómo saber qué tarjeta vale: solo lo contaba el
+    // README.
+    dePrueba = true;
+    pintar();
+
+    expect(screen.getByText(es.pago.tarjetaDePrueba)).toBeInTheDocument();
+    expect(es.pago.tarjetaDePrueba).toContain('4242 4242 4242 4242');
+  });
+
+  it('con pagos de verdad, no', () => {
+    pintar();
+
+    expect(screen.queryByText(es.pago.tarjetaDePrueba)).toBeNull();
   });
 
   it('una retención aceptada se confirma contra el servidor y lleva a la lista', async () => {

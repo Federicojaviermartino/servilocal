@@ -161,4 +161,74 @@ describe('Cuentas de demostración', () => {
       await fuente.query(`DELETE FROM users WHERE id = $1`, [real]);
     }
   });
+
+  it('y las métricas, también: lo real no las mueve', async () => {
+    // Daban los agregados de toda la plataforma, lo cobrado de verdad
+    // incluido, a quien entra con una contraseña que está publicada.
+    const administracion = new AdminService(
+      fuente.getRepository(User),
+      fuente.getRepository(Service),
+      fuente.getRepository(Booking),
+      fuente.getRepository(Review),
+      fuente.getRepository(Category),
+    );
+    const antes = await administracion.metricas({ soloDemostracion: true });
+
+    const [cliente, profesional] = await fuente.query(
+      `INSERT INTO users (email, password, "firstName", "lastName", role)
+       VALUES ('real-metricas-c@correo.test', 'x', 'Ana', 'Real', 'client'),
+              ('real-metricas-p@correo.test', 'x', 'Luis', 'Real', 'provider')
+       RETURNING id`,
+    );
+    const [{ id: categoria }] = await fuente.query(
+      `SELECT id FROM categories LIMIT 1`,
+    );
+    const [{ id: servicio }] = await fuente.query(
+      `INSERT INTO services ("providerId", "categoryId", title, description,
+         "priceMin", "priceUnit", address, city, location)
+       VALUES ($1, $2, 'Servicio real', 'De una cuenta real', 123.45,
+               'por servicio', 'Calle Real 1', 'Madrid',
+               ST_SetSRID(ST_MakePoint(-3.7, 40.4), 4326))
+       RETURNING id`,
+      [profesional.id, categoria],
+    );
+    const [{ id: reserva }] = await fuente.query(
+      `INSERT INTO bookings ("clientId", "providerId", "serviceId",
+         "scheduledDate", "durationMinutes", "totalPrice", status)
+       VALUES ($1, $2, $3, now() - interval '1 day', 60, 123.45, 'completed')
+       RETURNING id`,
+      [cliente.id, profesional.id, servicio],
+    );
+    await fuente.query(
+      `INSERT INTO payments ("bookingId", "clientId", amount, status)
+       VALUES ($1, $2, 123.45, 'completed')`,
+      [reserva, cliente.id],
+    );
+
+    try {
+      const suya = await administracion.metricas({ soloDemostracion: true });
+      const completa = await administracion.metricas();
+
+      expect(suya).toEqual(antes);
+      // La administración de verdad sí lo cuenta todo.
+      expect(completa.usuarios.total).toBeGreaterThanOrEqual(
+        suya.usuarios.total + 2,
+      );
+      expect(completa.servicios.total).toBe(suya.servicios.total + 1);
+      expect(completa.reservas.total).toBe(suya.reservas.total + 1);
+      expect(completa.reservas.facturado).toBeCloseTo(
+        suya.reservas.facturado + 123.45,
+        2,
+      );
+    } finally {
+      await fuente.query(`DELETE FROM payments WHERE "bookingId" = $1`, [
+        reserva,
+      ]);
+      await fuente.query(`DELETE FROM bookings WHERE id = $1`, [reserva]);
+      await fuente.query(`DELETE FROM services WHERE id = $1`, [servicio]);
+      await fuente.query(`DELETE FROM users WHERE id = ANY($1)`, [
+        [cliente.id, profesional.id],
+      ]);
+    }
+  });
 });

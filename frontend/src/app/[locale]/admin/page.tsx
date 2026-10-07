@@ -42,6 +42,7 @@ import Badge from '@/components/atoms/Badge';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 import Pagination from '@/components/molecules/Pagination';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
 
 // Recharts son unos 430 KB, y se cargaban con el panel aunque nadie abriera
 // las métricas. Aparte, como el mapa en el buscador.
@@ -897,6 +898,7 @@ function slugify(s: string): string {
 
 function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
   const t = useTranslations('administracion');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const idioma = useLocale();
 
@@ -973,7 +975,13 @@ function ReportedReviewsSection({ onMutate }: { onMutate?: () => void }) {
                 </span>
               </div>
               {r.comment && (
-                <p className="text-principal break-words">{r.comment}</p>
+                <p
+                  dir="auto"
+                  lang={idiomaDelCatalogo}
+                  className="text-principal break-words"
+                >
+                  {r.comment}
+                </p>
               )}
               <p className="text-xs text-tenue">
                 {t('reserva', { id: r.bookingId.slice(0, 8) })} ·{' '}
@@ -1357,6 +1365,10 @@ interface EntradaAuditoria {
 function AuditoriaSection() {
   const t = useTranslations('auditoria');
   const idioma = useLocale();
+  // A la administración de demostración el servidor no le enseña el
+  // historial, que es moderación de cuentas reales: sin decírselo, parecería
+  // que la sección no funciona.
+  const soloLectura = useAuthStore((estado) => estado.user?.soloLectura);
   const [pagina, setPagina] = useState(1);
   // Cambiar de página antes de que vuelva la anterior no deja pintada la
   // respuesta que llegue la última: useCarga solo acepta la de la página
@@ -1405,7 +1417,7 @@ function AuditoriaSection() {
             {entradas.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-3 py-8 text-center text-tenue">
-                  {t('sinEntradas')}
+                  {t(soloLectura ? 'vacioEnDemostracion' : 'sinEntradas')}
                 </td>
               </tr>
             )}

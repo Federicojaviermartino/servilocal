@@ -142,7 +142,14 @@ test.describe('Idioma', () => {
       .locator('a[href*="/services/"]:not([href*="search"])')
       .first();
     await expect(ficha).toBeVisible();
-    await ficha.click();
+    // Por su dirección y no pulsando la tarjeta: lo que se comprueba es lo
+    // que recibe quien llega a la ficha desde fuera, que es como llega un
+    // buscador. Pulsando la tarjeta en cuanto aparece, en WebKit y unas
+    // veces de cada diez, el título y los enlaces de idioma que el servidor
+    // mandó con el buscador se quedan en la cabecera junto a los de la
+    // ficha. Medido también en la 2.12.0: no depende de lo que declare la
+    // ficha, y hacía fallar esta prueba sin que la ficha tuviera nada mal.
+    await page.goto((await ficha.getAttribute('href')) as string);
     await page.waitForURL(/\/de\/services\/[0-9a-f-]{36}/);
 
     await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(

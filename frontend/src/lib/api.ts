@@ -63,6 +63,18 @@ api.interceptors.response.use(
   },
 );
 
+/**
+ * Un identificador como tramo de una ruta, escapado.
+ *
+ * Next entrega los parámetros de la dirección ya descodificados: con
+ * /services/..%2Fusers%2Fme, el «identificador» que llega es ../users/me, y
+ * pegado tal cual a la ruta la petición acababa en otra distinta, con la
+ * cookie de quien miraba. No había ninguna escritura alcanzable así, pero
+ * la ruta la decidía quien escribía el enlace. Escapado, es solo un
+ * identificador que no existe.
+ */
+const tramo = (valor: string) => encodeURIComponent(valor);
+
 export const authApi = {
   register: (data: {
     firstName: string;
@@ -100,7 +112,7 @@ export const usersApi = {
     api.post('/users/me/eliminar', { contrasena }),
   updateProfile: (data: Record<string, unknown>) =>
     api.put('/users/profile', data),
-  toggleActive: (id: string) => api.patch(`/users/${id}/toggle-active`),
+  toggleActive: (id: string) => api.patch(`/users/${tramo(id)}/toggle-active`),
 };
 
 export const iaApi = {
@@ -114,7 +126,7 @@ export const iaApi = {
 export const avisosApi = {
   listar: () => api.get('/notifications'),
   sinLeer: () => api.get('/notifications/unread/count'),
-  marcarLeido: (id: string) => api.patch(`/notifications/${id}/read`),
+  marcarLeido: (id: string) => api.patch(`/notifications/${tramo(id)}/read`),
   marcarTodos: () => api.patch('/notifications/read-all'),
 };
 
@@ -130,56 +142,58 @@ export const categoriesApi = {
   create: (data: { name: string; slug: string; description?: string }) =>
     api.post('/categories', data),
   update: (id: string, data: Record<string, unknown>) =>
-    api.put(`/categories/${id}`, data),
-  remove: (id: string) => api.delete(`/categories/${id}`),
+    api.put(`/categories/${tramo(id)}`, data),
+  remove: (id: string) => api.delete(`/categories/${tramo(id)}`),
 };
 
 export const servicesApi = {
   // Con los nombres de la API: ver parametrosDeApi.
   search: (params: ServiceSearchParams) =>
     api.get('/services/search', { params: parametrosDeApi(params) }),
-  getById: (id: string) => api.get(`/services/${id}`),
+  getById: (id: string) => api.get(`/services/${tramo(id)}`),
   // Los propios, con la dirección de referencia, que lo público ya no trae.
   getMine: () => api.get('/services/mine'),
   getByProvider: (providerId: string) =>
-    api.get(`/services/provider/${providerId}`),
+    api.get(`/services/provider/${tramo(providerId)}`),
   create: (data: Record<string, unknown>) => api.post('/services', data),
   update: (id: string, data: Record<string, unknown>) =>
-    api.put(`/services/${id}`, data),
-  remove: (id: string) => api.delete(`/services/${id}`),
+    api.put(`/services/${tramo(id)}`, data),
+  remove: (id: string) => api.delete(`/services/${tramo(id)}`),
 };
 
 export const bookingsApi = {
   create: (data: CreateBookingDto) => api.post('/bookings', data),
   getMyBookings: () => api.get('/bookings/my'),
   getReceived: () => api.get('/bookings/received'),
-  getById: (id: string) => api.get(`/bookings/${id}`),
+  getById: (id: string) => api.get(`/bookings/${tramo(id)}`),
   // sinCobro: completar aunque no haya pago retenido. Ver cambiar-estado.ts.
   updateStatus: (
     id: string,
     status: string,
     opciones: { sinCobro?: boolean; cancellationReason?: string } = {},
-  ) => api.patch(`/bookings/${id}/status`, { status, ...opciones }),
+  ) => api.patch(`/bookings/${tramo(id)}/status`, { status, ...opciones }),
 };
 
 export const reviewsApi = {
   create: (data: CreateReviewDto) => api.post('/reviews', data),
-  getByService: (serviceId: string) => api.get(`/reviews/service/${serviceId}`),
+  getByService: (serviceId: string) =>
+    api.get(`/reviews/service/${tramo(serviceId)}`),
   getMyReviews: () => api.get('/reviews/my'),
   respond: (id: string, providerResponse: string) =>
-    api.patch(`/reviews/${id}/response`, { providerResponse }),
+    api.patch(`/reviews/${tramo(id)}/response`, { providerResponse }),
   getReported: () => api.get('/reviews/reported'),
-  dismissReport: (id: string) => api.patch(`/reviews/${id}/dismiss-report`),
-  remove: (id: string) => api.delete(`/reviews/${id}`),
+  dismissReport: (id: string) =>
+    api.patch(`/reviews/${tramo(id)}/dismiss-report`),
+  remove: (id: string) => api.delete(`/reviews/${tramo(id)}`),
 };
 
 export const messagesApi = {
   getConversations: () => api.get('/messages/conversations'),
   getConversation: (partnerId: string) =>
-    api.get(`/messages/conversation/${partnerId}`),
+    api.get(`/messages/conversation/${tramo(partnerId)}`),
   // Leer el hilo ya no marca nada: es una escritura aparte.
   markRead: (partnerId: string) =>
-    api.patch(`/messages/conversation/${partnerId}/read`),
+    api.patch(`/messages/conversation/${tramo(partnerId)}/read`),
   send: (data: { receiverId: string; content: string }) =>
     api.post('/messages', data),
 };
@@ -188,10 +202,10 @@ export const paymentsApi = {
   createIntent: (bookingId: string) =>
     api.post('/payments/create-intent', { bookingId }),
   confirm: (paymentIntentId: string) =>
-    api.post(`/payments/confirm/${paymentIntentId}`),
+    api.post(`/payments/confirm/${tramo(paymentIntentId)}`),
   // Sin pago, la API responde vacío.
   getByBooking: (bookingId: string) =>
-    api.get<Payment | ''>(`/payments/booking/${bookingId}`),
+    api.get<Payment | ''>(`/payments/booking/${tramo(bookingId)}`),
 };
 
 export default api;

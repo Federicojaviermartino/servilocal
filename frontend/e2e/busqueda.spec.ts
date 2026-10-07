@@ -19,6 +19,18 @@ async function abrirFiltros(page: Page) {
   }
 }
 
+/**
+ * El recuento que se ve, junto a la lista. El mismo texto va otra vez fuera
+ * de la vista, en la región que lo anuncia a quien no ve la pantalla: por el
+ * texto solo, serían dos.
+ */
+const recuento = (page: Page, texto: string | RegExp) =>
+  page.getByRole('paragraph').filter({ hasText: texto });
+
+/** Y el que se anuncia. */
+const anunciado = (page: Page, texto: string) =>
+  page.getByRole('status').filter({ hasText: texto });
+
 test.describe('Búsqueda de servicios', () => {
   test('la portada lleva al buscador y muestra resultados', async ({
     page,
@@ -33,7 +45,7 @@ test.describe('Búsqueda de servicios', () => {
 
     await expect(page).toHaveURL(/\/services\/search/);
     // Sin tildes debe encontrar igualmente los servicios de Fontanería
-    await expect(page.getByText(/resultados? encontrados?/)).toBeVisible();
+    await expect(recuento(page, /resultados? encontrados?/)).toBeVisible();
     await expect(page.locator(TARJETA).first()).toBeVisible();
   });
 
@@ -119,17 +131,20 @@ test.describe('Búsqueda de servicios', () => {
     page,
   }) => {
     await page.goto('/services/search');
-    await expect(page.getByText('25 resultados encontrados')).toBeVisible();
+    await expect(recuento(page, '25 resultados encontrados')).toBeVisible();
 
     await abrirFiltros(page);
     await page.getByLabel('Ciudad').selectOption('Murcia');
     await page.getByRole('button', { name: 'Aplicar filtros' }).click();
 
-    await expect(page.getByText('1 resultado encontrado')).toBeVisible();
+    await expect(recuento(page, '1 resultado encontrado')).toBeVisible();
+    // Filtrar vuelve a montar la lista: sin anunciarlo, quien no ve la
+    // pantalla no sabría que ha cambiado nada.
+    await expect(anunciado(page, '1 resultado encontrado')).toBeAttached();
 
     await abrirFiltros(page);
     await page.getByRole('button', { name: 'Limpiar' }).click();
-    await expect(page.getByText('25 resultados encontrados')).toBeVisible();
+    await expect(recuento(page, '25 resultados encontrados')).toBeVisible();
   });
 
   test('la vista de mapa muestra todos los servicios sin paginar', async ({

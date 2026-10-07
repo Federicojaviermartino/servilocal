@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 import { UserRole } from '../entities';
 import { AuditoriaController } from './auditoria.controller';
 import { AuditoriaService } from './auditoria.service';
@@ -17,10 +18,23 @@ describe('AuditoriaController', () => {
     auditoria.listar.mockClear();
   });
 
-  it('pide la página que se le indica', async () => {
-    await controlador.listar(3);
+  const quien = (soloLectura: boolean) =>
+    ({ user: { id: 'u-1', soloLectura } }) as unknown as PeticionAutenticada;
 
-    expect(auditoria.listar).toHaveBeenCalledWith(3);
+  it('pide la página que se le indica', async () => {
+    await controlador.listar(3, quien(false));
+
+    expect(auditoria.listar).toHaveBeenCalledWith(3, {
+      soloDemostracion: false,
+    });
+  });
+
+  it('a la administración de demostración no le enseña la moderación real', async () => {
+    await controlador.listar(1, quien(true));
+
+    expect(auditoria.listar).toHaveBeenCalledWith(1, {
+      soloDemostracion: true,
+    });
   });
 
   it('está reservado al administrador', () => {

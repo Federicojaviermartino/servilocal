@@ -4,6 +4,7 @@ import {
   Get,
   ParseIntPipe,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -15,6 +16,8 @@ import {
 } from '@nestjs/swagger';
 import { Roles, RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../entities';
+import type { PeticionAutenticada } from '../auth/peticion-autenticada';
+import { soloVeLaDemostracion } from '../common/demostracion';
 import { AuditoriaService } from './auditoria.service';
 
 @ApiTags('admin')
@@ -35,7 +38,10 @@ export class AuditoriaController {
   @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
   listar(
     @Query('pagina', new DefaultValuePipe(1), ParseIntPipe) pagina: number,
+    @Request() req: PeticionAutenticada,
   ) {
-    return this.auditoria.listar(pagina);
+    return this.auditoria.listar(pagina, {
+      soloDemostracion: soloVeLaDemostracion(req.user),
+    });
   }
 }

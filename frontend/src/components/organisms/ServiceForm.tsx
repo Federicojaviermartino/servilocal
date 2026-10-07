@@ -12,6 +12,7 @@ import { CIUDADES } from '@/lib/ciudades';
 import Input from '../atoms/Input';
 import Button from '../atoms/Button';
 import { useNombreCategoria } from '@/lib/categorias';
+import { aCentimos } from '@/lib/importes';
 import { useNombreUnidad } from '@/lib/unidades';
 import {
   DURACIONES,
@@ -107,7 +108,8 @@ export default function ServiceForm({
     setErrorPrecio('');
     onSubmit({
       ...form,
-      priceMax: form.priceMax || undefined,
+      priceMin: aCentimos(form.priceMin),
+      priceMax: form.priceMax ? aCentimos(form.priceMax) : undefined,
     });
   };
 

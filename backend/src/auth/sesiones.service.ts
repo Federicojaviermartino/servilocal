@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThan, Repository } from 'typeorm';
 import { SesionRevocada } from '../entities';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 import { AUDIENCIA_API } from './sesion';
 
 /**
@@ -18,6 +19,7 @@ export class SesionesService {
     @InjectRepository(SesionRevocada)
     private readonly revocadas: Repository<SesionRevocada>,
     private readonly jwt: JwtService,
+    private readonly tiempoReal: TiempoRealGateway,
   ) {}
 
   /** Si la sesión se cerró antes de caducar. */
@@ -36,7 +38,7 @@ export class SesionesService {
   async revocar(token: string | null): Promise<void> {
     if (!token) return;
 
-    let carga: { jti?: string; exp?: number };
+    let carga: { jti?: string; exp?: number; sub?: string };
     try {
       carga = await this.jwt.verifyAsync(token, { audience: AUDIENCIA_API });
     } catch {
@@ -50,6 +52,10 @@ export class SesionesService {
       { jti: carga.jti, caduca: new Date(carga.exp * 1000) },
       ['jti'],
     );
+
+    // Y sus sockets: el token ya no abre nada, pero uno abierto con él
+    // seguía recibiendo los mensajes. Ver TiempoRealGateway.desconectar.
+    if (carga.sub) this.tiempoReal.desconectar(carga.sub);
 
     // Las que ya caducaron sobran: el token lo rechaza la firma sola. Se
     // aprovecha cada cierre para barrerlas, sin tarea programada que olvidar.

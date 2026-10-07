@@ -14,6 +14,7 @@ const PRODUCCION = {
   DATABASE_URL: 'postgresql://usuario:clave@servidor/base',
   CORS_ORIGINS: 'https://servilocal-web.onrender.com',
   PROXY_SECRETO: 'y'.repeat(32),
+  STRIPE_WEBHOOK_SECRET: 'whsec_marcador',
 };
 
 const fallo = (entorno: Record<string, unknown>): string => {
@@ -80,6 +81,19 @@ describe('validarEntorno', () => {
       expect(avisos).toHaveLength(2);
       expect(avisos[0]).toContain('JWT_SECRET tiene menos de 32');
       expect(avisos[1]).toContain('Falta PROXY_SECRETO');
+    });
+
+    it('sin el secreto del aviso de Stripe arranca, pero lo dice', () => {
+      // Sin él la API funciona: el navegador confirma el pago y la revisión
+      // horaria recoge lo que se quede a medias. Pero cada aviso de Stripe
+      // recibe un 503, y eso solo se veía en su panel.
+      const avisos: string[] = [];
+      const { STRIPE_WEBHOOK_SECRET: _aviso, ...sinAviso } = PRODUCCION;
+
+      validarEntorno(sinAviso, (aviso) => avisos.push(aviso));
+
+      expect(avisos).toHaveLength(1);
+      expect(avisos[0]).toContain('Falta STRIPE_WEBHOOK_SECRET');
     });
 
     it('en local no se exige nada de eso', () => {

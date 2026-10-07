@@ -7,16 +7,24 @@ describe('AdminController', () => {
 
   beforeEach(() => vi.clearAllMocks());
 
-  it('las métricas son las de la plataforma', async () => {
-    await controlador.metricas();
+  const quien = (soloLectura: boolean) =>
+    ({ user: { id: 'u-1', soloLectura } }) as unknown as PeticionAutenticada;
 
-    expect(servicio.metricas).toHaveBeenCalled();
+  it('las métricas son las de la plataforma, y para la de demostración, las de su mundo', async () => {
+    // Daban lo cobrado de verdad y cuántas cuentas reales hay a quien
+    // entra con una contraseña que está en la pantalla de acceso.
+    await controlador.metricas(quien(false));
+    await controlador.metricas(quien(true));
+
+    expect(servicio.metricas).toHaveBeenNthCalledWith(1, {
+      soloDemostracion: false,
+    });
+    expect(servicio.metricas).toHaveBeenNthCalledWith(2, {
+      soloDemostracion: true,
+    });
   });
 
   it('la administración de demostración solo ve la reputación de su mundo', async () => {
-    const quien = (soloLectura: boolean) =>
-      ({ user: { id: 'u-1', soloLectura } }) as unknown as PeticionAutenticada;
-
     await controlador.reputacion(quien(true));
     await controlador.reputacion(quien(false));
 

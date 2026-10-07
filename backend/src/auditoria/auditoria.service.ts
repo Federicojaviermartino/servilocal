@@ -67,13 +67,29 @@ export class AuditoriaService {
     }
   }
 
-  /** Lo último primero, que es como se mira un historial. */
-  async listar(pagina = 1): Promise<{
+  /**
+   * Lo último primero, que es como se mira un historial.
+   *
+   * Con `soloDemostracion`, vacío. La administración de demostración no
+   * puede moderar, así que nada de lo anotado es suyo: es la moderación de
+   * cuentas reales, y cada entrada copia texto que escribieron ellas —el
+   * motivo de una denuncia, el comentario de una valoración borrada, el
+   * título de un servicio retirado—. Su contraseña está en la pantalla de
+   * acceso; ver soloVeLaDemostracion.
+   */
+  async listar(
+    pagina = 1,
+    { soloDemostracion = false }: { soloDemostracion?: boolean } = {},
+  ): Promise<{
     datos: RegistroAuditoria[];
     total: number;
     pagina: number;
     paginas: number;
   }> {
+    if (soloDemostracion) {
+      return { datos: [], total: 0, pagina: 1, paginas: 1 };
+    }
+
     const [datos, total] = await this.registros.findAndCount({
       order: { createdAt: 'DESC' },
       skip: (Math.max(pagina, 1) - 1) * LIMITE,

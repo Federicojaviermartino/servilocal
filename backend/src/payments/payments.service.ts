@@ -188,6 +188,10 @@ export class PaymentsService {
     amount: number;
     currency: string;
   }> {
+    // Si al mirar en Stripe resulta que el dinero ya está retenido y el
+    // trabajo ya se dio por hecho: se cobra al salir de la transacción.
+    let retenidoTrasCompletar = false;
+
     const abierto = await this.dataSource.transaction(async (gestor) => {
       // La fila de la reserva se bloquea mientras dura todo esto.
       //
@@ -214,8 +218,10 @@ export class PaymentsService {
         throw new NotFoundException('Reserva no encontrada');
       }
 
+      // 403, como todo lo que es de otro. Respondía 400, que es lo que se
+      // dice de una petición mal escrita, y esta está bien escrita.
       if (booking.clientId !== clientId) {
-        throw new BadRequestException('Esta reserva no te pertenece');
+        throw new ForbiddenException('Esta reserva no te pertenece');
       }
 
       // Una reserva completada sin cobro se puede pagar después: es lo que
@@ -288,7 +294,11 @@ export class PaymentsService {
 
         // El 409 se lanza fuera: dentro de la transacción desharía lo que se
         // acaba de reflejar.
-        if (alreadyPaid.includes(stripePi.status)) return null;
+        if (alreadyPaid.includes(stripePi.status)) {
+          retenidoTrasCompletar =
+            completada && stripePi.status === 'requires_capture';
+          return null;
+        }
         // Si el PI esta canceled o en otro estado no reutilizable, se crea uno nuevo abajo.
       }
 
@@ -377,6 +387,23 @@ export class PaymentsService {
     });
 
     if (!abierto) {
+      // Retenido, y con la reserva completada sin cobro: el aviso de esa
+      // retención se perdió. Se respondía que había un pago en curso y ahí
+      // quedaba, sin que nadie llegara a cobrarlo hasta que Stripe lo
+      // soltaba a los siete días. Fuera de la transacción, porque resolverlo
+      // bloquea la misma reserva. Si falla, quien paga no tiene nada que
+      // repetir: lo reintenta la revisión de cada hora.
+      if (retenidoTrasCompletar) {
+        try {
+          await this.resolverRetencionTardia(bookingId);
+        } catch (error) {
+          this.logger.warn(
+            `Retención sin cobrar en la reserva ${bookingId}: ${
+              error instanceof Error ? error.message : 'causa desconocida'
+            }. La revisión horaria lo volverá a intentar.`,
+          );
+        }
+      }
       throw new ConflictException({
         statusCode: 409,
         codigo: CODIGO_PAGO_EN_CURSO,
@@ -668,9 +695,9 @@ export class PaymentsService {
    * Suelta la retención cuando la reserva no va a ocurrir.
    *
    * Al contrario que el cobro, esto no puede impedir la cancelación. Quien
-   * cancela tiene derecho a cancelar, y si Stripe no responde la retención
-   * caduca sola en siete días: el remedio de bloquear la operación sería
-   * peor que el fallo. Se deja constancia en el registro.
+   * cancela tiene derecho a cancelar, y bloquear la operación porque Stripe
+   * no responde sería peor que el fallo. Se deja constancia en el registro
+   * y la revisión de cada hora lo vuelve a intentar: ver revisarRetenciones.
    */
   async liberarRetencion(
     bookingId: string,
@@ -718,7 +745,7 @@ export class PaymentsService {
         this.logger.warn(
           `Retención sin liberar en la reserva ${bookingId}: ${
             error instanceof Error ? error.message : 'causa desconocida'
-          }. Caducará sola en siete días.`,
+          }. La revisión horaria lo volverá a intentar.`,
         );
         return null;
       }
@@ -1061,7 +1088,8 @@ export class PaymentsService {
   }
 
   /**
-   * Revisa las retenciones de las reservas que siguen abiertas.
+   * Revisa las retenciones: renueva las de las reservas que siguen abiertas
+   * y resuelve las de las que ya se cerraron.
    *
    * Stripe suelta una autorización sin cobrar a los siete días, y una
    * reserva puede ser para dentro de un mes: sin esto, el trabajo se hacía y
@@ -1090,10 +1118,21 @@ export class PaymentsService {
       nada: 0,
     };
     for (const pago of retenidos) {
-      if (!pago.booking || !RESERVAS_ABIERTAS.includes(pago.booking.status)) {
-        continue;
-      }
+      if (!pago.booking) continue;
       try {
+        // Retenido con la reserva ya cerrada. Pasa cuando Stripe no contesta
+        // al cancelarla —la cancelación sigue adelante, que para eso es un
+        // derecho— o cuando la retención llega tarde y no se puede cobrar en
+        // el momento. Estos pagos se saltaban, y nada volvía a mirarlos: el
+        // dinero seguía bloqueado en la tarjeta de quien canceló, o el
+        // trabajo hecho se quedaba sin cobrar, hasta que Stripe soltaba la
+        // retención a los siete días. Se resuelven como la que llega tarde.
+        if (!RESERVAS_ABIERTAS.includes(pago.booking.status)) {
+          const resuelto = await this.resolverRetencionTardia(pago.bookingId);
+          const cambio = resuelto && resuelto.status !== PaymentStatus.HELD;
+          resumen[cambio ? 'conciliada' : 'nada'] += 1;
+          continue;
+        }
         resumen[await this.revisarRetencion(pago.id, ahora)] += 1;
       } catch (error) {
         this.logger.warn(

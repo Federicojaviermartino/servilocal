@@ -18,23 +18,39 @@ import { join } from 'node:path';
  */
 describe('Arranque', () => {
   const main = readFileSync(join(__dirname, 'main.ts'), 'utf8');
+  const imports = [
+    ...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm),
+  ].map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
 
   it('carga el .env antes que ningún módulo propio', () => {
-    const imports = [
-      ...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm),
-    ].map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
-
     expect(imports[0]).toBe('dotenv/config');
   });
 
   it('y el resto de imports viene después, no antes', () => {
     // Sin esto, la comprobación de arriba pasaría con el import puesto
     // primero pero duplicado más abajo, o con la lista vacía.
-    const imports = [
-      ...main.matchAll(/^import .*?from '(.+?)';|^import '(.+?)';/gm),
-    ].map((coincidencia) => coincidencia[1] ?? coincidencia[2]);
-
     expect(imports.length).toBeGreaterThan(5);
     expect(imports.indexOf('./app.module')).toBeGreaterThan(0);
+  });
+
+  it('Sentry se inicia antes de cargar Nest y todo lo demás', () => {
+    // Su instrumentación se engancha a cada biblioteca al cargarla: con
+    // Express y el cliente de PostgreSQL ya cargados no se engancha nunca,
+    // y tampoco protesta. Delante solo van el .env, del que sale SENTRY_DSN,
+    // y la zona horaria.
+    expect(imports.slice(0, 3)).toEqual([
+      'dotenv/config',
+      './config/zona-horaria',
+      './instrumentacion',
+    ]);
+  });
+
+  it('sin SENTRY_DSN, la instrumentación no arranca nada', async () => {
+    vi.stubEnv('SENTRY_DSN', '');
+
+    const { sentryActivo } = await import('./instrumentacion');
+
+    expect(sentryActivo).toBe(false);
+    vi.unstubAllEnvs();
   });
 });

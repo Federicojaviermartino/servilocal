@@ -21,7 +21,6 @@ import { visitanteReenviado } from '../common/proxy-frontend';
  */
 @ApiTags('health')
 @Controller('health')
-@SkipThrottle()
 export class HealthController {
   constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
@@ -73,6 +72,11 @@ export class HealthController {
    * cómputo en toda la franja, y eso se paga del cupo. La base se sigue
    * comprobando arriba, con menos frecuencia.
    */
+  // Sin límite de peticiones, al contrario que la de arriba: esta no toca
+  // nada. La completa lanza una consulta en cada llamada, y fuera del límite
+  // cualquiera podía ocupar el grupo de conexiones y gastar el cupo de la
+  // base con solo pedirla en bucle.
+  @SkipThrottle()
   @Get('vivo')
   @ApiOperation({ summary: 'El proceso responde; no comprueba la base' })
   @ApiResponse({ status: 200, description: 'En marcha' })

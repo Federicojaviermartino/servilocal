@@ -17,6 +17,7 @@ import { useImporte } from '@/lib/importes';
 import iconoRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import icono from 'leaflet/dist/images/marker-icon.png';
 import sombra from 'leaflet/dist/images/marker-shadow.png';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
 
 /** Next da la imagen importada como objeto con src; otros empaquetadores, como texto. */
 const urlDe = (imagen: string | { src: string }) =>
@@ -77,6 +78,7 @@ export default function ServiceMap({
   height = '500px',
 }: ServiceMapProps) {
   const t = useTranslations('mapa');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const importe = useImporte();
   const nombreUnidad = useNombreUnidad();
 
@@ -133,7 +135,9 @@ export default function ServiceMap({
           >
             <Popup>
               <div className="text-sm">
-                <p className="font-semibold">{service.title}</p>
+                <p lang={idiomaDelCatalogo} className="font-semibold">
+                  {service.title}
+                </p>
                 <p className="text-secundario">{service.city}</p>
                 <p className="text-secundario">
                   {t('desde', {

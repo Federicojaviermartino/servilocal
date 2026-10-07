@@ -14,6 +14,18 @@ import {
 } from './common/observabilidad/peticion';
 
 /**
+ * Las opciones con las que se crea la aplicación, para main.ts y para las
+ * pruebas que la arrancan entera.
+ *
+ * `rawBody` guarda el cuerpo de cada petición tal como llegó, además del ya
+ * interpretado. El aviso de Stripe verifica su firma sobre esos bytes: sin
+ * ellos todos darían 400 y ninguna retención llegaría a anotarse. Estaba
+ * escrito dos veces, aquí y en la prueba, y quitarlo de main.ts no ponía
+ * nada en rojo.
+ */
+export const OPCIONES_DE_ARRANQUE = { rawBody: true } as const;
+
+/**
  * Lo que rodea a los módulos: identificador y registro de cada petición,
  * cabeceras, cookies, CORS, prefijo, versiones, filtro de errores y
  * validación.
@@ -61,14 +73,17 @@ export function configurarAplicacion(app: NestExpressApplication): void {
 
   app.useGlobalFilters(new FiltroDeExcepciones());
 
+  // Sin conversión implícita de tipos. Con ella, class-transformer hacía
+  // Boolean(valor) antes de validar, y cualquier texto es verdadero: un
+  // "sinCobro":"false" cerraba la reserva sin cobrar y un
+  // "aceptaTerminos":"false" contaba como aceptado. Lo que no llega con el
+  // tipo declarado se rechaza. Los números de la búsqueda, que llegan como
+  // texto en la dirección, se convierten uno a uno con @Type en su DTO.
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
     }),
   );
 }

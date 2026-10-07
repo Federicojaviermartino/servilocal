@@ -230,6 +230,7 @@
     "titulo": "Audit",
     "usuario_activado": "Account attivato",
     "usuario_desactivado": "Account disattivato",
+    "vacioEnDemostracion": "Nella demo lo storico è vuoto: qui si registra la moderazione di account reali, e questo account può solo consultare.",
     "valoracion_eliminada": "Recensione eliminata"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Risposta pubblicata.",
     "sinValoraciones": "Questo servizio non ha ancora recensioni.",
     "sobreProfesional": "Il professionista",
+    "soloClientes": "Per prenotare serve un account cliente.",
     "tuRespuesta": "La tua risposta, visibile a tutti",
     "valoraciones": "Recensioni ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Attivo",
     "cancelada": "Annullata",
+    "canceladas": "Annullate",
     "completada": "Completata",
     "completadas": "Completate",
     "confirmada": "Confermata",
     "confirmadas": "Confermate",
+    "filtrar": "Filtra per stato",
     "pausado": "In pausa",
     "pendiente": "In attesa",
     "pendientes": "In attesa",
     "rechazada": "Rifiutata",
+    "rechazadas": "Rifiutate",
     "todas": "Tutte"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "Non hai il permesso di pagare questa prenotazione.",
     "sinServidor": "Non è stato possibile contattare il server.",
     "tarjetaCaducada": "La tua carta è scaduta.",
+    "tarjetaDePrueba": "Questa è una demo e non viene addebitato nulla: paga con la carta di prova 4242 4242 4242 4242, una data futura qualsiasi e un CVC qualsiasi.",
     "tarjetaGuardada": "La tua carta resta salvata su Stripe, non su ServiLocal, per poter rinnovare il blocco se la prenotazione è tra più di una settimana. Viene cancellata se elimini il tuo account.",
     "titulo": "Conferma il pagamento",
     "totalPagar": "Totale da pagare",

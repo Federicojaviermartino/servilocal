@@ -25,6 +25,7 @@ import {
 import { UsersService } from './users.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PaymentsService } from '../payments/payments.service';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 
 /** La transacción de la eliminación, y las consultas de la exportación. */
 const gestor = {
@@ -45,6 +46,7 @@ const dataSource = {
   ),
 };
 const pagos = { olvidarCliente: vi.fn(async () => undefined) };
+const tiempoReal = { desconectar: vi.fn() };
 
 describe('UsersService', () => {
   let servicio: UsersService;
@@ -73,6 +75,7 @@ describe('UsersService', () => {
         { provide: AuditoriaService, useValue: auditoria },
         { provide: DataSource, useValue: dataSource },
         { provide: PaymentsService, useValue: pagos },
+        { provide: TiempoRealGateway, useValue: tiempoReal },
       ],
     }).compile();
 
@@ -85,6 +88,18 @@ describe('UsersService', () => {
 
       expect(resultado.isActive).toBe(false);
       expect(repo.save).toHaveBeenCalled();
+    });
+
+    it('al desactivarla se cierran sus sockets; al reactivarla, no', async () => {
+      // Una cuenta desactivada ya no entra en la API, pero el socket que
+      // tuviera abierto seguía recibiendo mensajes y avisos.
+      await servicio.toggleActive(OTRO, ACTOR);
+      expect(tiempoReal.desconectar).toHaveBeenCalledWith(OTRO);
+
+      tiempoReal.desconectar.mockClear();
+      repo.findOne.mockResolvedValueOnce({ id: OTRO, isActive: false } as User);
+      await servicio.toggleActive(OTRO, ACTOR);
+      expect(tiempoReal.desconectar).not.toHaveBeenCalled();
     });
 
     it('no deja que un administrador se desactive a sí mismo', async () => {
@@ -284,6 +299,14 @@ describe('UsersService', () => {
       promesa.catch((e: unknown) => e) as Promise<{
         getResponse: () => unknown;
       }>;
+
+    it('y cierra los sockets que tuviera abiertos', async () => {
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+
+      await servicio.eliminarCuenta(YO, CLAVE);
+
+      expect(tiempoReal.desconectar).toHaveBeenCalledWith(YO);
+    });
 
     it('borra sus datos personales y deja la fila, anonimizada', async () => {
       // La necesitan las reservas, los pagos y las valoraciones de otros.

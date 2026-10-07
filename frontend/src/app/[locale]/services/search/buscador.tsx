@@ -1,5 +1,13 @@
 'use client';
-import { Suspense, use, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Suspense,
+  use,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
 import { useTranslations } from 'next-intl';
@@ -42,11 +50,19 @@ interface Estado {
 }
 
 /**
- * Tras cambiar de página, el título de la búsqueda nueva se lleva el foco.
- * La búsqueda nueva es otro componente, montado al cambiar la dirección, así
- * que el aviso no puede ir en su estado.
+ * A dónde va el foco cuando llega la búsqueda nueva.
+ *
+ * Cada búsqueda es otro componente, montado al cambiar la dirección, así que
+ * el aviso no puede ir en su estado. Y al montarse de nuevo, el foco se
+ * perdía: tras buscar, aplicar un filtro o cambiar de vista caía en el
+ * documento, y con teclado había que volver a recorrer la página desde el
+ * principio. Solo la paginación lo devolvía.
+ *
+ * Tras buscar, filtrar o paginar va al título de los resultados. Tras
+ * cambiar de vista, al botón de la vista que se acaba de elegir: llevárselo
+ * de ahí obligaría a volver para probar la otra.
  */
-let enfocarAlMontar = false;
+let enfocarAlMontar: 'titulo' | 'vista' | null = null;
 
 interface BuscadorProps {
   /** La búsqueda en la forma en que la escribe la página. */
@@ -77,18 +93,31 @@ export default function Buscador({
   const t = useTranslations('resultados');
   const router = useRouter();
   const titulo = useRef<HTMLHeadingElement>(null);
+  const vistaActiva = useRef<HTMLButtonElement>(null);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  // Cuántos resultados hay, dicho a quien no ve la pantalla: ver el párrafo
+  // que lo lleva, más abajo.
+  const anuncio = useRef<HTMLParagraphElement>(null);
+  const anunciar = useCallback((texto: string) => {
+    if (anuncio.current) anuncio.current.textContent = texto;
+  }, []);
   // Pedir lo mismo otra vez: repetir la búsqueda o cambiar a la vista que
   // ya está no cambia la dirección.
   const [repeticion, setRepeticion] = useState(0);
 
   useEffect(() => {
-    if (!enfocarAlMontar) return;
-    enfocarAlMontar = false;
-    titulo.current?.focus({ preventScroll: true });
+    const destino = enfocarAlMontar;
+    enfocarAlMontar = null;
+    if (destino === 'titulo') titulo.current?.focus({ preventScroll: true });
+    if (destino === 'vista') vistaActiva.current?.focus();
   }, []);
 
-  const irA = (destino: string, modo: 'replace' | 'push' = 'replace') => {
+  const irA = (
+    destino: string,
+    modo: 'replace' | 'push' = 'replace',
+    foco: 'titulo' | 'vista' = 'titulo',
+  ) => {
+    enfocarAlMontar = foco;
     const ruta = destino ? `/services/search?${destino}` : '/services/search';
     if (modo === 'push') router.push(ruta, { scroll: false });
     else router.replace(ruta);
@@ -115,7 +144,7 @@ export default function Buscador({
 
   const cambiarVista = (nueva: Vista) => {
     if (nueva === vista) return;
-    irA(urlDeBusqueda(filtros, nueva));
+    irA(urlDeBusqueda(filtros, nueva), 'replace', 'vista');
   };
 
   const cambiarPagina = (nuevaPagina: number) => {
@@ -125,7 +154,6 @@ export default function Buscador({
     // al pie, sin enterarse de que la lista había cambiado. Cada página es
     // una entrada del historial, y atrás vuelve a la anterior.
     window.scrollTo({ top: 0, behavior: desplazamiento() });
-    enfocarAlMontar = true;
     irA(urlDeBusqueda(filtros, vista, nuevaPagina), 'push');
   };
 
@@ -180,10 +208,24 @@ export default function Buscador({
               >
                 {t('titulo')}
               </h1>
+              {/* El recuento, para un lector de pantalla. Vacío al montarse
+                  y escrito cuando llegan los resultados, que es lo que hace
+                  que se anuncie: el que se ve, junto a la lista, aparece ya
+                  con su texto y no se anuncia.
+
+                  Escrito en el propio nodo, y no con un estado. Un estado
+                  aquí volvía a pintar el buscador entero justo al
+                  hidratarse los resultados, y la página tardaba más en
+                  quedar lista. Se notaba en Safari: pulsando una tarjeta
+                  nada más aparecer, casi la mitad de las veces se quedaban
+                  en la cabecera el título y los enlaces de idioma del
+                  buscador, cuando sin el estado pasa una de cada diez. */}
+              <p ref={anuncio} role="status" className="sr-only" />
               {/* aria-pressed: la vista activa solo se distinguía por el
                   color. Esquinas lógicas, que en árabe van al revés. */}
               <div className="flex bg-superficie rounded-md shadow-card">
                 <button
+                  ref={vista === 'list' ? vistaActiva : undefined}
                   type="button"
                   aria-pressed={vista === 'list'}
                   onClick={() => cambiarVista('list')}
@@ -196,6 +238,7 @@ export default function Buscador({
                   {t('vistaLista')}
                 </button>
                 <button
+                  ref={vista === 'map' ? vistaActiva : undefined}
                   type="button"
                   aria-pressed={vista === 'map'}
                   onClick={() => cambiarVista('map')}
@@ -218,6 +261,7 @@ export default function Buscador({
                 vista={vista}
                 pagina={pagina}
                 onPagina={cambiarPagina}
+                onRecuento={anunciar}
               />
             </Suspense>
           </div>
@@ -267,12 +311,15 @@ function Resultados({
   vista,
   pagina,
   onPagina,
+  onRecuento,
 }: {
   primera: Promise<ResultadoBusqueda | null> | null;
   filtros: ServiceSearchParams;
   vista: Vista;
   pagina: number;
   onPagina: (pagina: number) => void;
+  /** Cuántos resultados han llegado, ya escrito para decirlo. */
+  onRecuento: (texto: string) => void;
 }) {
   const t = useTranslations('resultados');
   const tComun = useTranslations('comun');
@@ -316,6 +363,16 @@ function Resultados({
       vigente = false;
     };
   }, [pendiente, intento, peticion]);
+
+  const llegados = pendiente ? null : (estado?.datos ?? null);
+  const recuento = !llegados
+    ? ''
+    : llegados.totalEsParcial
+      ? t('cuentaParcial', { total: llegados.total })
+      : t('cuenta', { total: llegados.total });
+  useEffect(() => {
+    if (recuento) onRecuento(recuento);
+  }, [recuento, onRecuento]);
 
   if (pendiente || !estado) return <Esperando />;
 

@@ -30,8 +30,10 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Agregados de la plataforma' })
   @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
-  metricas() {
-    return this.adminService.metricas();
+  metricas(@Request() req: PeticionAutenticada) {
+    return this.adminService.metricas({
+      soloDemostracion: soloVeLaDemostracion(req.user),
+    });
   }
 
   @Get('reputacion')

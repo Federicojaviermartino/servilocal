@@ -78,8 +78,25 @@ function abrir(): Promise<Socket> {
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
     });
-    socket.on('connect', () => fijarConexion(true));
-    socket.on('disconnect', () => fijarConexion(false));
+    // El servidor cierra las conexiones de una cuenta cuando revoca alguna
+    // de sus sesiones —al salir en otro dispositivo, al cambiar la
+    // contraseña—, y tras un cierre hecho desde el servidor la biblioteca no
+    // vuelve a conectar sola. Se intenta de nuevo, con un pase nuevo: quien
+    // conserva una sesión válida lo consigue; a quien no, el servidor le
+    // contesta «sesion-invalida» antes de cerrar, y ahí se deja de insistir.
+    let rechazado = false;
+    const abierto = socket;
+    abierto.on('sesion-invalida', () => {
+      rechazado = true;
+    });
+    abierto.on('connect', () => {
+      rechazado = false;
+      fijarConexion(true);
+    });
+    abierto.on('disconnect', (motivo) => {
+      fijarConexion(false);
+      if (motivo === 'io server disconnect' && !rechazado) abierto.connect();
+    });
     return socket;
   });
   return abriendo;

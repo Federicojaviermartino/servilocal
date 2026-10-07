@@ -15,14 +15,19 @@ import Avatar from '@/components/atoms/Avatar';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 import { useAhora } from '@/lib/ahora';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
+import FiltroEstados, {
+  type FiltroDeEstado,
+} from '@/components/molecules/FiltroEstados';
 
 export default function BookingsReceivedPage() {
   const t = useTranslations('reservasPanel');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const tEstados = useTranslations('estados');
   const avisarFallo = useAvisoDeFallo();
   const importe = useImporte();
   const idioma = useLocale();
-  const [filter, setFilter] = useState<'all' | BookingStatus>('all');
+  const [filter, setFilter] = useState<FiltroDeEstado>('all');
   const ahora = useAhora();
 
   // Antes un fallo dejaba la lista vacía, y el profesional leía «no tienes
@@ -63,34 +68,13 @@ export default function BookingsReceivedPage() {
   const filtered =
     filter === 'all' ? bookings : bookings.filter((b) => b.status === filter);
 
-  const tabs: { id: 'all' | BookingStatus; label: string }[] = [
-    { id: 'all', label: tEstados('todas') },
-    { id: BookingStatus.PENDING, label: tEstados('pendientes') },
-    { id: BookingStatus.CONFIRMED, label: tEstados('confirmadas') },
-    { id: BookingStatus.COMPLETED, label: tEstados('completadas') },
-  ];
-
   return (
     <div>
       <h1 className="text-2xl font-bold text-principal mb-6">
         {t('reservasRecibidas')}
       </h1>
 
-      <div className="bg-superficie rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setFilter(t.id)}
-            className={`px-4 py-2 text-sm rounded-md ${
-              filter === t.id
-                ? 'bg-primary-600 text-white'
-                : 'text-secundario hover:bg-fondo'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <FiltroEstados valor={filter} onCambiar={setFilter} reservas={bookings} />
 
       <EstadoCarga
         estado={estado}
@@ -127,6 +111,7 @@ export default function BookingsReceivedPage() {
                       <h3 className="font-semibold text-principal">
                         <Link
                           href={`/dashboard/bookings/${b.id}`}
+                          lang={idiomaDelCatalogo}
                           className="hover:underline"
                         >
                           {b.service.title}

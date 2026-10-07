@@ -193,6 +193,33 @@ describe('opcionesDeSentry', () => {
   });
 });
 
+describe('el muestreo de las trazas', () => {
+  const muestreo = () =>
+    opcionesDeSentry('https://clave@o0.ingest.sentry.io/0').tracesSampleRate;
+
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('sin la variable, una de cada diez', () => {
+    vi.stubEnv('SENTRY_TRACES_SAMPLE_RATE', '');
+
+    expect(muestreo()).toBe(0.1);
+  });
+
+  it('con ella, lo que diga', () => {
+    vi.stubEnv('SENTRY_TRACES_SAMPLE_RATE', ' 0.5 ');
+
+    expect(muestreo()).toBe(0.5);
+  });
+
+  it('el cero las apaga, en vez de tomarse por ausencia', () => {
+    // Con «|| 0.1» volvía a ser una de cada diez: no había forma de
+    // apagarlas, y la comprobación del entorno aceptaba el cero.
+    vi.stubEnv('SENTRY_TRACES_SAMPLE_RATE', '0');
+
+    expect(muestreo()).toBe(0);
+  });
+});
+
 describe('iniciarSentry', () => {
   it('sin DSN no arranca nada ni envía a ningún sitio', () => {
     // En desarrollo y en la integración continua no hay DSN, y no debe

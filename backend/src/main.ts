@@ -7,6 +7,8 @@
 // fallaba: se ignoraba en silencio, que es peor.
 import 'dotenv/config';
 import './config/zona-horaria';
+// Y Sentry, antes de que se cargue Nest: ver instrumentacion.ts.
+import { sentryActivo } from './instrumentacion';
 
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
@@ -14,24 +16,19 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AdaptadorSocketRedis } from './common/redis/adaptador-socket';
 import { RedisService } from './common/redis/redis.service';
 import { AppModule } from './app.module';
-import { configurarAplicacion } from './aplicacion';
-import { iniciarSentry } from './common/observabilidad/sentry';
+import { OPCIONES_DE_ARRANQUE, configurarAplicacion } from './aplicacion';
 import { secretoDelProxy } from './common/proxy-frontend';
 import { RegistroConPeticion } from './common/observabilidad/peticion';
 import { anotarApagado } from './common/observabilidad/apagado';
 
 async function bootstrap() {
-  // Antes de crear la aplicación, para que la instrumentación alcance a todo
-  // lo que se cargue después.
-  const sentryActivo = iniciarSentry();
-
   // Con colores solo en una terminal. En Render la salida va a un fichero de
   // registro, y los códigos de color llegaban como texto: «\u001b[32m[Nest]».
   const registro = new RegistroConPeticion({
     colors: process.stdout.isTTY === true,
   });
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    rawBody: true,
+    ...OPCIONES_DE_ARRANQUE,
     logger: registro,
   });
 

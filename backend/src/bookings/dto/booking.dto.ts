@@ -8,11 +8,16 @@ import {
   IsUUID,
   IsNumber,
   IsDateString,
+  Max,
   MaxLength,
   Min,
 } from 'class-validator';
 import { BookingStatus } from '../../entities';
-import { PRECIO_MINIMO } from '../../common/calendario';
+import {
+  DOS_DECIMALES,
+  PRECIO_MAXIMO,
+  PRECIO_MINIMO,
+} from '../../common/calendario';
 
 export class CreateBookingDto {
   // Con @IsString, un identificador mal formado llegaba a la base de datos
@@ -39,9 +44,13 @@ export class CreateBookingDto {
   // Se mantiene porque la ficha publica una horquilla y el cliente elige
   // dentro de ella. Lo que ya no se mantiene es creérselo: el servicio
   // comprueba que cae dentro del rango de ESE servicio antes de guardarlo.
+  // Con céntimos y con tope: 45,555 se guardaba como 45,56 y la respuesta
+  // decía 45,555, y por encima de lo que Stripe admite la reserva se creaba
+  // y después no había forma de pagarla.
   @ApiProperty({ example: 45.0 })
-  @IsNumber()
+  @IsNumber(DOS_DECIMALES)
   @Min(PRECIO_MINIMO)
+  @Max(PRECIO_MAXIMO)
   totalPrice: number;
 }
 

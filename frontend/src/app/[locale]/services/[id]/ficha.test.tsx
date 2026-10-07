@@ -10,7 +10,10 @@ const getById = vi.fn();
 const getByService = vi.fn();
 
 const responder = vi.fn();
-let sesion: { isAuthenticated: boolean; user?: { id: string } } = {
+let sesion: {
+  isAuthenticated: boolean;
+  user?: { id: string; role?: string };
+} = {
   isAuthenticated: false,
 };
 
@@ -59,9 +62,12 @@ const VALORACION = {
   client: { firstName: 'Ana', lastName: 'Ruiz' },
 } as unknown as Review;
 
-const pintar = (inicial?: { servicio: Service; valoraciones: Review[] }) =>
+const pintar = (
+  inicial?: { servicio: Service; valoraciones: Review[] },
+  idioma = 'es',
+) =>
   render(
-    <NextIntlClientProvider locale="es" messages={es as never}>
+    <NextIntlClientProvider locale={idioma} messages={es as never}>
       <FichaServicio serviceId="s1" inicial={inicial} />
     </NextIntlClientProvider>,
   );
@@ -107,6 +113,37 @@ describe('La ficha de un servicio', () => {
     }
   });
 
+  it('y en otro idioma, dice que está en castellano', () => {
+    // El catálogo está en castellano. Sin marcarlo, en /ar o en /de un
+    // lector de pantalla lo leía con la voz del idioma de la página.
+    const inicial = {
+      servicio: {
+        ...SERVICIO,
+        provider: { ...SERVICIO.provider, bio: 'Fontanero desde 2010.' },
+      },
+      valoraciones: [{ ...VALORACION, providerResponse: 'Gracias, Ana.' }],
+    };
+    const textos = [
+      SERVICIO.title,
+      SERVICIO.description,
+      VALORACION.comment!,
+      'Gracias, Ana.',
+      'Fontanero desde 2010.',
+    ];
+
+    const enArabe = pintar(inicial, 'ar');
+    for (const texto of textos) {
+      expect(screen.getByText(texto)).toHaveAttribute('lang', 'es');
+    }
+    enArabe.unmount();
+
+    // En la página en castellano ya lo dice el documento.
+    pintar(inicial);
+    for (const texto of textos) {
+      expect(screen.getByText(texto)).not.toHaveAttribute('lang');
+    }
+  });
+
   it('si el servidor no pudo preguntar, lo pide desde el navegador', async () => {
     getById.mockResolvedValue({ data: SERVICIO });
     getByService.mockResolvedValue({ data: [] });
@@ -149,6 +186,48 @@ describe('La ficha de un servicio', () => {
       await screen.findByRole('heading', { level: 1, name: SERVICIO.title }),
     ).toBeInTheDocument();
     expect(getById).toHaveBeenCalledTimes(2);
+  });
+
+  describe('quién puede reservar y con quién se contacta', () => {
+    const boton = (nombre: string) =>
+      screen.queryByRole('button', { name: nombre });
+    const deOtro = { ...SERVICIO, providerId: 'p1' } as unknown as Service;
+
+    it('sin sesión se ofrecen las dos cosas: llevan a entrar', () => {
+      pintar({ servicio: deOtro, valoraciones: [] });
+
+      expect(boton(es.detalle.reservar)).toBeInTheDocument();
+      expect(boton(es.detalle.contactar)).toBeInTheDocument();
+    });
+
+    it('a un cliente, también', () => {
+      sesion = { isAuthenticated: true, user: { id: 'c1', role: 'client' } };
+      pintar({ servicio: deOtro, valoraciones: [] });
+
+      expect(boton(es.detalle.reservar)).toBeInTheDocument();
+      expect(screen.queryByText(es.detalle.soloClientes)).toBeNull();
+    });
+
+    it.each(['provider', 'admin'])(
+      'a una cuenta de %s no se le ofrece reservar, y se le dice por qué',
+      (role) => {
+        // La API solo deja reservar a clientes. Se ofrecía igual: rellenaban
+        // el formulario entero y acababan en un 403.
+        sesion = { isAuthenticated: true, user: { id: 'otro', role } };
+        pintar({ servicio: deOtro, valoraciones: [] });
+
+        expect(boton(es.detalle.reservar)).toBeNull();
+        expect(screen.getByText(es.detalle.soloClientes)).toBeInTheDocument();
+        expect(boton(es.detalle.contactar)).toBeInTheDocument();
+      },
+    );
+
+    it('el dueño del servicio no se contacta a sí mismo', () => {
+      sesion = { isAuthenticated: true, user: { id: 'p1', role: 'provider' } };
+      pintar({ servicio: deOtro, valoraciones: [] });
+
+      expect(boton(es.detalle.contactar)).toBeNull();
+    });
   });
 
   describe('responder a una valoración', () => {

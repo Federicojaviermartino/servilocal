@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import toast from 'react-hot-toast';
-import { Service } from '@/types';
+import { Service, UserRole } from '@/types';
 import { servicesApi, bookingsApi } from '@/lib/api';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import BookingForm, { DatosReserva } from '@/components/organisms/BookingForm';
@@ -33,7 +33,11 @@ export default function BookingPage() {
   const router = useRouter();
   const serviceId = params.id as string;
   const borrador = useBorrador<DatosReserva>(`reserva:${serviceId}`);
-  const { isAuthenticated, loadFromStorage } = useAuthStore();
+  const { isAuthenticated, loadFromStorage, user } = useAuthStore();
+  // Solo reserva un cliente. Quien llega aquí con otra cuenta —por un enlace
+  // guardado, porque la ficha ya no se lo ofrece— vuelve a la ficha en vez
+  // de rellenar un formulario que la API le va a rechazar.
+  const sinPermiso = Boolean(user) && user?.role !== UserRole.CLIENT;
 
   const [carga, setCarga] = useState<Carga | null>(null);
   const [intento, setIntento] = useState(0);
@@ -49,6 +53,10 @@ export default function BookingPage() {
       if (!haySesionRecordada()) {
         router.push(`/auth/login?redirect=/services/${serviceId}/book`);
       }
+      return;
+    }
+    if (sinPermiso) {
+      router.replace(`/services/${serviceId}`);
       return;
     }
     let vigente = true;
@@ -72,7 +80,7 @@ export default function BookingPage() {
     return () => {
       vigente = false;
     };
-  }, [serviceId, isAuthenticated, router, intento]);
+  }, [serviceId, isAuthenticated, sinPermiso, router, intento]);
 
   const reintentar = () => {
     setCarga(null);

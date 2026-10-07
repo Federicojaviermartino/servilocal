@@ -25,6 +25,7 @@ import {
 import { CorreoService } from '../correo/correo.service';
 import { correoDeRecuperacion, esIdioma } from '../correo/plantillas';
 import { urlDelFrontend } from '../common/origenes';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 import { JwtPayload } from './strategies/jwt.strategy';
 import {
   AUDIENCIA_API,
@@ -74,6 +75,7 @@ export class AuthService {
     private readonly enlaces: Repository<RestablecimientoContrasena>,
     private readonly correo: CorreoService,
     private readonly dataSource: DataSource,
+    private readonly tiempoReal: TiempoRealGateway,
   ) {}
 
   /**
@@ -189,6 +191,8 @@ export class AuthService {
       password: await cifrar(nueva),
       sesionesDesde: segundoActual(),
     });
+    // Las demás sesiones dejan de valer, y sus sockets abiertos también.
+    this.tiempoReal.desconectar(usuario.id);
 
     return this.generateAuthResponse(usuario);
   }
@@ -291,7 +295,7 @@ export class AuthService {
           'El enlace no es válido o ha caducado: pide otro desde «¿Olvidaste tu contraseña?».',
       });
 
-    await this.dataSource.transaction(async (gestor) => {
+    const usuarioId = await this.dataSource.transaction(async (gestor) => {
       // Con la fila bloqueada: dos pestañas con el mismo enlace no pueden
       // usarlo las dos.
       const pendiente = await gestor.findOne(RestablecimientoContrasena, {
@@ -324,7 +328,11 @@ export class AuthService {
         { userId: usuario.id, usadoEn: IsNull() },
         { usadoEn: new Date() },
       );
+      return usuario.id;
     });
+    // Quien hubiera entrado con la contraseña vieja se queda fuera, y sin
+    // el socket que tuviera abierto.
+    this.tiempoReal.desconectar(usuarioId);
   }
 
   /**

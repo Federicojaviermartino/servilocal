@@ -34,6 +34,7 @@ import {
   segundoActual,
 } from '../common/cuenta';
 import { PaymentsService } from '../payments/payments.service';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 import { TOPE_ADMINISTRACION } from '../common/topes';
 
 /** Reservas que todavía comprometen a alguien. */
@@ -49,6 +50,7 @@ export class UsersService {
     private readonly auditoria: AuditoriaService,
     private readonly dataSource: DataSource,
     private readonly pagos: PaymentsService,
+    private readonly tiempoReal: TiempoRealGateway,
   ) {}
 
   /** Con `soloDemostracion`, las de la demostración: ver soloVeLaDemostracion. */
@@ -118,6 +120,9 @@ export class UsersService {
 
     user.isActive = !user.isActive;
     const guardado = await this.userRepository.save(user);
+    // Una cuenta desactivada ya no entra, pero su socket abierto seguía
+    // recibiendo mensajes y avisos.
+    if (!guardado.isActive) this.tiempoReal.desconectar(guardado.id);
 
     // Se anota el correo de la persona afectada además de su identificador:
     // un historial que solo tiene identificadores obliga a cruzarlo con
@@ -438,6 +443,7 @@ export class UsersService {
       });
     });
 
+    this.tiempoReal.desconectar(usuarioId);
     if (cuenta.stripeCustomerId) {
       await this.pagos.olvidarCliente(cuenta.stripeCustomerId);
     }

@@ -195,7 +195,9 @@ function LoginPageContent() {
                   type="button"
                   onClick={() => iniciarSesion(cuenta.email, PASSWORD_DEMO)}
                   disabled={isLoading}
-                  className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-start transition-colors hover:bg-primary-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  // Con su variante oscura: el azul claro del modo claro
+                  // dejaba el texto a 2:1 al pasar el ratón en el oscuro.
+                  className="rounded-md border border-primary-200 bg-superficie px-3 py-2 text-start transition-colors hover:bg-primary-100 dark:hover:bg-primary-900/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <span className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <span className="text-sm font-medium text-acento">

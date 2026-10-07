@@ -11,9 +11,11 @@ function construir() {
     upsert: vi.fn(async () => undefined),
     delete: vi.fn(async () => undefined),
   };
+  const tiempoReal = { desconectar: vi.fn() };
   return {
-    servicio: new SesionesService(revocadas as never, jwt),
+    servicio: new SesionesService(revocadas as never, jwt, tiempoReal as never),
     revocadas,
+    tiempoReal,
   };
 }
 
@@ -43,6 +45,27 @@ describe('SesionesService', () => {
       },
       ['jti'],
     );
+  });
+
+  it('y cierra los sockets de esa cuenta', async () => {
+    // El token revocado ya no abre nada, pero el socket abierto con él
+    // seguía recibiendo los mensajes.
+    const { servicio, tiempoReal } = construir();
+
+    await servicio.revocar(sesion());
+
+    expect(tiempoReal.desconectar).toHaveBeenCalledWith('u1');
+  });
+
+  it('un token que no vale no cierra los sockets de nadie', async () => {
+    // Con cualquier cadena en la cookie, cualquiera podría echar del
+    // tiempo real a quien quisiera.
+    const { servicio, tiempoReal } = construir();
+
+    await servicio.revocar('no-es-un-token');
+    await servicio.revocar(sesion({ audience: AUDIENCIA_SOCKET }));
+
+    expect(tiempoReal.desconectar).not.toHaveBeenCalled();
   });
 
   it('de paso barre las que ya caducaron', async () => {

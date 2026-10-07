@@ -230,6 +230,7 @@
     "titulo": "Auditoria",
     "usuario_activado": "Compte activat",
     "usuario_desactivado": "Compte desactivat",
+    "vacioEnDemostracion": "A la demostració l’historial és buit: aquí s’anota la moderació de comptes reals, i aquest compte només pot mirar.",
     "valoracion_eliminada": "Valoració eliminada"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Resposta publicada.",
     "sinValoraciones": "Aquest servei encara no té valoracions.",
     "sobreProfesional": "Sobre el professional",
+    "soloClientes": "Per reservar cal un compte de client.",
     "tuRespuesta": "La teva resposta, que veurà tothom",
     "valoraciones": "Valoracions ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Actiu",
     "cancelada": "Cancel·lada",
+    "canceladas": "Cancel·lades",
     "completada": "Completada",
     "completadas": "Completades",
     "confirmada": "Confirmada",
     "confirmadas": "Confirmades",
+    "filtrar": "Filtra per estat",
     "pausado": "En pausa",
     "pendiente": "Pendent",
     "pendientes": "Pendents",
     "rechazada": "Rebutjada",
+    "rechazadas": "Rebutjades",
     "todas": "Totes"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "No tens permís per pagar aquesta reserva.",
     "sinServidor": "No s'ha pogut contactar amb el servidor.",
     "tarjetaCaducada": "La teva targeta ha caducat.",
+    "tarjetaDePrueba": "Això és una demostració i no es cobra res: paga amb la targeta de prova 4242 4242 4242 4242, qualsevol data futura i qualsevol CVC.",
     "tarjetaGuardada": "La teva targeta queda desada a Stripe, no a ServiLocal, per poder renovar la retenció si la reserva és per d’aquí a més d’una setmana. S’esborra si elimines el compte.",
     "titulo": "Confirma el pagament",
     "totalPagar": "Total a pagar",

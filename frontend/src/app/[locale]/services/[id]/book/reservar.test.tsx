@@ -9,11 +9,13 @@ import BookingPage from './page';
 const getById = vi.fn();
 const crear = vi.fn();
 const empujar = vi.fn();
+const reemplazar = vi.fn();
 const cargarSesion = vi.fn();
 const avisoExito = vi.fn();
 const avisoError = vi.fn();
 let autenticado = true;
 let recordada = false;
+let usuario: { id: string; role: string } | null = null;
 
 vi.mock('@/lib/api', () => ({
   servicesApi: { getById: (id: string) => getById(id) },
@@ -24,7 +26,10 @@ vi.mock('next/navigation', () => ({ useParams: () => ({ id: 's1' }) }));
 
 // El mismo enrutador en cada render, como el de verdad: la carga del
 // servicio depende de él y se repetiría con uno nuevo cada vez.
-const enrutador = { push: (ruta: string) => empujar(ruta) };
+const enrutador = {
+  push: (ruta: string) => empujar(ruta),
+  replace: (ruta: string) => reemplazar(ruta),
+};
 
 vi.mock('@/i18n/navigation', async () => {
   const React = await import('react');
@@ -40,6 +45,7 @@ vi.mock('@/lib/auth-store', () => ({
   useAuthStore: () => ({
     isAuthenticated: autenticado,
     loadFromStorage: cargarSesion,
+    user: usuario,
   }),
   haySesionRecordada: () => recordada,
   // Los borradores se guardan con quien entró: ver borrador.ts.
@@ -107,6 +113,7 @@ beforeEach(() => {
   crear.mockReset();
   autenticado = true;
   recordada = false;
+  usuario = { id: 'c1', role: 'client' };
 });
 
 afterEach(() => {
@@ -144,6 +151,22 @@ describe('Reservar un servicio', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it.each(['provider', 'admin'])(
+    'con una cuenta de %s vuelve a la ficha: solo reserva un cliente',
+    async (role) => {
+      // La API se lo niega. Rellenaba el formulario entero y acababa en un
+      // 403 que no explicaba nada.
+      usuario = { id: 'p1', role };
+
+      pintar();
+
+      await waitFor(() =>
+        expect(reemplazar).toHaveBeenCalledWith('/services/s1'),
+      );
+      expect(getById).not.toHaveBeenCalled();
+    },
+  );
 
   it('con sesión, carga el servicio y lo pone en el título', async () => {
     getById.mockResolvedValue({ data: SERVICIO });

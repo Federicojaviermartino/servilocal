@@ -1,16 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Booking, BookingStatus } from '@/types';
+import { Booking } from '@/types';
 import { bookingsApi } from '@/lib/api';
 import BookingCard from '@/components/molecules/BookingCard';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
+import FiltroEstados, {
+  type FiltroDeEstado,
+} from '@/components/molecules/FiltroEstados';
 import { useCarga } from '@/lib/carga';
 
 export default function MyBookingsPage() {
   const t = useTranslations('reservasPanel');
-  const tEstados = useTranslations('estados');
-  const [filter, setFilter] = useState<'all' | BookingStatus>('all');
+  const [filter, setFilter] = useState<FiltroDeEstado>('all');
 
   // Antes un fallo de red dejaba la lista vacía, indistinguible de no tener
   // ninguna reserva: quien reservó ayer entraba hoy y leía «no tienes
@@ -24,34 +26,13 @@ export default function MyBookingsPage() {
   const filtered =
     filter === 'all' ? bookings : bookings.filter((b) => b.status === filter);
 
-  const tabs: { id: 'all' | BookingStatus; label: string }[] = [
-    { id: 'all', label: tEstados('todas') },
-    { id: BookingStatus.PENDING, label: tEstados('pendientes') },
-    { id: BookingStatus.CONFIRMED, label: tEstados('confirmadas') },
-    { id: BookingStatus.COMPLETED, label: tEstados('completadas') },
-  ];
-
   return (
     <div>
       <h1 className="text-2xl font-bold text-principal mb-6">
         {t('misReservas')}
       </h1>
 
-      <div className="bg-superficie rounded-lg shadow-card p-1 mb-4 inline-flex max-w-full flex-wrap gap-1">
-        {tabs.map((pestana) => (
-          <button
-            key={pestana.id}
-            onClick={() => setFilter(pestana.id)}
-            className={`px-4 py-2 text-sm rounded-md transition-colors ${
-              filter === pestana.id
-                ? 'bg-primary-600 text-white'
-                : 'text-secundario hover:bg-fondo'
-            }`}
-          >
-            {pestana.label}
-          </button>
-        ))}
-      </div>
+      <FiltroEstados valor={filter} onCambiar={setFilter} reservas={bookings} />
 
       <EstadoCarga
         estado={estado}

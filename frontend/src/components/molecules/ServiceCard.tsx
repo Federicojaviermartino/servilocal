@@ -11,6 +11,7 @@ import Badge from '../atoms/Badge';
 import RatingStars from './RatingStars';
 import ServiceImage from './ServiceImage';
 import { useNombreCategoria } from '../../lib/categorias';
+import { useIdiomaDelCatalogo } from '../../lib/idioma-catalogo';
 import { usePrecioServicio } from '../../lib/importes';
 
 interface ServiceCardProps {
@@ -28,6 +29,7 @@ export default function ServiceCard({ service, nivel = 3 }: ServiceCardProps) {
   const t = useTranslations('tarjeta');
   const nombreCategoria = useNombreCategoria();
   const precio = usePrecioServicio();
+  const idioma = useIdiomaDelCatalogo();
 
   // La unidad se guarda en castellano y se traduce al pintarla; el valor
   // guardado no se toca, que es el contrato con la API.
@@ -39,9 +41,11 @@ export default function ServiceCard({ service, nivel = 3 }: ServiceCardProps) {
       className="block bg-superficie rounded-lg shadow-card hover:shadow-card-hover transition-shadow overflow-hidden"
     >
       <div className="aspect-video bg-superficie-alt relative">
+        {/* Sin texto alternativo: la tarjeta entera es el enlace, y con el
+            título también en la foto su nombre lo decía dos veces. */}
         <ServiceImage
           src={service.images?.[0]}
-          alt={service.title}
+          alt=""
           categoryIcon={service.category?.icon}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
         />
@@ -53,14 +57,20 @@ export default function ServiceCard({ service, nivel = 3 }: ServiceCardProps) {
       </div>
       <div className="p-4">
         {/* dir="auto" en lo que escribe el profesional: en árabe, un título
-            en castellano se cortaba por el lado equivocado. */}
+            en castellano se cortaba por el lado equivocado. Y con su idioma:
+            ver useIdiomaDelCatalogo. */}
         <Titulo
           dir="auto"
+          lang={idioma}
           className="font-semibold text-principal line-clamp-1"
         >
           {service.title}
         </Titulo>
-        <p dir="auto" className="mt-1 text-sm text-secundario line-clamp-2">
+        <p
+          dir="auto"
+          lang={idioma}
+          className="mt-1 text-sm text-secundario line-clamp-2"
+        >
           {service.description}
         </p>
         <div className="mt-3 flex items-center gap-3 text-sm text-secundario">

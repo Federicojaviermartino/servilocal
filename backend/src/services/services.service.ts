@@ -122,6 +122,25 @@ function ubicar(
   return puntoGeografico(punto.lat, punto.lng);
 }
 
+/**
+ * El máximo de la tarifa no puede quedar por debajo del mínimo.
+ *
+ * Solo lo impedía el formulario. Por la API se publicaba una horquilla que
+ * ningún importe cumple, y la reserva tenía que ignorar ese máximo para que
+ * el servicio se pudiera contratar: ver comprobarPrecio en las reservas.
+ */
+function comprobarHorquilla(
+  minimo: number | string,
+  maximo: number | string | null | undefined,
+) {
+  if (maximo === null || maximo === undefined) return;
+  if (Number(maximo) < Number(minimo)) {
+    throw new BadRequestException(
+      'El precio máximo no puede ser menor que el mínimo.',
+    );
+  }
+}
+
 @Injectable()
 export class ServicesService {
   constructor(
@@ -137,6 +156,7 @@ export class ServicesService {
     createDto: CreateServiceDto,
   ): Promise<Service> {
     const { latitude, longitude, ...rest } = createDto;
+    comprobarHorquilla(rest.priceMin, rest.priceMax);
 
     const service = this.serviceRepository.create({
       ...rest,
@@ -201,6 +221,12 @@ export class ServicesService {
     }
 
     Object.assign(service, rest);
+    // Solo si la edición toca la tarifa: un servicio publicado con la
+    // horquilla al revés antes de esta comprobación tiene que poder cambiar
+    // su título sin que se le exija arreglarla.
+    if (rest.priceMin !== undefined || rest.priceMax !== undefined) {
+      comprobarHorquilla(service.priceMin, service.priceMax);
+    }
     // La categoría viene cargada como relación, y al guardar TypeORM toma
     // su identificador y no el campo: cambiar de categoría respondía con la
     // nueva y no se guardaba. Se quita la relación, y se devuelve releído.
@@ -465,26 +491,37 @@ export class ServicesService {
       qb.andWhere('service.priceMin <= :priceMax', { priceMax });
     }
 
-    // Ordenación
+    // Ordenación, siempre con un desempate.
+    //
+    // Entre los que empatan, el orden lo decide PostgreSQL en cada consulta,
+    // y no tiene por qué repetirlo de una página a la siguiente: ordenando
+    // por valoración, dos servicios con la misma nota salían en la página 1
+    // y otra vez en la 2, y otros dos no salían en ninguna. Con la fecha
+    // pasa lo mismo en cuanto varios se crean en el mismo instante.
+    //
+    // En el orden por fecha, el identificador va en el mismo sentido que
+    // ella: así el índice sobre los dos se recorre hacia atrás de una vez.
+    const porRecientes = () =>
+      qb.orderBy('service.createdAt', 'DESC').addOrderBy('service.id', 'DESC');
     switch (sortBy) {
       case 'distance':
         if (conCoordenadas) {
-          qb.orderBy('distance_meters', 'ASC');
+          qb.orderBy('distance_meters', 'ASC').addOrderBy('service.id', 'ASC');
         } else {
-          qb.orderBy('service.createdAt', 'DESC');
+          porRecientes();
         }
         break;
       case 'price':
-        qb.orderBy('service.priceMin', 'ASC');
+        qb.orderBy('service.priceMin', 'ASC').addOrderBy('service.id', 'ASC');
         break;
       case 'rating':
-        qb.orderBy('service.averageRating', 'DESC');
-        break;
-      case 'newest':
-        qb.orderBy('service.createdAt', 'DESC');
+        qb.orderBy('service.averageRating', 'DESC').addOrderBy(
+          'service.id',
+          'ASC',
+        );
         break;
       default:
-        qb.orderBy('service.createdAt', 'DESC');
+        porRecientes();
     }
 
     // Paginación

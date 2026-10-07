@@ -98,13 +98,24 @@ export function limpiarTramo(tramo: Tramo): Tramo {
   return tramo;
 }
 
+/**
+ * Qué parte de las trazas de rendimiento se envía. Baja a propósito: el plan
+ * gratuito tiene cupo y lo que interesa aquí son los errores.
+ *
+ * El cero vale, y es la forma de apagarlas. Con «|| 0.1» se tomaba por
+ * ausencia y volvía a ser una de cada diez, y la comprobación del entorno lo
+ * daba por bueno.
+ */
+function muestreoDeTrazas(): number {
+  const valor = process.env.SENTRY_TRACES_SAMPLE_RATE?.trim();
+  return valor ? Number(valor) : 0.1;
+}
+
 export function opcionesDeSentry(dsn: string): NodeOptions {
   return {
     dsn,
     environment: process.env.NODE_ENV || 'development',
-    // Muestreo de trazas de rendimiento. Se deja bajo a propósito: el plan
-    // gratuito tiene cupo y lo que interesa aquí son los errores.
-    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE) || 0.1,
+    tracesSampleRate: muestreoDeTrazas(),
     // Escrito y no por defecto: SENTRY_TRACE_LIFECYCLE=static devolvería las
     // trazas al modelo de transacciones, donde beforeSendSpan no se llama, y
     // la limpieza de los tramos dejaría de hacerse sin que nada avisara. La
@@ -123,8 +134,7 @@ export function opcionesDeSentry(dsn: string): NodeOptions {
  * hace nada, de modo que en desarrollo y en integración continua no se envía
  * nada a ningún servicio externo.
  *
- * Debe llamarse antes de crear la aplicación Nest para que la instrumentación
- * automática alcance a las librerías que se cargan después.
+ * Tiene que llamarse antes de cargar nada más: ver instrumentacion.ts.
  */
 export function iniciarSentry(): boolean {
   const dsn = process.env.SENTRY_DSN;

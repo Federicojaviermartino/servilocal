@@ -77,3 +77,13 @@ export function usePrecioServicio() {
   return (servicio: ConPrecio & { priceUnit?: string | null }): string =>
     textoDelPrecio(servicio, t, idioma, nombreUnidad(servicio.priceUnit));
 }
+
+/**
+ * Un importe con céntimos, que es lo que se cobra.
+ *
+ * Un campo numérico deja escribir 45,555. La API lo rechaza —antes guardaba
+ * 45,56 y respondía 45,555—, y lo que el formulario enseña en su resumen ya
+ * va redondeado: se envía lo mismo que se ve.
+ */
+export const aCentimos = (importe: number): number =>
+  Math.round(importe * 100) / 100;

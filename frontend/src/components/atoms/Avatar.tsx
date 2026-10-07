@@ -26,6 +26,14 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
+/**
+ * La foto o las iniciales de alguien, siempre junto a su nombre escrito.
+ *
+ * Por eso no dice nada a un lector de pantalla: el nombre ya está al lado.
+ * Las iniciales llevaban un aria-label, que en un elemento sin función no
+ * vale, y se leían sueltas —«eme, pe»— antes de cada nombre; y la foto
+ * repetía el nombre en su texto alternativo.
+ */
 export default function Avatar({
   src,
   name,
@@ -40,7 +48,7 @@ export default function Avatar({
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
-        alt={name}
+        alt=""
         className={clsx('rounded-full object-cover', sizes[size], className)}
       />
     );
@@ -52,7 +60,7 @@ export default function Avatar({
         sizes[size],
         className,
       )}
-      aria-label={name}
+      aria-hidden="true"
     >
       {getInitials(name)}
     </div>

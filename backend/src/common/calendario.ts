@@ -16,6 +16,15 @@ export const DIAS_DE_ANTELACION_MAXIMA = 365;
 /** Lo mínimo que Stripe cobra en euros: por debajo, no hay forma de pagar. */
 export const PRECIO_MINIMO = 0.5;
 
+/**
+ * Y lo máximo: ocho cifras contando los céntimos. La columna admite más, así
+ * que una reserva mayor se guardaba y después Stripe rechazaba el cobro.
+ */
+export const PRECIO_MAXIMO = 999_999.99;
+
+/** Un importe en euros: con céntimos, no con milésimas. */
+export const DOS_DECIMALES = { maxDecimalPlaces: 2 } as const;
+
 /** Cuánto dura un servicio que no dice nada, y entre qué límites. */
 export const DURACION_POR_DEFECTO = 60;
 export const DURACION_MINIMA = 15;

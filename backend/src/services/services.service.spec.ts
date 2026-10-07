@@ -41,6 +41,7 @@ function constructorFalso() {
     'where',
     'andWhere',
     'orderBy',
+    'addOrderBy',
     'offset',
     'limit',
   ]) {
@@ -535,6 +536,7 @@ describe('ServicesService', () => {
         'distance_meters',
       );
       expect(qb.orderBy).toHaveBeenCalledWith('distance_meters', 'ASC');
+      expect(qb.addOrderBy).toHaveBeenCalledWith('service.id', 'ASC');
     });
 
     it('sin coordenadas, ordenar por distancia cae en lo más reciente', async () => {
@@ -550,17 +552,25 @@ describe('ServicesService', () => {
     });
 
     it.each([
-      ['price', 'service.priceMin', 'ASC'],
-      ['rating', 'service.averageRating', 'DESC'],
-      ['newest', 'service.createdAt', 'DESC'],
-    ])('ordenar por %s usa %s', async (criterio, columna, sentido) => {
-      const qb = constructorFalso();
-      const { servicio } = await construir(qb);
+      ['price', 'service.priceMin', 'ASC', 'ASC'],
+      ['rating', 'service.averageRating', 'DESC', 'ASC'],
+      ['newest', 'service.createdAt', 'DESC', 'DESC'],
+      [undefined, 'service.createdAt', 'DESC', 'DESC'],
+    ])(
+      'ordenar por %s usa %s y desempata por el identificador',
+      async (criterio, columna, sentido, desempate) => {
+        // Sin desempate, los que empatan cambian de sitio entre una página
+        // y la siguiente: unos salen dos veces y otros ninguna. En el orden
+        // por fecha va en su mismo sentido, para que lo sirva el índice.
+        const qb = constructorFalso();
+        const { servicio } = await construir(qb);
 
-      await servicio.search({ sortBy: criterio } as never);
+        await servicio.search({ sortBy: criterio } as never);
 
-      expect(qb.orderBy).toHaveBeenCalledWith(columna, sentido);
-    });
+        expect(qb.orderBy).toHaveBeenCalledWith(columna, sentido);
+        expect(qb.addOrderBy).toHaveBeenCalledWith('service.id', desempate);
+      },
+    );
   });
 
   describe('filtros de la búsqueda', () => {
@@ -836,6 +846,95 @@ describe('ServicesService', () => {
       };
       expect(guardado.location).toBe('punto-original');
       expect(guardado.title).toBe('Después');
+    });
+
+    describe('la horquilla de la tarifa', () => {
+      // Solo la comprobaba el formulario. Por la API se publicaba un máximo
+      // por debajo del mínimo, que ningún importe cumple, y la reserva tenía
+      // que ignorarlo para que el servicio se pudiera contratar.
+      const publicado = (tarifa: Record<string, unknown>) => {
+        const qb = constructorFalso();
+        qb.getOne = vi.fn(async () => ({
+          id: 's1',
+          providerId: 'p1',
+          location: 'punto-original',
+          ...tarifa,
+        }));
+        return construir(qb);
+      };
+
+      it('no se publica con el máximo por debajo del mínimo', async () => {
+        const { servicio, repo } = await construir(constructorFalso());
+
+        await expect(
+          servicio.create('p1', {
+            title: 'Reparaciones',
+            city: 'Madrid',
+            priceMin: 60,
+            priceMax: 40,
+          } as never),
+        ).rejects.toThrow(/máximo no puede ser menor/);
+        expect(repo.save).not.toHaveBeenCalled();
+      });
+
+      it('con el máximo igual al mínimo, que es un precio fijo, sí', async () => {
+        const { servicio, repo } = await construir(constructorFalso());
+
+        await servicio.create('p1', {
+          title: 'Reparaciones',
+          city: 'Madrid',
+          priceMin: 50,
+          priceMax: 50,
+        } as never);
+
+        expect(repo.save).toHaveBeenCalled();
+      });
+
+      it.each([
+        ['bajar el máximo', { priceMax: 30 }],
+        ['subir el mínimo', { priceMin: 90 }],
+      ])(
+        'al editar, %s por debajo o por encima del otro tampoco pasa',
+        async (_caso, cambio) => {
+          // Se compara con lo que ya tenía el servicio, no solo con lo que
+          // llega: basta con mandar uno de los dos para invertirla.
+          const { servicio, repo } = await publicado({
+            priceMin: '40.00',
+            priceMax: '80.00',
+          });
+
+          await expect(
+            servicio.update('s1', 'p1', cambio as never),
+          ).rejects.toThrow(/máximo no puede ser menor/);
+          expect(repo.save).not.toHaveBeenCalled();
+        },
+      );
+
+      it('quitar el máximo deja la tarifa abierta', async () => {
+        const { servicio, repo } = await publicado({
+          priceMin: '40.00',
+          priceMax: '80.00',
+        });
+
+        await servicio.update('s1', 'p1', { priceMax: null } as never);
+
+        expect(repo.save).toHaveBeenCalledWith(
+          expect.objectContaining({ priceMax: null }),
+        );
+      });
+
+      it('uno publicado con la horquilla al revés puede cambiar lo demás', async () => {
+        // Los hay de antes de esta comprobación: exigirles arreglar la
+        // tarifa para corregir una falta en el título sería castigarlos.
+        const { servicio, repo } = await publicado({
+          priceMin: '60.00',
+          priceMax: '40.00',
+        });
+
+        await servicio.update('s1', 'p1', { title: 'Después' } as never);
+
+        expect(repo.save).toHaveBeenCalled();
+      });
     });
 
     describe('sin coordenadas', () => {

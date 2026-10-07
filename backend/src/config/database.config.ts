@@ -10,6 +10,31 @@ import { conexionPorUrl } from './conexion-segura';
 const validarCertificado = (configService: ConfigService): boolean =>
   configService.get<string>('DB_SSL_PERMISIVO') !== 'true';
 
+/**
+ * Los tiempos de espera de cada conexión.
+ *
+ * Sin ellos, una base que no contesta dejaba cada petición esperando
+ * indefinidamente, y una transacción olvidada abierta retenía sus bloqueos.
+ * Quince segundos para conectar dan margen a que Neon despierte; treinta por
+ * sentencia, a cualquier consulta de la aplicación; y una transacción parada
+ * un minuto se cierra.
+ *
+ * Y cinco para esperar una fila bloqueada. Pagar una reserva la bloquea
+ * mientras se habla con Stripe, que puede tardar diez segundos por intento:
+ * una segunda operación sobre ella esperaba hasta los treinta de la sentencia
+ * y acababa en un 500. Ahora responde 409 enseguida, y se puede reintentar;
+ * un aviso de Stripe que choque se repite solo.
+ *
+ * Aparte, para que la integración se conecte con los mismos: con una base de
+ * pruebas que espera sin límite, lo que depende de estos tiempos no se veía.
+ */
+export const TIEMPOS_DE_LA_BASE = {
+  connectionTimeoutMillis: 15_000,
+  statement_timeout: 30_000,
+  lock_timeout: 5_000,
+  idle_in_transaction_session_timeout: 60_000,
+} as const;
+
 export const getDatabaseConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
@@ -26,23 +51,7 @@ export const getDatabaseConfig = (
     synchronize: false,
     migrationsRun: true,
     logging: nodeEnv === 'development',
-    // Sin tiempos, una base que no contesta dejaba cada petición esperando
-    // indefinidamente, y una transacción olvidada abierta retenía sus
-    // bloqueos. Quince segundos para conectar dan margen a que Neon
-    // despierte; treinta por sentencia, a cualquier consulta de la
-    // aplicación; y una transacción parada un minuto se cierra.
-    //
-    // Y cinco para esperar una fila bloqueada. Pagar una reserva la bloquea
-    // mientras se habla con Stripe, que puede tardar diez segundos por
-    // intento: una segunda operación sobre ella esperaba hasta los treinta
-    // de la sentencia y acababa en un 500. Ahora responde 409 enseguida, y
-    // se puede reintentar; un aviso de Stripe que choque se repite solo.
-    extra: {
-      connectionTimeoutMillis: 15_000,
-      statement_timeout: 30_000,
-      lock_timeout: 5_000,
-      idle_in_transaction_session_timeout: 60_000,
-    },
+    extra: TIEMPOS_DE_LA_BASE,
   };
 
   if (databaseUrl) {

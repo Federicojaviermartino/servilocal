@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
 import {
   filtrosDeUrl,
@@ -7,6 +9,7 @@ import {
   vistaDeUrl,
 } from '@/lib/busqueda';
 import { buscarEnServidor } from '@/lib/busqueda-servidor';
+import { alternativas, grafoAbierto } from '@/lib/seo';
 import Buscador from './buscador';
 
 type Recibidos = Record<string, string | string[] | undefined>;
@@ -19,6 +22,45 @@ function parametrosDe(recibidos: Recibidos): URLSearchParams {
     if (primero !== undefined) parametros.set(clave, primero);
   }
   return parametros;
+}
+
+/** Lo que cabe en la pestaña sin comerse el nombre de la página. */
+const LARGO_EN_EL_TITULO = 60;
+
+/**
+ * Los metadatos del buscador, con lo que se busca en el título.
+ *
+ * Aquí y no en un layout, que no recibe los parámetros de la dirección. El
+ * título era siempre el mismo, «Buscar servicios»: quien tiene tres
+ * búsquedas abiertas no distinguía las pestañas, y al cambiar de búsqueda
+ * Next no anunciaba nada a un lector de pantalla, porque solo habla cuando
+ * el título cambia. Generados, y no una constante, porque una constante no
+ * sabe en qué idioma se sirve.
+ */
+export async function generateMetadata({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Recibidos>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'meta' });
+  const { query, city } = filtrosDeUrl(parametrosDe(await searchParams));
+  const buscado = [query, city]
+    .filter((parte): parte is string => Boolean(parte))
+    .map((parte) => parte.slice(0, LARGO_EN_EL_TITULO));
+
+  return {
+    title: [...buscado, t('buscadorTitulo')].join(' · '),
+    description: t('buscadorDescripcion'),
+    alternates: alternativas(locale, '/services/search'),
+    openGraph: grafoAbierto(locale, {
+      titulo: t('buscadorTitulo'),
+      descripcion: t('buscadorDescripcion'),
+      ruta: '/services/search',
+    }),
+  };
 }
 
 /**

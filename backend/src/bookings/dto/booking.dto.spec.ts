@@ -34,6 +34,32 @@ describe('El motivo de una cancelación', () => {
   });
 });
 
+describe('El importe de una reserva', () => {
+  const conImporte = (totalPrice: unknown) =>
+    validate(
+      plainToInstance(CreateBookingDto, {
+        serviceId: '8f14e45f-ceea-467a-9575-6d2c1b1f0a11',
+        scheduledDate: '2027-03-10T09:30:00Z',
+        totalPrice,
+      }),
+    ).then((errores) => errores.map((error) => error.property));
+
+  it.each([
+    // Se guardaba 45,56 y la respuesta decía 45,555.
+    ['con milésimas', 45.555],
+    // La columna lo admite y Stripe no: se creaba y no se podía pagar.
+    ['por encima de lo que Stripe puede cobrar', 1_000_000],
+    ['como texto', '45'],
+  ])('%s se rechaza', async (_caso, importe) => {
+    expect(await conImporte(importe)).toEqual(['totalPrice']);
+  });
+
+  it('con céntimos y hasta el tope, pasa', async () => {
+    expect(await conImporte(45.5)).toEqual([]);
+    expect(await conImporte(999_999.99)).toEqual([]);
+  });
+});
+
 describe('La descripción de una reserva', () => {
   const reserva = (description: string) =>
     validate(

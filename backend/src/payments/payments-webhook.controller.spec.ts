@@ -128,4 +128,15 @@ describe('PaymentsWebhookController', () => {
     );
     expect(pagos.handleWebhookEvent).not.toHaveBeenCalled();
   });
+
+  it('queda fuera del límite de peticiones: lo autentica la firma', () => {
+    // Stripe llama desde unas pocas direcciones. Con el límite general, una
+    // ráfaga de avisos recibía un 429 y los pagos se anotaban tarde.
+    expect(
+      Reflect.getMetadata(
+        'THROTTLER:SKIPdefault',
+        PaymentsWebhookController.prototype.handleWebhook,
+      ),
+    ).toBe(true);
+  });
 });

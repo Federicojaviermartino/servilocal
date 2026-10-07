@@ -1,20 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { RequestMethod, type INestApplication } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import {
-  DiscoveryModule,
-  DiscoveryService,
-  MetadataScanner,
-} from '@nestjs/core';
+import { DiscoveryService, MetadataScanner } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import type { NestExpressApplication } from '@nestjs/platform-express';
-import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { AUDIENCIA_API } from '../../src/auth/sesion';
-import { opcionesDeLaBase } from './base';
-
-/** El de @nestjs/typeorm, que no lo exporta. */
-const OPCIONES_TYPEORM = 'TypeOrmModuleOptions';
+import { arrancarAplicacion } from './aplicacion';
 
 /**
  * Quién puede llamar a cada ruta, con la aplicación montada entera.
@@ -208,53 +199,18 @@ function rutasDeLaAplicacion(app: INestApplication): string[] {
 }
 
 describe('Permisos de cada ruta, con la aplicación montada', () => {
-  let app: NestExpressApplication;
+  let app: INestApplication;
   let base: string;
   let jwt: JwtService;
   let fuente: DataSource;
+  let cerrar: () => Promise<void>;
   const cuentas: Partial<
     Record<Quien, { id: string; email: string; role: string }>
   > = {};
   let visitante = 0;
 
   beforeAll(async () => {
-    // Antes de importar AppModule: ConfigModule lee y valida el entorno al
-    // definirse el módulo. Los programadores no arrancan en las pruebas.
-    vi.stubEnv('CORS_ORIGINS', 'http://localhost:3000');
-    vi.stubEnv('REDIS_URL', '');
-    // Sin secreto, el aviso de Stripe responde 503 a todo: se configura para
-    // que llegue a comprobar la firma, que es lo que lo protege.
-    vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_solo_para_la_prueba');
-    // Una línea de registro por llamada, y son más de trescientas.
-    const escribir = process.stdout.write.bind(process.stdout);
-    vi.spyOn(process.stdout, 'write').mockImplementation(((
-      trozo: string | Uint8Array,
-      ...resto: never[]
-    ) =>
-      String(trozo).startsWith('{"tipo":"peticion"')
-        ? true
-        : escribir(trozo, ...resto)) as typeof process.stdout.write);
-    const { AppModule } = await import('../../src/app.module');
-    const { configurarAplicacion } = await import('../../src/aplicacion');
-
-    // La base, con entidades y migraciones como clases: ver base.ts. Ya
-    // viene migrada.
-    const modulo = await Test.createTestingModule({
-      imports: [AppModule, DiscoveryModule],
-    })
-      .overrideProvider(OPCIONES_TYPEORM)
-      .useValue({ ...opcionesDeLaBase(), migrationsRun: false })
-      .compile();
-    app = modulo.createNestApplication<NestExpressApplication>({
-      rawBody: true,
-      logger: false,
-    });
-    configurarAplicacion(app);
-    await app.listen(0, '127.0.0.1');
-    base = (await app.getUrl()).replace('[::1]', '127.0.0.1');
-
-    jwt = app.get(JwtService);
-    fuente = app.get(DataSource);
+    ({ app, base, jwt, fuente, cerrar } = await arrancarAplicacion());
 
     const crear = async (
       quien: Quien,
@@ -282,9 +238,7 @@ describe('Permisos de cada ruta, con la aplicación montada', () => {
     if (fuente?.isInitialized && ids.length > 0) {
       await fuente.query(`DELETE FROM users WHERE id = ANY($1)`, [ids]);
     }
-    await app?.close();
-    vi.unstubAllEnvs();
-    vi.restoreAllMocks();
+    await cerrar?.();
   });
 
   /**

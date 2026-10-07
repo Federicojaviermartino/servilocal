@@ -221,6 +221,61 @@ describe('Pagos contra la API de Stripe', () => {
     }
   });
 
+  it('y dos a la vez, también: una sola fila y una sola intención', async () => {
+    // Dos pestañas en la pantalla de pago. Lo impide el bloqueo de la fila
+    // de la reserva, que un doble no puede contradecir: sin él, las dos
+    // veían que no había pago y las dos abrían una intención en Stripe, con
+    // dos retenciones sobre la misma tarjeta.
+    const bookingId = await reservaNueva();
+    const crear = vi.spyOn(stripe().paymentIntents, 'create');
+
+    try {
+      const [una, otra] = await Promise.all([
+        servicio.createPaymentIntent(reserva.clientId, bookingId),
+        servicio.createPaymentIntent(reserva.clientId, bookingId),
+      ]);
+
+      expect(crear).toHaveBeenCalledTimes(1);
+      expect(otra.paymentIntentId).toBe(una.paymentIntentId);
+      const filas = await fuente.query(
+        `SELECT count(*)::int FROM payments WHERE "bookingId" = $1`,
+        [bookingId],
+      );
+      expect(filas[0].count).toBe(1);
+    } finally {
+      crear.mockRestore();
+      await limpiar(bookingId);
+    }
+  });
+
+  it('si la reserva sigue bloqueada a los cinco segundos, se rinde en vez de esperar', async () => {
+    // lock_timeout: quien espera recibe el error que el filtro convierte en
+    // un 409, y puede reintentar. Sin él esperaba hasta los treinta segundos
+    // de la sentencia y acababa en un 500.
+    const bookingId = await reservaNueva();
+    const otra = fuente.createQueryRunner();
+    await otra.connect();
+    await otra.startTransaction();
+    await otra.query(`SELECT id FROM bookings WHERE id = $1 FOR UPDATE`, [
+      bookingId,
+    ]);
+    const inicio = Date.now();
+
+    try {
+      await expect(
+        servicio.createPaymentIntent(reserva.clientId, bookingId),
+      ).rejects.toMatchObject({ driverError: { code: '55P03' } });
+
+      const esperado = Date.now() - inicio;
+      expect(esperado).toBeGreaterThanOrEqual(4_500);
+      expect(esperado).toBeLessThan(15_000);
+    } finally {
+      await otra.rollbackTransaction();
+      await otra.release();
+      await limpiar(bookingId);
+    }
+  });
+
   it('una reserva sin pago no se completa sin preguntar', async () => {
     const bookingId = await reservaNueva();
 
@@ -571,7 +626,9 @@ describe('Pagos contra la API de Stripe', () => {
           '00000000-0000-4000-8000-000000000000',
           bookingId,
         ),
-      ).rejects.toThrow();
+        // El rechazo es este, y no cualquier fallo: una caída de la base
+        // también habría lanzado.
+      ).rejects.toMatchObject({ status: 403 });
 
       const filas = await fuente.query(
         `SELECT count(*)::int FROM payments WHERE "bookingId" = $1`,
@@ -593,7 +650,10 @@ describe('Pagos contra la API de Stripe', () => {
     try {
       await expect(
         servicio.createPaymentIntent(reserva.clientId, bookingId),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({
+        status: 400,
+        response: expect.objectContaining({ codigo: 'reserva-no-pagable' }),
+      });
     } finally {
       await limpiar(bookingId);
     }

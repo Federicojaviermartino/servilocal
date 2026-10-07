@@ -26,12 +26,14 @@ import Button from '@/components/atoms/Button';
 import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 import { useAhora } from '@/lib/ahora';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
 
 /** Un pago en estos estados no retiene nada: se puede volver a pagar. */
 const SIN_RETENER = [PaymentStatus.PENDING, PaymentStatus.FAILED];
 
 export default function BookingDetailPage() {
   const t = useTranslations('reservasPanel');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const tComun = useTranslations('comun');
   const tEstados = useTranslations('estados');
   const avisarFallo = useAvisoDeFallo();
@@ -158,7 +160,10 @@ export default function BookingDetailPage() {
           <span className="text-xs text-tenue">#{booking.id.slice(0, 8)}</span>
         </div>
 
-        <h1 className="text-2xl font-bold text-principal mb-4">
+        <h1
+          lang={idiomaDelCatalogo}
+          className="text-2xl font-bold text-principal mb-4"
+        >
           {booking.service.title}
         </h1>
 

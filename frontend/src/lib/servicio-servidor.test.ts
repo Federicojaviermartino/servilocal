@@ -26,6 +26,21 @@ describe('la ficha pedida desde el servidor', () => {
     });
   });
 
+  it('un identificador con una ruta dentro no cambia de ruta', async () => {
+    // Llega de la dirección ya descodificado: con ../ dentro, la petición
+    // del servidor acababa en otra ruta de la API.
+    const pedir = vi.fn(async (_url: string) => respuesta(400, {}));
+    vi.stubGlobal('fetch', pedir);
+
+    await obtenerServicio('../users/me');
+    await obtenerValoraciones('../../auth/profile');
+
+    expect(pedir.mock.calls[0][0]).toMatch(/\/services\/\.\.%2Fusers%2Fme$/);
+    expect(pedir.mock.calls[1][0]).toMatch(
+      /\/reviews\/service\/\.\.%2F\.\.%2Fauth%2Fprofile$/,
+    );
+  });
+
   it.each([404, 400])(
     'con %i, no existe: la página responde 404',
     async (codigo) => {

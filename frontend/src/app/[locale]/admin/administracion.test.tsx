@@ -1486,6 +1486,20 @@ describe('Panel de administración', () => {
       }
     });
 
+    it('a la administración de demostración le explica por qué lo ve vacío', async () => {
+      // El servidor no le enseña la moderación de cuentas reales. Sin
+      // decírselo, parecería que la sección no funciona.
+      usuario = { ...ADMIN, soloLectura: true };
+      auditoria.mockResolvedValue({ data: { datos: [], paginas: 1 } });
+
+      await abrirAuditoria();
+
+      expect(
+        screen.getByText(es.auditoria.vacioEnDemostracion),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(es.auditoria.sinEntradas)).toBeNull();
+    });
+
     it('sin entradas lo dice, y no hay páginas que recorrer', async () => {
       auditoria.mockResolvedValue({ data: { datos: [], paginas: 1 } });
 

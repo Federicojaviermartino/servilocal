@@ -28,7 +28,9 @@ describe('Sesiones cerradas en la base', () => {
 
   beforeAll(async () => {
     fuente = await crearFuente().initialize();
-    servicio = new SesionesService(fuente.getRepository(SesionRevocada), jwt);
+    servicio = new SesionesService(fuente.getRepository(SesionRevocada), jwt, {
+      desconectar: () => undefined,
+    } as never);
   });
 
   afterAll(async () => {

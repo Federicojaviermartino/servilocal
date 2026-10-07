@@ -230,6 +230,7 @@
     "titulo": "سجل التدقيق",
     "usuario_activado": "تم تفعيل الحساب",
     "usuario_desactivado": "تم تعطيل الحساب",
+    "vacioEnDemostracion": "السجل فارغ في النسخة التجريبية: هنا تُسجَّل إجراءات الإشراف على الحسابات الحقيقية، وهذا الحساب للعرض فقط.",
     "valoracion_eliminada": "تم حذف التقييم"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "تم نشر الرد.",
     "sinValoraciones": "لا توجد تقييمات لهذه الخدمة بعد.",
     "sobreProfesional": "عن المحترف",
+    "soloClientes": "للحجز تحتاج إلى حساب عميل.",
     "tuRespuesta": "ردّك، ويراه الجميع",
     "valoraciones": "التقييمات ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "نشطة",
     "cancelada": "ملغى",
+    "canceladas": "ملغاة",
     "completada": "مكتمل",
     "completadas": "مكتملة",
     "confirmada": "مؤكَّد",
     "confirmadas": "مؤكَّدة",
+    "filtrar": "التصفية حسب الحالة",
     "pausado": "موقوفة مؤقتًا",
     "pendiente": "قيد الانتظار",
     "pendientes": "قيد الانتظار",
     "rechazada": "مرفوض",
+    "rechazadas": "مرفوضة",
     "todas": "الكل"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "لا تملك إذنًا لدفع هذا الحجز.",
     "sinServidor": "تعذّر الاتصال بالخادم.",
     "tarjetaCaducada": "انتهت صلاحية بطاقتك.",
+    "tarjetaDePrueba": "هذه نسخة تجريبية ولا يُخصم أي مبلغ: ادفع ببطاقة الاختبار 4242 4242 4242 4242 مع أي تاريخ مستقبلي وأي رمز CVC.",
     "tarjetaGuardada": "تُحفظ بطاقتك لدى Stripe وليس لدى ServiLocal، لتجديد الحجز إذا كان موعد الحجز بعد أكثر من أسبوع. تُمحى إذا حذفت حسابك.",
     "titulo": "تأكيد الدفع",
     "totalPagar": "الإجمالي المستحق",

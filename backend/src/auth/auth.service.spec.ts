@@ -16,6 +16,7 @@ import { RestablecimientoContrasena, User, UserRole } from '../entities';
 import { AUDIENCIA_API, AUDIENCIA_SOCKET } from './sesion';
 import { CorreoService } from '../correo/correo.service';
 import { VERSION_TERMINOS } from '../common/cuenta';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 
 // La comparación de verdad, pero observable: hace falta saber con qué huella
 // se compara cuando el correo no existe.
@@ -72,6 +73,8 @@ const jwt = new JwtService({
   signOptions: { expiresIn: '24h' },
 });
 
+const tiempoReal = { desconectar: vi.fn() };
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -87,6 +90,7 @@ describe('AuthService', () => {
         },
         { provide: CorreoService, useValue: correo },
         { provide: DataSource, useValue: dataSource },
+        { provide: TiempoRealGateway, useValue: tiempoReal },
       ],
     }).compile();
 
@@ -296,6 +300,23 @@ describe('AuthService', () => {
       role: UserRole.CLIENT,
       password: await bcrypt.hash('Antigua123!', 4),
       ...extra,
+    });
+
+    it('y cierra los sockets abiertos: los de las sesiones que dejan de valer', async () => {
+      mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+      await service.cambiarContrasena('uuid-123', 'Antigua123!', 'Nueva12345!');
+
+      expect(tiempoReal.desconectar).toHaveBeenCalledWith('uuid-123');
+    });
+
+    it('con la actual equivocada no se cierra nada', async () => {
+      mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+      await expect(
+        service.cambiarContrasena('uuid-123', 'No-es-esta1!', 'Nueva12345!'),
+      ).rejects.toThrow();
+      expect(tiempoReal.desconectar).not.toHaveBeenCalled();
     });
 
     it('con la actual, pone la nueva y cierra las demás sesiones', async () => {
@@ -508,6 +529,23 @@ describe('AuthService', () => {
       gestor.findOne.mockImplementation(async (entidad: unknown) =>
         entidad === RestablecimientoContrasena ? enlace : cuenta,
       );
+
+    it('y cierra los sockets que la cuenta tuviera abiertos', async () => {
+      // Quien hubiera entrado con la contraseña vieja se queda fuera de la
+      // API, y también del tiempo real.
+      preparar(pendiente());
+
+      await service.restablecer(TOKEN, 'Nueva12345!');
+
+      expect(tiempoReal.desconectar).toHaveBeenCalledWith('uuid-123');
+    });
+
+    it('con un enlace que no vale, no se cierra nada', async () => {
+      preparar(null);
+
+      await expect(service.restablecer(TOKEN, 'Nueva12345!')).rejects.toThrow();
+      expect(tiempoReal.desconectar).not.toHaveBeenCalled();
+    });
 
     it('pone la contraseña, cierra las sesiones y gasta todos los enlaces', async () => {
       preparar(pendiente());

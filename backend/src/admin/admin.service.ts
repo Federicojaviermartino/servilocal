@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
 import {
   Booking,
   BookingStatus,
@@ -147,7 +147,32 @@ export class AdminService {
     });
   }
 
-  async metricas(): Promise<Metricas> {
+  /**
+   * Los agregados del panel.
+   *
+   * Con `soloDemostracion`, solo los de su mundo: ver soloVeLaDemostracion.
+   * Daba los de toda la plataforma, también lo cobrado de verdad y cuántas
+   * cuentas reales hay, a quien entra con una contraseña que está publicada.
+   * Como las cuentas de demostración no reservan ni valoran fuera de su
+   * mundo, basta con mirar de quién es cada cosa: el servicio, de su
+   * profesional; la reserva y la valoración, de su cliente. Las categorías
+   * son las mismas para todos.
+   */
+  async metricas({
+    soloDemostracion = false,
+  }: { soloDemostracion?: boolean } = {}): Promise<Metricas> {
+    const suyo = soloDemostracion ? { esDemostracion: true } : {};
+    const deSuProfesional = soloDemostracion ? { provider: suyo } : {};
+    const deSuCliente = soloDemostracion ? { client: suyo } : {};
+    /** Lo mismo, para las consultas que se construyen a mano. */
+    const acotar = <T extends object>(
+      consulta: SelectQueryBuilder<T>,
+      relacion: string,
+    ) =>
+      soloDemostracion
+        ? consulta.innerJoin(relacion, 'mundo', 'mundo.esDemostracion = true')
+        : consulta;
+
     const [
       totalUsuarios,
       usuariosInactivos,
@@ -169,25 +194,24 @@ export class AdminService {
       totalCategorias,
       categoriasSinServicios,
     ] = await Promise.all([
-      this.usuarios.count(),
-      this.usuarios.count({ where: { isActive: false } }),
+      this.usuarios.count({ where: suyo }),
+      this.usuarios.count({ where: { isActive: false, ...suyo } }),
       this.usuarios
         .createQueryBuilder('u')
         .select('u.role', 'clave')
         .addSelect('COUNT(*)', 'total')
+        .where(soloDemostracion ? 'u.esDemostracion = true' : '1 = 1')
         .groupBy('u.role')
         .getRawMany(),
 
-      this.servicios.count(),
-      this.servicios.count({ where: { isActive: true } }),
-      this.servicios
-        .createQueryBuilder('s')
+      this.servicios.count({ where: deSuProfesional }),
+      this.servicios.count({ where: { isActive: true, ...deSuProfesional } }),
+      acotar(this.servicios.createQueryBuilder('s'), 's.provider')
         // images es simple-array: TypeORM lo guarda como texto separado por
         // comas, no como array de Postgres, así que «sin foto» es nulo o vacío.
-        .where("s.images IS NULL OR s.images = ''")
+        .where("(s.images IS NULL OR s.images = '')")
         .getCount(),
-      this.servicios
-        .createQueryBuilder('s')
+      acotar(this.servicios.createQueryBuilder('s'), 's.provider')
         .leftJoin('s.category', 'c')
         .select('c.name', 'clave')
         .addSelect('COUNT(*)', 'total')
@@ -195,8 +219,7 @@ export class AdminService {
         .groupBy('c.name')
         .orderBy('COUNT(*)', 'DESC')
         .getRawMany(),
-      this.servicios
-        .createQueryBuilder('s')
+      acotar(this.servicios.createQueryBuilder('s'), 's.provider')
         .select('s.city', 'clave')
         .addSelect('COUNT(*)', 'total')
         .where('s.isActive = true')
@@ -204,9 +227,8 @@ export class AdminService {
         .orderBy('COUNT(*)', 'DESC')
         .getRawMany(),
 
-      this.reservas.count(),
-      this.reservas
-        .createQueryBuilder('b')
+      this.reservas.count({ where: deSuCliente }),
+      acotar(this.reservas.createQueryBuilder('b'), 'b.client')
         .select('b.status', 'clave')
         .addSelect('COUNT(*)', 'total')
         .groupBy('b.status')
@@ -214,8 +236,7 @@ export class AdminService {
       // Lo cobrado de verdad: pagos capturados y no devueltos. Sumaba el
       // precio de cada reserva completada, también de las completadas sin
       // cobro y de las que luego se reembolsaron.
-      this.reservas
-        .createQueryBuilder('b')
+      acotar(this.reservas.createQueryBuilder('b'), 'b.client')
         .leftJoin(Payment, 'p', 'p.bookingId = b.id')
         .select('COALESCE(SUM(p.amount), 0)', 'suma')
         .where('p.status = :cobrado', { cobrado: PaymentStatus.COMPLETED })
@@ -225,8 +246,7 @@ export class AdminService {
       // se registró la reserva y en la semilla es el mismo instante para
       // todas, así que daría una sola columna. Lo que interesa además es
       // cuándo se presta el servicio.
-      this.reservas
-        .createQueryBuilder('b')
+      acotar(this.reservas.createQueryBuilder('b'), 'b.client')
         .select(
           "to_char(date_trunc('week', b.scheduledDate), 'YYYY-MM-DD')",
           'semana',
@@ -240,21 +260,20 @@ export class AdminService {
         .groupBy("date_trunc('week', b.scheduledDate)")
         .getRawMany(),
 
-      this.valoraciones.count(),
-      this.valoraciones
-        .createQueryBuilder('r')
+      this.valoraciones.count({ where: deSuCliente }),
+      acotar(this.valoraciones.createQueryBuilder('r'), 'r.client')
         .select('AVG(r.rating)', 'media')
         .getRawOne(),
-      this.valoraciones
-        .createQueryBuilder('r')
+      acotar(this.valoraciones.createQueryBuilder('r'), 'r.client')
         .select('r.rating', 'clave')
         .addSelect('COUNT(*)', 'total')
         .groupBy('r.rating')
         .orderBy('r.rating', 'DESC')
         .getRawMany(),
-      this.valoraciones.count({ where: { isReported: true } }),
-      this.valoraciones
-        .createQueryBuilder('r')
+      this.valoraciones.count({
+        where: { isReported: true, ...deSuCliente },
+      }),
+      acotar(this.valoraciones.createQueryBuilder('r'), 'r.client')
         .where('r.providerResponse IS NULL')
         .getCount(),
 

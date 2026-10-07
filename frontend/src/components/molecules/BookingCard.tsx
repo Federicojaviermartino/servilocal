@@ -11,6 +11,7 @@ import { CLAVE_ESTADO, VARIANTE_ESTADO } from '@/lib/estados';
 import { useImporte } from '@/lib/importes';
 import Badge from '../atoms/Badge';
 import Avatar from '../atoms/Avatar';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
 
 interface BookingCardProps {
   booking: Booking;
@@ -19,6 +20,7 @@ interface BookingCardProps {
 
 export default function BookingCard({ booking, viewAs }: BookingCardProps) {
   const t = useTranslations('estados');
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const importe = useImporte();
   const idioma = useLocale();
   const counterpart = viewAs === 'client' ? booking.provider : booking.client;
@@ -39,7 +41,10 @@ export default function BookingCard({ booking, viewAs }: BookingCardProps) {
               #{booking.id.slice(0, 8)}
             </span>
           </div>
-          <h3 className="font-semibold text-principal truncate">
+          <h3
+            lang={idiomaDelCatalogo}
+            className="font-semibold text-principal truncate"
+          >
             {booking.service.title}
           </h3>
           <div className="mt-2 flex items-center gap-3 text-sm text-secundario">

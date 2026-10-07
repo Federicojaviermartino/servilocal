@@ -230,6 +230,7 @@
     "titulo": "Audit",
     "usuario_activado": "Compte activé",
     "usuario_desactivado": "Compte désactivé",
+    "vacioEnDemostracion": "Dans la démonstration, l'historique est vide : il consigne la modération de comptes réels, et ce compte ne peut que consulter.",
     "valoracion_eliminada": "Avis supprimé"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Réponse publiée.",
     "sinValoraciones": "Ce service n'a pas encore d'avis.",
     "sobreProfesional": "À propos du professionnel",
+    "soloClientes": "Il faut un compte client pour réserver.",
     "tuRespuesta": "Votre réponse, visible par tous",
     "valoraciones": "Avis ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Actif",
     "cancelada": "Annulée",
+    "canceladas": "Annulées",
     "completada": "Terminée",
     "completadas": "Terminées",
     "confirmada": "Confirmée",
     "confirmadas": "Confirmées",
+    "filtrar": "Filtrer par statut",
     "pausado": "En pause",
     "pendiente": "En attente",
     "pendientes": "En attente",
     "rechazada": "Refusée",
+    "rechazadas": "Refusées",
     "todas": "Toutes"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "Vous n'avez pas l'autorisation de payer cette réservation.",
     "sinServidor": "Impossible de contacter le serveur.",
     "tarjetaCaducada": "Votre carte a expiré.",
+    "tarjetaDePrueba": "Ceci est une démonstration et rien n'est débité : payez avec la carte de test 4242 4242 4242 4242, n'importe quelle date future et n'importe quel CVC.",
     "tarjetaGuardada": "Votre carte est enregistrée chez Stripe, pas chez ServiLocal, pour pouvoir renouveler le blocage si la réservation a lieu dans plus d’une semaine. Elle est effacée si vous supprimez votre compte.",
     "titulo": "Confirmer le paiement",
     "totalPagar": "Total à payer",

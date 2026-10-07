@@ -99,6 +99,22 @@ export class TiempoRealGateway implements OnGatewayConnection {
   }
 
   /**
+   * Cierra las conexiones abiertas de una persona.
+   *
+   * La identidad solo se comprueba en el apretón de manos, así que un socket
+   * ya abierto sobrevivía a todo lo que revoca una sesión: quien la hubiera
+   * robado seguía recibiendo cada mensaje, con su contenido, aunque la
+   * víctima cambiara la contraseña. Se cierran todas las de la cuenta; las
+   * pestañas que conservan una sesión válida vuelven a conectarse con un
+   * pase nuevo, y las demás ya no lo consiguen. Con el adaptador de Redis
+   * alcanza a las conexiones de todas las instancias.
+   */
+  desconectar(usuarioId: string): void {
+    if (!this.server) return;
+    this.server.in(salaDe(usuarioId)).disconnectSockets(true);
+  }
+
+  /**
    * Avisa a una sola persona.
    *
    * Comparte sala y conexión con los mensajes: abrir un segundo socket para

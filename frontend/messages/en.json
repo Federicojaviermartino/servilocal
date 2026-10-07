@@ -230,6 +230,7 @@
     "titulo": "Audit log",
     "usuario_activado": "Account activated",
     "usuario_desactivado": "Account deactivated",
+    "vacioEnDemostracion": "In the demo the history is empty: it records the moderation of real accounts, and this account can only look.",
     "valoracion_eliminada": "Review deleted"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Reply posted.",
     "sinValoraciones": "This service has no reviews yet.",
     "sobreProfesional": "About the professional",
+    "soloClientes": "You need a client account to book.",
     "tuRespuesta": "Your reply, visible to everyone",
     "valoraciones": "Reviews ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Active",
     "cancelada": "Cancelled",
+    "canceladas": "Cancelled",
     "completada": "Completed",
     "completadas": "Completed",
     "confirmada": "Confirmed",
     "confirmadas": "Confirmed",
+    "filtrar": "Filter by status",
     "pausado": "Paused",
     "pendiente": "Pending",
     "pendientes": "Pending",
     "rechazada": "Rejected",
+    "rechazadas": "Rejected",
     "todas": "All"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "You do not have permission to pay for this booking.",
     "sinServidor": "The server could not be reached.",
     "tarjetaCaducada": "Your card has expired.",
+    "tarjetaDePrueba": "This is a demo and nothing is charged: pay with the test card 4242 4242 4242 4242, any future date and any CVC.",
     "tarjetaGuardada": "Your card is saved at Stripe, not at ServiLocal, so the hold can be renewed if the booking is more than a week away. It is erased if you delete your account.",
     "titulo": "Confirm payment",
     "totalPagar": "Total to pay",

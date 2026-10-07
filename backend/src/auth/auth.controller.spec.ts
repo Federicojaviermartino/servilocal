@@ -18,6 +18,7 @@ import {
 import { CorreoService } from '../correo/correo.service';
 import { OrigenGuard } from '../common/guards/origen.guard';
 import { SoloLecturaInterceptor } from '../common/interceptores/solo-lectura.interceptor';
+import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SesionesService } from './sesiones.service';
@@ -123,6 +124,10 @@ beforeAll(async () => {
       },
       { provide: CorreoService, useValue: correo },
       { provide: DataSource, useValue: {} },
+      {
+        provide: TiempoRealGateway,
+        useValue: { desconectar: () => undefined },
+      },
       {
         provide: ConfigService,
         useValue: { get: () => SECRETO, getOrThrow: () => SECRETO },

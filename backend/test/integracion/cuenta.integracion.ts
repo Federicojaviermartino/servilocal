@@ -27,6 +27,8 @@ describe('La cuenta', () => {
   let usuarios: UsersService;
   let acceso: AuthService;
   const olvidarCliente = vi.fn(async () => undefined);
+  // Los sockets de la cuenta, que aquí no hay: se comprueba que se piden.
+  const desconectar = vi.fn();
   const enviados: Array<{ texto: string }> = [];
 
   const CLAVE = 'Clave12345!';
@@ -38,6 +40,7 @@ describe('La cuenta', () => {
       { anotar: vi.fn() } as never,
       fuente,
       { olvidarCliente } as never,
+      { desconectar } as never,
     );
     acceso = new AuthService(
       fuente.getRepository(User),
@@ -50,6 +53,7 @@ describe('La cuenta', () => {
         },
       } as never,
       fuente,
+      { desconectar } as never,
     );
   });
 
@@ -388,7 +392,9 @@ describe('La cuenta', () => {
         getOrThrow: () => 'secreto-de-integracion',
       } as unknown as ConfigService,
       fuente.getRepository(User),
-      new SesionesService(fuente.getRepository(SesionRevocada), jwt),
+      new SesionesService(fuente.getRepository(SesionRevocada), jwt, {
+        desconectar,
+      } as never),
     );
     const [{ id: administrador }] = await fuente.query(
       `SELECT id FROM users WHERE role = 'admin' LIMIT 1`,

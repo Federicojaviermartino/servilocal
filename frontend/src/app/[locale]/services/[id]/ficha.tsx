@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { MapPin, Calendar, MessageSquare, Clock } from 'lucide-react';
-import { Service, Review } from '@/types';
+import { Service, Review, UserRole } from '@/types';
 import { servicesApi, reviewsApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import Button from '@/components/atoms/Button';
@@ -13,6 +13,7 @@ import Skeleton from '@/components/atoms/Skeleton';
 import RatingStars from '@/components/molecules/RatingStars';
 import ServiceImage from '@/components/molecules/ServiceImage';
 import { useNombreCategoria } from '@/lib/categorias';
+import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
 import { usePrecioServicio } from '@/lib/importes';
 import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
 import AsistenteBusqueda from '@/components/organisms/AsistenteBusqueda';
@@ -39,6 +40,7 @@ export default function FichaServicio({
   const idioma = useLocale();
   const nombreCategoria = useNombreCategoria();
   const precio = usePrecioServicio();
+  const idiomaDelCatalogo = useIdiomaDelCatalogo();
   const router = useRouter();
   const { isAuthenticated, user } = useAuthStore();
 
@@ -206,8 +208,13 @@ export default function FichaServicio({
                 </Badge>
               )}
               {/* Lo que escribe el profesional toma su propia dirección:
-                    en árabe, un texto en castellano se leía al revés. */}
-              <h1 dir="auto" className="text-2xl font-bold text-principal">
+                    en árabe, un texto en castellano se leía al revés. Y
+                    lleva su idioma: ver useIdiomaDelCatalogo. */}
+              <h1
+                dir="auto"
+                lang={idiomaDelCatalogo}
+                className="text-2xl font-bold text-principal"
+              >
                 {service.title}
               </h1>
               <div className="mt-3 flex items-center gap-4 text-sm text-secundario">
@@ -225,7 +232,11 @@ export default function FichaServicio({
                 <h2 className="text-lg font-semibold text-principal">
                   {t('descripcion')}
                 </h2>
-                <p dir="auto" className="text-secundario whitespace-pre-line">
+                <p
+                  dir="auto"
+                  lang={idiomaDelCatalogo}
+                  className="text-secundario whitespace-pre-line"
+                >
                   {service.description}
                 </p>
               </div>
@@ -249,19 +260,32 @@ export default function FichaServicio({
                   ),
                 })}
               </p>
-              <Button onClick={handleBook} fullWidth size="lg">
-                <Calendar size={18} className="inline me-2" />
-                {t('reservar')}
-              </Button>
-              <Button
-                onClick={handleContact}
-                variant="secondary"
-                fullWidth
-                className="mt-2"
-              >
-                <MessageSquare size={18} className="inline me-2" />
-                {t('contactar')}
-              </Button>
+              {/* Reservar es cosa de clientes: a los demás la API se lo
+                  niega. A un profesional o a la administración se les
+                  ofrecía igual, rellenaban el formulario entero y acababan
+                  en un 403. Sin sesión se sigue ofreciendo: lleva a entrar. */}
+              {!isAuthenticated || user?.role === UserRole.CLIENT ? (
+                <Button onClick={handleBook} fullWidth size="lg">
+                  <Calendar size={18} className="inline me-2" />
+                  {t('reservar')}
+                </Button>
+              ) : (
+                <p className="rounded-md bg-superficie-alt p-3 text-sm text-secundario">
+                  {t('soloClientes')}
+                </p>
+              )}
+              {/* Y contactar con uno mismo abría una conversación con nadie. */}
+              {user?.id !== service.providerId && (
+                <Button
+                  onClick={handleContact}
+                  variant="secondary"
+                  fullWidth
+                  className="mt-2"
+                >
+                  <MessageSquare size={18} className="inline me-2" />
+                  {t('contactar')}
+                </Button>
+              )}
             </div>
 
             <div className="bg-superficie rounded-lg shadow-card p-6">
@@ -283,7 +307,11 @@ export default function FichaServicio({
                 </div>
               </div>
               {service.provider.bio && (
-                <p dir="auto" className="mt-4 text-sm text-secundario">
+                <p
+                  dir="auto"
+                  lang={idiomaDelCatalogo}
+                  className="mt-4 text-sm text-secundario"
+                >
                   {service.provider.bio}
                 </p>
               )}
@@ -322,6 +350,7 @@ export default function FichaServicio({
                         {review.comment && (
                           <p
                             dir="auto"
+                            lang={idiomaDelCatalogo}
                             className="mt-2 text-secundario text-sm"
                           >
                             {review.comment}
@@ -347,7 +376,11 @@ export default function FichaServicio({
                             <p className="text-xs font-medium text-tenue mb-1">
                               {t('respuestaProfesional')}
                             </p>
-                            <p dir="auto" className="text-sm text-secundario">
+                            <p
+                              dir="auto"
+                              lang={idiomaDelCatalogo}
+                              className="text-sm text-secundario"
+                            >
                               {review.providerResponse}
                             </p>
                           </div>

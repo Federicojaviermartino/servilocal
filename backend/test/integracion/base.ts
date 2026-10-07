@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import * as dotenv from 'dotenv';
 import * as entidades from '../../src/entities';
 import { conexionPorUrl } from '../../src/config/conexion-segura';
+import { TIEMPOS_DE_LA_BASE } from '../../src/config/database.config';
 import { EsquemaInicial1789222453037 } from '../../src/database/migrations/1789222453037-EsquemaInicial';
 import { IndiceCiudadNormalizada1789322907859 } from '../../src/database/migrations/1789322907859-IndiceCiudadNormalizada';
 import { TablaUsoIa1789500000000 } from '../../src/database/migrations/1789500000000-TablaUsoIa';
@@ -25,6 +26,7 @@ import { CategoriaConServicios1790900000000 } from '../../src/database/migration
 import { ReservasYServiciosAuditados1791000000000 } from '../../src/database/migrations/1791000000000-ReservasYServiciosAuditados';
 import { DemostracionOriginal1791100000000 } from '../../src/database/migrations/1791100000000-DemostracionOriginal';
 import { IndiceServiciosRecientes1791200000000 } from '../../src/database/migrations/1791200000000-IndiceServiciosRecientes';
+import { DesempateDeServiciosRecientes1791300000000 } from '../../src/database/migrations/1791300000000-DesempateDeServiciosRecientes';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -65,6 +67,7 @@ const MIGRACIONES = [
   ReservasYServiciosAuditados1791000000000,
   DemostracionOriginal1791100000000,
   IndiceServiciosRecientes1791200000000,
+  DesempateDeServiciosRecientes1791300000000,
 ];
 
 /**
@@ -128,6 +131,10 @@ export function opcionesDeLaBase(): DataSourceOptions {
     migrations: MIGRACIONES,
     synchronize: false,
     logging: false,
+    // Los tiempos de espera de producción: sin ellos, una prueba esperaría
+    // un bloqueo sin límite donde la aplicación responde a los cinco
+    // segundos.
+    extra: TIEMPOS_DE_LA_BASE,
   };
 
   return url

@@ -30,12 +30,18 @@ export type Resultado =
   | { estado: 'no-existe' }
   | { estado: 'sin-respuesta' };
 
+/**
+ * El identificador como tramo de la ruta, escapado. Llega de la dirección ya
+ * descodificado: con ../ dentro, la petición acababa en otra ruta de la API.
+ */
+const tramo = (id: string) => encodeURIComponent(id);
+
 export const obtenerServicio = cache(async (id: string): Promise<Resultado> => {
   const apiUrl = apiDelServidor();
   if (!apiUrl) return { estado: 'sin-respuesta' };
 
   try {
-    const respuesta = await fetch(`${apiUrl}/services/${id}`, {
+    const respuesta = await fetch(`${apiUrl}/services/${tramo(id)}`, {
       signal: AbortSignal.timeout(15000),
       next: { revalidate: FRESCURA_S },
     });
@@ -60,7 +66,7 @@ export const obtenerValoraciones = cache(
     if (!apiUrl) return null;
 
     try {
-      const respuesta = await fetch(`${apiUrl}/reviews/service/${id}`, {
+      const respuesta = await fetch(`${apiUrl}/reviews/service/${tramo(id)}`, {
         signal: AbortSignal.timeout(15000),
         next: { revalidate: FRESCURA_S },
       });

@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const sockets: Array<{
   manejadores: Record<string, Array<(dato: unknown) => void>>;
   connected: boolean;
+  connect: ReturnType<typeof vi.fn>;
   disconnect: ReturnType<typeof vi.fn>;
   off: ReturnType<typeof vi.fn>;
   emitir: (evento: string, dato?: unknown) => void;
@@ -23,6 +24,7 @@ const io = vi.fn((_url: string, _opciones?: unknown) => {
   const socket = {
     manejadores,
     connected: false,
+    connect: vi.fn(),
     disconnect: vi.fn(),
     off: vi.fn((evento: string, fn: (dato: unknown) => void) => {
       manejadores[evento] = (manejadores[evento] ?? []).filter((f) => f !== fn);
@@ -220,6 +222,42 @@ describe('socket compartido', () => {
     act(() => sockets[0].emitir('sesion-invalida'));
 
     expect(sockets[0].disconnect).toHaveBeenCalled();
+  });
+
+  it('si el servidor cierra la conexión, vuelve a intentarlo con un pase nuevo', async () => {
+    // El servidor cierra los sockets de una cuenta cuando revoca alguna de
+    // sus sesiones, y tras un cierre suyo la biblioteca no reconecta sola:
+    // la pestaña que sigue con su sesión se quedaría sin tiempo real.
+    const { useAvisosEnVivo } = await cargar();
+    renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
+
+    act(() => sockets[0].emitir('disconnect', 'io server disconnect'));
+
+    expect(sockets[0].connect).toHaveBeenCalledTimes(1);
+  });
+
+  it('pero no si antes le dijo que la sesión no vale', async () => {
+    const { useAvisosEnVivo } = await cargar();
+    renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
+
+    act(() => {
+      sockets[0].emitir('sesion-invalida');
+      sockets[0].emitir('disconnect', 'io server disconnect');
+    });
+
+    expect(sockets[0].connect).not.toHaveBeenCalled();
+  });
+
+  it('ni cuando la conexión se cae sola: de eso ya se ocupa la biblioteca', async () => {
+    const { useAvisosEnVivo } = await cargar();
+    renderHook(() => useAvisosEnVivo(() => undefined));
+    await descargado();
+
+    act(() => sockets[0].emitir('disconnect', 'transport close'));
+
+    expect(sockets[0].connect).not.toHaveBeenCalled();
   });
 });
 

@@ -1,12 +1,20 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 import { configurarAplicacion } from './aplicacion';
 
 class EcoDto {
   @IsString()
   texto: string;
+
+  @IsOptional()
+  @IsBoolean()
+  marcado?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  cantidad?: number;
 }
 
 @Controller('eco')
@@ -78,19 +86,38 @@ describe('configurarAplicacion', () => {
     expect(ajena.headers.get('access-control-allow-origin')).toBeNull();
   });
 
-  it('valida el cuerpo y rechaza los campos que no espera', async () => {
-    const enviar = (cuerpo: unknown) =>
-      fetch(`${base}/api/eco`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(cuerpo),
-      });
+  const enviar = (cuerpo: unknown) =>
+    fetch(`${base}/api/eco`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(cuerpo),
+    });
 
+  it('valida el cuerpo y rechaza los campos que no espera', async () => {
     expect((await enviar({ texto: 'hola' })).status).toBe(201);
     expect((await enviar({})).status).toBe(400);
     // Un campo de más, como un «role» colado en el registro, no se ignora.
     const conDeMas = await enviar({ texto: 'hola', role: 'admin' });
     expect(conDeMas.status).toBe(400);
     expect(await conDeMas.json()).toMatchObject({ statusCode: 400 });
+  });
+
+  it('no convierte los tipos: lo que no llega con el suyo se rechaza', async () => {
+    // Con la conversión implícita, «false» entre comillas llegaba como
+    // verdadero: completar una reserva con "sinCobro":"false" la cerraba sin
+    // cobrar, y un registro con "aceptaTerminos":"false" contaba como
+    // aceptado.
+    const conBooleano = await enviar({ texto: 'hola', marcado: false });
+    expect(conBooleano.status).toBe(201);
+    expect(await conBooleano.json()).toEqual({ texto: 'hola', marcado: false });
+
+    expect((await enviar({ texto: 'hola', marcado: 'false' })).status).toBe(
+      400,
+    );
+    expect((await enviar({ texto: 'hola', marcado: 1 })).status).toBe(400);
+    expect((await enviar({ texto: 'hola', cantidad: '3' })).status).toBe(400);
+    expect((await enviar({ texto: 'hola', cantidad: true })).status).toBe(400);
+    // Un objeto donde va un texto llegaba como «[object Object]».
+    expect((await enviar({ texto: {} })).status).toBe(400);
   });
 });

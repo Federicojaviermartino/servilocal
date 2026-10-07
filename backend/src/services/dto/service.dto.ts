@@ -16,8 +16,10 @@ import {
 import { Type } from 'class-transformer';
 import { SiSeEnvia } from '../../common/si-se-envia';
 import {
+  DOS_DECIMALES,
   DURACION_MAXIMA,
   DURACION_MINIMA,
+  PRECIO_MAXIMO,
   PRECIO_MINIMO,
 } from '../../common/calendario';
 
@@ -43,14 +45,16 @@ export class CreateServiceDto {
   // Stripe no cobra menos de 50 céntimos en euros: un servicio más barato
   // se publicaba y después no había forma de pagarlo.
   @ApiProperty({ example: 25.0 })
-  @IsNumber()
+  @IsNumber(DOS_DECIMALES)
   @Min(PRECIO_MINIMO)
+  @Max(PRECIO_MAXIMO)
   priceMin: number;
 
   @ApiPropertyOptional({ example: 60.0 })
   @IsOptional()
-  @IsNumber()
+  @IsNumber(DOS_DECIMALES)
   @Min(PRECIO_MINIMO)
+  @Max(PRECIO_MAXIMO)
   priceMax?: number;
 
   @ApiProperty({ example: 'hour', enum: ['hour', 'service', 'project'] })
@@ -139,14 +143,16 @@ export class UpdateServiceDto {
 
   @ApiPropertyOptional()
   @SiSeEnvia()
-  @IsNumber()
+  @IsNumber(DOS_DECIMALES)
   @Min(PRECIO_MINIMO)
+  @Max(PRECIO_MAXIMO)
   priceMin?: number;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsNumber()
+  @IsNumber(DOS_DECIMALES)
   @Min(PRECIO_MINIMO)
+  @Max(PRECIO_MAXIMO)
   priceMax?: number;
 
   @ApiPropertyOptional()

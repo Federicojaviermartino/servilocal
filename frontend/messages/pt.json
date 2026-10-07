@@ -230,6 +230,7 @@
     "titulo": "Auditoria",
     "usuario_activado": "Conta ativada",
     "usuario_desactivado": "Conta desativada",
+    "vacioEnDemostracion": "Na demonstração o histórico está vazio: aqui regista-se a moderação de contas reais, e esta conta só pode consultar.",
     "valoracion_eliminada": "Avaliação eliminada"
   },
   "avisos": {
@@ -312,6 +313,7 @@
     "respuestaPublicada": "Resposta publicada.",
     "sinValoraciones": "Este serviço ainda não tem avaliações.",
     "sobreProfesional": "Sobre o profissional",
+    "soloClientes": "Para reservar é preciso uma conta de cliente.",
     "tuRespuesta": "A sua resposta, visível para todos",
     "valoraciones": "Avaliações ({total})"
   },
@@ -347,14 +349,17 @@
   "estados": {
     "activo": "Ativo",
     "cancelada": "Cancelada",
+    "canceladas": "Canceladas",
     "completada": "Concluída",
     "completadas": "Concluídas",
     "confirmada": "Confirmada",
     "confirmadas": "Confirmadas",
+    "filtrar": "Filtrar por estado",
     "pausado": "Em pausa",
     "pendiente": "Pendente",
     "pendientes": "Pendentes",
     "rechazada": "Recusada",
+    "rechazadas": "Recusadas",
     "todas": "Todas"
   },
   "filtros": {
@@ -514,6 +519,7 @@
     "sinPermiso": "Não tem permissão para pagar esta reserva.",
     "sinServidor": "Não foi possível contactar o servidor.",
     "tarjetaCaducada": "O seu cartão expirou.",
+    "tarjetaDePrueba": "Isto é uma demonstração e nada é cobrado: pague com o cartão de teste 4242 4242 4242 4242, qualquer data futura e qualquer CVC.",
     "tarjetaGuardada": "O seu cartão fica guardado na Stripe, não no ServiLocal, para poder renovar a retenção se a reserva for para daqui a mais de uma semana. É apagado se eliminar a sua conta.",
     "titulo": "Confirmar o pagamento",
     "totalPagar": "Total a pagar",

@@ -22,8 +22,9 @@ import { ColumnNumericTransformer } from '../common/transformers/column-numeric.
 @Entity('services')
 @Index('IDX_services_profesional', ['providerId'])
 @Index('IDX_services_categoria', ['categoryId'])
-// El orden por defecto del buscador: ver la migración IndiceServiciosRecientes.
-@Index('IDX_services_creados', ['createdAt'])
+// El orden por defecto del buscador, con su desempate: ver las migraciones
+// IndiceServiciosRecientes y DesempateDeServiciosRecientes.
+@Index('IDX_services_creados', ['createdAt', 'id'])
 @Check('CHK_services_duracion', '"durationMinutes" BETWEEN 15 AND 480')
 @Check('CHK_services_precio_minimo', '"priceMin" >= 0.5')
 @Check('CHK_services_precio_maximo', '"priceMax" IS NULL OR "priceMax" >= 0.5')
