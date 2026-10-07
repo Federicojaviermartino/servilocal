@@ -8,8 +8,8 @@
 #
 # Lo que difiere de lo que hay hoy en el panel, y es a propósito:
 #   - healthCheckPath. Hoy no hay ninguna: Render da por bueno un despliegue
-#     en cuanto abre el puerto, y un servicio que responde 503 sigue
-#     recibiendo tráfico.
+#     en cuanto abre el puerto, y un proceso colgado sigue recibiendo
+#     tráfico.
 #
 # Se despliega con cada commit que llega a main, y no con «checksPass»,
 # aunque este pedía esperar a la integración continua. Render no despliega
@@ -35,8 +35,14 @@ services:
     dockerfilePath: ./Dockerfile
     region: frankfurt
     plan: free
-    # Comprueba también la base de datos: con la base caída responde 503.
-    healthCheckPath: /api/health
+    # Solo que el proceso responde, sin consultar la base. Render la llama
+    # cada pocos segundos y reinicia el servicio si falla un minuto seguido:
+    # con /api/health, que sí la consulta, Neon no llegaría a suspenderse
+    # nunca mientras la API esté despierta, y con Neon caído o sin cupo la
+    # API entraría en un bucle de reinicios que no arregla nada. Que la base
+    # responde ya lo exige el arranque, que aplica las migraciones, y lo
+    # vigilan la prueba de humo y el aviso de cada hora.
+    healthCheckPath: /api/health/vivo
     autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV

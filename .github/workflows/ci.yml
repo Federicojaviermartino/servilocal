@@ -34,26 +34,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
-    # Las imágenes de servicio van fijadas por su resumen, no solo por la
-    # etiqueta: una etiqueta se puede volver a publicar con otro contenido, y
-    # la CI cambiaría sin que cambiara nada aquí. Dependabot solo vigila los
-    # Dockerfile, así que estas se actualizan a mano, con el resumen que da
-    # «docker buildx imagetools inspect <imagen>:<etiqueta>».
-    services:
-      postgres:
-        image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
-        env:
-          POSTGRES_DB: servilocal_test
-          POSTGRES_USER: servilocal_user
-          POSTGRES_PASSWORD: test_password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U servilocal_user -d servilocal_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
+    # Sin servicios: estas pruebas usan dobles y no abren ninguna conexión.
+    # Las que necesitan la base de verdad son las del trabajo «integracion».
     defaults:
       run:
         working-directory: ./backend
@@ -78,16 +60,14 @@ jobs:
       - name: Ejecutar linter
         run: npm run lint
 
+      # Las pruebas incluidas. Vitest las transpila sin mirar los tipos y la
+      # compilación las deja fuera, así que un error de tipos en una prueba
+      # no lo veía nadie: seguía en verde contra una firma que ya no existe.
+      - name: Comprobar tipos
+        run: npx tsc --noEmit -p tsconfig.json
+
       - name: Ejecutar tests con umbral de cobertura
         run: npm run test:cov
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: servilocal_user
-          DB_PASSWORD: test_password
-          DB_DATABASE: servilocal_test
-          JWT_SECRET: test_jwt_secret
-          JWT_EXPIRATION: 1h
 
       - name: Build
         run: npm run build
@@ -155,6 +135,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
 
+    # Las imágenes de servicio van fijadas por su resumen, no solo por la
+    # etiqueta: una etiqueta se puede volver a publicar con otro contenido, y
+    # la CI cambiaría sin que cambiara nada aquí. Dependabot solo vigila los
+    # Dockerfile, así que estas se actualizan a mano, con el resumen que da
+    # «docker buildx imagetools inspect <imagen>:<etiqueta>».
     services:
       postgres:
         image: postgis/postgis:16-3.4@sha256:44126d872ac91993766c341e369c539e8196614321765d36a6f1bab0419a5fa5
@@ -172,7 +157,7 @@ jobs:
       stripe:
         # Fijada: con «latest», un cambio en el emulador podía poner la
         # integración en rojo sin tocar una línea del código. Y por resumen,
-        # como todas: ver el primer trabajo.
+        # como todas.
         image: stripe/stripe-mock:v0.205.0@sha256:ff32647993847be491e68533e2881c90434fa8d5df40246ee5f7d41253422081
         ports:
           - 12111:12111
@@ -226,6 +211,21 @@ jobs:
 
       - name: Ejecutar las pruebas de integración
         run: npm run test:integracion
+
+      # Una copia que nunca se ha restaurado no se sabe si sirve. Con la base
+      # de este trabajo, ya migrada y sembrada: se copia y se cifra con el
+      # mismo script que la copia semanal, se restaura en una base vacía como
+      # manda docs/OPERATIONS.md y se comprueba que al otro lado está todo.
+      # pg_dump 16, como el servidor: ver copia-base.yml.
+      - name: Ensayar la copia de la base y su restauración
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16 age
+          export PATH="/usr/lib/postgresql/16/bin:$PATH"
+          servidor="postgresql://$DB_USERNAME:$DB_PASSWORD@$DB_HOST:$DB_PORT"
+          psql "$servidor/$DB_DATABASE" --command 'CREATE DATABASE servilocal_restaurada'
+          URL_BASE="$servidor/$DB_DATABASE" URL_DESTINO="$servidor/servilocal_restaurada" \
+            bash ../scripts/ensayo-restauracion.sh
 
   dependencias:
     name: Vulnerabilidades en producción
@@ -585,6 +585,12 @@ jobs:
           # La semilla crea los servicios con identificadores nuevos.
           export LHCI_FICHA=$(curl -s "http://localhost:3001/api/services/search?limit=1" \
             | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).data[0].id))")
+          # Sin identificador, Lighthouse mediría las otras tres páginas y
+          # daría el paso por bueno sin haber abierto una sola ficha.
+          if [ -z "$LHCI_FICHA" ]; then
+            echo "::error::La búsqueda no ha devuelto ningún servicio: no hay ficha que medir."
+            exit 1
+          fi
           npx --yes @lhci/cli@0.15.1 autorun --config=lighthouserc.cjs
 
       - name: Guardar los informes de Lighthouse

@@ -56,6 +56,15 @@ function avisar(nombre, bien, detalle = '') {
 const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /** Pide algo sin dejar que un corte de red tumbe la prueba entera. */
+/** Un texto como lo escribe React dentro del HTML. */
+const escaparHtml = (texto) =>
+  texto
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+
 async function pedir(url, opciones = {}) {
   try {
     return await fetch(url, { ...opciones, signal: AbortSignal.timeout(60_000) });
@@ -198,6 +207,30 @@ async function main() {
       (portada.headers.get('content-security-policy') ?? '').includes(
         'upgrade-insecure-requests',
       ),
+    );
+  }
+
+  // La búsqueda y una ficha: por donde entra la gente, y lo que más depende
+  // de la base de verdad —PostGIS, sus índices, el catálogo—. Nada de esto se
+  // miraba: un fallo de la búsqueda que solo se diera en producción pasaba
+  // la prueba entera, que comprobaba la sesión y poco más.
+  const cerca = await pedir(
+    `${API}/api/services/search?latitude=40.4168&longitude=-3.7038&radiusKm=50&sortBy=distance&limit=3`,
+  );
+  const { data: cercanos = [] } = cerca.ok ? await cerca.json() : {};
+  comprobar(
+    'La búsqueda por cercanía encuentra servicios',
+    cercanos.length > 0,
+    `${cerca.status}`,
+  );
+  if (cercanos.length > 0) {
+    const [{ id, title }] = cercanos;
+    const ficha = await pedir(`${WEB}/services/${id}`);
+    const html = ficha.ok ? await ficha.text() : '';
+    comprobar(
+      'La ficha de un servicio llega pintada, con su título',
+      html.includes(escaparHtml(title)),
+      `${ficha.status}`,
     );
   }
 

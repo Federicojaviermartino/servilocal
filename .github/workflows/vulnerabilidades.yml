@@ -1,0 +1,51 @@
+name: Vulnerabilidades
+
+# La misma comprobación que el trabajo «dependencias» de ci.yml, cada lunes.
+#
+# Aquella solo corre al empujar, y un aviso se publica cuando se publica, no
+# cuando alguien empuja: tras unas semanas sin tocar el repositorio, la demo
+# podía llevar una dependencia con un aviso alto sin que nada lo dijera. Lo
+# mismo con una aceptación caducada de auditoria-aceptada.json, que no falla
+# hasta que algo vuelve a ejecutar la comprobación.
+#
+# Si encuentra algo, falla, y GitHub lo avisa por correo.
+#
+# Como todos los flujos programados, GitHub lo desactiva tras 60 días sin
+# actividad en el repositorio, que es justo cuando más falta haría. Avisa
+# antes por correo y se reactiva con un clic en la pestaña de acciones.
+
+on:
+  schedule:
+    # Los lunes a las 06:17 UTC, fuera de la hora en punto, que es cuando
+    # GitHub más retrasa.
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+# Solo lee el código; ver ci.yml.
+permissions:
+  contents: read
+
+jobs:
+  dependencias:
+    name: Vulnerabilidades en producción
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # Como en ci.yml: sin el árbol instalado, npm audit no sabe qué
+      # versiones hay de verdad, y --ignore-scripts evita ejecutar código de
+      # terceros para una simple comprobación.
+      - name: Instalar dependencias
+        run: |
+          npm ci --ignore-scripts --prefix backend
+          npm ci --ignore-scripts --prefix frontend
+
+      - name: Comprobar que no hay avisos nuevos
+        run: node scripts/auditoria-dependencias.mjs

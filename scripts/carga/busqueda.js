@@ -57,7 +57,12 @@ export const options = {
   // la máquina de la integración no los haga saltar, y no más: con los de
   // antes, de tres a nueve segundos, la 2.11.1 tardaba veinte veces más que
   // ahora en buscar por texto y solo la búsqueda por cercanía lo delataba.
+  //
+  // Las comprobaciones de cada respuesta también cuentan. Sin su umbral
+  // solo salían en el resumen: una búsqueda que devolviera 200 con otra
+  // forma dejaba la prueba en verde.
   thresholds: {
+    checks: ['rate>0.99'],
     http_req_failed: ['rate<0.01'],
     http_req_duration: ['p(95)<2000'],
     busqueda_por_cercania: ['p(95)<1000'],

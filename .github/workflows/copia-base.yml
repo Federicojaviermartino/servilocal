@@ -9,11 +9,15 @@ name: Copia semanal de la base
 # descargar los artefactos de un flujo. Aquí solo está la clave pública; la
 # privada la guarda quien tenga que restaurar.
 #
-# No hace nada hasta que se configuran las dos piezas, y lo dice:
+# No copia nada hasta que se configuran las dos piezas, y falla para decirlo:
 #   - el secreto COPIA_DATABASE_URL, la conexión a Neon, mejor con un rol
 #     que solo pueda leer;
 #   - la variable COPIA_CLAVE_AGE, la clave pública (age1…).
 # Cómo crearlas y cómo restaurar una copia: docs/OPERATIONS.md.
+#
+# Fallar, y no avisar en verde: sin configurar terminaba en «success» en diez
+# segundos, y quien mirase la pestaña de acciones daba por hecho que había
+# una copia semanal que no existía.
 
 on:
   schedule:
@@ -39,28 +43,22 @@ jobs:
 
     steps:
       - name: Comprobar que está configurada
-        id: configuracion
         run: |
           if [ -z "$URL_BASE" ] || [ -z "$DESTINATARIO" ]; then
-            echo "::notice title=Copia de la base::Sin el secreto COPIA_DATABASE_URL y la variable COPIA_CLAVE_AGE no se copia nada. Ver docs/OPERATIONS.md."
-            echo "activa=no" >> "$GITHUB_OUTPUT"
-          else
-            echo "activa=si" >> "$GITHUB_OUTPUT"
+            echo "::error title=Copia de la base::No se ha copiado nada: faltan el secreto COPIA_DATABASE_URL y la variable COPIA_CLAVE_AGE. Ver docs/OPERATIONS.md."
+            exit 1
           fi
 
       - uses: actions/checkout@v7
-        if: steps.configuracion.outputs.activa == 'si'
 
       # pg_dump 16, como el servidor de Neon: uno más antiguo no sabe leer
       # una base más nueva.
       - name: Instalar pg_dump y age
-        if: steps.configuracion.outputs.activa == 'si'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-16 age
 
       - name: Copiar y cifrar
-        if: steps.configuracion.outputs.activa == 'si'
         id: copia
         run: |
           nombre="copia-$(date -u +%F)"
@@ -69,7 +67,6 @@ jobs:
           echo "nombre=$nombre" >> "$GITHUB_OUTPUT"
 
       - name: Guardar la copia
-        if: steps.configuracion.outputs.activa == 'si'
         uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.copia.outputs.nombre }}

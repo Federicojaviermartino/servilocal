@@ -1,9 +1,14 @@
 name: Mantener la demo despierta
 
 # Las instancias gratuitas de Render se duermen tras 15 minutos sin tráfico y
-# tardan cerca de un minuto en volver. Este flujo despierta el frontend y la
-# API con peticiones periódicas para que la demo no haga esperar a quien la
-# visita en horario laboral, y avisa si alguno de los dos no responde.
+# tardan cerca de un minuto en volver. Este flujo llama al frontend y a la API
+# cada pocos minutos para que la demo no haga esperar a quien la visita en
+# horario laboral, y avisa si alguno de los dos no responde.
+#
+# No se puede contar con él: GitHub retrasa y se salta las ejecuciones
+# programadas, y lo que de verdad mantiene despierta la demo es un monitor
+# externo. Ver docs/OPERATIONS.md, «External monitor». Esto es la segunda
+# línea, y el aviso por correo cuando algo no contesta.
 #
 # Aritmética del cupo: Render concede 750 horas mensuales POR WORKSPACE,
 # repartidas entre todos los servicios gratuitos. Este workspace tiene cuatro.
@@ -13,21 +18,22 @@ name: Mantener la demo despierta
 # puede agotar el cupo, y entonces Render suspende TODOS los servicios
 # gratuitos hasta el mes siguiente.
 #
-# Cada ejecución hace primero la comprobación completa —la portada y
-# /api/health, que consulta la base— y falla en ese momento si alguna no
-# responde: es el aviso. Después se queda 45 minutos llamando cada 4 a /salud
-# y /api/health/vivo, que no tocan la base. Así, mantener despierta la demo
-# no impide que Neon suspenda su cómputo, que lo hace a los cinco minutos sin
-# actividad y cuesta solo un arranque en frío de la base.
+# Cada ejecución es una ronda corta de peticiones, y nada más. La primera de
+# cada hora es la completa —la portada y /api/health, que consulta la base—;
+# las demás llaman a /salud y /api/health/vivo, que no la tocan. Así,
+# mantener despierta la demo no impide que Neon suspenda su cómputo, que lo
+# hace a los cinco minutos sin actividad y cuesta solo un arranque en frío
+# de la base.
 #
-# Antes era una sola petición por ejecución, lanzada cada 5 minutos, y no
-# bastaba: GitHub retrasa y se salta ejecuciones programadas. El 29/09/2026
-# solo empezaron 23 de las 77 previstas entre las 08:00 y las 14:30, con
-# huecos de hasta 35 minutos, y la API se durmió cinco veces en una mañana.
-# Ahora cada ejecución cubre 45 minutos y se lanza una cada 10, fuera del
-# minuto 0, que es cuando GitHub más retrasa: el servicio solo se duerme si
-# pasa casi una hora sin que empiece ninguna. Que se solapen no cuesta nada:
-# el repositorio es público y el servicio ya estaba despierto.
+# Lo que se probó y no funcionó. El 29/09/2026 solo empezaron 23 de las 77
+# ejecuciones previstas en una mañana, y para cubrir los huecos cada
+# ejecución pasó a quedarse 45 minutos llamando en bucle, con una nueva cada
+# 10. Al día siguiente esas ejecuciones, solapadas de dos en dos y de cuatro
+# en cuatro, sumaron 18 horas de máquina, y desde el 1 de octubre GitHub
+# dejó de lanzar más de dos o tres al día, algunas fuera de la franja. No se
+# puede demostrar que una cosa causara la otra, pero un bucle de espera no
+# es para lo que están las acciones, y con él la demo quedó peor que antes.
+# Se vuelve a una ronda corta por ejecución, de una en una.
 
 # Aviso que conviene tener presente: GitHub desactiva solo los flujos
 # programados de un repositorio tras 60 días sin actividad, y avisa por correo
@@ -37,21 +43,46 @@ name: Mantener la demo despierta
 
 on:
   schedule:
-    # Cada 10 minutos, de 08:03 a 15:53 UTC.
-    # Son las 10:00-17:59 en horario de verano peninsular y 09:00-16:59 en invierno.
-    - cron: '3-59/10 8-15 * * *'
+    # Cada 5 minutos, de 08:03 a 15:58 UTC, fuera del minuto 0, que es cuando
+    # GitHub más retrasa. Son las 10:00-17:59 en horario de verano peninsular
+    # y 09:00-16:59 en invierno.
+    - cron: '3-59/5 8-15 * * *'
   workflow_dispatch:
 
 # Solo hace peticiones a la demo: no necesita ni leer el repositorio.
 permissions: {}
 
+# De una en una. Tras un retraso GitHub lanza varias seguidas: la segunda
+# espera a la primera en vez de sumarse a ella.
+concurrency:
+  group: mantener-la-demo-despierta
+  cancel-in-progress: false
+
 jobs:
   ping:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 10
     steps:
-      - name: Comprobar el frontend y la API
+      - name: Llamar al frontend y a la API
+        env:
+          DISPARO: ${{ github.event_name }}
         run: |
+          # Una ejecución programada que GitHub arranca tarde, fuera de la
+          # franja, no llama a nada: despertaría los servicios a deshoras,
+          # que es gastar el cupo. A mano se puede lanzar cuando sea.
+          hora=$(date -u +%H)
+          if [ "$DISPARO" = "schedule" ] && { [ "$hora" -lt 8 ] || [ "$hora" -ge 16 ]; }; then
+            echo "Fuera de la franja (las $hora UTC): no se llama a nada."
+            exit 0
+          fi
+
+          # La primera de cada hora, y las lanzadas a mano, la completa.
+          if [ "$DISPARO" != "schedule" ] || [ "$(date -u +%M)" -lt 8 ]; then
+            direcciones="https://servilocal-web.onrender.com https://servilocal-api.onrender.com/api/health"
+          else
+            direcciones="https://servilocal-web.onrender.com/salud https://servilocal-api.onrender.com/api/health/vivo"
+          fi
+
           # Falla si CUALQUIERA de los dos no responde. Antes exigía que
           # cayeran los dos a la vez, así que la API podía estar devolviendo
           # 503 —que es lo que hace /api/health cuando la base no contesta— y
@@ -68,10 +99,7 @@ jobs:
           # que no conecta o se queda sin tiempo terminaba el paso ahí mismo,
           # sin reintentar ni decir qué dirección había fallado.
           fallos=0
-          for url in \
-            "https://servilocal-web.onrender.com" \
-            "https://servilocal-api.onrender.com/api/health"
-          do
+          for url in $direcciones; do
             codigo=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$url" || true)
             if [ "$codigo" != "200" ]; then
               echo "$url -> $codigo, reintentando"
@@ -85,15 +113,3 @@ jobs:
             fi
           done
           [ "$fallos" -eq 0 ]
-
-      - name: Mantenerlos despiertos
-        run: |
-          # Aquí solo cuenta que haya tráfico: la respuesta no se comprueba,
-          # de eso se ocupa el paso anterior. Hasta 45 minutos, y nunca pasadas
-          # las 15:59 UTC, que es donde acaba la franja del cupo.
-          fin=$(( $(date +%s) + 45 * 60 ))
-          while sleep 240 && [ "$(date +%s)" -lt "$fin" ] && [ "$(date -u +%H)" -lt 16 ]; do
-            curl -s -o /dev/null --max-time 60 "https://servilocal-web.onrender.com/salud" || true
-            curl -s -o /dev/null --max-time 60 "https://servilocal-api.onrender.com/api/health/vivo" || true
-            echo "$(date -u +%H:%M) despiertos"
-          done
