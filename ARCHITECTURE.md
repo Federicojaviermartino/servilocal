@@ -29,8 +29,8 @@ through them, and which trade-offs were taken deliberately.
                       └───────────────┬──────────────────────────┘
                                       │ HTTPS
                       ┌───────────────▼──────────────────────────┐
-                      │   Next.js 16 · App Router · SSG + CSR     │
-                      │   Prerendered once per locale             │
+                      │   Next.js 16 · App Router · SSG + SSR     │
+                      │   Rendered on the server, per locale      │
                       │   Relays /api to the API                  │
                       └───────┬───────────────────────┬───────────┘
                      REST/JSON│                       │ WebSocket
@@ -70,7 +70,7 @@ down. See
 | `servilocal-api` | Render web service, own Dockerfile | Nest with `rawBody: true`, global prefix `/api`, `trust proxy: 1` |
 | PostgreSQL + PostGIS | Neon | SSL with certificate validation. Free tier that does not expire |
 | Key Value (Valkey) | Render, optional | Must be in the **same region** as the API: Render's private network does not cross regions |
-| CI + keep-warm | GitHub Actions | Tests on every push, plus a scheduled job that keeps both services awake during working hours |
+| CI and scheduled jobs | GitHub Actions | Tests on every push and the smoke test after each deploy. On a schedule: a ping during working hours, which GitHub runs too irregularly to be what keeps the demo awake, the weekly copy of the database, the vulnerability check and mutation testing |
 
 Both services are described in [`render.yaml`](render.yaml), and how to deploy, roll
 back, restore the database and rotate secrets is in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
@@ -164,9 +164,10 @@ read is now a `PATCH` of its own.
 | `notifications` | Persisted notices, pushed over the socket |
 | `auditoria` | Append-only record of administration actions |
 | `demostracion` | Hourly restore of whatever the demo accounts changed |
+| `correo` | Email through Brevo; outside production, the server log |
 | `admin` | Aggregated metrics and provider reputation |
 | `ia` | Optional assistant layer with a hard spend ceiling |
-| `health` | Liveness that checks the database, not just the process |
+| `health` | Health that checks the database, not just the process, and a liveness route that does not |
 | `common` | Guards, interceptors, filters, Redis, real-time gateway |
 
 Aggregates are computed in SQL, not in the browser. The admin panel used to download
@@ -206,8 +207,11 @@ Constraints worth naming:
   asked for, which the index on `location::geography` can serve, then with each
   provider's coverage radius, which changes from row to row and no index can. It pages
   with `offset` and `limit` rather than TypeORM's `skip` and `take`, which with joins add
-  a `SELECT DISTINCT` of every match, and an index on `createdAt` serves its default
-  order. With 50,000 services, a broad text search went from 1.6 s to 21 ms in the
+  a `SELECT DISTINCT` of every match. Every order ends in the service's id, so services
+  that tie fall in the same place on every request and a page never repeats or skips
+  one: without it, the three pages of a search by rating returned 25 rows and 23
+  different services in production. The default order reads its index on
+  `("createdAt", "id")` backwards, tie-break included. With 50,000 services, a broad text search went from 1.6 s to 21 ms in the
   database. The location columns are written as GeoJSON, because TypeORM converts every
   value for a spatial column with `ST_GeomFromGeoJSON`: the profile used to pass EWKT
   text, and saving a location failed with a 500 that only a test against PostGIS could
@@ -261,10 +265,13 @@ the language picker, the `hreflang` alternates and the RTL flag. The picker is a
 links rather than a drop-down that navigated on change, which moved the page as soon as
 the keyboard went through it.
 
-**Rendering.** Every page is prerendered once per locale at build time rather than
-translated in the browser, so a crawler and a first-time visitor receive the same HTML.
+**Rendering.** Nothing is translated in the browser, so a crawler and a first-time
+visitor receive the same HTML. Pages whose content does not depend on the address — the
+home page, sign-in and registration, the legal texts, the sections of the dashboard —
+are prerendered once per locale at build time; the search, the service pages and
+whatever carries an id in its address are rendered on the server on each request.
 Interactive screens hydrate into client components from there. The public service page
-also fetches its data on the server: the service and its reviews come with the same
+fetches its data on the server: the service and its reviews come with the same
 `cache()`d request its metadata uses, so the HTML already carries the title, the price
 and the reviews. If the API does not answer, the page fetches them from the browser
 instead, and only a real 404 from the API turns into a 404 page.
@@ -278,7 +285,9 @@ a `Suspense` boundary. The heading, the search bar and the filters arrive at onc
 results stream in when the API answers. An API that has been asleep takes about a minute,
 so the server gives up after eight seconds and the browser asks instead, saying that the
 server is waking up. Changing a filter or a page is a navigation, and the page is served
-again for the new address.
+again for the new address. That mounts the list anew, so focus is put back on purpose —
+on the results' heading, or on the view switch when that is what changed — and the new
+count is announced.
 
 Static pages set their locale with `setRequestLocale`, so they are generated at build
 time instead of being rendered on every request. Pages that can be shared carry their own
@@ -353,6 +362,11 @@ messaging module, because notifications travel over the same connection.
   for different audiences, so neither opens the other's door.
 - **`identificar()` verifies the ticket *and* checks the account is still active**,
   because a token stays syntactically valid after an account is deactivated.
+- **Closing a session closes its sockets.** Signing out, changing or recovering the
+  password, deactivating an account and deleting it disconnect every socket in that
+  person's room. A socket used to outlive all of them, and went on receiving messages
+  and notifications until the tab was closed. The browser tries to come back, asking
+  for a new ticket first, which only a session that still stands can get.
 - **The server never stores notification text.** It stores the type and the data to
   interpolate; the interface composes the sentence from the reader's catalogue. Storing
   "Your booking is confirmed" would freeze that notice in Spanish even if the reader
@@ -489,7 +503,10 @@ file until `npm ci` accepts it.
 **6 · `/api/health` checks the database.**
 An API that boots but cannot reach its database is down in practice — exactly the failure
 this project had, unnoticed, for four months. The endpoint returns `503` when the
-database does not answer, so a monitor can detect it.
+database does not answer, so a monitor can detect it. Render's own health check calls
+`/api/health/vivo` instead, which only says that the process answers: asked every few
+seconds, a check that queried the database would keep Neon from ever suspending, and
+with the database down Render would restart the API in a loop.
 
 **7 · Service pages keep a single canonical URL.**
 Interface strings are translated, but the text a provider writes about their own service
@@ -568,7 +585,9 @@ database's clock, because timestamps carry no time zone.
 The read-only demo administrator is the other half. It sees every screen of the panel,
 but only the demo's world: a real account's profile, booking or payment answers 404, as
 if it did not exist, and the moderation queue and the providers' reputation list only the
-demo's. Reporting a review follows booking and messaging: each world only reports its
+demo's. Its metrics are counted over the demo's accounts, and the moderation history
+comes back empty, since what it records was done to real accounts; until 2.13.0 it was
+shown both whole. Reporting a review follows booking and messaging: each world only reports its
 own, so neither a demo account can fill the real moderation queue nor a real account's
 free-text reason reach the queue that anyone with the demo password can read.
 
@@ -601,13 +620,27 @@ Stated here rather than discovered later.
   time, so the API and the seed pin themselves to UTC. A script that bypasses them and
   runs outside UTC would still write shifted times.
 - **The free tier sleeps.** Cold starts are visible on the first request after an idle
-  period; the scheduled workflow only covers working hours.
+  period. The scheduled ping covers working hours only, and GitHub skips enough of its
+  runs that it cannot be counted on: keeping the demo awake takes an external monitor,
+  described in `docs/OPERATIONS.md`.
+- **When Stripe fails, the API answers 500.** A timeout or an outage at Stripe reaches
+  the client as a generic server error, where a 503 with `Retry-After` would say that
+  trying again later is the right thing to do. Nothing is left half done, because the
+  booking does not change state unless the money did, but the answer is the wrong one.
+- **One payment per booking is kept by a lock, not by the schema.** Opening a payment
+  locks the booking's row, and a test opens two at once and finds one; `payments` has no
+  unique index on the booking to say the same.
 - **A 404 is rendered by the browser.** Next.js 16 answers `notFound()` with its error
   document and puts the not-found page in the React payload, where the browser renders
   it: with JavaScript, the page is the usual one, with its language, header and message;
   without it, the HTML is empty. The status is 404 and the page is `noindex`, so a crawler
   drops it all the same. Checked with the not-found page stripped down to a heading and
   one level further down the tree: the HTML is the same.
+- **A click before the page is ready can leave its head behind, in Safari.** Measured
+  in WebKit: following a link the moment it appears, about one time in ten the title
+  and the `<link>` tags the server sent with the first page stay in the head next to
+  those of the second. The tab shows the right title, since the new one comes first,
+  and a crawler does not navigate by clicking, so nothing visible depends on it.
 - **The demo restore leaves bookings, payments and messages alone.** They are history
   shared between demo accounts, and undoing them would pull a booking out from under
   someone halfway through trying the flow, so they accumulate until the next seed. Like
@@ -618,8 +651,9 @@ Stated here rather than discovered later.
 | Layer | Tool | What it protects |
 |-------|------|------------------|
 | Back end | Vitest + SWC | Services and every controller, including the money paths, and that whoever acts is taken from the session, never from the address or the body |
-| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that every migration can be undone and applied again, that shutting down closes the sockets before Redis, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that every migration can be undone and applied again, that shutting down closes the sockets before Redis, that a signed Stripe event reaches its handler with the raw body it was signed over, that pages of results with ties neither repeat nor skip a service, that each kind of search uses its index, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it. A second matrix asks the question a role cannot answer, whose it is: with real rows, as the owner, as another client, as another provider and as the administration |
 | Front end | Vitest | Library helpers, components, pages, and catalogue parity across the ten locales |
+| Database copy | `scripts/ensayo-restauracion.sh`, in the integration job | That the encrypted copy the weekly workflow takes restores into an empty database identical to the original: every table's rows, and the extensions, constraints, indexes and sequences |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
 | AI assistant | Evaluation set, `src/ia/evaluacion` | 48 messages in ten languages with the category and city each should yield. The dictionary path runs in CI; the model path runs by hand, since each case is a paid call, through the same prompt and validation as production |

@@ -16,9 +16,11 @@
 // README se saca de él con ffmpeg, en dos pasadas para que la paleta salga
 // del propio vídeo. Con diff_mode=rectangle cada fotograma guarda solo lo
 // que cambia: con las opciones por defecto pesaba 7 MB, y así menos de 4.
+// Y se salta el primer cuarto de segundo, en el que la página aún está en
+// blanco: el primer fotograma es lo que se ve mientras el GIF no se mueve.
 //
-//   ffmpeg -i docs/recorrido.webm -vf "fps=8,scale=840:-1:flags=lanczos,palettegen=stats_mode=diff" paleta.png
-//   ffmpeg -i docs/recorrido.webm -i paleta.png -lavfi "fps=8,scale=840:-1:flags=lanczos[v];[v][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" docs/recorrido.gif
+//   ffmpeg -ss 0.25 -i docs/recorrido.webm -vf "fps=8,scale=840:-1:flags=lanczos,palettegen=stats_mode=diff" paleta.png
+//   ffmpeg -ss 0.25 -i docs/recorrido.webm -i paleta.png -lavfi "fps=8,scale=840:-1:flags=lanczos[v];[v][1:v]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle" docs/recorrido.gif
 import { chromium, request } from '@playwright/test';
 import { mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';

@@ -9,7 +9,7 @@ practice here, how it is verified, and — just as importantly — what is not c
 |---|---|
 | Target | WCAG 2.1 level AA |
 | Status | Partially conformant. No known level A or AA failure; the gaps below are level AAA or untested |
-| Verified on | Chromium desktop (1440×900) and a Pixel 5 viewport (393 px), light and dark themes, with reflow checked at 320 px |
+| Verified on | Chrome on desktop (1440×900) and on a Pixel 5 viewport (393 px), Firefox and Safari's WebKit, in light and dark themes, with reflow checked at 320 px |
 | Last checked | Every push — the checks run in CI |
 
 "Partially conformant" is the honest label. Automated tooling catches roughly a
@@ -49,9 +49,13 @@ axe run would be the kind of statement this project tries not to make.
   and revealed the names only on hover, which is no use on a touch screen, by
   keyboard, or to anyone who cannot tell those colours apart. It now carries a
   legend. Automated tooling did not catch it, and neither did we until someone
-  looked at the screen.
-- Images carry alternative text; decorative icons are `aria-hidden`. Map markers
-  are named after their service, and the admin charts carry their data in a table
+  looked at the screen. It was false again for the status filters above the
+  booking lists: the one in force differed from the rest by its colour and nothing
+  else. They are now a named group of toggle buttons that say which is pressed and
+  how many bookings each one holds.
+- Images carry alternative text; decorative icons are `aria-hidden`. A photo or an
+  avatar next to the name it illustrates has an empty one, so the name is not read
+  twice. Map markers are named after their service, and the admin charts carry their data in a table
   for screen readers, next to the drawing.
 - Text reflows at 320 px, the width WCAG asks for, without horizontal
   scrolling. It used to be checked at 375, and at 320 a seven-page pagination
@@ -65,7 +69,9 @@ axe run would be the kind of statement this project tries not to make.
   the bell; the admin tab list follows the ARIA pattern — one tab stop, arrows,
   `Home` and `End` inside it, with the arrows reversed in Arabic. Closing the search
   assistant gives focus back to the button that opened it, and changing page in the
-  results moves focus to their heading.
+  results moves focus to their heading. So does changing a filter, and switching
+  between the list and the map leaves it on the switch: each of those is a
+  navigation that mounts the results anew, and focus used to be lost with them.
 - Focus is always visible, including where the real control is visually hidden:
   the registration role cards draw a ring when the hidden radio inside them takes
   focus.
@@ -89,6 +95,10 @@ axe run would be the kind of statement this project tries not to make.
   and directional icons mirrored. Messages take their own direction
   (`dir="auto"`), so a message written in Arabic reads right-to-left on a page in
   Spanish, and the other way round.
+- Text that people wrote is marked with its language. Service titles and
+  descriptions, reviews and replies are in Spanish whatever the language of the
+  page, and on the other nine they carry `lang="es"`: without it, a screen reader
+  read Spanish words with the pronunciation of German or Arabic (3.1.2).
 - Every page has its own title in its language, so the route announcer speaks when
   moving between sections of the dashboard.
 - Form errors say what is wrong in words, next to the field, and are tied to it with
@@ -112,7 +122,10 @@ axe run would be the kind of statement this project tries not to make.
   a polite live region, because otherwise its only trace is a ten-pixel red badge.
   A conversation is a `log`, so a reply that arrives over the socket is read out;
   it has a heading with the other person's name, and each message says who wrote
-  it, which on screen is only the side and the colour.
+  it, which on screen is only the side and the colour. The number of results is
+  announced after each search, from a live region that is already on the page when
+  they arrive: the count next to the list appears together with its text, and a
+  region that appears already filled is not announced.
 
 ## How it is verified
 
@@ -138,6 +151,9 @@ Listed rather than discovered.
 
 - **No audit with a real screen reader.** NVDA, JAWS and VoiceOver each behave
   differently; nothing here has been listened to end to end.
+- **Messages between users carry no language.** Nothing records which language a
+  message was written in, so it is read with the pronunciation of the page. Its
+  direction is detected; its language is not.
 - **Leaflet maps are not keyboard-navigable beyond panning.** Markers cannot be
   reached with the keyboard, so the map is an alternative view of the list, never
   the only way to reach a service. The list view carries the same results.

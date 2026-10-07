@@ -24,9 +24,10 @@ against your own local copy.
 
 ## Dependencies
 
-`npm audit` runs in CI on every push, over production dependencies only. Any
-advisory that is not already listed in `auditoria-aceptada.json` fails the
-build.
+`npm audit` runs in CI on every push and again every Monday, over production
+dependencies only: an advisory is published when it is published, not when
+someone pushes. Any advisory that is not already listed in
+`auditoria-aceptada.json` fails the build.
 
 That file records the advisories currently accepted, each with the reason and
 an expiry date — after which the build fails again, so a temporary exception
@@ -42,6 +43,9 @@ dependencies of either the API or the front end.
   lost their last four.
 - Card details never reach this server. Stripe Elements collects them in the
   browser and the API only ever handles payment intent identifiers.
+- Stripe's events are accepted only with a valid signature over the raw
+  body. A test sends them over HTTP, signed as Stripe signs them: an altered
+  body, another secret or no signature answer 400.
 - Payments are authorised and captured separately, so an amount is only taken
   once the work is marked complete, and a booking cannot be completed before
   its date. The administration's manual capture and refund act only on a
@@ -67,6 +71,17 @@ dependencies of either the API or the front end.
   and the read-only demo administrator. The list of routes comes from the
   application itself, so a new route without a row in that table fails the
   build until someone decides who may call it.
+- Whose it is, is tested the same way. A role says what kind of account may
+  call a route, not whose booking it names: with real rows, each route that
+  names a booking, a payment, a review, a conversation or a notification is
+  called as its owner, as another client, as another provider and as the
+  administration.
+- Request bodies are validated without converting types on the way. With
+  implicit conversion, a `"false"` sent as text where a boolean goes was read
+  as `true`: it recorded the terms as accepted, and completed a booking
+  without charge. It is now refused.
+- The API client encodes every identifier it puts in a path, so a crafted
+  one cannot walk to another route.
 - What someone was typing when their session expired is kept in the tab under
   their account and cleared when they sign out, so the next person to sign in
   there does not inherit a half-typed phone number. If another tab signs in with
@@ -77,6 +92,11 @@ dependencies of either the API or the front end.
   would have expired anyway. Only that session is closed — the demo accounts
   are shared by many visitors at once, and one of them signing out must not
   sign out the rest.
+- Revoking a session, changing the password, deactivating an account or
+  deleting it also closes that account's open sockets. They used to stay
+  connected, receiving messages and notifications, until the tab was closed.
+  A socket comes back only by asking for a new ticket, which takes a session
+  that still stands.
 - Changing or recovering the password invalidates every session issued before
   it, so one opened with a stolen password is closed too. Recovery links last
   an hour, work once, are stored only as a SHA-256 hash, and an account
@@ -117,7 +137,8 @@ dependencies of either the API or the front end.
 - The API checks its configuration before it starts. In production it
   refuses to run with the example `JWT_SECRET` from `backend/.env.example`,
   which is public, and without allowed origins; a secret shorter than 32
-  characters or a missing proxy secret is reported in the log. Values that
+  characters, a missing proxy secret or a missing webhook secret is reported
+  in the log. Values that
   may carry credentials, such as database or Redis URLs, are never echoed.
 - Administrative actions — manual captures and refunds, status changes on
   other people's bookings and services withdrawn included — are written to an
@@ -137,7 +158,10 @@ dependencies of either the API or the front end.
   administrator sees every screen of the panel but only the demo's data — a
   real account's profile, booking or payment answers 404, and the providers'
   reputation lists only the demo's — with surnames shortened and email
-  addresses, phone numbers, postal addresses and locations masked.
+  addresses, phone numbers, postal addresses and locations masked. Its
+  metrics are counted over the demo's accounts, and the moderation history,
+  which records what was done to real accounts, comes back empty. Until
+  2.13.0 anyone with the demo password could read both whole.
 - A booking shows each party only the other's name, avatar and city until it
   is accepted; phone, email and address follow once it is confirmed. Home
   coordinates never leave the API.
@@ -167,6 +191,19 @@ These are open, listed here rather than left implicit:
   messages share 10 and 30 a minute, and publishing services 20 an hour.
   `GET /api/health` reports `atravesDelFrontend`, which turns `true` once
   the secret is set on both services.
+- Sign-in attempts are limited per visitor, five a minute, and not per
+  account: attempts spread across many addresses are not slowed down for any
+  one account.
+- There is no second factor, not even for administrators.
+- A password needs eight characters and nothing else. It is not checked
+  against lists of common or leaked passwords.
+- A session lasts 24 hours from sign-in, with no idle timeout, and no screen
+  lists the open sessions or closes the others; changing the password does
+  close them.
+- The Content Security Policy allows inline scripts (`'unsafe-inline'` in
+  `script-src`), which the theme script and the framework's own need while
+  there are no nonces. It limits where a script could send what it reads,
+  not whether an injected one runs.
 - Registration answers `409` when an email is already in use, so it tells
   anyone whether an address has an account, which sign-in and recovery are
   careful not to. Closing it means answering the same either way and sending

@@ -11,7 +11,7 @@ steps, not an explanation.
 | API (`servilocal-api`) | Render, Frankfurt, free plan, Docker from `backend/` | Runs pending migrations when it boots |
 | Front end (`servilocal-web`) | Render, Frankfurt, free plan, Docker from `frontend/` | Relays `/api/*` to the API |
 | Database | Neon, PostgreSQL 16 with PostGIS | Free plan: compute suspends after five idle minutes |
-| CI, smoke test, keep-awake ping, weekly database copy | GitHub Actions | See `.github/workflows/` |
+| CI, smoke test, keep-awake ping, weekly database copy and vulnerability check | GitHub Actions | See `.github/workflows/` |
 | Payments | Stripe, test mode | Webhook at `/api/payments/webhook` |
 | Email | Brevo | Password recovery only; without a key, recovery answers 503 |
 | Errors | Sentry, optional | Off without `SENTRY_DSN` |
@@ -21,8 +21,13 @@ effect once it is linked in Render as a Blueprint (*New → Blueprint*, pick thi
 repository, and accept the existing services). One of its settings is not what
 the dashboard has today, and it matters:
 
-- **`healthCheckPath`**: `/api/health` and `/salud`. Without one, Render treats a
-  deploy as live as soon as the port opens.
+- **`healthCheckPath`**: `/api/health/vivo` and `/salud`. Without one, Render treats a
+  deploy as live as soon as the port opens. Both only say that the process answers.
+  Render calls the path every few seconds and restarts a service that fails it for a
+  minute: with `/api/health`, which queries the database, Neon would never get to
+  suspend while the API is awake, and a database outage would turn into a loop of
+  restarts that fixes nothing. Whether the database answers is checked at boot, by the
+  smoke test and by the hourly round of the keep-awake ping.
 
 Deploys stay on every commit that reaches `main` (`autoDeployTrigger: commit`),
 not *After CI Checks Pass*. Render holds a deploy back if any check on the commit
@@ -58,7 +63,8 @@ What stops it: no `JWT_SECRET` or `STRIPE_SECRET_KEY`; in production, no
 `DATABASE_URL`/`DB_HOST` or no `CORS_ORIGINS`/`FRONTEND_URL`, or the example
 `JWT_SECRET`; a number that is not a number; a switch that is not exactly `true` or
 `false`; a URL that does not parse; an origin with a path or a trailing slash. What
-only warns: a `JWT_SECRET` under 32 characters, and a missing `PROXY_SECRETO`.
+only warns: a `JWT_SECRET` under 32 characters, a missing `PROXY_SECRETO` and a missing
+`STRIPE_WEBHOOK_SECRET`.
 
 ## Migrations
 
@@ -119,8 +125,10 @@ run against a schema it does not know.
 Neon keeps a history of the database and can restore it to a point in time, within
 the window that the plan keeps. On the free plan that window is **six hours**
 (September 2026): damage noticed the next morning can no longer be undone from Neon,
-and the weekly copy below is what is left. **Rehearse a restore once**, before it is
-needed.
+and the weekly copy below is what is left. **That copy is not set up yet: until it is,
+nothing older than six hours can be recovered.**
+
+From Neon's history, within those six hours:
 
 1. In Neon, create a branch from the main branch at a moment before the damage
    (*Branches → Create branch → Past point in time*).
@@ -141,7 +149,9 @@ The plain dump only ever exists in the runner's memory: it is encrypted with
 is public and anyone signed in to GitHub can download a workflow's artifacts. Only the
 public key is in GitHub.
 
-It does nothing, and says so in the run, until two things are set up:
+**It is not set up yet, and until it is the run fails**, so that GitHub emails about it
+every Monday. It used to end in green after ten seconds without copying anything, which
+read as a weekly copy that did not exist. It needs:
 
 1. A key pair, kept outside GitHub: `age-keygen -o servilocal-copias.txt`. The file
    holds the private key; store it in a password manager. The line starting with
@@ -154,17 +164,32 @@ It does nothing, and says so in the run, until two things are set up:
 3. Run it once by hand (*Actions → Copia semanal de la base → Run workflow*) and check
    that the artifact appears.
 
-To restore one, into a new Neon branch rather than over the live one:
+To restore one, into a **new, empty database**. Not into a Neon branch: a branch starts
+as a copy of its parent, tables included, so `pg_restore` fails on everything that
+already exists and leaves a mixture of the two. Create the database with
+`CREATE DATABASE servilocal_restaurada;` from Neon's SQL editor, and take the usual
+connection string with that name in place of the old one. Use the owner's role, not the
+read-only one the copies are taken with.
 
 ```bash
 gh run download <run id> -n copia-2026-10-05
-age -d -i servilocal-copias.txt copia-2026-10-05.dump.age \
-  | pg_restore --no-owner --no-privileges --dbname='<URL of the new branch>'
+age --decrypt --identity servilocal-copias.txt copia-2026-10-05.dump.age \
+  | pg_restore --no-owner --no-privileges --dbname='<URL of the empty database>'
 ```
 
-Then check the data and point `DATABASE_URL` at that branch, as in the point-in-time
-restore above.
-Everything created after the copy is gone; payments still exist in Stripe.
+`pg_restore` has to end without a single error; if it reports any, read them before
+going on. Then check the data, point `DATABASE_URL` in Render at that database and
+redeploy the API. The copy carries the `migrations` table, so the API applies only the
+migrations added after it was taken. Everything created after the copy is gone;
+payments still exist in Stripe.
+
+These steps run on every push, in CI's integration job
+([`scripts/ensayo-restauracion.sh`](../scripts/ensayo-restauracion.sh)): the seeded
+database is copied and encrypted by the script the weekly copy uses, restored into an
+empty one, and the two are compared, every table's rows and the extensions,
+constraints, indexes and sequences. What that cannot rehearse is Neon itself: creating
+the database there and restoring into it over the network has never been done.
+**Do it once**, before it is needed.
 
 ## Seeding
 
@@ -191,20 +216,29 @@ and what they publish is deleted, or withdrawn if it already has bookings. So:
 ## Watching production
 
 - **Health**: `GET https://servilocal-api.onrender.com/api/health` checks the
-  database and answers 503 when it does not respond.
-- **Keep-awake ping**: from 08:00 to 15:59 UTC a run starts every ten minutes. It
-  first checks the home page and `/api/health`, and fails straight away, so GitHub
-  emails whoever last changed the workflow, when either does not answer 200 after
-  a retry. Then it stays for 45 minutes calling `/salud` and `/api/health/vivo`
-  every four, which do not touch the database, so a scheduled run that GitHub
-  starts late or skips does not let the services sleep, and Neon can still
-  suspend. Nothing watches outside those hours.
+  database and answers 503 when it does not respond. `/api/health/vivo` only says
+  that the process answers, and is the one Render's own health check calls.
+- **Keep-awake ping**: from 08:00 to 15:59 UTC, a run every five minutes. Each one
+  is a short round of requests and nothing else. The first of every hour calls the
+  home page and `/api/health`, which queries the database; the rest call `/salud`
+  and `/api/health/vivo`, which do not, so Neon can still suspend. A run fails, so
+  GitHub emails whoever last changed the workflow, when an address does not answer
+  200 after a retry. Runs never overlap, and one that GitHub starts outside the
+  window calls nothing. Nothing watches outside those hours.
 
-  **It cannot be relied on.** GitHub started it 25 to 42 times a day until 30
-  September 2026, and 2 or 3 times a day from 1 October, some of them outside the
-  window altogether, with nothing changed in the workflow. On those days the demo
-  slept most of the time. What keeps it awake is the external monitor below; the
-  workflow stays as a second line and for its failure emails.
+  **It cannot be relied on.** GitHub starts scheduled runs late or skips them. On
+  29 September 2026 only 23 of the 77 runs expected in a morning started, and to
+  cover the gaps each run was made to stay for 45 minutes, calling in a loop. The
+  next day those runs, overlapping in twos and fours, added up to 18 hours of
+  machine time, and from 1 October GitHub started two or three a day, some of them
+  outside the window altogether: the demo slept most of the time. Nothing proves
+  that one caused the other, but a waiting loop is not what Actions are for, so the
+  workflow went back to one short round per run, one at a time. What keeps the demo
+  awake is the external monitor below; the workflow is a second line, and the
+  failure emails.
+- **Vulnerabilities**: `npm audit` over production dependencies on every push and
+  every Monday at 06:17 UTC (`vulnerabilidades.yml`). A new advisory, or an accepted
+  one past its date in `auditoria-aceptada.json`, fails the run.
 - **Smoke test**: after every deploy of `main`; opens an issue when it fails.
 - **Request log**: one JSON line per request in the API's log in Render, with
   method, path (no query string), status, milliseconds and the request id. Anyone
@@ -225,6 +259,8 @@ and what they publish is deleted, or withdrawn if it already has bookings. So:
 - **Errors**: Sentry, once `SENTRY_DSN` is set.
 
 ### External monitor
+
+**Not set up yet**, and until it is the demo sleeps whenever GitHub skips the ping.
 
 A free monitor such as [cron-job.org](https://cron-job.org) or
 [UptimeRobot](https://uptimerobot.com) calls on time, which GitHub's scheduler does not.
@@ -268,9 +304,9 @@ about 08:00 to 08:43 UTC, with the API awake and Render reporting no incident.
   suspends every free service until the next month.
 - **Neon** (free plan, September 2026): 100 CU-hours of compute a month per project,
   0.5 GB of storage and six hours of history. Compute suspends after five idle
-  minutes, and the next query waits for it to resume. The keep-awake ping only
-  touches the database at the start of each run, so compute suspends between runs;
-  the hourly jobs and real visits wake it too. Even awake the whole window, at the
+  minutes, and the next query waits for it to resume. The keep-awake ping touches
+  the database once an hour, so compute suspends in between; the hourly jobs and
+  real visits wake it too. Even awake the whole window, at the
   minimum size of 0.25 CU, it would be about 64 CU-hours a month; if autoscaling lets
   it grow, that multiplies. When the hours run out, Neon suspends the database until
   the next month. Check *Usage* in the Neon console once a week, as well as Render's.

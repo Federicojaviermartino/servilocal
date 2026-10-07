@@ -10,6 +10,159 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [Unreleased]
+
+Nothing yet.
+
+## [2.13.0] — 2026-10-07
+
+### Fixed
+
+- A list of results could repeat a service and skip another from one page to the next.
+  No order had a tie-break, and PostgreSQL does not promise to order ties the same way
+  twice: in production, the three pages of a search by rating returned 25 rows and 23
+  different services. Every order now ends in the service's id. The default one, newest
+  first, still reads from its index, which now covers `("createdAt", "id")`: with 50,000
+  services a page takes 12 ms, against 41 ms with the tie-break on the old index.
+- A hold on a booking that was already closed could stay held. If Stripe failed while
+  the hold of a cancelled or rejected booking was being released, or a hold became known
+  once the booking had been completed, nothing tried again: the hourly review skipped
+  held payments whose booking was no longer open. It now resolves them, released if the
+  booking was cancelled or rejected and captured if it was completed, and so does opening
+  the payment page of a completed booking.
+- `"false"` sent as text where a boolean goes was read as `true`. The API converted types
+  on the way in, so `"aceptaTerminos": "false"` registered an account with the terms
+  recorded as accepted, and `"sinCobro": "false"` completed a booking without charge.
+  Bodies are now validated as they arrive, and that text is refused.
+- The API accepted a price range upside down, with the maximum below the minimum, amounts
+  with more than two decimals, which it stored rounded and returned unrounded, and
+  amounts above the 999,999.99 that Stripe can charge. All three are refused, on services
+  and on bookings, and the forms send amounts rounded to the cent.
+- "Book" was offered to accounts that cannot book. A provider or an administrator filled
+  in the whole form and got a 403 at the end. It is now offered to visitors and clients
+  only, with a line saying why to the rest, and "Contact" is no longer offered on one's
+  own service.
+- Paying for somebody else's booking answered 400, as if the request were badly written,
+  instead of 403.
+- Stripe's webhook was under the general rate limit: a burst of events could be answered
+  429, and Stripe retries later each time, so payments were recorded late. It is outside
+  it now, since what authenticates it is the signature.
+- Sentry could not trace a route or a query. It was started inside `bootstrap()`, after
+  every import, and its instrumentation hooks each library as it loads: with Express and
+  the PostgreSQL client already loaded, it waited for them forever. It now starts before
+  anything else is imported. And `SENTRY_TRACES_SAMPLE_RATE=0`, the way to turn traces
+  off, was taken for "not set" and became 0.1.
+- Every search had the same page title. It now carries what was searched for and the
+  city, so two searches can be told apart in the history and in the tabs.
+
+### Security
+
+- The demo administrator, whose password is on the sign-in page, could read the whole
+  moderation history, which records what was done to real accounts and carries their
+  email addresses, and metrics counted over every account. The history now comes back
+  empty for that account, with a line in the panel saying why, and its metrics are
+  counted over the demo's accounts.
+- Sockets outlived their session. After signing out, changing the password, being
+  deactivated or deleting the account, a socket already open kept receiving that
+  account's messages and notifications until the tab was closed. All four now disconnect
+  the account's sockets, and the browser comes back only where a session still stands.
+- The API client encodes every identifier it puts in a path. A crafted one could turn a
+  request into a request to another route, which is what CodeQL had flagged.
+- `GET /api/health`, which queries the database, was outside the rate limit: anyone could
+  make the API query it as fast as they could ask. It is under the general limit now;
+  only the liveness route, which touches nothing, stays outside.
+- The API says at boot when `STRIPE_WEBHOOK_SECRET` is missing. It answered every Stripe
+  event with a 503, and that only showed in Stripe's dashboard.
+
+### Accessibility
+
+- Text that people wrote in Spanish is marked as Spanish. Service titles and
+  descriptions, reviews and replies stay in Spanish on pages in the other nine languages,
+  where a screen reader read them with the pronunciation of the page (WCAG 3.1.2). They
+  now carry `lang="es"` there.
+- Changing a filter, the view or the page of a search lost the keyboard focus, and
+  nothing said that the results had changed. Focus now goes to the results' heading, or
+  stays on the list and map switch when that is what changed, and the number of results
+  is announced.
+- The status filters above the booking lists told which one was in force by colour
+  alone. They are a named group of toggle buttons now, each with its count, and there is
+  one for cancelled and one for rejected bookings, which could only be found among all of
+  them.
+- An avatar or a service photo next to the name it illustrates no longer repeats that
+  name to a screen reader, and the demo buttons of the sign-in page keep their contrast
+  when hovered in the dark theme.
+
+### Changed
+
+- The payment form says which test card to use while payments run on Stripe's test keys.
+  Until now only the README did.
+- The keep-awake workflow is one short round of requests per run again, every five
+  minutes and never two at once, and a run that GitHub starts outside the window calls
+  nothing. The version that stayed for 45 minutes in a loop overlapped with itself for 18
+  hours of machine time in a day, and GitHub then stopped starting it more than two or
+  three times a day.
+- The weekly copy of the database fails until its key and its connection string are set
+  up. It ended in green after ten seconds without copying anything.
+- Restoring that copy is rehearsed on every push: CI copies and encrypts the integration
+  database with the script the weekly workflow uses, restores it into an empty one and
+  compares the two, rows, extensions, constraints, indexes and sequences. Writing the
+  rehearsal showed that the documented procedure was wrong: it restored into a Neon
+  branch, which already has every table.
+- Render's health check asks `/api/health/vivo`. With `/api/health` it queried the
+  database every few seconds, so Neon could never suspend, and a database outage would
+  have restarted the API in a loop.
+- Known vulnerabilities in production dependencies are checked every Monday as well as
+  on every push: an advisory is published when it is published, not when someone pushes.
+- The smoke test after each deploy also searches near a point and opens a service page,
+  checking that it arrives rendered with its title.
+- CI type-checks the API's tests, which Vitest runs without looking at types; fails
+  Lighthouse when there is no service page to measure, instead of measuring three pages
+  out of four; and no longer starts a database for the unit tests, which never used it.
+  The load test fails when a response has the wrong shape, not only when it is slow.
+
+### Documentation
+
+- README: the weekly copy was listed as done, and it has never run; the end-to-end
+  payment test was said to run in CI, where it is skipped for lack of Stripe keys; "every
+  page is prerendered" was not true of the search or the service pages; and the
+  configuration table missed the `DB_*` variables and `SEMILLA_CONFIRMAR` and gave a
+  session length nobody uses. All corrected, with the links to SECURITY and OPERATIONS
+  at the top.
+- SECURITY lists what is still open: no second factor, no limit on attempts per account,
+  no check against common passwords, no idle timeout and a CSP that allows inline
+  scripts.
+- OPERATIONS: the restore procedure, into an empty database rather than a branch, and
+  what the keep-awake workflow does now and why it cannot be relied on.
+- ARCHITECTURE: what is prerendered and what is rendered per request, and three more
+  known limitations: a Stripe failure answered as a 500, one payment per booking kept by
+  a lock rather than by the schema, and what a click before the page is ready can leave
+  in the head in Safari.
+- This file has its links for 2.9.0 to 2.12.0, which were missing.
+
+### Tests
+
+- Stripe's webhook is tested over HTTP, with the application booted as in production
+  and events signed as Stripe signs them: a valid one is recorded, and an altered body,
+  another secret or no signature answer 400. Until now the signature check was replaced
+  by a double, so nothing proved that the raw body reached it.
+- A second permission matrix asks whose it is, which a role cannot answer: with real
+  rows, the routes that name a booking, a payment, a review, a conversation or a
+  notification are called as the owner, as another client, as another provider and as
+  the administration.
+- Pagination is tested with every service tied, and the query plans of each kind of
+  search, by distance, by city, by text and in the default order, are checked against
+  the queries the search actually sends.
+- Two requests opening the payment of one booking at once end in one payment, and a
+  request waiting on a locked row gives up after five seconds, tested with the database
+  options production runs with, which the integration tests did not use.
+- The end-to-end test of a service page's language alternates loads the page by its
+  address, as a crawler does, instead of clicking through from the search. In WebKit,
+  clicking a card the moment it appears now and then leaves the search page's title and
+  language links in the head, in 2.12.0 too, and that failed the test with nothing
+  wrong in the service page.
+- 1146 unit tests on the API, 468 integration tests and 873 in the browser, up from
+  1099, 427 and 836.
+
 ## [2.12.0] — 2026-10-07
 
 ### Fixed
@@ -988,6 +1141,13 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
+[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.13.0...HEAD
+[2.13.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.12.0...v2.13.0
+[2.12.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.11.1...v2.12.0
+[2.11.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.11.0...v2.11.1
+[2.11.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.10.0...v2.11.0
+[2.10.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.9.0...v2.10.0
+[2.9.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.8.0...v2.9.0
 [2.8.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.7.1...v2.8.0
 [2.7.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.6.0...v2.7.0
