@@ -19,7 +19,15 @@ import prettierRecomendado from 'eslint-plugin-prettier/recommended';
  */
 export default defineConfig([
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**'],
+    // Y lo que dejan las pruebas de mutación: una copia del código en la que
+    // cambian cosas a propósito, y sus informes.
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      'coverage/**',
+      'reports/**',
+      '.stryker-tmp/**',
+    ],
   },
   js.configs.recommended,
   tseslint.configs.recommended,
@@ -37,6 +45,14 @@ export default defineConfig([
           ignoreRestSiblings: true,
         },
       ],
+    },
+  },
+  {
+    // Los scripts y configuraciones en JavaScript corren en Node: proceso,
+    // consola y nada más.
+    files: ['**/*.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly', console: 'readonly' },
     },
   },
   {

@@ -21,5 +21,12 @@ test-results/
 playwright-report/
 .playwright/
 
+# Salida de Lighthouse, de Stryker y del vídeo del recorrido
+.lighthouseci/
+frontend/lighthouse/
+backend/reports/
+.stryker-tmp/
+docs/recorrido.webm
+
 # Salida de Storybook
 storybook-static/

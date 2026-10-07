@@ -32,6 +32,12 @@ describe('SoloLecturaInterceptor', () => {
       ).toThrow(ForbiddenException);
     });
 
+    it('y dice por qué, en vez de un «prohibido» a secas', () => {
+      expect(() =>
+        interceptor.intercept(contexto('POST', demo), siguiente),
+      ).toThrow(/cuenta de demostración.*no modificar datos/);
+    });
+
     it('bloquea también un método que no existe hoy', () => {
       // Se deniega por método y no por lista de rutas: cualquier verbo que no
       // sea de lectura queda fuera sin tener que enumerarlo.

@@ -46,7 +46,7 @@ test.describe('Búsqueda de servicios', () => {
     await expect(paginacion).toBeVisible();
 
     const primerTitulo = await page
-      .locator(TARJETA + ' h3')
+      .locator(TARJETA + ' h2')
       .first()
       .textContent();
 
@@ -59,7 +59,7 @@ test.describe('Búsqueda de servicios', () => {
     // marcada un instante antes de que lleguen sus resultados, y entonces se
     // comparaba la primera tarjeta de la página 1 consigo misma.
     expect(primerTitulo).toBeTruthy();
-    await expect(page.locator(TARJETA + ' h3').first()).not.toHaveText(
+    await expect(page.locator(TARJETA + ' h2').first()).not.toHaveText(
       primerTitulo!,
     );
   });
@@ -166,7 +166,7 @@ test.describe('Búsqueda de servicios', () => {
     // buscador o una vista previa en una red social no veían ni el título.
     await page.goto('/services/search');
     const tarjeta = page.locator(TARJETA).first();
-    const titulo = (await tarjeta.locator('h3').textContent())?.trim();
+    const titulo = (await tarjeta.locator('h2').textContent())?.trim();
     const enlace = await tarjeta.getAttribute('href');
 
     const html = await (await request.get(enlace!)).text();

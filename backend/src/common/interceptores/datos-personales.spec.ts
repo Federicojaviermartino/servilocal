@@ -43,6 +43,36 @@ describe('los datos personales ante la administración de demostración', () => 
     expect(tapada.createdAt).toBeInstanceOf(Date);
   });
 
+  it('la ubicación también en latitud y longitud sueltas', () => {
+    // Hay respuestas que la mandan así, y no solo como punto GeoJSON.
+    const tapada = taparDatosPersonales({
+      firstName: 'Laura',
+      latitude: 36.72,
+      longitude: -4.42,
+    });
+
+    expect(tapada).toEqual({
+      firstName: 'Laura',
+      latitude: null,
+      longitude: null,
+    });
+  });
+
+  it('es una persona aunque solo traiga el apellido, o solo el nombre', () => {
+    expect(
+      taparDatosPersonales({ lastName: 'García', phone: '611 222 333' }),
+    ).toEqual({ lastName: 'G.', phone: '•••' });
+    expect(
+      taparDatosPersonales({ firstName: 'Laura', phone: '611 222 333' }),
+    ).toEqual({ firstName: 'Laura', phone: '•••' });
+  });
+
+  it('un apellido que no es texto no se acorta: sigue su camino', () => {
+    expect(
+      taparDatosPersonales({ firstName: 'Laura', lastName: null }),
+    ).toEqual({ firstName: 'Laura', lastName: null });
+  });
+
   it('también dentro de otras cosas: las partes de una reserva', () => {
     const reserva = taparDatosPersonales({
       id: 'b1',

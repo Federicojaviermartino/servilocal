@@ -49,6 +49,11 @@ updates:
       # la 22. Los de la 26 compilarían código que en producción no existe.
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # TypeScript 7 todavía no: typescript-eslint 8 solo admite hasta la
+      # 6.0, y con la 7 el lint no arranca. Solo la 7, no cualquier mayor:
+      # la 6 sí puede llegar. Se quita en cuanto typescript-eslint la admita.
+      - dependency-name: 'typescript'
+        versions: ['>=7.0.0']
     commit-message:
       prefix: 'Actualiza'
 
@@ -84,6 +89,11 @@ updates:
         update-types: ['version-update:semver-major']
       - dependency-name: '@types/node'
         update-types: ['version-update:semver-major']
+      # TypeScript 7 todavía no: typescript-eslint 8 solo admite hasta la
+      # 6.0, y con la 7 el lint no arranca. Solo la 7, no cualquier mayor:
+      # la 6 sí puede llegar. Se quita en cuanto typescript-eslint la admita.
+      - dependency-name: 'typescript'
+        versions: ['>=7.0.0']
     commit-message:
       prefix: 'Actualiza'
 

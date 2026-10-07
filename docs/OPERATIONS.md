@@ -199,6 +199,12 @@ and what they publish is deleted, or withdrawn if it already has bookings. So:
   every four, which do not touch the database, so a scheduled run that GitHub
   starts late or skips does not let the services sleep, and Neon can still
   suspend. Nothing watches outside those hours.
+
+  **It cannot be relied on.** GitHub started it 25 to 42 times a day until 30
+  September 2026, and 2 or 3 times a day from 1 October, some of them outside the
+  window altogether, with nothing changed in the workflow. On those days the demo
+  slept most of the time. What keeps it awake is the external monitor below; the
+  workflow stays as a second line and for its failure emails.
 - **Smoke test**: after every deploy of `main`; opens an issue when it fails.
 - **Request log**: one JSON line per request in the API's log in Render, with
   method, path (no query string), status, milliseconds and the request id. Anyone
@@ -218,9 +224,31 @@ and what they publish is deleted, or withdrawn if it already has bookings. So:
   serving shows up there as a failure.
 - **Errors**: Sentry, once `SENTRY_DSN` is set.
 
-An external monitor outside working hours is worth having, but it wakes the
-service: checking only the API every three hours costs about 40 of the 750 free
-hours a month; checking both services every hour would use up the quota.
+### External monitor
+
+A free monitor such as [cron-job.org](https://cron-job.org) or
+[UptimeRobot](https://uptimerobot.com) calls on time, which GitHub's scheduler does not.
+Set up two checks, every 10 minutes, Monday to Friday from 08:00 to 16:00 UTC:
+
+- `https://servilocal-web.onrender.com/salud`
+- `https://servilocal-api.onrender.com/api/health/vivo`
+
+Neither touches the database, so Neon still suspends. Expect a 200 and a body with
+`"estado":"ok"`, and send failures to email. Weekdays only, both services cost about
+360 of the 750 free hours a month; every day, about 510. Watching outside those hours
+wakes the services too, so it spends the same quota.
+
+### If a service does not wake up
+
+Symptoms: it answers `503` with `Retry-After` for minutes, nothing new appears in its
+log and its event list is empty. On 5 October 2026 the front end stayed like that from
+about 08:00 to 08:43 UTC, with the API awake and Render reporting no incident.
+
+1. Confirm it from outside your network, and check
+   [Render's status page](https://status.render.com).
+2. Redeploy the same commit: in Render, the service → *Manual Deploy* → *Deploy latest
+   commit*. Nothing changes but the instance.
+3. Check `/salud` or `/api/health` until it answers with the expected `version`.
 
 ## Rotating secrets
 

@@ -167,6 +167,28 @@ describe('BookingForm', () => {
     );
   });
 
+  it('con un precio fijo, el máximo igual al mínimo sí manda', async () => {
+    // Se comparaba con «>», y un servicio de 50 euros se podía reservar por
+    // cualquier cifra por encima.
+    const alEnviar = pintar({
+      ...SERVICIO,
+      priceMin: 50,
+      priceMax: 50,
+    } as unknown as Service);
+    const precio = screen.getByLabelText(/Precio acordado/);
+
+    await userEvent.clear(precio);
+    await userEvent.click(precio);
+    await userEvent.paste('60');
+    await describir('Gotea el grifo de la cocina desde ayer.');
+    enviarSaltandoAlNavegador();
+
+    expect(alEnviar).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(es.reserva.precioMaximo.replace('{max}', '50\ €')),
+    ).toBeInTheDocument();
+  });
+
   it('sin máximo publicado, por arriba no hay tope', async () => {
     // Pagar de más es decisión de quien paga, y el servidor opina igual.
     const alEnviar = pintar({

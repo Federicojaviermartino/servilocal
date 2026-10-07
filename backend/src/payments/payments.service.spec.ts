@@ -67,6 +67,7 @@ function stripeFalso() {
           _opciones?: Stripe.RequestOptions,
         ) => ({ id: 'cus_nuevo' }),
       ),
+      del: vi.fn(async (id: string) => ({ id, deleted: true })),
     },
     refunds: {
       create: vi.fn(async () => ({ id: 're_prueba' })),
@@ -512,6 +513,21 @@ describe('PaymentsService', () => {
       expect(resultado.status).toBe(PaymentStatus.COMPLETED);
     });
 
+    it('un retenido que Stripe ya cobró pasa a cobrado, con la fecha en que se retuvo', async () => {
+      const retenidoEl = new Date('2026-09-28T10:00:00Z');
+      const { servicio, stripe } = await construir(
+        { ...PENDIENTE(PaymentStatus.HELD), paidAt: retenidoEl },
+        RESERVA(BookingStatus.COMPLETED),
+      );
+      enStripe(stripe, 'succeeded');
+
+      const resultado = await servicio.confirmPaymentHold(INTENCION, 'c1');
+
+      expect(resultado.status).toBe(PaymentStatus.COMPLETED);
+      expect(resultado.paidAt).toBe(retenidoEl);
+      expect(stripe.paymentIntents.capture).not.toHaveBeenCalled();
+    });
+
     it('con la fila del pago bloqueada', async () => {
       // El webhook puede estar anotando lo mismo a la vez.
       const { servicio, stripe, gestor } = await construir(
@@ -678,6 +694,39 @@ describe('PaymentsService', () => {
         NotFoundException,
       );
       expect(await deSuMundo.servicio.findByBooking('b1', demo)).toBeTruthy();
+      // Con las dos partes: sin ellas, ninguna reserva sería de su mundo.
+      expect(deSuMundo.reservas.findOne).toHaveBeenCalledWith({
+        where: { id: 'b1' },
+        relations: { client: true, provider: true },
+      });
+    });
+
+    it.each([
+      ['el cliente', true, false],
+      ['el profesional', false, true],
+    ])(
+      'ni si solo %s es de demostración',
+      async (_parte, cliente, profesional) => {
+        const demo = { id: 'demo', role: 'admin', soloLectura: true };
+        const { servicio } = await construir(PAGO, {
+          ...RESERVA,
+          client: { esDemostracion: cliente },
+          provider: { esDemostracion: profesional },
+        } as never);
+
+        await expect(servicio.findByBooking('b1', demo)).rejects.toThrow(
+          NotFoundException,
+        );
+      },
+    );
+
+    it('ni si la reserva no existe', async () => {
+      const demo = { id: 'demo', role: 'admin', soloLectura: true };
+      const { servicio } = await construir(PAGO, null);
+
+      await expect(servicio.findByBooking('b1', demo)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
   describe('abrir el cobro', () => {
@@ -941,6 +990,56 @@ describe('PaymentsService', () => {
       },
     );
 
+    it('una confirmada también se paga, y se retiene', async () => {
+      // Quien no pagó al reservar puede hacerlo con la reserva ya aceptada.
+      const { servicio, stripe } = await construir(null, {
+        ...RESERVA,
+        status: BookingStatus.CONFIRMED,
+      });
+
+      await servicio.createPaymentIntent('c1', 'b1');
+
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        expect.objectContaining({ capture_method: 'manual' }),
+        expect.anything(),
+      );
+    });
+
+    it('sin el secreto de Stripe falla, en vez de dar un formulario que no puede pagar', async () => {
+      const nueva = await construir(null, RESERVA);
+      nueva.stripe.paymentIntents.create.mockResolvedValueOnce({
+        id: NUEVA,
+        client_secret: null,
+        status: 'requires_payment_method',
+      });
+      const reaprovechada = await construir(
+        { id: 'p1', stripePaymentIntentId: INTENCION },
+        RESERVA,
+      );
+      reaprovechada.stripe.paymentIntents.retrieve.mockResolvedValueOnce({
+        id: INTENCION,
+        client_secret: null,
+        status: 'requires_payment_method',
+      });
+
+      await expect(
+        nueva.servicio.createPaymentIntent('c1', 'b1'),
+      ).rejects.toThrow(/client_secret/);
+      await expect(
+        reaprovechada.servicio.createPaymentIntent('c1', 'b1'),
+      ).rejects.toThrow(/client_secret/);
+    });
+
+    it('si quien paga ya no existe, no abre nada en Stripe', async () => {
+      const { servicio, stripe } = await construir(null, RESERVA, null);
+
+      await expect(servicio.createPaymentIntent('c1', 'b1')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(stripe.customers.create).not.toHaveBeenCalled();
+      expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+    });
+
     it('reaprovecha la intención que sigue siendo pagable', async () => {
       // Volver a la pantalla de pago no debe abrir un cobro nuevo: serían dos
       // retenciones sobre la misma tarjeta por la misma reserva.
@@ -1021,13 +1120,17 @@ describe('PaymentsService', () => {
 
     it('si la anterior quedó cancelada, abre otra y reutiliza la fila', async () => {
       // Sin esto, una tarjeta rechazada dejaría la reserva imposible de pagar
-      // para siempre. Y se limpia el motivo del fallo anterior: si no, el
-      // cobro nuevo nace con la excusa del viejo pegada.
+      // para siempre. Y se limpia lo del cobro anterior: el motivo del fallo,
+      // para que el nuevo no nazca con la excusa del viejo pegada, y la fecha
+      // de su retención, porque de ella se cuentan los días para renovar.
+      // Las pruebas de mutación lo encontraron: la nueva la heredaba si se
+      // conocía preguntando a Stripe, y se renovaba en la hora siguiente.
       const anterior = {
         id: 'p1',
         stripePaymentIntentId: INTENCION,
         status: PaymentStatus.FAILED,
         failureReason: 'Tarjeta rechazada',
+        paidAt: new Date('2026-09-20T10:00:00Z'),
       };
       const { servicio, pagos, stripe } = await construir(anterior, RESERVA);
       stripe.paymentIntents.retrieve.mockResolvedValueOnce({
@@ -1046,6 +1149,7 @@ describe('PaymentsService', () => {
           stripePaymentIntentId: NUEVA,
           status: PaymentStatus.PENDING,
           failureReason: null,
+          paidAt: null,
         }),
       );
     });
@@ -1104,6 +1208,34 @@ describe('PaymentsService', () => {
       expect(pagos.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: PaymentStatus.COMPLETED }),
       );
+    });
+
+    it('el cobro conserva la fecha en que se retuvo', async () => {
+      const retenidoEl = new Date('2026-09-28T10:00:00Z');
+      const pago = { ...PAGO(PaymentStatus.HELD), paidAt: retenidoEl };
+      const { servicio } = await construir(
+        pago,
+        RESERVA(BookingStatus.COMPLETED),
+      );
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.succeeded', { id: INTENCION }),
+      );
+
+      expect(pago.status).toBe(PaymentStatus.COMPLETED);
+      expect(pago.paidAt).toBe(retenidoEl);
+    });
+
+    it('un rechazo sin motivo no borra el que ya constaba', async () => {
+      const pago = { ...PAGO(), failureReason: 'Fondos insuficientes' };
+      const { servicio, pagos } = await construir(pago, RESERVA());
+
+      await servicio.handleWebhookEvent(
+        evento('payment_intent.payment_failed', { id: INTENCION }),
+      );
+
+      expect(pago.failureReason).toBe('Fondos insuficientes');
+      expect(pagos.save).not.toHaveBeenCalled();
     });
 
     it('no reescribe una reserva que ya estaba en ese estado', async () => {
@@ -1189,6 +1321,26 @@ describe('PaymentsService', () => {
       expect(pagos.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: PaymentStatus.FAILED }),
       );
+    });
+
+    it('con el motivo de Stripe si lo da, y si no, con el que ya constaba', async () => {
+      const conMotivo = await construir(PAGO(), RESERVA());
+      await conMotivo.servicio.handleWebhookEvent(
+        evento('payment_intent.canceled', {
+          id: INTENCION,
+          last_payment_error: { message: 'Tarjeta caducada' },
+        }),
+      );
+      const pago = { ...PAGO(), failureReason: 'Fondos insuficientes' };
+      const sinMotivo = await construir(pago, RESERVA());
+      await sinMotivo.servicio.handleWebhookEvent(
+        evento('payment_intent.canceled', { id: INTENCION }),
+      );
+
+      expect(conMotivo.pagos.save).toHaveBeenCalledWith(
+        expect.objectContaining({ failureReason: 'Tarjeta caducada' }),
+      );
+      expect(pago.failureReason).toBe('Fondos insuficientes');
     });
 
     it('si caduca una retención, pide a las dos partes que se vuelva a autorizar', async () => {
@@ -1361,14 +1513,22 @@ describe('PaymentsService', () => {
       expect(avisos.crear).not.toHaveBeenCalled();
     });
 
-    it('un evento de un pago que aquí no existe no rompe nada', async () => {
+    it.each([
+      'payment_intent.amount_capturable_updated',
+      'payment_intent.succeeded',
+      'payment_intent.payment_failed',
+      'payment_intent.canceled',
+    ])('un %s de un pago que aquí no existe no rompe nada', async (tipo) => {
       // Stripe reenvía eventos y exige un 2xx: lanzar aquí provocaría
       // reintentos indefinidos por algo que no tiene arreglo.
       const { servicio, pagos } = await construir(null, null);
 
       await expect(
         servicio.handleWebhookEvent(
-          evento('payment_intent.succeeded', { id: 'pi_desconocida' }),
+          evento(tipo, {
+            id: 'pi_desconocida',
+            last_payment_error: { message: 'Tarjeta rechazada' },
+          }),
         ),
       ).resolves.toBeUndefined();
       expect(pagos.save).not.toHaveBeenCalled();
@@ -1891,6 +2051,30 @@ describe('PaymentsService', () => {
       return { ...partes, pago };
     }
 
+    it('lee cada pago con su reserva, que es la que dice si sigue abierta', async () => {
+      const { servicio, pagos } = await preparar();
+
+      await servicio.revisarRetenciones(AHORA);
+
+      expect(pagos.find).toHaveBeenCalledWith({
+        where: { status: PaymentStatus.HELD },
+        relations: { booking: true },
+      });
+    });
+
+    it('una que Stripe ya no tiene retenida no se renueva', async () => {
+      const { servicio, stripe, pagos } = await preparar(
+        RETENIDO(),
+        EN_STRIPE({ status: 'processing' }),
+      );
+
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen.nada).toBe(1);
+      expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+      expect(pagos.save).not.toHaveBeenCalled();
+    });
+
     it('una de menos de cuatro días se deja como está', async () => {
       const { servicio, stripe, pagos } = await preparar(RETENIDO(3));
 
@@ -2053,6 +2237,49 @@ describe('PaymentsService', () => {
         await comprobarPerdida(partes);
         expect(partes.stripe.paymentIntents.create).not.toHaveBeenCalled();
       });
+
+      it.each([
+        ['sin ficha de cliente', { customer: null }],
+        ['sin tarjeta guardada', { payment_method: null }],
+      ])('le falta una de las dos piezas: %s', async (_caso, falta) => {
+        // Hacen falta las dos: con una sola, Stripe rechaza el cargo sin
+        // la presencia del titular.
+        const partes = await preparar(
+          RETENIDO(),
+          EN_STRIPE(falta as Partial<Stripe.PaymentIntent>),
+        );
+
+        await comprobarPerdida(partes);
+        expect(partes.stripe.paymentIntents.create).not.toHaveBeenCalled();
+      });
+    });
+
+    it('con la ficha y la tarjeta expandidas, como objetos, también renueva', async () => {
+      // Stripe las devuelve como identificador o como objeto, según cómo se
+      // pida la intención.
+      const { servicio, stripe } = await preparar(
+        RETENIDO(),
+        EN_STRIPE({
+          customer: { id: 'cus_1' } as Stripe.Customer,
+          payment_method: { id: 'pm_1' } as Stripe.PaymentMethod,
+        }),
+      );
+
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen.renovada).toBe(1);
+      expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
+        expect.objectContaining({ customer: 'cus_1', payment_method: 'pm_1' }),
+        expect.anything(),
+      );
+    });
+
+    it('justo a los cuatro días ya se renueva', async () => {
+      const { servicio } = await preparar(RETENIDO(4));
+
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen.renovada).toBe(1);
     });
 
     it('un fallo pasajero deja el pago como estaba, para la próxima', async () => {
@@ -2128,6 +2355,52 @@ describe('PaymentsService', () => {
 
       expect(resumen.conciliada).toBe(1);
       expect(pago.status).toBe(PaymentStatus.HELD);
+      // Y con la fecha en que quedó retenido: de ella se cuentan los cuatro
+      // días para renovar.
+      expect(pago).toHaveProperty('paidAt', expect.any(Date));
+    });
+
+    it('si ya constaba cuándo se retuvo, esa fecha no se toca', async () => {
+      const antes = new Date('2026-09-29T10:00:00Z');
+      const pago = { ...SIN_RETENER(PaymentStatus.FAILED), paidAt: antes };
+      const { servicio, stripe } = await construir(pago);
+      stripe.paymentIntents.retrieve.mockResolvedValue({
+        id: INTENCION,
+        status: 'requires_capture',
+      });
+
+      await servicio.revisarRetenciones(AHORA);
+
+      expect(pago.paidAt).toBe(antes);
+    });
+
+    it('un pago pendiente que Stripe ya cobró pasa a cobrado, con su fecha', async () => {
+      const pago = SIN_RETENER(PaymentStatus.PENDING);
+      const { servicio, stripe } = await construir(pago);
+      stripe.paymentIntents.retrieve.mockResolvedValue({
+        id: INTENCION,
+        status: 'succeeded',
+      });
+
+      await servicio.revisarRetenciones(AHORA);
+
+      expect(pago.status).toBe(PaymentStatus.COMPLETED);
+      expect(pago).toHaveProperty('paidAt', expect.any(Date));
+    });
+
+    it('uno que Stripe sigue esperando no se toca', async () => {
+      const { servicio, stripe, pagos } = await construir(
+        SIN_RETENER(PaymentStatus.PENDING),
+      );
+      stripe.paymentIntents.retrieve.mockResolvedValue({
+        id: INTENCION,
+        status: 'requires_payment_method',
+      });
+
+      const resumen = await servicio.revisarRetenciones(AHORA);
+
+      expect(resumen.nada).toBe(1);
+      expect(pagos.save).not.toHaveBeenCalled();
     });
 
     it('y uno que se quedó fallido con el dinero retenido, también', async () => {
@@ -2200,6 +2473,25 @@ describe('PaymentsService', () => {
       await expect(servicio.revisarRetenciones(AHORA)).resolves.toMatchObject({
         conciliada: 0,
       });
+    });
+  });
+
+  describe('olvidar la ficha de cliente', () => {
+    it('la borra en Stripe, y con ella la tarjeta guardada', async () => {
+      const { servicio, stripe } = await construir(null);
+
+      await servicio.olvidarCliente('cus_1');
+
+      expect(stripe.customers.del).toHaveBeenCalledWith('cus_1');
+    });
+
+    it('si Stripe no contesta, la cuenta se elimina igual', async () => {
+      const { servicio, stripe } = await construir(null);
+      stripe.customers.del.mockRejectedValueOnce(
+        new Error('Stripe no responde'),
+      );
+
+      await expect(servicio.olvidarCliente('cus_1')).resolves.toBeUndefined();
     });
   });
 

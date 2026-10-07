@@ -89,7 +89,9 @@ function comprobarPrecio(servicio: Service, propuesto: number): number {
     );
   }
 
-  if (maximo !== null && maximo > minimo && propuesto > maximo) {
+  // Con el máximo igual al mínimo, que es un precio fijo, también manda: con
+  // «>» se saltaba, y un servicio de 50 euros se reservaba por 9.999.
+  if (maximo !== null && maximo >= minimo && propuesto > maximo) {
     throw new BadRequestException(
       `El importe no puede superar los ${maximo} euros`,
     );

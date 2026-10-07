@@ -1,5 +1,7 @@
-import { DataSource } from 'typeorm';
-import { crearFuente } from './base';
+import { DataSource, type DataSourceOptions } from 'typeorm';
+import { Booking, Service } from '../../src/entities';
+import { ServicesService } from '../../src/services/services.service';
+import { crearFuente, opcionesDeLaBase } from './base';
 
 /**
  * Lo que solo existe dentro de PostgreSQL.
@@ -9,6 +11,23 @@ import { crearFuente } from './base';
  * ninguna se podía comprobar con un doble, porque un doble hace lo que se le
  * dice. Aquí se le pregunta a la base.
  */
+/** Las llamadas a una función en un SQL, con sus paréntesis equilibrados. */
+function extraerLlamadas(sql: string, funcion: string): string[] {
+  const llamadas: string[] = [];
+  let desde = sql.indexOf(`${funcion}(`);
+  while (desde !== -1) {
+    let profundidad = 0;
+    let fin = desde + funcion.length;
+    for (; fin < sql.length; fin++) {
+      if (sql[fin] === '(') profundidad++;
+      if (sql[fin] === ')' && --profundidad === 0) break;
+    }
+    llamadas.push(sql.slice(desde, fin + 1));
+    desde = sql.indexOf(`${funcion}(`, fin);
+  }
+  return llamadas;
+}
+
 describe('Esquema real', () => {
   let fuente: DataSource;
 
@@ -43,19 +62,68 @@ describe('Esquema real', () => {
     // búsqueda indexada. Se fuerza al planificador porque con pocas filas
     // prefiere el escaneo, y hace bien; lo que se comprueba es que el índice
     // está disponible, no cuál elige hoy.
+    //
+    // Y sobre la consulta que lanza de verdad la búsqueda, capturada al
+    // vuelo, no sobre una escrita a mano. La escrita a mano usaba un radio
+    // fijo y pasaba en verde mientras la real, con el radio de cada
+    // profesional, no podía usar el índice: la prueba de carga lo destapó.
+    const capturadas: Array<{ sql: string; parametros: unknown[] }> = [];
+    const espia = await new DataSource({
+      ...opcionesDeLaBase(),
+      logging: ['query'],
+      logger: {
+        logQuery: (sql: string, parametros?: unknown[]) => {
+          capturadas.push({ sql, parametros: parametros ?? [] });
+        },
+        logQueryError: () => undefined,
+        logQuerySlow: () => undefined,
+        logSchemaBuild: () => undefined,
+        logMigration: () => undefined,
+        log: () => undefined,
+      },
+    } as DataSourceOptions).initialize();
+    try {
+      const servicios = new ServicesService(
+        espia.getRepository(Service),
+        espia.getRepository(Booking),
+        { anotar: async () => undefined } as never,
+      );
+      await servicios.search({
+        latitude: 40.4168,
+        longitude: -3.7038,
+        radiusKm: 15,
+        sortBy: 'distance',
+      } as never);
+    } finally {
+      await espia.destroy();
+    }
+
+    const busqueda = capturadas.find(
+      (c) => c.sql.includes('ST_DWithin') && !c.sql.includes('COUNT('),
+    );
+    expect(busqueda, 'la búsqueda lanzó su consulta').toBeTruthy();
+
+    // Sus condiciones de cercanía, tal cual, sobre la tabla de servicios
+    // sola: con la consulta entera y 25 servicios, el planificador puede
+    // preferir otro índice igual de bueno, y lo que se comprueba es que el
+    // espacial se puede usar. Los parámetros van escritos: son números.
+    const condiciones = extraerLlamadas(busqueda!.sql, 'ST_DWithin').map(
+      (llamada) =>
+        llamada.replace(/\$(\d+)/g, (_, n: string) =>
+          String(busqueda!.parametros[Number(n) - 1]),
+        ),
+    );
+    expect(condiciones).toHaveLength(2);
+
     await fuente.query('SET enable_seqscan = off');
     const plan: { 'QUERY PLAN': string }[] = await fuente.query(
-      `EXPLAIN SELECT id FROM services
-       WHERE ST_DWithin(
-         location::geography,
-         ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)::geography,
-         10000)`,
+      `EXPLAIN SELECT service.id FROM services service
+       WHERE ${condiciones.join(' AND ')}`,
     );
     await fuente.query('SET enable_seqscan = on');
 
     const texto = plan.map((f) => f['QUERY PLAN']).join(' ');
     expect(texto).toContain('IDX_services_location_geography');
-    expect(texto).not.toContain('Seq Scan');
   });
 
   it('la comparación de ciudad sin acentos también', async () => {

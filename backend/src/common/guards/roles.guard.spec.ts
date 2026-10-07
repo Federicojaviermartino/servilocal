@@ -1,6 +1,6 @@
 import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RolesGuard } from './roles.guard';
+import { Roles, RolesGuard } from './roles.guard';
 import { UserRole } from '../../entities';
 
 /**
@@ -26,6 +26,56 @@ describe('RolesGuard', () => {
 
   const exigirRoles = (roles: UserRole[] | undefined) =>
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(roles);
+
+  describe('con el decorador, como lo usan los controladores', () => {
+    // Sin dobles del Reflector: lo que pone @Roles es lo que lee la guardia.
+    class Rutas {
+      @Roles(UserRole.ADMIN)
+      reembolsar() {}
+
+      @Roles(UserRole.CLIENT, UserRole.PROVIDER)
+      escribir() {}
+
+      leer() {}
+    }
+
+    const contextoDe = (manejador: () => void, user: unknown) =>
+      ({
+        switchToHttp: () => ({ getRequest: () => ({ user }) }),
+        getHandler: () => manejador,
+        getClass: () => Rutas,
+      }) as unknown as ExecutionContext;
+
+    it('la ruta de administración solo para la administración', () => {
+      const reembolsar = Rutas.prototype.reembolsar;
+
+      expect(
+        guard.canActivate(contextoDe(reembolsar, { role: UserRole.ADMIN })),
+      ).toBe(true);
+      expect(
+        guard.canActivate(contextoDe(reembolsar, { role: UserRole.CLIENT })),
+      ).toBe(false);
+    });
+
+    it('con varios roles, cualquiera de ellos', () => {
+      const escribir = Rutas.prototype.escribir;
+
+      expect(
+        guard.canActivate(contextoDe(escribir, { role: UserRole.PROVIDER })),
+      ).toBe(true);
+      expect(
+        guard.canActivate(contextoDe(escribir, { role: UserRole.ADMIN })),
+      ).toBe(false);
+    });
+
+    it('sin decorador, cualquiera', () => {
+      expect(
+        guard.canActivate(
+          contextoDe(Rutas.prototype.leer, { role: UserRole.CLIENT }),
+        ),
+      ).toBe(true);
+    });
+  });
 
   it('deja pasar cuando la ruta no exige ningún rol', () => {
     exigirRoles(undefined);

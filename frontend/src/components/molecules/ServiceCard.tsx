@@ -15,9 +15,16 @@ import { usePrecioServicio } from '../../lib/importes';
 
 interface ServiceCardProps {
   service: Service;
+  /**
+   * El nivel del título, según dónde va la tarjeta. En el buscador cuelga
+   * directamente del h1, y con un h3 se saltaba un nivel: un lector de
+   * pantalla que recorre por encabezados no sabía dónde estaba.
+   */
+  nivel?: 2 | 3;
 }
 
-export default function ServiceCard({ service }: ServiceCardProps) {
+export default function ServiceCard({ service, nivel = 3 }: ServiceCardProps) {
+  const Titulo = nivel === 2 ? 'h2' : 'h3';
   const t = useTranslations('tarjeta');
   const nombreCategoria = useNombreCategoria();
   const precio = usePrecioServicio();
@@ -47,9 +54,12 @@ export default function ServiceCard({ service }: ServiceCardProps) {
       <div className="p-4">
         {/* dir="auto" en lo que escribe el profesional: en árabe, un título
             en castellano se cortaba por el lado equivocado. */}
-        <h3 dir="auto" className="font-semibold text-principal line-clamp-1">
+        <Titulo
+          dir="auto"
+          className="font-semibold text-principal line-clamp-1"
+        >
           {service.title}
-        </h3>
+        </Titulo>
         <p dir="auto" className="mt-1 text-sm text-secundario line-clamp-2">
           {service.description}
         </p>

@@ -9,6 +9,11 @@ export const routing = defineRouting({
   locales: ['es', 'en', 'ca', 'gl', 'eu', 'fr', 'de', 'it', 'pt', 'ar'],
   defaultLocale: 'es',
   localePrefix: 'as-needed',
+  // Las versiones en cada idioma ya van en el HTML, con el dominio del sitio
+  // (ver lib/seo.ts). next-intl las repetía en una cabecera Link con el host
+  // de la petición: dos fuentes para lo mismo, y fuera de producción, con
+  // dominios distintos que Lighthouse veía como un canonical en conflicto.
+  alternateLinks: false,
 });
 
 export type Idioma = (typeof routing.locales)[number];

@@ -288,8 +288,7 @@ export class ServicesService {
     const interna = qb
       .clone()
       .orderBy()
-      .skip(undefined)
-      .take(undefined)
+      .offset(undefined)
       .limit(tope)
       .select('service.id', 'id');
 
@@ -420,13 +419,27 @@ export class ServicesService {
       // hasta dónde se desplaza el profesional, que es lo que declara al
       // publicar. El radio de cobertura se guardaba y no filtraba nada, y
       // salían profesionales que no iban a ir.
+      //
+      // Y dos veces, a propósito. El índice espacial solo sirve con una
+      // distancia fija: con la de cada profesional, que cambia fila a fila,
+      // PostgreSQL medía la distancia a todos los servicios, y con 50.000
+      // la búsqueda por cercanía pasaba de los 3 segundos con 30 personas a
+      // la vez. La primera usa el índice con el radio pedido; la segunda,
+      // más estricta, deja solo a los que además llegan.
+      qb.andWhere(
+        `ST_DWithin(
+          service.location::geography,
+          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+          :radius
+        )`,
+        { lng: longitude, lat: latitude, radius: radiusMeters },
+      );
       qb.andWhere(
         `ST_DWithin(
           service.location::geography,
           ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
           LEAST(:radius, service.coverageRadiusKm * 1000)
         )`,
-        { lng: longitude, lat: latitude, radius: radiusMeters },
       );
 
       // Añadir distancia como columna calculada
@@ -476,7 +489,13 @@ export class ServicesService {
 
     // Paginación
     const offset = (page - 1) * limit;
-    qb.skip(offset).take(limit);
+    // offset y limit, no skip y take. Con uniones, skip y take hacen que
+    // TypeORM pida antes los identificadores con un SELECT DISTINCT de todo
+    // lo que casa, por si una unión repitiera filas, y luego los datos. Aquí
+    // no se repite ninguna —cada servicio tiene un profesional y una
+    // categoría—, y ese paso era casi todo el tiempo de una búsqueda por
+    // texto con 50.000 servicios: más de 6 de sus 7 segundos.
+    qb.offset(offset).limit(limit);
 
     // El conteo se corta en TOPE_CONTEO.
     //

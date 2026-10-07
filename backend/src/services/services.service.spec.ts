@@ -41,8 +41,7 @@ function constructorFalso() {
     'where',
     'andWhere',
     'orderBy',
-    'skip',
-    'take',
+    'offset',
     'limit',
   ]) {
     qb[metodo] = vi.fn(() => qb);
@@ -486,8 +485,25 @@ describe('ServicesService', () => {
         expect.stringContaining(
           'LEAST(:radius, service.coverageRadiusKm * 1000)',
         ),
-        expect.anything(),
       );
+    });
+
+    it('y antes, con el radio pedido tal cual, para que sirva el índice', async () => {
+      // Con una distancia que cambia fila a fila, el índice espacial no se
+      // puede usar: la condición de radio fijo es la que lo aprovecha. Que
+      // de verdad lo use lo comprueba la integración, con la consulta real.
+      const qb = constructorFalso();
+      const { servicio } = await construir(qb);
+
+      await servicio.search({ latitude: 40.4, longitude: -3.7 } as never);
+
+      const condiciones = qb.andWhere.mock.calls.map(([sql]) => String(sql));
+      const fija = condiciones.findIndex(
+        (sql) => sql.includes('ST_DWithin') && /:radius\s*\)$/.test(sql.trim()),
+      );
+      const variable = condiciones.findIndex((sql) => sql.includes('LEAST('));
+      expect(fija).toBeGreaterThanOrEqual(0);
+      expect(fija).toBeLessThan(variable);
     });
 
     it('el radio viaja en metros aunque se pida en kilómetros', async () => {
@@ -717,8 +733,9 @@ describe('ServicesService', () => {
 
       await servicio.search({ page: 3, limit: 12 } as never);
 
-      expect(qb.skip).toHaveBeenCalledWith(24);
-      expect(qb.take).toHaveBeenCalledWith(12);
+      // Con offset y limit, no skip y take: ver el servicio.
+      expect(qb.offset).toHaveBeenCalledWith(24);
+      expect(qb.limit).toHaveBeenCalledWith(12);
     });
 
     it('el total de páginas se redondea hacia arriba', async () => {
@@ -768,8 +785,7 @@ describe('ServicesService', () => {
       await servicio.search({ page: 3, limit: 12 } as never);
 
       expect(qb.orderBy).toHaveBeenCalledWith();
-      expect(qb.skip).toHaveBeenCalledWith(undefined);
-      expect(qb.take).toHaveBeenCalledWith(undefined);
+      expect(qb.offset).toHaveBeenCalledWith(undefined);
       expect(qb.limit).toHaveBeenCalledWith(1000);
     });
   });

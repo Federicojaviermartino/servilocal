@@ -184,6 +184,27 @@ describe('BookingsService', () => {
       expect(avisos.crear).not.toHaveBeenCalled();
     });
 
+    it('una cuya hora no ha pasado al bloquearla se deja, también la que es justo ahora', async () => {
+      // Entre la lista y el bloqueo, otra instancia pudo cambiarle la fecha.
+      // Caduca la que ya pasó, no la que empieza en este instante.
+      const ahora = new Date('2026-10-05T10:00:00Z');
+      mockBookingRepository.find.mockResolvedValue([
+        { id: 'b1' },
+        { id: 'b2' },
+      ]);
+      mockBookingRepository.findOne
+        .mockResolvedValueOnce({ ...vencida(), scheduledDate: MANANA })
+        .mockResolvedValueOnce({
+          ...vencida(),
+          id: 'b2',
+          scheduledDate: ahora,
+        });
+
+      expect(await service.caducarPendientes(ahora)).toBe(0);
+      expect(pagos.liberarRetencion).not.toHaveBeenCalled();
+      expect(mockBookingRepository.save).not.toHaveBeenCalled();
+    });
+
     it('si falla una, sigue con las demás', async () => {
       mockBookingRepository.find.mockResolvedValue([
         { id: 'b1' },
@@ -256,6 +277,47 @@ describe('BookingsService', () => {
         priceMin: 45,
       });
       INACTIVAS.add('provider-uuid');
+
+      await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockBookingRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('de las dos partes lee lo que decide si pueden reservarse', async () => {
+      mockServiceRepository.findOne.mockResolvedValue({
+        id: 'service-uuid',
+        providerId: 'provider-uuid',
+        isActive: true,
+        priceMin: 10,
+        priceMax: null,
+      });
+      mockBookingRepository.create.mockImplementation((r: unknown) => r);
+      mockBookingRepository.save.mockImplementation(async (r: unknown) => r);
+
+      await service.create('client-uuid', createDto);
+
+      expect(mockUserRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          select: { id: true, esDemostracion: true, isActive: true },
+        }),
+      );
+    });
+
+    it.each([
+      ['el cliente', 'provider-uuid'],
+      ['el profesional', 'client-uuid'],
+    ])('si %s ya no existe, no se reserva', async (_parte, queda) => {
+      mockServiceRepository.findOne.mockResolvedValue({
+        id: 'service-uuid',
+        providerId: 'provider-uuid',
+        isActive: true,
+        priceMin: 10,
+        priceMax: null,
+      });
+      mockUserRepository.find.mockResolvedValueOnce([
+        { id: queda, isActive: true, esDemostracion: false },
+      ] as never);
 
       await expect(service.create('client-uuid', createDto)).rejects.toThrow(
         NotFoundException,
@@ -376,6 +438,10 @@ describe('BookingsService', () => {
       await expect(service.create('client-uuid', createDto)).rejects.toThrow(
         NotFoundException,
       );
+      // Ni si está desactivado: lo filtra la propia consulta.
+      expect(mockServiceRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'service-uuid', isActive: true },
+      });
     });
 
     it('debería lanzar BadRequestException si el proveedor intenta reservar su propio servicio', async () => {
@@ -424,6 +490,21 @@ describe('BookingsService', () => {
         await expect(service.create('client-uuid', createDto)).rejects.toThrow(
           ForbiddenException,
         );
+      });
+
+      it('lleguen las dos cuentas en el orden que lleguen', async () => {
+        // La base no promete ningún orden: si se tomara la primera cuenta
+        // como la del cliente, aquí el profesional real se compararía
+        // consigo mismo y un cliente de demostración reservaría con él.
+        mockUserRepository.find.mockResolvedValueOnce([
+          { id: 'provider-uuid', isActive: true, esDemostracion: false },
+          { id: 'client-uuid', isActive: true, esDemostracion: true },
+        ] as never);
+
+        await expect(service.create('client-uuid', createDto)).rejects.toThrow(
+          ForbiddenException,
+        );
+        expect(mockBookingRepository.save).not.toHaveBeenCalled();
       });
 
       it('entre cuentas de demostración se reserva como siempre', async () => {
@@ -963,6 +1044,104 @@ describe('BookingsService', () => {
       expect(auditoria.anotar).not.toHaveBeenCalled();
     });
 
+    it.each([
+      ['clienta', { clientId: 'admin-1' }],
+      ['profesional', { providerId: 'admin-1' }],
+    ])(
+      'una administración que es la %s de la reserva actúa como parte: no se anota',
+      async (_papel, parte) => {
+        mockBookingRepository.findOne.mockResolvedValue({
+          ...reserva(BookingStatus.PENDING),
+          ...parte,
+        });
+        mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+        await service.updateStatus('b1', 'admin-1', 'admin', {
+          status: BookingStatus.CANCELLED,
+        } as never);
+
+        expect(auditoria.anotar).not.toHaveBeenCalled();
+      },
+    );
+
+    it('la moderación aceptando una solicitud se lo cuenta solo al cliente', async () => {
+      await cambiar(BookingStatus.PENDING, 'confirmed', 'admin-1', 'admin');
+
+      expect(avisos.crear).toHaveBeenCalledTimes(1);
+      expect(avisos.crear).toHaveBeenCalledWith(
+        expect.objectContaining({ usuarioId: 'c1' }),
+      );
+    });
+
+    it('aceptarla deja anotado cuándo', async () => {
+      await cambiar(BookingStatus.PENDING, 'confirmed', 'p1', 'provider');
+
+      expect(mockBookingRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: BookingStatus.CONFIRMED,
+          confirmedAt: expect.any(Date),
+        }),
+      );
+    });
+
+    it('el aviso de una cancelación no dice que fuera sin cobro', async () => {
+      await cambiar(BookingStatus.PENDING, 'cancelled', 'c1', 'client');
+
+      expect(avisos.crear).toHaveBeenCalledWith(
+        expect.objectContaining({
+          datos: { estado: BookingStatus.CANCELLED },
+        }),
+      );
+    });
+
+    it('una solicitud pendiente cuya hora pasó, el cliente sí la cancela', async () => {
+      // La regla de la cancelación tardía es para las aceptadas: en una
+      // pendiente no hay trabajo hecho ni nadie que se haya comprometido.
+      mockBookingRepository.findOne.mockResolvedValue(
+        reserva(BookingStatus.PENDING, AYER),
+      );
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+      const r = await service.updateStatus('b1', 'c1', 'client', {
+        status: BookingStatus.CANCELLED,
+      } as never);
+
+      expect(r.status).toBe(BookingStatus.CANCELLED);
+    });
+
+    it('una administración que reservó como clienta sí la cancela, pasada la hora', async () => {
+      mockBookingRepository.findOne.mockResolvedValue({
+        ...reserva(BookingStatus.CONFIRMED, AYER),
+        clientId: 'admin-1',
+      });
+      mockBookingRepository.save.mockImplementation(async (b: unknown) => b);
+
+      const r = await service.updateStatus('b1', 'admin-1', 'admin', {
+        status: BookingStatus.CANCELLED,
+      } as never);
+
+      expect(r.status).toBe(BookingStatus.CANCELLED);
+    });
+
+    it('a la hora justa, el cliente ya no la cancela', async () => {
+      const hora = new Date('2026-10-05T10:00:00Z');
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(hora);
+      try {
+        mockBookingRepository.findOne.mockResolvedValue(
+          reserva(BookingStatus.CONFIRMED, hora),
+        );
+
+        await expect(
+          service.updateStatus('b1', 'c1', 'client', {
+            status: BookingStatus.CANCELLED,
+          } as never),
+        ).rejects.toThrow(ConflictException);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('un cambio rechazado no avisa a nadie', async () => {
       await expect(
         cambiar(BookingStatus.COMPLETED, 'cancelled', 'p1', 'provider'),
@@ -1061,6 +1240,23 @@ describe('BookingsService', () => {
       expect((await reservar(40)).totalPrice).toBe(40);
       expect((await reservar(90)).totalPrice).toBe(90);
     });
+
+    it('con un precio fijo, el máximo igual al mínimo también manda', async () => {
+      // Se comparaba con «>», y un servicio de 50 euros se reservaba por
+      // 9.999: lo encontraron las pruebas de mutación.
+      conTarifa(50, 50);
+
+      expect((await reservar(50)).totalPrice).toBe(50);
+      await expect(reservar(9999)).rejects.toThrow(BadRequestException);
+    });
+
+    it('con la horquilla al revés, el máximo no manda', async () => {
+      // Quedan servicios publicados así de antes: aplicarlo dejaría la
+      // reserva sin ningún importe posible.
+      conTarifa(90, 40);
+
+      expect((await reservar(95)).totalPrice).toBe(95);
+    });
   });
 
   describe('quién puede leer una reserva', () => {
@@ -1111,6 +1307,65 @@ describe('BookingsService', () => {
       mockBookingRepository.findOne.mockResolvedValue(RESERVA);
 
       expect(await service.findById('b1')).toBeTruthy();
+    });
+
+    it('una que no existe es un 404', async () => {
+      mockBookingRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.findById('b1', { id: 'c1', role: 'client' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('llega con las dos partes y el servicio', async () => {
+      // De las partes sale también si la reserva es del mundo de la
+      // demostración: sin ellas, no lo sería ninguna.
+      mockBookingRepository.findOne.mockResolvedValue(RESERVA);
+
+      await service.findById('b1', { id: 'c1', role: 'client' });
+
+      expect(mockBookingRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'b1' },
+        relations: {
+          client: true,
+          provider: true,
+          service: { category: true },
+        },
+      });
+    });
+
+    describe('la administración de demostración', () => {
+      // Su contraseña está en la pantalla de acceso, y dentro de una reserva
+      // van el domicilio y lo que el cliente cuenta del trabajo.
+      const DEMO = { id: 'demo-admin', role: 'admin', soloLectura: true };
+      const CON = (cliente: boolean, profesional: boolean) => ({
+        ...RESERVA,
+        client: { id: 'c1', esDemostracion: cliente },
+        provider: { id: 'p1', esDemostracion: profesional },
+      });
+
+      it('ve las de su mundo', async () => {
+        mockBookingRepository.findOne.mockResolvedValue(CON(true, true));
+
+        expect(await service.findById('b1', DEMO)).toBeTruthy();
+      });
+
+      it.each([
+        ['entre cuentas reales', false, false],
+        ['con un cliente real', false, true],
+        ['con un profesional real', true, false],
+      ])(
+        'no ve una reserva %s: para ella no existe',
+        async (_caso, cliente, profesional) => {
+          mockBookingRepository.findOne.mockResolvedValue(
+            CON(cliente, profesional),
+          );
+
+          await expect(service.findById('b1', DEMO)).rejects.toThrow(
+            NotFoundException,
+          );
+        },
+      );
     });
   });
 

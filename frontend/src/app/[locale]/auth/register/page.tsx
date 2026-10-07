@@ -260,7 +260,7 @@ export default function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute end-3 top-1/2 -translate-y-1/2 text-tenue"
+                  className="absolute end-1.5 top-1/2 -translate-y-1/2 rounded p-1.5 text-tenue hover:text-principal"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={
                     showPassword ? t('ocultarPassword') : t('mostrarPassword')

@@ -349,6 +349,12 @@ export class PaymentsService {
         existingPayment.stripePaymentIntentId = paymentIntent.id;
         existingPayment.status = PaymentStatus.PENDING;
         existingPayment.failureReason = null as unknown as string;
+        // Ni la fecha de la retención anterior. Se quedaba, y la nueva, si se
+        // conocía preguntando a Stripe y no por el aviso, la heredaba: la
+        // revisión la creía de hacía días y la renovaba en la hora siguiente,
+        // o la soltaba y volvía a pedir autorización si el banco quería que
+        // el titular confirmara.
+        existingPayment.paidAt = null as unknown as Date;
         await gestor.save(existingPayment);
       } else {
         const payment = gestor.create(Payment, {

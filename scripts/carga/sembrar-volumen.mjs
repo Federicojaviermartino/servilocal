@@ -165,7 +165,11 @@ for (let hecho = 0; hecho < CUANTOS; hecho += LOTE) {
 
 // Sin esto el planificador sigue creyendo que la tabla tiene veinticinco
 // filas y elige el plan de antes, que es justo lo que se quería dejar atrás.
-await cliente.query('ANALYZE services');
+// Toda la base y no solo los servicios: sin estadísticas de las cuentas,
+// recién sembradas, contaba con un profesional donde había diecisiete y
+// elegía un plan que tardaba diez veces más. En producción las mantiene al
+// día el autovacuum.
+await cliente.query('ANALYZE');
 
 const total = (
   await cliente.query('SELECT count(*)::int AS n FROM services')

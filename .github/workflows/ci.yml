@@ -568,3 +568,30 @@ jobs:
           name: informe-playwright
           path: frontend/playwright-report/
           retention-days: 7
+
+      # Rendimiento, accesibilidad, buenas prácticas y SEO de las páginas por
+      # las que entra la gente, con sus presupuestos (frontend/lighthouserc.cjs).
+      # Aquí y no en un trabajo aparte: la API ya está en marcha y el
+      # frontend compilado, y la protección de main no cambia.
+      - name: Medir con Lighthouse
+        if: ${{ !cancelled() }}
+        working-directory: ./frontend
+        run: |
+          npx next start -p 3000 > web.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null http://localhost:3000/ && break
+            sleep 2
+          done
+          # La semilla crea los servicios con identificadores nuevos.
+          export LHCI_FICHA=$(curl -s "http://localhost:3001/api/services/search?limit=1" \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).data[0].id))")
+          npx --yes @lhci/cli@0.15.1 autorun --config=lighthouserc.cjs
+
+      - name: Guardar los informes de Lighthouse
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: informe-lighthouse
+          path: frontend/lighthouse/
+          retention-days: 14
+          if-no-files-found: ignore

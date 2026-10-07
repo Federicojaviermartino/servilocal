@@ -70,6 +70,19 @@ describe('ThrottlerVisitanteGuard', () => {
     expect(r).toBe(BALANCEADOR);
   });
 
+  it('quita los espacios de la cabecera', async () => {
+    const r = await clave({
+      headers: { 'cf-connecting-ip': ` ${REAL} ` },
+      ip: BALANCEADOR,
+    });
+
+    expect(r).toBe(REAL);
+  });
+
+  it('un req.ip vacío no cuenta como visitante', async () => {
+    expect(await clave({ headers: {}, ip: '' })).toBe('desconocido');
+  });
+
   it('no se queda con una cabecera vacía', async () => {
     const r = await clave({
       headers: { 'cf-connecting-ip': '   ' },
@@ -155,6 +168,14 @@ describe('ThrottlerVisitanteGuard', () => {
       ['fe80::1%eth0', 'fe80:0:0:0::/64'],
       ['2001:db8:1:2:3:4:5:6', '2001:db8:1:2::/64'],
       ['64:ff9b::192.0.2.1', '64:ff9b:0:0::/64'],
+      // El hueco del :: se calcula con lo que hay a cada lado: aquí deja un
+      // solo bloque, y el /64 llega hasta el 1 de la derecha.
+      ['2001:db8::1:2:3:4:5', '2001:db8:0:1::/64'],
+      // Y una IPv4 al final ocupa dos bloques: contada como uno, el 3 caería
+      // fuera del /64.
+      ['1:2::3:4:5:192.0.2.1', '1:2:0:3::/64'],
+      // ::ffff: solo es una IPv4 si va al principio.
+      ['1::ffff:192.0.2.1', '1:0:0:0::/64'],
     ])('%s cuenta como %s', (ip, esperado) => {
       expect(agruparVisitante(ip)).toBe(esperado);
     });

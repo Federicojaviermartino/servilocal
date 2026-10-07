@@ -45,7 +45,7 @@ export default function ResultsList({
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {services.map((service) => (
-          <ServiceCard key={service.id} service={service} />
+          <ServiceCard key={service.id} service={service} nivel={2} />
         ))}
       </div>
     </div>

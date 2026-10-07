@@ -29,7 +29,8 @@
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
     "lock": "node ../scripts/regenerar-lockfile.mjs",
     "test:integracion": "vitest run --config vitest.integracion.config.ts",
-    "evaluar:ia": "vitest run --config vitest.evaluacion.config.ts"
+    "evaluar:ia": "vitest run --config vitest.evaluacion.config.ts",
+    "test:mutacion": "node scripts/mutacion.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -68,6 +69,7 @@
     "@nestjs/cli": "^12.0.7",
     "@nestjs/schematics": "^12.0.5",
     "@nestjs/testing": "^12.1.0",
+    "@stryker-mutator/core": "^10.0.0",
     "@swc/core": "^1.16.2",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",

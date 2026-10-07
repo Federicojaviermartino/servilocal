@@ -34,6 +34,19 @@ describe('OrigenGuard', () => {
     },
   );
 
+  it.each(['GET', 'HEAD', 'OPTIONS'])(
+    'deja pasar %s desde cualquier sitio: no cambia nada',
+    (method) => {
+      // OPTIONS es la consulta previa de CORS: rechazarla dejaría al propio
+      // frontend sin poder llamar.
+      expect(
+        guardia.canActivate(
+          contexto({ method, headers: { origin: 'https://ajena.example' } }),
+        ),
+      ).toBe(true);
+    },
+  );
+
   it('deja pasar al frontend', () => {
     expect(
       guardia.canActivate(

@@ -1,0 +1,58 @@
+name: Pruebas de mutación
+
+# Si las pruebas detectan un fallo de verdad, no solo si pasan por cada
+# línea: Stryker cambia el código que mueve dinero, decide permisos o
+# filtra datos personales, y cada cambio que sobrevive es un fallo que
+# nadie habría visto. Ver backend/stryker.config.mjs.
+#
+# Tarda demasiado para cada empujón: a mano, y una vez por semana para que
+# no se quede atrás sin que nadie lo vea.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 2 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  mutacion:
+    name: Mutación de ${{ matrix.area }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      # Un área por debajo del suelo no tiene por qué parar las demás.
+      fail-fast: false
+      matrix:
+        area: [privacidad, permisos, reservas, pagos]
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Mutar y probar
+        env:
+          MUTAR: ${{ matrix.area }}
+        run: npx stryker run
+
+      - name: Guardar el informe
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: mutacion-${{ matrix.area }}
+          path: backend/reports/mutacion/
+          retention-days: 30
+          if-no-files-found: ignore
