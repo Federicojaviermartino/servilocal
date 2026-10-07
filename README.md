@@ -22,9 +22,12 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-1856%20unit%20%2B%20427%20integration%20%2B%20106%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-1935%20unit%20%2B%20427%20integration%20%2B%20106%20e2e-475569)
 
 <img src="docs/screenshots/search-en.png" alt="Search results in English, with filters, prices and ratings" width="820">
+
+Designed, built, tested and deployed by **[Federico Javier Martino](https://github.com/Federicojaviermartino)**<br>
+Master's thesis · *Máster Universitario en Desarrollo de Sitios y Aplicaciones Web* · Universitat Oberta de Catalunya, 2025/2026
 
 </div>
 
@@ -64,7 +67,7 @@ The stack is a Next.js front end, a NestJS REST API, PostgreSQL with PostGIS for
 - **Search near you**: PostGIS `ST_DWithin` over a spatial index, accent-insensitive text matching, and a results page rendered on the server with its filters and page in the address — [`services.service.ts`](backend/src/services/services.service.ts), [`search/page.tsx`](frontend/src/app/%5Blocale%5D/services/search/page.tsx).
 - **Money that follows Stripe**: the whole amount is held when the client books, captured when the provider completes, released on cancellation, and reconciled with Stripe every hour — [`payments.service.ts`](backend/src/payments/payments.service.ts).
 - **Who may do what**: roles, a read-only demo administrator and demo accounts kept apart from real ones, checked by booting the whole application and calling every route as every kind of account — [`permisos.integracion.ts`](backend/test/integracion/permisos.integracion.ts).
-- **Tested in depth**: 1856 unit tests, 427 against a real database, Stripe's emulator and Valkey, and 106 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
+- **Tested in depth**: 1935 unit tests, 427 against a real database, Stripe's emulator and Valkey, and 106 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
 - **Ten languages**, Arabic right to left included, and an operations runbook for deploying, rolling back and restoring — [`OPERATIONS.md`](docs/OPERATIONS.md).
 
 ---
@@ -93,7 +96,7 @@ The client and provider accounts can change anything, as real users would. Whate
 they change goes back to the seeded state an hour later, so the demo survives the
 next visitor.
 
-> **Note on the first load.** Both services run on Render's free tier and sleep after 15 minutes without traffic. The first request can take up to a minute while they wake up; after that it is fast. A scheduled job pings them during working hours to reduce the chance of a cold start.
+> **Note on the first load.** Both services run on Render's free tier and sleep after 15 minutes without traffic, so the first visit can take up to a minute while they wake up; after that it is fast.
 
 ### What is live in the demo
 
@@ -110,7 +113,9 @@ next visitor.
 
 ## Screenshots
 
-Taken from the running application with the seeded data by [`frontend/scripts/capturas.mjs`](frontend/scripts/capturas.mjs), so they can be retaken whenever the interface changes.
+<img src="docs/recorrido.gif" alt="Searching for a plumber, the results on the map, a service page, then the provider accepting the request and writing to the client" width="820">
+
+Recorded and taken from the running application with the seeded data by [`frontend/scripts/recorrido.mjs`](frontend/scripts/recorrido.mjs) and [`frontend/scripts/capturas.mjs`](frontend/scripts/capturas.mjs), so they can be redone whenever the interface changes.
 
 | Home |
 |---|
@@ -203,7 +208,7 @@ Taken from the running application with the seeded data by [`frontend/scripts/ca
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1021 unit tests on the API with doubles, plus 427 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 835 in the browser. Playwright for 106 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1099 unit tests on the API with doubles, plus 427 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 836 in the browser. Playwright for 106 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes. Lighthouse in CI with budgets for performance, accessibility, best practices and SEO, and Stryker mutation testing over payments, bookings, permissions and personal data |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -236,7 +241,7 @@ The UML diagrams in [`diagrams/`](diagrams/README.md) are the ones submitted wit
 
 ## Engineering Highlights
 
-- **Spatial search** uses PostGIS `ST_DWithin` against GiST-indexed geometry columns, not a bounding-box approximation.
+- **Spatial search** uses PostGIS `ST_DWithin` over a GiST index on the geography expression, not a bounding-box approximation: first with the radius asked for, which the index can serve, then with each provider's own coverage radius, which it cannot. With only the provider's radius, as from 2.8.0 to 2.11.1, a search near you measured the distance to every service.
 - **Text and city matching** is accent-insensitive through an `IMMUTABLE` SQL expression, backed by a functional index so it stays indexable.
 - **Payments use manual capture**, so the client's money is authorised at booking time and only captured when the work is confirmed — the correct model for a marketplace. Each status change runs in one transaction with the booking locked, so a provider completing while the client cancels can no longer leave a cancelled booking charged.
 - **The calendar is enforced by the database.** An exclusion constraint over the provider and the booked interval keeps confirmed bookings from overlapping, even when two are confirmed at the same instant and neither request can see the other.
@@ -377,11 +382,13 @@ servilocal/
       database/
         migrations/         Schema history — the only source of truth
         seeds/              Reproducible demo data
+    scripts/                mutacion.mjs, which runs the mutation tests area by area
   frontend/                 Next.js 16 App Router + Tailwind
     .storybook/             Component catalogue config and sample data
     e2e/                    Playwright specs, desktop and mobile projects
     messages/               Translation catalogues, one JSON per locale
-    scripts/                capturas.mjs, which takes the screenshots in this README
+    scripts/                capturas.mjs and recorrido.mjs, the screenshots and the
+                            walkthrough in this README; iconos.mjs, the site's icons
     src/
       app/
         [locale]/           Every route, prerendered once per language
@@ -601,11 +608,12 @@ Hardening still in progress is tracked in the [roadmap](#roadmap).
 # Back end
 cd backend
 npm run lint
-npm run test          # 1021 unit tests across 72 files, all with doubles (Vitest)
+npm run test          # 1099 unit tests across 73 files, all with doubles (Vitest)
 npm run test:cov      # all of src; fails below 96% statements / 89% branches,
                       # or below its own floor for payments, bookings, account data and guards
 npm run test:integracion   # 427 tests against a real database, stripe-mock and Valkey
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
+npm run test:mutacion      # Stryker: do the tests catch a bug, not just run the line? About 90 minutes
 npm run build
 
 # Front end
@@ -613,7 +621,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 835 unit tests (Vitest)
+npm run test          # 836 unit tests (Vitest)
 npm run test:cov      # fails below 91% statements / 88% branches
 npm run build
 
@@ -635,6 +643,51 @@ npm run lock
 The payment test runs only where both Stripe test keys are present, and is skipped from the start otherwise, with the reason. With the keys set it has to pass: a payment form that does not appear is a failure, not a skip, and the test checks through the API that the money ends up held. Add `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as repository secrets to run it for real in CI.
 
 All of these run in CI on every push, to any branch. The end-to-end job spins up the whole stack: a PostGIS container, migrations, the seed, the API and the built front end. A test that fails and then passes on a retry fails the run as well, and a stray `.only` is rejected by ESLint and, in CI, by both runners.
+
+### Performance, mutation and load
+
+**Lighthouse** measures the built front end in CI, with a phone emulated as Lighthouse
+does by default, and fails the run below its budgets
+([`lighthouserc.cjs`](frontend/lighthouserc.cjs)). The median of three runs in CI:
+
+| Page | Performance | Accessibility | Best practices | SEO |
+|---|---|---|---|---|
+| Home | 0.96 | 1.00 | 1.00 | 1.00 |
+| Search | 0.92 | 1.00 | 1.00 | 1.00 |
+| Service page | 0.97 | 1.00 | 1.00 | 1.00 |
+| Sign-in | 0.91 | 1.00 | 1.00 | — (`noindex` on purpose) |
+
+**Mutation testing** changes the code on purpose — a `>` for a `>=`, a condition for
+`true` — and checks that some test fails. It is what showed that a fixed-price service
+could be booked for any amount above its price, that paying again after an expired hold
+kept the old hold's date, and which tests only ran a line without checking it
+([`stryker.config.mjs`](backend/stryker.config.mjs)):
+
+| Area | Mutation score |
+|---|---|
+| What each party of a booking sees, and the public service | 100% |
+| Permissions: guards, the read-only interceptor, the demo world | 95.7% |
+| Bookings | 87.1% |
+| Payments | 82.0% |
+
+Each area fails the run below its own floor, about five points under its score. What
+survives is mostly error texts; the options passed to the database, which the unit tests
+replace with doubles and the integration tests check, though Stryker does not run those;
+and changes no caller could notice, such as a check that an earlier one already makes.
+
+**The load test** fills a database with 50,000 services and has up to 30 people search
+at once for 70 seconds ([`scripts/carga`](scripts/carga)). It runs by hand from the
+Actions tab, and the same test gave, at the 95th percentile:
+
+| Search | 2.11.1 | 2.12.0 |
+|---|---|---|
+| Near you | 3.72 s | 0.16 s |
+| By city | 3.19 s | 0.04 s |
+| By text | 8.25 s | 0.39 s |
+
+That is 396 requests before and 2,484 after, none of them failed. Its budgets, from
+half a second to two, sit a few times above the new figures, so a regression like that
+of 2.11.1 fails the run.
 
 ### Running the heavier suites locally
 
@@ -687,6 +740,7 @@ some tests count the seeded services, and a run leaves bookings and messages beh
 |--------|------|
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
+| Done | Quality: Lighthouse budgets in CI, mutation testing over money, permissions and personal data, a search that stays fast with 50,000 services, a favicon, and a fixed price that is really fixed |
 | Done | Tests and operations: who may call each route checked with the whole application booted, coverage over all the code with floors of its own for money and personal data, flaky end-to-end tests failing the run, a weekly encrypted copy of the database, and a shutdown that is bounded and logged |
 | Done | Front end: search rendered on the server with its page in the address, search near you, ratings and conversations that a screen reader can follow, forms that validate in the page's language, and drafts kept per account |
 | Done | The demo resets itself every hour, and its administrator only sees the demo's accounts. Public pages show reviewers by first name and initial, and services without their reference address |

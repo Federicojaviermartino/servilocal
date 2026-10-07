@@ -10,6 +10,100 @@ resources, and has not changed since it was introduced.
 Versions up to 2.0.0 were tagged after the fact, on the commit that closed each stage of
 the project, and carry that commit's date.
 
+## [2.12.0] — 2026-10-07
+
+### Fixed
+
+- Search slowed down badly with a large catalogue. With 50,000 services and 30 people
+  searching at once, a text search took 4.8 seconds on average and a search near you
+  missed its three-second budget. Three causes, measured one by one:
+  - Since 2.8.0, the distance filter also applies each provider's coverage radius, and a
+    distance that changes from row to row cannot use the spatial index: PostgreSQL
+    measured the distance to every service (4.4 s instead of 0.47 s for the same
+    rows). The requested radius now filters first, through the index, and the
+    provider's radius refines.
+  - With joins, paging made TypeORM fetch the ids of every match in a `SELECT DISTINCT`
+    before the page itself: more than six of the seven seconds of a broad text search.
+    No join here can repeat a row, so the page is read directly.
+  - Ordering the newest first had to sort every match. An index on the publication date
+    lets PostgreSQL read them in order and stop at the twelfth: a broad text search went
+    from 1.6 s to 21 ms in the database.
+
+  In the same test after the fix, a text search takes 0.14 s on average and a search
+  near you 0.07 s, and the API answers 35 requests a second instead of 5.5.
+- A fixed-price service, with the same minimum and maximum, could be booked for any
+  amount above it: the cap applied only when the maximum was higher than the minimum.
+  It now applies when it is equal too, in the API and in the booking form. Mutation
+  testing found it.
+- Paying again for a booking whose hold had expired kept the date of the old hold. If
+  the new one became known by asking Stripe rather than through its webhook, the
+  hourly check took it for days old and renewed it within the hour; and if the bank
+  wanted the cardholder to confirm, it released it and asked the client to authorise
+  the payment once more. The new attempt now starts without a date. Mutation testing
+  found this one too.
+- The site had no icon: browsers showed their generic one, and every page logged a 404
+  for `/favicon.ico`. It now has a favicon, an SVG icon and one for a phone's home
+  screen.
+- In the search results, the service titles were `h3` straight under the page's `h1`,
+  and the button that shows the password was a 16 px touch target. Titles are `h2`
+  there now, and the button 28 px.
+- The language versions of each page were declared twice, in the HTML and in a `Link`
+  header that took the host from the request, so outside production they disagreed.
+  Only the HTML ones remain.
+
+### Security
+
+- `sharp` 0.35.5, which Next uses to resize images, for a flaw in the `librsvg` it
+  bundles that could allow running code on Linux (GHSA-wq5f-xc86-pv6w); and
+  `source-map-js` 1.2.2, which PostCSS uses, for a denial of service through crafted
+  source maps (GHSA-68fv-2mgg-jv7q). Both were published while this version was being
+  tested, and the dependency gate in CI held it back until they were updated.
+
+### Changed
+
+- Lighthouse runs in CI against the built front end, with budgets on the home page, the
+  search, a service page and sign-in: performance at least 0.85, best practices 0.95,
+  and accessibility and SEO 1.00 (sign-in is `noindex` on purpose, so no SEO there).
+  In CI: performance 0.91 to 0.97, the rest 1.00.
+- Mutation testing with Stryker over payments, bookings, permissions and what each party
+  sees: it changes the code on purpose and checks the tests notice. By hand with
+  `npm run test:mutacion`, from the Actions tab, and weekly. Scores: what each party sees
+  100%, permissions 95.7%, bookings 87.1%, payments 82.0%, each with a floor about five
+  points below that fails the run.
+- The load test analyses the whole database after filling it, as autovacuum does in
+  production: with stale statistics it measured a plan production would not use. And
+  its budgets follow what it now measures: under a second near you, half a second by
+  city and two seconds by text, at the 95th percentile. The old ones, three to nine
+  seconds, let 2.11.1 search by text twenty times slower than now.
+- `npm run lock -- <packages>` also updates those packages within their ranges,
+  including the ones that come in through another dependency, still resolving inside
+  Linux.
+- Dependabot leaves TypeScript 7 aside, with the reason, until typescript-eslint supports
+  it.
+- OPERATIONS: GitHub ran the keep-awake ping 25 to 42 times a day until 30 September and
+  2 or 3 times a day after it, so an external monitor is what keeps the demo awake; and
+  what to do when a service does not wake up, which happened to the front end on
+  5 October for about forty minutes.
+- README: who built it and in which context, right under the title; a walkthrough
+  recorded from the running application; and the Lighthouse, mutation and load figures.
+
+### Tests
+
+- Mutation testing found weak tests, now strengthened: `HEAD` and `OPTIONS` as safe
+  methods, `@Roles` read through the real reflector, IPv6 addresses where the `::` and an
+  embedded IPv4 decide the /64, the masks of personal data, the account helpers,
+  late cancellation exactly at the booking's time, an administrator who is also a party
+  to the booking, the expiry of requests at the exact moment, the payment date when a
+  payment is reconciled with Stripe, paying a confirmed booking, a payment intent
+  without its client secret, deleting the Stripe customer with the account, webhooks
+  for payments that do not exist here, the demo administrator asking for a real booking
+  by its id, the two accounts of a new booking arriving in either order, and an account
+  that no longer exists.
+- The integration test that checks the spatial index is usable now looks at the
+  conditions the search actually sends, captured on the fly. The old one checked a query
+  written by hand with a fixed radius, and stayed green while the real one could not use
+  the index.
+
 ## [2.11.1] — 2026-09-30
 
 ### Fixed

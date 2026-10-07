@@ -31,9 +31,9 @@ module.exports = {
       },
     },
     // La mediana de las tres pasadas de cada página. Un suelo, no una meta:
-    // el rendimiento se deja unos puntos por debajo de lo medido en local
-    // (0,90 a 0,92 con el móvil que simula Lighthouse), porque el runner de
-    // la CI es más lento y más variable.
+    // el rendimiento se deja unos puntos por debajo de lo medido —de 0,90 a
+    // 0,92 en local y de 0,91 a 0,97 en la CI, con el móvil que simula
+    // Lighthouse—, porque varía de una pasada a otra más que lo demás.
     assert: {
       assertMatrix: [
         {

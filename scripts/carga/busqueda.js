@@ -34,28 +34,35 @@ export const options = {
   // Los umbrales son el resultado de la prueba, no un adorno: si se pasan,
   // k6 sale con error y la prueba falla.
   //
-  // Medido el 22/09/2026 con 50.000 servicios y 30 usuarios a la vez, sobre
-  // una máquina de desarrollo:
+  // Medido con 50.000 servicios y 30 usuarios a la vez: la media de cada
+  // búsqueda y las peticiones por segundo.
   //
-  //             por cercanía   por ciudad   por texto   caudal
-  //   de salida     1,34 s       5,97 s      12,12 s    4,7 req/s
-  //   ahora         1,13 s       1,53 s       4,94 s   11,6 req/s
+  //                                por cercanía  por ciudad  por texto   caudal
+  //   22/09/2026, de salida (*)        1,34 s      5,97 s     12,12 s   4,7 req/s
+  //   22/09/2026, con índices (*)      1,13 s      1,53 s      4,94 s  11,6 req/s
+  //   05/10/2026, la 2.11.1            1,74 s      1,27 s      4,77 s   5,5 req/s
+  //   07/10/2026, la 2.12.0            0,07 s      0,01 s      0,14 s  35,3 req/s
   //
-  // Lo que cambió entre una columna y otra: índices de trigramas sobre las
-  // expresiones normalizadas, normalizar el patrón en código para que el
-  // planificador pueda usarlos, sacar el nombre de la categoría del OR, y
-  // acotar el conteo de la paginación.
+  //   (*) En una máquina de desarrollo; las demás, en la integración.
   //
-  // Los topes van por encima de lo medido porque la máquina de la
-  // integración es más lenta y porque el margen tiene que absorber su ruido,
-  // no tapar una regresión: si la búsqueda por texto vuelve a pasar de ocho
-  // segundos, algo se ha deshecho.
+  // Entre las dos primeras: índices de trigramas sobre las expresiones
+  // normalizadas, normalizar el patrón en código para que el planificador
+  // pueda usarlos, sacar el nombre de la categoría del OR, y acotar el conteo
+  // de la paginación. Entre las dos últimas: un filtro de distancia que el
+  // índice espacial puede servir, la página sin el SELECT DISTINCT que
+  // añadía TypeORM y un índice por fecha de publicación (ver
+  // services.service.ts).
+  //
+  // Los topes van varias veces por encima de lo medido, para que el ruido de
+  // la máquina de la integración no los haga saltar, y no más: con los de
+  // antes, de tres a nueve segundos, la 2.11.1 tardaba veinte veces más que
+  // ahora en buscar por texto y solo la búsqueda por cercanía lo delataba.
   thresholds: {
     http_req_failed: ['rate<0.01'],
-    http_req_duration: ['p(95)<8000'],
-    busqueda_por_cercania: ['p(95)<3000'],
-    busqueda_por_ciudad: ['p(95)<4000'],
-    busqueda_por_texto: ['p(95)<9000'],
+    http_req_duration: ['p(95)<2000'],
+    busqueda_por_cercania: ['p(95)<1000'],
+    busqueda_por_ciudad: ['p(95)<500'],
+    busqueda_por_texto: ['p(95)<2000'],
   },
 };
 

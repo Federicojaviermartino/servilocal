@@ -202,10 +202,16 @@ Constraints worth naming:
   out collusion, since a provider with a second account can book their own service
   through it. A raised cost, not a guarantee.
 - **`Service.location` and `User.location`** are PostGIS geometry columns with GiST
-  spatial indexes. Search uses `ST_DWithin`, not a bounding box. They are written as
-  GeoJSON, because TypeORM converts every value for a spatial column with
-  `ST_GeomFromGeoJSON`: the profile used to pass EWKT text, and saving a location
-  failed with a 500 that only a test against PostGIS could show.
+  spatial indexes. Search uses `ST_DWithin`, not a bounding box: first with the radius
+  asked for, which the index on `location::geography` can serve, then with each
+  provider's coverage radius, which changes from row to row and no index can. It pages
+  with `offset` and `limit` rather than TypeORM's `skip` and `take`, which with joins add
+  a `SELECT DISTINCT` of every match, and an index on `createdAt` serves its default
+  order. With 50,000 services, a broad text search went from 1.6 s to 21 ms in the
+  database. The location columns are written as GeoJSON, because TypeORM converts every
+  value for a spatial column with `ST_GeomFromGeoJSON`: the profile used to pass EWKT
+  text, and saving a location failed with a 500 that only a test against PostGIS could
+  show.
 - **City and text matching** go through an `IMMUTABLE` accent-stripping SQL expression
   with a functional index behind it, so it stays indexable rather than degrading to a
   sequential scan.
@@ -617,6 +623,8 @@ Stated here rather than discovered later.
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |
 | Accessibility | `@axe-core/playwright` | WCAG 2.1 A/AA, in both light and dark themes |
 | AI assistant | Evaluation set, `src/ia/evaluacion` | 48 messages in ten languages with the category and city each should yield. The dictionary path runs in CI; the model path runs by hand, since each case is a paid call, through the same prompt and validation as production |
+| Performance | Lighthouse, in the end-to-end job | Performance, accessibility, best practices and SEO of the home page, the search, a service page and sign-in, against budgets: performance at least 0.85, best practices 0.95, accessibility and SEO 1.00 |
+| Test strength | Stryker, by hand and weekly | That the tests notice a change in the code that moves money, decides permissions or masks personal data, not only that they run it |
 | Components | Storybook | Built in CI, because a broken story breaks nothing in production and would otherwise rot unnoticed |
 | Production | Smoke test after each deploy | Waits until each service reports the commit it should now serve — each Render service redeploys only when its own folder changes — then checks the relay, the cookie attributes, the socket handshake and that sign-out revokes the session |
 
