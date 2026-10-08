@@ -93,6 +93,14 @@ test.describe('Accesibilidad', () => {
     ).toBeVisible();
 
     expect(resumir((await analizar(page)).violations)).toEqual([]);
+
+    // Y la de pagos, que apila distintivos de aviso sobre tarjetas.
+    await page.getByRole('tab', { name: 'Pagos' }).click();
+    await expect(
+      page.getByRole('list', { name: 'Pagos por revisar' }),
+    ).toBeVisible();
+
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
   });
 
   // El contraste del texto tenue era peor en oscuro que en claro —3,19 sobre
@@ -134,6 +142,13 @@ test.describe('Accesibilidad', () => {
       page.getByRole('table', {
         name: 'Historial de acciones de administración',
       }),
+    ).toBeVisible();
+
+    expect(resumir((await analizar(page)).violations)).toEqual([]);
+
+    await page.getByRole('tab', { name: 'Pagos' }).click();
+    await expect(
+      page.getByRole('list', { name: 'Pagos por revisar' }),
     ).toBeVisible();
 
     expect(resumir((await analizar(page)).violations)).toEqual([]);

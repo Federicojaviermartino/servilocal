@@ -19,6 +19,7 @@ const obtenerReportadas = vi.fn();
 const descartarReporte = vi.fn();
 const eliminarValoracion = vi.fn();
 const consumoIa = vi.fn();
+const pagosPorRevisar = vi.fn();
 const estadoIa = vi.fn();
 const reemplazar = vi.fn();
 const cargarSesion = vi.fn();
@@ -30,7 +31,11 @@ vi.mock('@/lib/api', () => ({
     metricas: () => metricas(),
     reputacion: () => reputacion(),
     auditoria: (pagina: number) => auditoria(pagina),
+    pagos: () => pagosPorRevisar(),
   },
+  // La sección de pagos tiene sus propias pruebas: aquí solo se abre.
+  paymentsApi: {},
+  bookingsApi: {},
   usersApi: {
     getAll: () => obtenerUsuarios(),
     toggleActive: (id: string) => alternarCuenta(id),
@@ -319,6 +324,16 @@ beforeEach(() => {
   descartarReporte.mockResolvedValue({ data: {} });
   eliminarValoracion.mockResolvedValue({ data: {} });
   consumoIa.mockResolvedValue({ data: CONSUMO });
+  pagosPorRevisar.mockResolvedValue({
+    data: {
+      pagos: [],
+      totales: {
+        'retenido-con-reserva-cerrada': 0,
+        'retenido-sin-completar': 0,
+        'completada-sin-cobrar': 0,
+      },
+    },
+  });
   estadoIa.mockResolvedValue({ data: { disponible: true, motivo: null } });
 });
 
@@ -490,7 +505,7 @@ describe('Panel de administración', () => {
       expect(
         screen.queryByRole('region', { name: 'Gráficas' }),
       ).not.toBeInTheDocument();
-      expect(screen.getAllByRole('tab')).toHaveLength(6);
+      expect(screen.getAllByRole('tab')).toHaveLength(7);
       expect(screen.getByText('Ana Núñez')).toBeInTheDocument();
     });
   });
@@ -513,6 +528,17 @@ describe('Panel de administración', () => {
       expect(
         screen.queryByRole('table', { name: es.administracion.listaUsuarios }),
       ).not.toBeInTheDocument();
+    });
+
+    it('la de pagos abre los que hay que revisar', async () => {
+      // La administración podía cobrar y reembolsar por la API, pero el
+      // panel no enseñaba qué.
+      await abrir(es.administracion.pagos);
+
+      expect(
+        await screen.findByText(es.administracion.sinPagos),
+      ).toBeInTheDocument();
+      expect(pagosPorRevisar).toHaveBeenCalledTimes(1);
     });
 
     it('solo la pestaña activa entra en el orden del tabulador', async () => {

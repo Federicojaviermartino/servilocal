@@ -23,6 +23,7 @@ import {
   Eye,
   Sparkles,
   ScrollText,
+  Banknote,
 } from 'lucide-react';
 import { haySesionRecordada, useAuthStore } from '@/lib/auth-store';
 import nextDynamic from 'next/dynamic';
@@ -43,6 +44,7 @@ import EstadoCarga from '@/components/molecules/EstadoCarga';
 import { useCarga } from '@/lib/carga';
 import Pagination from '@/components/molecules/Pagination';
 import { useIdiomaDelCatalogo } from '@/lib/idioma-catalogo';
+import PagosSection from './pagos';
 
 // Recharts son unos 430 KB, y se cargaban con el panel aunque nadie abriera
 // las métricas. Aparte, como el mapa en el buscador.
@@ -61,6 +63,7 @@ const TABS = [
   { key: 'reputation', clave: 'reputacion', icon: TrendingUp },
   { key: 'categories', clave: 'categorias', icon: Tag },
   { key: 'reviews', clave: 'valoracionesReportadas', icon: Flag },
+  { key: 'payments', clave: 'pagos', icon: Banknote },
   { key: 'auditoria', clave: 'auditoria', icon: ScrollText },
   { key: 'ia', clave: 'ia', icon: Sparkles },
 ] as const;
@@ -328,6 +331,15 @@ function PanelAdmin({ soloLectura }: { soloLectura: boolean }) {
                 aria-labelledby="tab-reviews"
               >
                 <ReportedReviewsSection onMutate={metricas.reintentar} />
+              </div>
+            )}
+            {tab === 'payments' && (
+              <div
+                role="tabpanel"
+                id="panel-payments"
+                aria-labelledby="tab-payments"
+              >
+                <PagosSection />
               </div>
             )}
             {tab === 'auditoria' && (

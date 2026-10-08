@@ -36,6 +36,22 @@ export class AdminController {
     });
   }
 
+  @Get('pagos')
+  @ApiOperation({
+    summary: 'Pagos que alguien tiene que mirar (solo admin)',
+    description:
+      'Retenciones de reservas ya cerradas, retenciones de reservas ' +
+      'confirmadas cuya hora pasó hace días y reservas completadas sin ' +
+      'cobrar. Las más urgentes primero, con el total de cada motivo.',
+  })
+  @ApiResponse({ status: 200, description: 'Los pagos por revisar' })
+  @ApiResponse({ status: 403, description: 'Requiere rol de administrador' })
+  pagos(@Request() req: PeticionAutenticada) {
+    return this.adminService.pagosPorRevisar({
+      soloDemostracion: soloVeLaDemostracion(req.user),
+    });
+  }
+
   @Get('reputacion')
   @ApiOperation({
     summary: 'Reputación agregada por profesional (solo admin)',

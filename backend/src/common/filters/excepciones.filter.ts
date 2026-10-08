@@ -10,6 +10,7 @@ import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 import { Sentry } from '../observabilidad/sentry';
 import { idPeticionActual } from '../observabilidad/peticion';
+import { respuestaDeStripe } from './errores-de-stripe';
 
 /**
  * Filtro global de excepciones.
@@ -105,24 +106,54 @@ export class FiltroDeExcepciones implements ExceptionFilter {
 
     const esHttp = excepcion instanceof HttpException;
     const deLaPeticion = esHttp ? null : errorDeLaPeticion(excepcion);
+    // Lo que falla en Stripe tampoco es un error interno: ver
+    // errores-de-stripe.ts.
+    const deStripe = esHttp ? null : respuestaDeStripe(excepcion);
     const codigo = esHttp
       ? excepcion.getStatus()
-      : (deLaPeticion?.codigo ?? HttpStatus.INTERNAL_SERVER_ERROR);
+      : (deLaPeticion?.codigo ??
+        deStripe?.estado ??
+        HttpStatus.INTERNAL_SERVER_ERROR);
 
     const cuerpo = esHttp
       ? excepcion.getResponse()
       : {
           statusCode: codigo,
-          message: deLaPeticion?.mensaje ?? 'Error interno del servidor',
+          ...(deStripe && { codigo: deStripe.codigo }),
+          message:
+            deLaPeticion?.mensaje ??
+            deStripe?.mensaje ??
+            'Error interno del servidor',
         };
+
+    // Sin la consulta, como el registro por petición: puede llevar lo que
+    // alguien buscó o datos suyos, y un 500 los dejaba en el registro y en
+    // Sentry.
+    const rutaSinConsulta = () =>
+      (peticion.originalUrl ?? peticion.url).split('?')[0];
+
+    // Cuándo volver a intentarlo, también en su cabecera: con Stripe caído,
+    // y con el freno de una cuenta, que lo trae en el cuerpo.
+    const reintentarEn =
+      deStripe?.reintentarEn ??
+      (cuerpo as { reintentarEn?: unknown } | null)?.reintentarEn;
+    if (typeof reintentarEn === 'number') {
+      respuesta.setHeader('Retry-After', String(reintentarEn));
+    }
+    // Una tarjeta rechazada o un pago que ya no está como se creía no son
+    // fallos del servidor, pero tampoco pasan todos los días: una línea, sin
+    // traza, para saber que ocurrió.
+    if (deStripe && codigo < HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.warn(
+        `${peticion.method} ${rutaSinConsulta()} -> ${codigo}: Stripe respondió ` +
+          ((excepcion as { code?: string }).code ?? deStripe.codigo),
+      );
+    }
 
     if (codigo >= HttpStatus.INTERNAL_SERVER_ERROR) {
       const detalle =
         excepcion instanceof Error ? excepcion.stack : String(excepcion);
-      // Sin la consulta, como el registro por petición: puede llevar lo que
-      // alguien buscó o datos suyos, y un 500 los dejaba en el registro y en
-      // Sentry.
-      const ruta = (peticion.originalUrl ?? peticion.url).split('?')[0];
+      const ruta = rutaSinConsulta();
       this.logger.error(
         `${peticion.method} ${ruta} -> ${codigo}` +
           (peticion.user ? ` (usuario ${peticion.user.id})` : ''),

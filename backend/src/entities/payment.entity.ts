@@ -27,7 +27,9 @@ export enum PaymentStatus {
  * no coinciden. Ver IntegridadDeLosDatos.
  */
 @Entity('payments')
-@Index('IDX_payments_reserva', ['bookingId'])
+// Único: una reserva tiene un solo pago, que se reutiliza si se vuelve a
+// pagar. Ver UnPagoPorReserva.
+@Index('IDX_payments_reserva', ['bookingId'], { unique: true })
 @Index('IDX_payments_cliente', ['clientId'])
 // El webhook busca cada pago por su intención de Stripe.
 @Index('IDX_payments_intencion', ['stripePaymentIntentId'])

@@ -16,6 +16,35 @@ export type Vista = 'list' | 'map';
  */
 export const LIMITE_MAPA = 50;
 
+/**
+ * Los órdenes que sabe dar la API, con sus nombres.
+ *
+ * La API los admitía desde el principio y la interfaz no ofrecía ninguno:
+ * todo salía por fecha de publicación, también al buscar cerca de uno, que
+ * es justo cuando se espera ver primero lo más cercano.
+ */
+export const ORDENES = ['newest', 'rating', 'price', 'distance'] as const;
+export type Orden = (typeof ORDENES)[number];
+
+const tienePunto = (filtros: ServiceSearchParams) =>
+  filtros.latitude !== undefined && filtros.longitude !== undefined;
+
+/** El orden si nadie elige otro: por cercanía si hay desde dónde medirla. */
+export const ordenPorDefecto = (filtros: ServiceSearchParams): Orden =>
+  tienePunto(filtros) ? 'distance' : 'newest';
+
+/**
+ * El orden que rige una búsqueda. Por cercanía solo vale con un punto: sin
+ * él no hay distancia que ordenar, y se cae al de por defecto.
+ */
+export function ordenVigente(filtros: ServiceSearchParams): Orden {
+  const pedido = filtros.sortBy;
+  if (!pedido || (pedido === 'distance' && !tienePunto(filtros))) {
+    return ordenPorDefecto(filtros);
+  }
+  return pedido;
+}
+
 /** Lo que se lee de la dirección: un URLSearchParams, en el navegador o no. */
 interface Parametros {
   get(clave: string): string | null;
@@ -59,6 +88,7 @@ export function filtrosDeUrl(parametros: Parametros): ServiceSearchParams {
   // El radio solo tiene sentido alrededor de un punto: sin él, la API lo
   // ignora y el filtro no filtraba nada.
   const conPunto = latitude !== undefined && longitude !== undefined;
+  const orden = parametros.get('sort') as Orden | null;
   return {
     query: parametros.get('q') || undefined,
     categoryId: parametros.get('category') || undefined,
@@ -68,6 +98,8 @@ export function filtrosDeUrl(parametros: Parametros): ServiceSearchParams {
     radiusKm: conPunto ? numero('radius') : undefined,
     minRating: numero('rating'),
     maxPrice: numero('maxPrice'),
+    // Solo los que existen; lo demás es como no haber dicho nada.
+    sortBy: orden && ORDENES.includes(orden) ? orden : undefined,
   };
 }
 
@@ -102,6 +134,10 @@ export function urlDeBusqueda(
   }
   if (filtros.minRating) parametros.set('rating', String(filtros.minRating));
   if (filtros.maxPrice) parametros.set('maxPrice', String(filtros.maxPrice));
+  // El orden solo se escribe si no es el que saldría de todas formas: así la
+  // misma búsqueda tiene una sola dirección.
+  const orden = ordenVigente(filtros);
+  if (orden !== ordenPorDefecto(filtros)) parametros.set('sort', orden);
   if (vista === 'map') parametros.set('view', 'map');
   // El mapa no se pagina: enseña todo lo que admite la API.
   else if (pagina > 1) parametros.set('page', String(pagina));
@@ -114,9 +150,15 @@ export function peticionDeBusqueda(
   vista: Vista,
   pagina: number,
 ): ServiceSearchParams {
+  // «newest» es lo que la API hace si no se le dice nada: no viaja.
+  const orden = ordenVigente(filtros);
+  const pedidos = {
+    ...filtros,
+    sortBy: orden === 'newest' ? undefined : orden,
+  };
   return vista === 'map'
-    ? { ...filtros, page: 1, limit: LIMITE_MAPA }
-    : { ...filtros, page: pagina };
+    ? { ...pedidos, page: 1, limit: LIMITE_MAPA }
+    : { ...pedidos, page: pagina };
 }
 
 /**

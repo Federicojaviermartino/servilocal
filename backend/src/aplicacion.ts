@@ -4,8 +4,10 @@ import {
   VersioningType,
 } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { COOKIE_SESION } from './auth/sesion';
 import { origenesPermitidos } from './common/origenes';
 import { FiltroDeExcepciones } from './common/filters/excepciones.filter';
 import {
@@ -24,6 +26,27 @@ import {
  * nada en rojo.
  */
 export const OPCIONES_DE_ARRANQUE = { rawBody: true } as const;
+
+/**
+ * Lo que se contesta a quien trae una sesión no se guarda en ninguna caché.
+ *
+ * Son sus reservas, sus mensajes y sus datos. Sin decir nada, la respuesta
+ * quedaba a criterio del navegador y de cualquier intermediario, y en un
+ * ordenador compartido podía seguir en el disco después de salir de la
+ * cuenta. Se decide por lo que trae la petición, no por la ruta: así una
+ * ruta nueva no tiene que acordarse.
+ */
+export function sinGuardarLoPersonal(
+  peticion: Request,
+  respuesta: Response,
+  siguiente: NextFunction,
+): void {
+  const cookies = peticion.cookies as Record<string, unknown> | undefined;
+  if (peticion.headers.authorization || cookies?.[COOKIE_SESION]) {
+    respuesta.setHeader('Cache-Control', 'no-store');
+  }
+  siguiente();
+}
 
 /**
  * Lo que rodea a los módulos: identificador y registro de cada petición,
@@ -48,6 +71,7 @@ export function configurarAplicacion(app: NestExpressApplication): void {
 
   // La sesión del navegador llega en una cookie. Ver auth/sesion.ts.
   app.use(cookieParser());
+  app.use(sinGuardarLoPersonal);
 
   app.enableCors({
     origin: origenesPermitidos(),

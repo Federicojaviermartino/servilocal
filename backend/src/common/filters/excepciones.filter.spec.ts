@@ -2,10 +2,12 @@ import {
   ArgumentsHost,
   BadRequestException,
   ForbiddenException,
+  HttpException,
   HttpStatus,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import Stripe from 'stripe';
 import { QueryFailedError } from 'typeorm';
 import { FiltroDeExcepciones } from './excepciones.filter';
 
@@ -21,15 +23,16 @@ import { FiltroDeExcepciones } from './excepciones.filter';
 function construir(peticion: Record<string, unknown> = {}) {
   const json = vi.fn();
   const status = vi.fn(() => ({ json }));
+  const setHeader = vi.fn();
 
   const host = {
     switchToHttp: () => ({
-      getResponse: () => ({ status }),
+      getResponse: () => ({ status, setHeader }),
       getRequest: () => ({ method: 'GET', url: '/api/algo', ...peticion }),
     }),
   } as unknown as ArgumentsHost;
 
-  return { filtro: new FiltroDeExcepciones(), host, status, json };
+  return { filtro: new FiltroDeExcepciones(), host, status, json, setHeader };
 }
 
 /** El registrador vive en la instancia, no en el prototipo. */
@@ -184,6 +187,150 @@ describe('FiltroDeExcepciones', () => {
     expect(resumen).toContain('GET');
     expect(resumen).toContain('/api/algo');
     expect(resumen).toContain('u1');
+  });
+
+  it('lo que trae cuándo volver a intentarlo lo dice también en su cabecera', () => {
+    // El freno de una cuenta lo manda en el cuerpo, que es lo que lee la
+    // interfaz; Retry-After es lo que entiende cualquier otro cliente.
+    const { filtro, host, json, setHeader } = construir();
+
+    filtro.catch(
+      new HttpException(
+        { statusCode: 429, codigo: 'cuenta-frenada', reintentarEn: 540 },
+        429,
+      ),
+      host,
+    );
+
+    expect(setHeader).toHaveBeenCalledWith('Retry-After', '540');
+    expect(json).toHaveBeenCalledWith(
+      expect.objectContaining({ codigo: 'cuenta-frenada', reintentarEn: 540 }),
+    );
+  });
+
+  it('y lo demás no lleva esa cabecera', () => {
+    const { filtro, host, setHeader } = construir();
+
+    filtro.catch(new NotFoundException('Reserva no encontrada'), host);
+    filtro.catch(new BadRequestException(['el correo no es válido']), host);
+
+    expect(setHeader).not.toHaveBeenCalled();
+  });
+
+  describe('cuando lo que falla es Stripe', () => {
+    const deStripe = (codigo?: string) => ({
+      type: 'invalid_request_error' as const,
+      message: 'No such payment_intent: pi_3Nx_interno',
+      ...(codigo && { code: codigo }),
+    });
+
+    it('caído, contesta 503 con su código y cuándo volver a intentarlo', () => {
+      // Era un 500 con «Error interno del servidor»: ni era verdad ni le
+      // decía a nadie que bastaba con repetirlo en un minuto.
+      const { filtro, host, status, json, setHeader } = construir({
+        method: 'PATCH',
+        url: '/api/bookings/b1/status',
+      });
+
+      filtro.catch(new Stripe.errors.StripeConnectionError(deStripe()), host);
+
+      expect(status).toHaveBeenCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 503,
+        codigo: 'pagos-no-disponibles',
+        message: expect.stringContaining('servicio de pagos'),
+      });
+      expect(setHeader).toHaveBeenCalledWith('Retry-After', '30');
+    });
+
+    it('y sigue siendo un 5xx: queda en el registro, con su traza', () => {
+      const { filtro, host } = construir();
+      const registro = vi
+        .spyOn(registrador(filtro), 'error')
+        .mockImplementation(() => undefined);
+
+      filtro.catch(new Stripe.errors.StripeAPIError(deStripe()), host);
+
+      expect(registro).toHaveBeenCalledTimes(1);
+    });
+
+    it('lo que dice Stripe no sale hacia fuera', () => {
+      // Sus mensajes llevan identificadores de pagos y, con la clave mal, los
+      // últimos caracteres de la clave.
+      const { filtro, host, json } = construir();
+
+      filtro.catch(
+        new Stripe.errors.StripeAuthenticationError(deStripe()),
+        host,
+      );
+
+      expect(JSON.stringify(json.mock.calls)).not.toContain('pi_3Nx_interno');
+    });
+
+    it('una tarjeta rechazada es un 402, y deja una línea sin traza', () => {
+      const { filtro, host, status, json, setHeader } = construir({
+        method: 'POST',
+        url: '/api/payments/capture/b1?x=1',
+      });
+      const fallo = vi
+        .spyOn(registrador(filtro), 'error')
+        .mockImplementation(() => undefined);
+      const aviso = vi
+        .spyOn(
+          registrador(filtro) as unknown as { warn: (linea: string) => void },
+          'warn',
+        )
+        .mockImplementation(() => undefined);
+
+      filtro.catch(
+        new Stripe.errors.StripeCardError(deStripe('card_declined')),
+        host,
+      );
+
+      expect(status).toHaveBeenCalledWith(HttpStatus.PAYMENT_REQUIRED);
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({ codigo: 'tarjeta-rechazada' }),
+      );
+      expect(setHeader).not.toHaveBeenCalled();
+      expect(fallo).not.toHaveBeenCalled();
+      expect(aviso).toHaveBeenCalledWith(
+        'POST /api/payments/capture/b1 -> 402: Stripe respondió card_declined',
+      );
+    });
+
+    it('un pago que ya no está como se creía es un 409', () => {
+      const { filtro, host, status, json } = construir();
+      vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+      filtro.catch(
+        new Stripe.errors.StripeInvalidRequestError(
+          deStripe('payment_intent_unexpected_state'),
+        ),
+        host,
+      );
+
+      expect(status).toHaveBeenCalledWith(HttpStatus.CONFLICT);
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({ codigo: 'pago-en-otro-estado' }),
+      );
+    });
+
+    it('una petición mal hecha a Stripe es un fallo nuestro: 500, sin código', () => {
+      const { filtro, host, status, json } = construir();
+
+      filtro.catch(
+        new Stripe.errors.StripeInvalidRequestError(
+          deStripe('parameter_invalid_integer'),
+        ),
+        host,
+      );
+
+      expect(status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+      expect(json).toHaveBeenCalledWith({
+        statusCode: 500,
+        message: 'Error interno del servidor',
+      });
+    });
   });
 
   it('la ruta se registra sin su consulta, que puede llevar datos de quien pregunta', () => {

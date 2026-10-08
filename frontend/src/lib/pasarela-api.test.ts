@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { cabecerasHaciaLaApi, destinoEnLaApi } from './pasarela-api';
+import {
+  cabecerasHaciaLaApi,
+  destinoEnLaApi,
+  esDocumentacion,
+} from './pasarela-api';
 
 const SECRETO = 's'.repeat(64);
 const VISITANTE = '150.228.101.176';
@@ -96,6 +100,33 @@ describe('cabecerasHaciaLaApi', () => {
     );
 
     expect(salientes.get('x-visitante-ip')).toBe(VISITANTE);
+  });
+});
+
+describe('esDocumentacion', () => {
+  it.each([
+    '/api/docs',
+    '/api/docs/',
+    '/api/docs/swagger-ui-bundle.js',
+    '/api/docs-json',
+    '/api/docs-yaml',
+    '/api/v1/docs',
+  ])(
+    '%s es de la documentación: no se sirve desde el dominio de la cookie',
+    (ruta) => {
+      expect(esDocumentacion(ruta)).toBe(true);
+    },
+  );
+
+  it.each([
+    '/api/services/search',
+    '/api/auth/login',
+    '/api/docsalgo',
+    '/api/services/docs',
+    '/api/documentos',
+    '/docs',
+  ])('%s no lo es', (ruta) => {
+    expect(esDocumentacion(ruta)).toBe(false);
   });
 });
 

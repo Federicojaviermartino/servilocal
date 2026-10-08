@@ -1,4 +1,9 @@
 const createNextIntlPlugin = require('next-intl/plugin');
+const { validarEntorno } = require('./entorno');
+
+// Antes de nada: con el entorno mal no se compila ni se arranca, y un
+// despliegue que no arranca no sustituye al que está sirviendo.
+validarEntorno();
 
 // Indica dónde vive la configuración de idioma por petición.
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
@@ -73,6 +78,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Sin «X-Powered-By: Next.js»: a quien busca qué atacar no hace falta
+  // decirle con qué está hecho.
+  poweredByHeader: false,
   experimental: {
     // Lo que espera el reenvío de /api/... antes de rendirse. Por defecto son
     // 30 segundos, y la API dormida tarda cerca de un minuto en volver: el

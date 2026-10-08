@@ -132,7 +132,9 @@ describe('Header', () => {
     ).toBeGreaterThan(0);
   });
 
-  it('con sesión aparece la campana de avisos', () => {
+  it('con sesión aparece la campana de avisos, una sola', () => {
+    // Había dos, la del escritorio y la del móvil, montadas a la vez y una
+    // oculta: pedían los avisos por duplicado y los anunciaban dos veces.
     entrarComo('client');
 
     pintar(<Header />);
@@ -140,8 +142,54 @@ describe('Header', () => {
     expect(
       screen.getAllByRole('button', {
         name: new RegExp(es.avisos.abrir, 'i'),
-      }).length,
-    ).toBeGreaterThan(0);
+      }),
+    ).toHaveLength(1);
+  });
+
+  it('el menú de móvil se cierra con Escape, y el foco vuelve a su botón', async () => {
+    pintar(<Header />);
+    await userEvent.click(
+      screen.getByRole('button', { name: es.navegacion.abrirMenu }),
+    );
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(
+      screen.queryByRole('navigation', { name: es.navegacion.menuMovil }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: es.navegacion.abrirMenu }),
+    ).toHaveFocus();
+  });
+
+  it('en el móvil, quien administra también tiene su enlace al panel', async () => {
+    // Faltaba: desde el teléfono solo se llegaba escribiendo la dirección.
+    entrarComo('admin');
+    pintar(<Header />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: es.navegacion.abrirMenu }),
+    );
+
+    const menu = screen.getByRole('navigation', {
+      name: es.navegacion.menuMovil,
+    });
+    expect(
+      within(menu).getByRole('link', { name: es.navegacion.administracion }),
+    ).toHaveAttribute('href', '/admin');
+  });
+
+  it('y un cliente no', async () => {
+    entrarComo('client');
+    pintar(<Header />);
+
+    await userEvent.click(
+      screen.getByRole('button', { name: es.navegacion.abrirMenu }),
+    );
+
+    expect(
+      screen.queryByRole('link', { name: es.navegacion.administracion }),
+    ).not.toBeInTheDocument();
   });
 
   it('el menú de móvil se abre y se cierra', async () => {

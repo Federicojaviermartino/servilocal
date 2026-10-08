@@ -92,6 +92,8 @@ export interface ServiceSearchParams {
   radiusKm?: number;
   minRating?: number;
   maxPrice?: number;
+  /** En qué orden: ver ORDENES en lib/busqueda. */
+  sortBy?: 'newest' | 'rating' | 'price' | 'distance';
   page?: number;
   limit?: number;
 }

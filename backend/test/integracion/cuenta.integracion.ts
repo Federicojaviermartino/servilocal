@@ -11,6 +11,7 @@ import {
 import { AuthService } from '../../src/auth/auth.service';
 import { SesionesService } from '../../src/auth/sesiones.service';
 import { JwtStrategy } from '../../src/auth/strategies/jwt.strategy';
+import { FrenoDeCuentas } from '../../src/common/redis/freno-de-cuentas';
 import { UsersService } from '../../src/users/users.service';
 import { crearFuente } from './base';
 
@@ -30,6 +31,8 @@ describe('La cuenta', () => {
   // Los sockets de la cuenta, que aquí no hay: se comprueba que se piden.
   const desconectar = vi.fn();
   const enviados: Array<{ texto: string }> = [];
+  // El de verdad, contando en memoria: sin Redis, como en local.
+  const freno = new FrenoDeCuentas({ cliente: null } as never);
 
   const CLAVE = 'Clave12345!';
 
@@ -41,6 +44,7 @@ describe('La cuenta', () => {
       fuente,
       { olvidarCliente } as never,
       { desconectar } as never,
+      freno,
     );
     acceso = new AuthService(
       fuente.getRepository(User),
@@ -54,6 +58,7 @@ describe('La cuenta', () => {
       } as never,
       fuente,
       { desconectar } as never,
+      freno,
     );
   });
 

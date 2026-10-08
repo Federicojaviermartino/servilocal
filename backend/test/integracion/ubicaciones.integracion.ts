@@ -32,6 +32,7 @@ describe('Ubicaciones en PostGIS', () => {
       fuente,
       {} as never,
       {} as never,
+      {} as never,
     );
   });
 

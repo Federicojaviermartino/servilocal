@@ -47,6 +47,17 @@ describe('DiagnosticoController', () => {
     expect(() => controlador.ip(peticion(), 'otro')).toThrow(NotFoundException);
   });
 
+  it.each(['secret', 'secreto ', 'secretos', 'SECRETO'])(
+    'y uno que solo se le parece, «%s», también',
+    (testigo) => {
+      process.env.DIAGNOSTICO_TOKEN = 'secreto';
+
+      expect(() => controlador.ip(peticion(), testigo)).toThrow(
+        NotFoundException,
+      );
+    },
+  );
+
   it('con el testigo correcto devuelve lo que hace falta para medir', () => {
     process.env.DIAGNOSTICO_TOKEN = 'secreto';
 

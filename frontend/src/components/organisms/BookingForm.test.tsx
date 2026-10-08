@@ -167,26 +167,93 @@ describe('BookingForm', () => {
     );
   });
 
-  it('con un precio fijo, el máximo igual al mínimo sí manda', async () => {
-    // Se comparaba con «>», y un servicio de 50 euros se podía reservar por
-    // cualquier cifra por encima.
-    const alEnviar = pintar({
+  describe('con un precio fijo', () => {
+    const FIJO = {
       ...SERVICIO,
       priceMin: 50,
       priceMax: 50,
-    } as unknown as Service);
-    const precio = screen.getByLabelText(/Precio acordado/);
+    } as unknown as Service;
 
-    await userEvent.clear(precio);
-    await userEvent.click(precio);
-    await userEvent.paste('60');
-    await describir('Gotea el grifo de la cocina desde ayer.');
-    enviarSaltandoAlNavegador();
+    it('no hay nada que elegir: se dice el precio y no se pide teclearlo', async () => {
+      // El campo pedía un importe que solo podía ser uno. Y antes de eso se
+      // comparaba con «>», y un servicio de 50 euros se podía reservar por
+      // cualquier cifra por encima.
+      const alEnviar = pintar(FIJO);
 
-    expect(alEnviar).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(es.reserva.precioMaximo.replace('{max}', '50\ €')),
-    ).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Precio acordado/)).toBeNull();
+      expect(screen.getByText(/^Precio fijo: 50\s€$/)).toBeInTheDocument();
+
+      await describir('Gotea el grifo de la cocina desde ayer.');
+      await enviar();
+
+      expect(alEnviar).toHaveBeenCalledWith(
+        expect.objectContaining({ totalPrice: 50 }),
+      );
+    });
+
+    it('y un borrador con otro importe no lo cambia', async () => {
+      const alEnviar = vi.fn();
+      render(
+        <NextIntlClientProvider locale="es" messages={es as never}>
+          <BookingForm
+            service={FIJO}
+            onSubmit={alEnviar}
+            inicial={{
+              scheduledDate: new Date(`${diaLocal(3)}T10:00:00`).toISOString(),
+              description: 'Gotea el grifo de la cocina desde ayer.',
+              totalPrice: 60,
+            }}
+          />
+        </NextIntlClientProvider>,
+      );
+
+      await enviar();
+
+      expect(alEnviar).toHaveBeenCalledWith(
+        expect.objectContaining({ totalPrice: 50 }),
+      );
+    });
+  });
+
+  describe('tras un envío con errores', () => {
+    it('el foco va al campo que falla, que es donde está su aviso', async () => {
+      // Se quedaba en el botón: quien no ve la pantalla no se enteraba de
+      // que no se había enviado, ni de por qué.
+      pintar();
+
+      await enviar();
+
+      const descripcion = screen.getByPlaceholderText(
+        es.reserva.descripcionPlaceholder,
+      );
+      expect(descripcion).toHaveFocus();
+      expect(descripcion).toHaveAccessibleDescription(
+        es.reserva.descripcionCorta,
+      );
+    });
+
+    it('si fallan varios, al primero', async () => {
+      pintar();
+      fireEvent.change(screen.getByLabelText(es.reserva.fecha), {
+        target: { value: diaLocal(-3) },
+      });
+
+      await enviar();
+
+      expect(screen.getByLabelText(es.reserva.fecha)).toHaveFocus();
+    });
+
+    it('y si se vuelve a enviar con el mismo error, vuelve a él', async () => {
+      pintar();
+      await enviar();
+      screen.getByRole('button', { name: es.reserva.continuar }).focus();
+
+      await enviar();
+
+      expect(
+        screen.getByPlaceholderText(es.reserva.descripcionPlaceholder),
+      ).toHaveFocus();
+    });
   });
 
   it('sin máximo publicado, por arriba no hay tope', async () => {

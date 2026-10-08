@@ -19,6 +19,7 @@ import { CorreoService } from '../correo/correo.service';
 import { OrigenGuard } from '../common/guards/origen.guard';
 import { SoloLecturaInterceptor } from '../common/interceptores/solo-lectura.interceptor';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
+import { FrenoDeCuentas } from '../common/redis/freno-de-cuentas';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SesionesService } from './sesiones.service';
@@ -34,7 +35,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
  */
 const SECRETO = 'secreto-de-prueba';
 const FRONTEND = 'http://localhost:3000';
-const CLAVE = 'Password123!';
+const CLAVE = 'Una-clave-larga-9';
 
 let hash: string;
 let soloLectura = false;
@@ -127,6 +128,14 @@ beforeAll(async () => {
       {
         provide: TiempoRealGateway,
         useValue: { desconectar: () => undefined },
+      },
+      {
+        provide: FrenoDeCuentas,
+        useValue: {
+          comprobar: async () => undefined,
+          anotarFallo: async () => undefined,
+          olvidar: async () => undefined,
+        },
       },
       {
         provide: ConfigService,

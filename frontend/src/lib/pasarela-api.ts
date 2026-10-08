@@ -24,6 +24,19 @@
 const NO_PASAN =
   /^(cf-|cdn-loop$|x-forwarded-|forwarded$|x-real-ip$|true-client-ip$|x-proxy-secreto$|x-visitante-ip$)/i;
 
+/**
+ * Si una ruta es de la documentación interactiva de la API.
+ *
+ * Swagger es una página con su propio JavaScript, hecha para lanzar
+ * peticiones. Reenviada como todo lo demás, se servía también desde este
+ * dominio, que es donde vive la cookie de sesión: un programa ajeno a la
+ * aplicación, ejecutándose con la sesión de quien la abriera. Desde aquí se
+ * manda a su sitio, el dominio de la API, donde esa cookie no existe.
+ */
+export function esDocumentacion(ruta: string): boolean {
+  return /^\/api(\/v\d+)?\/docs(-json|-yaml)?(\/|$)/.test(ruta);
+}
+
 /** A dónde va, en la API, una petición que llega a /api/... */
 export function destinoEnLaApi(
   ruta: string,

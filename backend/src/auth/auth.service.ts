@@ -26,6 +26,8 @@ import { CorreoService } from '../correo/correo.service';
 import { correoDeRecuperacion, esIdioma } from '../correo/plantillas';
 import { urlDelFrontend } from '../common/origenes';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
+import { FrenoDeCuentas } from '../common/redis/freno-de-cuentas';
+import { comprobarQueNoEsComun } from '../common/contrasenas-comunes';
 import { JwtPayload } from './strategies/jwt.strategy';
 import {
   AUDIENCIA_API,
@@ -76,6 +78,7 @@ export class AuthService {
     private readonly correo: CorreoService,
     private readonly dataSource: DataSource,
     private readonly tiempoReal: TiempoRealGateway,
+    private readonly freno: FrenoDeCuentas,
   ) {}
 
   /**
@@ -96,6 +99,9 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<SesionEmitida> {
+    // Antes de mirar si el correo existe: la respuesta es la misma lo tenga
+    // quien lo tenga.
+    comprobarQueNoEsComun(registerDto.password, [registerDto.email]);
     const existingUser = await this.buscarPorCorreo(registerDto.email);
 
     if (existingUser) {
@@ -123,11 +129,18 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<SesionEmitida> {
     const user = await this.buscarPorCorreo(loginDto.email, true);
 
+    // El freno por cuenta, exista o no: ver FrenoDeCuentas. Las de
+    // demostración quedan fuera, porque su contraseña está en la página de
+    // acceso y frenarlas dejaría a todos sin demostración.
+    const conFreno = !user?.esDemostracion;
+    if (conFreno) await this.freno.comprobar(loginDto.email);
+
     const valida = await bcrypt.compare(
       loginDto.password,
       user?.password ?? (await rellenoParaComparar()),
     );
     if (!user || !valida) {
+      if (conFreno) await this.freno.anotarFallo(loginDto.email);
       throw new UnauthorizedException({
         statusCode: 401,
         codigo: CODIGO_CREDENCIALES,
@@ -145,6 +158,7 @@ export class AuthService {
       });
     }
 
+    if (conFreno) await this.freno.olvidar(loginDto.email);
     return this.generateAuthResponse(user);
   }
 
@@ -177,7 +191,11 @@ export class AuthService {
     if (!usuario) throw new UnauthorizedException('Sesión no válida');
     comprobarQueNoEsDeDemostracion(usuario);
 
+    // Con una sesión robada, esto era otra forma de probar contraseñas: el
+    // mismo freno que al entrar.
+    await this.freno.comprobar(usuario.email);
     if (!(await bcrypt.compare(actual, usuario.password))) {
+      await this.freno.anotarFallo(usuario.email);
       // 400 y no 401: un 401 hace que la interfaz dé la sesión por
       // caducada y mande a entrar otra vez.
       throw new BadRequestException({
@@ -186,6 +204,7 @@ export class AuthService {
         message: 'La contraseña actual no es correcta.',
       });
     }
+    comprobarQueNoEsComun(nueva, [usuario.email]);
 
     await this.userRepository.update(usuario.id, {
       password: await cifrar(nueva),
@@ -193,6 +212,7 @@ export class AuthService {
     });
     // Las demás sesiones dejan de valer, y sus sockets abiertos también.
     this.tiempoReal.desconectar(usuario.id);
+    await this.freno.olvidar(usuario.email);
 
     return this.generateAuthResponse(usuario);
   }
@@ -295,7 +315,7 @@ export class AuthService {
           'El enlace no es válido o ha caducado: pide otro desde «¿Olvidaste tu contraseña?».',
       });
 
-    const usuarioId = await this.dataSource.transaction(async (gestor) => {
+    const cuenta = await this.dataSource.transaction(async (gestor) => {
       // Con la fila bloqueada: dos pestañas con el mismo enlace no pueden
       // usarlo las dos.
       const pendiente = await gestor.findOne(RestablecimientoContrasena, {
@@ -318,6 +338,9 @@ export class AuthService {
       ) {
         throw noValido();
       }
+      // Aquí dentro: si se rechaza, la transacción se deshace y el enlace
+      // sigue valiendo para probar con otra.
+      comprobarQueNoEsComun(nueva, [usuario.email]);
 
       await gestor.update(User, usuario.id, {
         password: await cifrar(nueva),
@@ -328,11 +351,14 @@ export class AuthService {
         { userId: usuario.id, usadoEn: IsNull() },
         { usadoEn: new Date() },
       );
-      return usuario.id;
+      return usuario;
     });
     // Quien hubiera entrado con la contraseña vieja se queda fuera, y sin
     // el socket que tuviera abierto.
-    this.tiempoReal.desconectar(usuarioId);
+    this.tiempoReal.desconectar(cuenta.id);
+    // Y quien la ha recuperado no tiene que esperar a que caduque el freno
+    // que le echaron sus propios intentos, o los de otro.
+    await this.freno.olvidar(cuenta.email);
   }
 
   /**

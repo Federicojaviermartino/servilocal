@@ -27,6 +27,7 @@ import { ReservasYServiciosAuditados1791000000000 } from '../../src/database/mig
 import { DemostracionOriginal1791100000000 } from '../../src/database/migrations/1791100000000-DemostracionOriginal';
 import { IndiceServiciosRecientes1791200000000 } from '../../src/database/migrations/1791200000000-IndiceServiciosRecientes';
 import { DesempateDeServiciosRecientes1791300000000 } from '../../src/database/migrations/1791300000000-DesempateDeServiciosRecientes';
+import { UnPagoPorReserva1791400000000 } from '../../src/database/migrations/1791400000000-UnPagoPorReserva';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -68,6 +69,7 @@ const MIGRACIONES = [
   DemostracionOriginal1791100000000,
   IndiceServiciosRecientes1791200000000,
   DesempateDeServiciosRecientes1791300000000,
+  UnPagoPorReserva1791400000000,
 ];
 
 /**

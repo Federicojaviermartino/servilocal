@@ -101,6 +101,7 @@ const MATRIZ: Record<string, (ruta: string) => Fila> = {
   'PATCH /api/users/:id/toggle-active': solo('administracion'),
   'GET /api/admin/metricas': solo('administracion'),
   'GET /api/admin/reputacion': solo('administracion'),
+  'GET /api/admin/pagos': solo('administracion'),
   'GET /api/admin/auditoria': solo('administracion'),
   'GET /api/ia/consumo': solo('administracion'),
   'POST /api/categories': solo('administracion'),

@@ -3,7 +3,7 @@
  * Componente: BookingForm (formulario de solicitud de reserva)
  */
 'use client';
-import { useState, FormEvent } from 'react';
+import { useEffect, useRef, useState, FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Service } from '@/types';
 import { DURACION_POR_DEFECTO, formatearDuracion } from '@/lib/duracion';
@@ -65,8 +65,28 @@ export default function BookingForm({
     inicial ? partesLocales(inicial.scheduledDate).hora : '10:00',
   );
   const [description, setDescription] = useState(inicial?.description ?? '');
-  const [price, setPrice] = useState(inicial?.totalPrice ?? service.priceMin);
+  // Con el máximo igual al mínimo no hay nada que elegir: el campo pedía
+  // teclear un importe que solo podía ser uno.
+  const precioFijo =
+    Boolean(service.priceMax) &&
+    Number(service.priceMax) === Number(service.priceMin);
+  const [price, setPrice] = useState(
+    precioFijo ? service.priceMin : (inicial?.totalPrice ?? service.priceMin),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const formulario = useRef<HTMLFormElement>(null);
+  const [enviosFallidos, setEnviosFallidos] = useState(0);
+
+  // Tras un envío con errores, el foco va al primer campo que lo tiene. Se
+  // quedaba en el botón: quien no ve la pantalla no se enteraba de que no
+  // se había enviado, ni de por qué. Con el foco en el campo, el lector lee
+  // el campo y su error, que va asociado.
+  useEffect(() => {
+    if (enviosFallidos === 0) return;
+    formulario.current
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      ?.focus();
+  }, [enviosFallidos]);
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -98,7 +118,10 @@ export default function BookingForm({
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      setEnviosFallidos((veces) => veces + 1);
+      return;
+    }
     onSubmit({
       scheduledDate: new Date(`${date}T${time}:00`).toISOString(),
       description,
@@ -109,7 +132,12 @@ export default function BookingForm({
   return (
     // noValidate: la validación es la de aquí, con los mensajes en el idioma
     // de la página. La del navegador se adelantaba, en el suyo.
-    <form noValidate onSubmit={handleSubmit} className="space-y-5">
+    <form
+      ref={formulario}
+      noValidate
+      onSubmit={handleSubmit}
+      className="space-y-5"
+    >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Input
           type="date"
@@ -159,27 +187,33 @@ export default function BookingForm({
         )}
       </div>
 
-      <Input
-        type="number"
-        label={
-          service.priceMax
-            ? t('precioRango', {
-                min: importe(service.priceMin),
-                max: importe(service.priceMax),
-              })
-            : t('precioMinimoEtiqueta', { min: importe(service.priceMin) })
-        }
-        min={service.priceMin}
-        max={service.priceMax}
-        // En céntimos: con un paso de 5 contado desde el mínimo, una reserva
-        // de 42 euros en un servicio «desde 40» no se podía hacer.
-        step={0.01}
-        value={price}
-        onChange={(e) => setPrice(Number(e.target.value))}
-        error={errors.price}
-        hint={t('precioPista')}
-        required
-      />
+      {precioFijo ? (
+        <p className="text-sm font-medium text-secundario">
+          {t('precioFijo', { precio: importe(service.priceMin) })}
+        </p>
+      ) : (
+        <Input
+          type="number"
+          label={
+            service.priceMax
+              ? t('precioRango', {
+                  min: importe(service.priceMin),
+                  max: importe(service.priceMax),
+                })
+              : t('precioMinimoEtiqueta', { min: importe(service.priceMin) })
+          }
+          min={service.priceMin}
+          max={service.priceMax}
+          // En céntimos: con un paso de 5 contado desde el mínimo, una reserva
+          // de 42 euros en un servicio «desde 40» no se podía hacer.
+          step={0.01}
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          error={errors.price}
+          hint={t('precioPista')}
+          required
+        />
+      )}
 
       <div className="bg-fondo rounded-md p-4 text-sm">
         <p className="font-medium text-principal mb-1">{t('resumen')}</p>

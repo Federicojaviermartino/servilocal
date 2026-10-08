@@ -19,6 +19,15 @@ import {
 } from './cuenta';
 import { CODIGO_CORREO_NO_DISPONIBLE } from '../correo/correo.service';
 import {
+  CODIGO_PAGO_EN_OTRO_ESTADO,
+  CODIGO_PAGOS_NO_DISPONIBLES,
+  CODIGO_TARJETA_RECHAZADA,
+} from './filters/errores-de-stripe';
+import { CODIGO_CUENTA_FRENADA } from './redis/freno-de-cuentas';
+import { CODIGO_CONTRASENA_COMUN } from './contrasenas-comunes';
+import { CODIGO_CANCELACION_TARDIA } from '../bookings/bookings.service';
+import { CODIGO_CATEGORIA_CON_SERVICIOS } from '../categories/categories.service';
+import {
   CODIGO_NADA_QUE_PAGAR,
   CODIGO_PAGO_EN_CURSO,
   CODIGO_RESERVA_NO_PAGABLE,
@@ -71,6 +80,13 @@ describe('Lo que la API nombra tiene texto en el frontend', () => {
     CODIGO_RESERVA_NO_PAGABLE,
     CODIGO_NADA_QUE_PAGAR,
     CODIGO_PAGO_EN_CURSO,
+    CODIGO_PAGOS_NO_DISPONIBLES,
+    CODIGO_TARJETA_RECHAZADA,
+    CODIGO_PAGO_EN_OTRO_ESTADO,
+    CODIGO_CUENTA_FRENADA,
+    CODIGO_CONTRASENA_COMUN,
+    CODIGO_CANCELACION_TARDIA,
+    CODIGO_CATEGORIA_CON_SERVICIOS,
   ])('el rechazo «%s»', (codigo) => {
     expect(catalogo.erroresApi).toHaveProperty([codigo]);
   });

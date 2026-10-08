@@ -1,5 +1,6 @@
 import { ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { UnPagoPorReserva1791400000000 } from '../../src/database/migrations/1791400000000-UnPagoPorReserva';
 import { Booking, Service } from '../../src/entities';
 import { ServicesService } from '../../src/services/services.service';
 import { crearFuente } from './base';
@@ -210,6 +211,75 @@ describe('Integridad de los datos', () => {
       );
 
       expect(sinValidar).toEqual([]);
+    });
+  });
+
+  describe('un pago por reserva', () => {
+    const sinPago = async () => {
+      const [libre] = await fuente.query(
+        `SELECT b.id, b."clientId" FROM bookings b
+         WHERE NOT EXISTS (SELECT 1 FROM payments p WHERE p."bookingId" = b.id)
+         ORDER BY b.id LIMIT 1`,
+      );
+      return libre as { id: string; clientId: string };
+    };
+    const PAGO = `INSERT INTO payments ("bookingId", "clientId", amount, status)
+                  VALUES ($1, $2, 50, 'pending')`;
+    const esUnico = async (consultar: DataSource['query']) => {
+      const [{ indisunique }] = await consultar(
+        `SELECT indisunique FROM pg_index
+         WHERE indexrelid = '"IDX_payments_reserva"'::regclass`,
+      );
+      return indisunique as boolean;
+    };
+
+    it('la tabla no admite el segundo, aunque nadie mire antes', async () => {
+      // Lo sostenía un bloqueo de la API: quien escribiera un pago por otro
+      // camino podía dejar dos retenciones para la misma reserva.
+      const reservaLibre = await sinPago();
+      await fuente.query(PAGO, [reservaLibre.id, reservaLibre.clientId]);
+
+      try {
+        const error = await fuente
+          .query(PAGO, [reservaLibre.id, reservaLibre.clientId])
+          .catch((e: unknown) => e);
+
+        expect(codigoDe(error)).toBe('23505');
+      } finally {
+        await fuente.query(`DELETE FROM payments WHERE "bookingId" = $1`, [
+          reservaLibre.id,
+        ]);
+      }
+    });
+
+    it('si ya hubiera dos, la migración lo dice y no tumba el despliegue', async () => {
+      // Una base con duplicados de antes del bloqueo. Todo dentro de una
+      // transacción que se deshace, para dejar el índice como estaba.
+      const reservaLibre = await sinPago();
+      const migracion = new UnPagoPorReserva1791400000000();
+      const corredor = fuente.createQueryRunner();
+      const aviso = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      await corredor.startTransaction();
+
+      try {
+        await migracion.down(corredor);
+        await corredor.query(PAGO, [reservaLibre.id, reservaLibre.clientId]);
+        await corredor.query(PAGO, [reservaLibre.id, reservaLibre.clientId]);
+
+        await migracion.up(corredor);
+
+        expect(aviso).toHaveBeenCalledWith(
+          expect.stringContaining(`${reservaLibre.id} tiene 2`),
+        );
+        expect(await esUnico(corredor.query.bind(corredor))).toBe(false);
+      } finally {
+        await corredor.rollbackTransaction();
+        await corredor.release();
+        aviso.mockRestore();
+      }
+      expect(await esUnico(fuente.query.bind(fuente))).toBe(true);
     });
   });
 

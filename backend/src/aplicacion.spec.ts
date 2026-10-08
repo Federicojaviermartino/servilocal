@@ -86,6 +86,32 @@ describe('configurarAplicacion', () => {
     expect(ajena.headers.get('access-control-allow-origin')).toBeNull();
   });
 
+  describe('lo que se contesta a quien trae una sesión', () => {
+    const cache = async (cabeceras: Record<string, string> = {}) =>
+      (await fetch(`${base}/api/eco`, { headers: cabeceras })).headers.get(
+        'cache-control',
+      );
+
+    it('con la cookie de sesión, no se guarda en ninguna caché', async () => {
+      // Sin decir nada, quedaba a criterio del navegador: en un ordenador
+      // compartido podía seguir en el disco después de salir de la cuenta.
+      expect(
+        await cache({ cookie: 'tema=oscuro; sesion=un.token.cualquiera' }),
+      ).toBe('no-store');
+    });
+
+    it('con un token en la cabecera, tampoco', async () => {
+      expect(await cache({ authorization: 'Bearer un.token.cualquiera' })).toBe(
+        'no-store',
+      );
+    });
+
+    it('a quien no trae ninguna no se le dice nada: lo público se puede guardar', async () => {
+      expect(await cache()).toBeNull();
+      expect(await cache({ cookie: 'tema=oscuro' })).toBeNull();
+    });
+  });
+
   const enviar = (cuerpo: unknown) =>
     fetch(`${base}/api/eco`, {
       method: 'POST',

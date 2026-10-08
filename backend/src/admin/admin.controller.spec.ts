@@ -2,7 +2,11 @@ import type { PeticionAutenticada } from '../auth/peticion-autenticada';
 import { AdminController } from './admin.controller';
 
 describe('AdminController', () => {
-  const servicio = { metricas: vi.fn(), reputacion: vi.fn() };
+  const servicio = {
+    metricas: vi.fn(),
+    reputacion: vi.fn(),
+    pagosPorRevisar: vi.fn(),
+  };
   const controlador = new AdminController(servicio as never);
 
   beforeEach(() => vi.clearAllMocks());
@@ -21,6 +25,18 @@ describe('AdminController', () => {
     });
     expect(servicio.metricas).toHaveBeenNthCalledWith(2, {
       soloDemostracion: true,
+    });
+  });
+
+  it('y los pagos por revisar, igual: los de su mundo', async () => {
+    await controlador.pagos(quien(true));
+    await controlador.pagos(quien(false));
+
+    expect(servicio.pagosPorRevisar).toHaveBeenNthCalledWith(1, {
+      soloDemostracion: true,
+    });
+    expect(servicio.pagosPorRevisar).toHaveBeenNthCalledWith(2, {
+      soloDemostracion: false,
     });
   });
 

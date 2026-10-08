@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   filtrosDeUrl,
   leerBusqueda,
+  ordenVigente,
   paginaDeUrl,
   parametrosDeApi,
   peticionDeBusqueda,
@@ -89,6 +90,71 @@ describe('La búsqueda en la dirección', () => {
     expect(
       urlDeBusqueda({ latitude: 39.46975, longitude: -0.37739 }, 'list'),
     ).toBe('lat=39.47&lng=-0.38');
+  });
+});
+
+describe('El orden de los resultados', () => {
+  const VALENCIA = { latitude: 39.47, longitude: -0.38 };
+
+  it('se lee de la dirección si es uno de los que hay', () => {
+    expect(filtrosDeUrl(url('sort=price')).sortBy).toBe('price');
+    expect(filtrosDeUrl(url('sort=rating')).sortBy).toBe('rating');
+    // Lo que no es un orden es como no haber dicho nada: la API respondería
+    // con el suyo, y la pantalla diría otro.
+    expect(filtrosDeUrl(url('sort=barato')).sortBy).toBeUndefined();
+    expect(filtrosDeUrl(url('q=grifo')).sortBy).toBeUndefined();
+  });
+
+  it('sin elegir, los más recientes; buscando cerca de uno, los más cercanos', () => {
+    // Todo salía por fecha de publicación, también con un punto, que es
+    // justo cuando se espera ver primero lo que queda más cerca.
+    expect(ordenVigente({ query: 'grifo' })).toBe('newest');
+    expect(ordenVigente(VALENCIA)).toBe('distance');
+    expect(ordenVigente({ ...VALENCIA, sortBy: 'price' })).toBe('price');
+  });
+
+  it('por cercanía sin un punto no hay nada que ordenar: rige el de siempre', () => {
+    // Pasa al quitar la ubicación con ese orden puesto.
+    expect(ordenVigente({ sortBy: 'distance' })).toBe('newest');
+    expect(urlDeBusqueda({ sortBy: 'distance', query: 'grifo' }, 'list')).toBe(
+      'q=grifo',
+    );
+  });
+
+  it('en la dirección solo va el que no saldría de todas formas', () => {
+    // Así la misma búsqueda tiene una sola dirección.
+    expect(urlDeBusqueda({ query: 'grifo', sortBy: 'newest' }, 'list')).toBe(
+      'q=grifo',
+    );
+    expect(urlDeBusqueda({ query: 'grifo', sortBy: 'price' }, 'list', 2)).toBe(
+      'q=grifo&sort=price&page=2',
+    );
+    expect(urlDeBusqueda({ ...VALENCIA, sortBy: 'distance' }, 'list')).toBe(
+      'lat=39.47&lng=-0.38',
+    );
+    expect(urlDeBusqueda({ ...VALENCIA, sortBy: 'newest' }, 'list')).toBe(
+      'lat=39.47&lng=-0.38&sort=newest',
+    );
+  });
+
+  it('y lo que se lee de una dirección se vuelve a escribir igual', () => {
+    const direccion = 'q=grifo&lat=39.47&lng=-0.38&radius=5&sort=rating';
+
+    expect(urlDeBusqueda(filtrosDeUrl(url(direccion)), 'list')).toBe(direccion);
+  });
+
+  it('a la API le llega el que rige, salvo el que ya hace por su cuenta', () => {
+    expect(peticionDeBusqueda({ query: 'grifo' }, 'list', 1).sortBy).toBe(
+      undefined,
+    );
+    expect(peticionDeBusqueda(VALENCIA, 'list', 1).sortBy).toBe('distance');
+    expect(peticionDeBusqueda(VALENCIA, 'map', 1).sortBy).toBe('distance');
+    expect(
+      peticionDeBusqueda({ ...VALENCIA, sortBy: 'newest' }, 'list', 1).sortBy,
+    ).toBe(undefined);
+    expect(
+      parametrosDeApi(peticionDeBusqueda({ sortBy: 'rating' }, 'list', 2)),
+    ).toEqual({ sortBy: 'rating', page: 2 });
   });
 });
 

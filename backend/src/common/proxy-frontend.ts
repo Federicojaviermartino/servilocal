@@ -40,7 +40,7 @@ function primera(valor: unknown): string | null {
  * caracteres del principio acertaste, y eso permite adivinarlo por partes.
  * Se comparan los resúmenes porque timingSafeEqual exige la misma longitud.
  */
-function coincide(recibido: string, esperado: string): boolean {
+export function coincide(recibido: string, esperado: string): boolean {
   const resumen = (texto: string) =>
     createHash('sha256').update(texto).digest();
   return timingSafeEqual(resumen(recibido), resumen(esperado));

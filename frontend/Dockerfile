@@ -39,6 +39,8 @@ RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 # compilar y viven dentro de .next. No hay carpeta public en este proyecto.
 COPY --from=builder --chown=node:node /app/.next ./.next
 COPY --from=builder --chown=node:node /app/next.config.js ./next.config.js
+# La configuración comprueba el entorno al cargarse, también al arrancar.
+COPY --from=builder --chown=node:node /app/entorno.js ./entorno.js
 
 USER node
 

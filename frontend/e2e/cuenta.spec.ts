@@ -90,6 +90,33 @@ test.describe('La cuenta', () => {
     await page.waitForURL((url) => !url.pathname.includes('/auth/login'));
   });
 
+  test('tras diez contraseñas equivocadas se frena, y la página lo explica', async ({
+    page,
+    request,
+  }) => {
+    // El límite por visitante no protege una cuenta de quien reparte los
+    // intentos entre muchas direcciones: este sí. Con una cuenta propia,
+    // porque las de demostración quedan fuera a propósito.
+    const email = await cuentaNueva(request);
+    for (let intento = 0; intento < 10; intento += 1) {
+      const respuesta = await request.post(`${API}/auth/token`, {
+        data: { email, password: 'No-es-esta1!' },
+      });
+      expect(respuesta.status()).toBe(401);
+    }
+
+    // Ni con la buena: si pasara, el freno no frenaría a quien las va
+    // probando.
+    await entrar(page, email, CLAVE);
+
+    await expect(
+      page.getByRole('alert').filter({
+        hasText: 'Demasiados intentos fallidos con esta cuenta',
+      }),
+    ).toBeVisible();
+    await expect(page).toHaveURL(/\/auth\/login/);
+  });
+
   test('eliminarla cierra la sesión, y ya no se puede entrar', async ({
     page,
     request,

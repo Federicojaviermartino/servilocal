@@ -17,8 +17,10 @@ import type { ServiceSearchParams } from '@/types';
 import { servicesApi } from '@/lib/api';
 import {
   leerBusqueda,
+  ordenVigente,
   peticionDeBusqueda,
   urlDeBusqueda,
+  type Orden,
   type ResultadoBusqueda,
   type Vista,
 } from '@/lib/busqueda';
@@ -26,6 +28,7 @@ import SearchBar from '@/components/molecules/SearchBar';
 import FilterPanel from '@/components/organisms/FilterPanel';
 import ResultsList from '@/components/organisms/ResultsList';
 import Pagination from '@/components/molecules/Pagination';
+import OrdenResultados from '@/components/molecules/OrdenResultados';
 import ServiceCardSkeleton from '@/components/molecules/ServiceCardSkeleton';
 import { desplazamiento } from '@/lib/movimiento';
 
@@ -59,10 +62,11 @@ interface Estado {
  * principio. Solo la paginación lo devolvía.
  *
  * Tras buscar, filtrar o paginar va al título de los resultados. Tras
- * cambiar de vista, al botón de la vista que se acaba de elegir: llevárselo
- * de ahí obligaría a volver para probar la otra.
+ * cambiar de vista o de orden, al botón que se acaba de elegir: llevárselo
+ * de ahí obligaría a volver para probar otro.
  */
-let enfocarAlMontar: 'titulo' | 'vista' | null = null;
+type Foco = 'titulo' | 'vista' | 'orden';
+let enfocarAlMontar: Foco | null = null;
 
 interface BuscadorProps {
   /** La búsqueda en la forma en que la escribe la página. */
@@ -94,6 +98,7 @@ export default function Buscador({
   const router = useRouter();
   const titulo = useRef<HTMLHeadingElement>(null);
   const vistaActiva = useRef<HTMLButtonElement>(null);
+  const ordenActivo = useRef<HTMLButtonElement>(null);
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   // Cuántos resultados hay, dicho a quien no ve la pantalla: ver el párrafo
   // que lo lleva, más abajo.
@@ -110,12 +115,13 @@ export default function Buscador({
     enfocarAlMontar = null;
     if (destino === 'titulo') titulo.current?.focus({ preventScroll: true });
     if (destino === 'vista') vistaActiva.current?.focus();
+    if (destino === 'orden') ordenActivo.current?.focus();
   }, []);
 
   const irA = (
     destino: string,
     modo: 'replace' | 'push' = 'replace',
-    foco: 'titulo' | 'vista' = 'titulo',
+    foco: Foco = 'titulo',
   ) => {
     enfocarAlMontar = foco;
     const ruta = destino ? `/services/search?${destino}` : '/services/search';
@@ -145,6 +151,16 @@ export default function Buscador({
   const cambiarVista = (nueva: Vista) => {
     if (nueva === vista) return;
     irA(urlDeBusqueda(filtros, nueva), 'replace', 'vista');
+  };
+
+  /** Otro orden, desde la primera página. */
+  const cambiarOrden = (orden: Orden) => {
+    if (orden === ordenVigente(filtros)) return;
+    irA(
+      urlDeBusqueda({ ...filtros, sortBy: orden }, vista),
+      'replace',
+      'orden',
+    );
   };
 
   const cambiarPagina = (nuevaPagina: number) => {
@@ -252,6 +268,19 @@ export default function Buscador({
                 </button>
               </div>
             </div>
+
+            {/* En el mapa no: no se pagina, y lo que se ve no tiene orden. */}
+            {vista === 'list' && (
+              <OrdenResultados
+                valor={ordenVigente(filtros)}
+                conCercania={
+                  filtros.latitude !== undefined &&
+                  filtros.longitude !== undefined
+                }
+                onCambiar={cambiarOrden}
+                refVigente={ordenActivo}
+              />
+            )}
 
             <Suspense fallback={<Esperando />}>
               <Resultados

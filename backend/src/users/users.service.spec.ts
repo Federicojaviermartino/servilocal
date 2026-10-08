@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -26,6 +27,7 @@ import { UsersService } from './users.service';
 import { AuditoriaService } from '../auditoria/auditoria.service';
 import { PaymentsService } from '../payments/payments.service';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
+import { FrenoDeCuentas } from '../common/redis/freno-de-cuentas';
 
 /** La transacción de la eliminación, y las consultas de la exportación. */
 const gestor = {
@@ -47,6 +49,11 @@ const dataSource = {
 };
 const pagos = { olvidarCliente: vi.fn(async () => undefined) };
 const tiempoReal = { desconectar: vi.fn() };
+const freno = {
+  comprobar: vi.fn(async (_correo: string) => undefined),
+  anotarFallo: vi.fn(async (_correo: string) => undefined),
+  olvidar: vi.fn(async (_correo: string) => undefined),
+};
 
 describe('UsersService', () => {
   let servicio: UsersService;
@@ -76,6 +83,7 @@ describe('UsersService', () => {
         { provide: DataSource, useValue: dataSource },
         { provide: PaymentsService, useValue: pagos },
         { provide: TiempoRealGateway, useValue: tiempoReal },
+        { provide: FrenoDeCuentas, useValue: freno },
       ],
     }).compile();
 
@@ -286,6 +294,7 @@ describe('UsersService', () => {
     const cuenta = async (extra: Partial<User> = {}) =>
       ({
         id: YO,
+        email: 'yo@correo.test',
         password: await bcrypt.hash(CLAVE, 4),
         role: UserRole.CLIENT,
         esDemostracion: false,
@@ -451,6 +460,21 @@ describe('UsersService', () => {
       expect(error.getResponse()).toMatchObject({
         codigo: 'contrasena-incorrecta',
       });
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+      // Y se le apunta a la cuenta, como al entrar: con una sesión robada,
+      // esto también serviría para probar contraseñas.
+      expect(freno.anotarFallo).toHaveBeenCalledWith('yo@correo.test');
+    });
+
+    it('con el freno de la cuenta echado, ni con la buena', async () => {
+      repo.findOne.mockResolvedValueOnce(await cuenta());
+      freno.comprobar.mockRejectedValueOnce(
+        new HttpException({ statusCode: 429, codigo: 'cuenta-frenada' }, 429),
+      );
+
+      const error = await rechazo(servicio.eliminarCuenta(YO, CLAVE));
+
+      expect(error.getResponse()).toMatchObject({ codigo: 'cuenta-frenada' });
       expect(dataSource.transaction).not.toHaveBeenCalled();
     });
 

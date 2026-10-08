@@ -6,6 +6,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import { AUDIENCIA_API, AUDIENCIA_SOCKET } from './sesion';
 import { CorreoService } from '../correo/correo.service';
 import { VERSION_TERMINOS } from '../common/cuenta';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
+import { FrenoDeCuentas } from '../common/redis/freno-de-cuentas';
 
 // La comparación de verdad, pero observable: hace falta saber con qué huella
 // se compara cuando el correo no existe.
@@ -75,6 +77,12 @@ const jwt = new JwtService({
 
 const tiempoReal = { desconectar: vi.fn() };
 
+const freno = {
+  comprobar: vi.fn(async (_correo: string) => undefined),
+  anotarFallo: vi.fn(async (_correo: string) => undefined),
+  olvidar: vi.fn(async (_correo: string) => undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -91,6 +99,7 @@ describe('AuthService', () => {
         { provide: CorreoService, useValue: correo },
         { provide: DataSource, useValue: dataSource },
         { provide: TiempoRealGateway, useValue: tiempoReal },
+        { provide: FrenoDeCuentas, useValue: freno },
       ],
     }).compile();
 
@@ -107,7 +116,7 @@ describe('AuthService', () => {
       firstName: 'Federico',
       lastName: 'Martino',
       email: 'federico@ejemplo.com',
-      password: 'Password123!',
+      password: 'Una-clave-larga-9',
       role: UserRole.CLIENT,
       aceptaTerminos: true,
     };
@@ -154,8 +163,31 @@ describe('AuthService', () => {
       expect(creado.versionTerminos).toBe(VERSION_TERMINOS);
       // Y la casilla no se guarda como una columna más.
       expect(creado).not.toHaveProperty('aceptaTerminos');
-      expect(await bcrypt.compare('Password123!', creado.password)).toBe(true);
+      expect(await bcrypt.compare('Una-clave-larga-9', creado.password)).toBe(
+        true,
+      );
     });
+
+    it.each([
+      ['de las de siempre', 'Password123!'],
+      ['el propio correo', 'Federico2026!'],
+    ])(
+      'con una contraseña que es %s no se crea la cuenta',
+      async (_caso, password) => {
+        // Diez intentos cada cuarto de hora dan para probar las primeras de
+        // cualquier lista: esas no se admiten. «Password123!» es además la de
+        // las cuentas de demostración, que está publicada.
+        mockUserRepository.findOne.mockResolvedValue(null);
+
+        const error = await service
+          .register({ ...registerDto, password })
+          .catch((e) => e);
+
+        expect(error).toBeInstanceOf(BadRequestException);
+        expect(error.getResponse().codigo).toBe('contrasena-comun');
+        expect(mockUserRepository.save).not.toHaveBeenCalled();
+      },
+    );
 
     it('debería lanzar ConflictException si el email ya existe', async () => {
       mockUserRepository.findOne.mockResolvedValue({ id: 'existing-user' });
@@ -289,6 +321,90 @@ describe('AuthService', () => {
 
       expect(error.getResponse().codigo).toBe('credenciales-no-validas');
     });
+
+    describe('el freno por cuenta', () => {
+      const cuenta = async (extra: Partial<User> = {}) => ({
+        id: 'uuid-123',
+        email: loginDto.email,
+        firstName: 'Federico',
+        lastName: 'Martino',
+        role: UserRole.CLIENT,
+        password: await bcrypt.hash('Password123!', 4),
+        isActive: true,
+        ...extra,
+      });
+      const frenada = () =>
+        new HttpException({ statusCode: 429, codigo: 'cuenta-frenada' }, 429);
+
+      it('una contraseña equivocada se le apunta a la cuenta', async () => {
+        mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+        await service
+          .login({ ...loginDto, password: 'No-es-esta1!' })
+          .catch(() => undefined);
+
+        expect(freno.anotarFallo).toHaveBeenCalledWith(loginDto.email);
+        expect(freno.olvidar).not.toHaveBeenCalled();
+      });
+
+      it('y a un correo que no existe, igual: el freno no dice cuáles existen', async () => {
+        mockUserRepository.findOne.mockResolvedValue(null);
+
+        await service.login(loginDto).catch(() => undefined);
+
+        expect(freno.comprobar).toHaveBeenCalledWith(loginDto.email);
+        expect(freno.anotarFallo).toHaveBeenCalledWith(loginDto.email);
+      });
+
+      it('con el freno echado no entra ni con la buena, y ni se compara', async () => {
+        // Si la contraseña buena pasara, el freno no frenaría a quien las
+        // va probando.
+        mockUserRepository.findOne.mockResolvedValue(await cuenta());
+        freno.comprobar.mockRejectedValueOnce(frenada());
+        vi.mocked(bcrypt.compare).mockClear();
+
+        const error = await service.login(loginDto).catch((e) => e);
+
+        expect(error.getStatus()).toBe(429);
+        expect(bcrypt.compare).not.toHaveBeenCalled();
+        expect(freno.anotarFallo).not.toHaveBeenCalled();
+      });
+
+      it('al entrar se empieza de cero', async () => {
+        mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+        await service.login(loginDto);
+
+        expect(freno.olvidar).toHaveBeenCalledWith(loginDto.email);
+        expect(freno.anotarFallo).not.toHaveBeenCalled();
+      });
+
+      it('una cuenta desactivada con la contraseña buena ni suma ni se olvida', async () => {
+        mockUserRepository.findOne.mockResolvedValue(
+          await cuenta({ isActive: false }),
+        );
+
+        await service.login(loginDto).catch(() => undefined);
+
+        expect(freno.anotarFallo).not.toHaveBeenCalled();
+        expect(freno.olvidar).not.toHaveBeenCalled();
+      });
+
+      it('las de demostración quedan fuera: ni se miran ni se apuntan', async () => {
+        // Su contraseña está en la página de acceso: frenarlas sería dejar a
+        // todos sin demostración a base de fallar a propósito.
+        mockUserRepository.findOne.mockResolvedValue(
+          await cuenta({ esDemostracion: true }),
+        );
+
+        await service
+          .login({ ...loginDto, password: 'No-es-esta1!' })
+          .catch(() => undefined);
+
+        expect(freno.comprobar).not.toHaveBeenCalled();
+        expect(freno.anotarFallo).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('cambiar la contraseña', () => {
@@ -317,6 +433,53 @@ describe('AuthService', () => {
         service.cambiarContrasena('uuid-123', 'No-es-esta1!', 'Nueva12345!'),
       ).rejects.toThrow();
       expect(tiempoReal.desconectar).not.toHaveBeenCalled();
+    });
+
+    it('y se le apunta a la cuenta, como al entrar', async () => {
+      // Con una sesión robada, esto era otra forma de probar contraseñas.
+      mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+      await service
+        .cambiarContrasena('uuid-123', 'No-es-esta1!', 'Nueva12345!')
+        .catch(() => undefined);
+
+      expect(freno.anotarFallo).toHaveBeenCalledWith('federico@ejemplo.com');
+    });
+
+    it('con el freno echado no se llega a comparar ni se cambia nada', async () => {
+      mockUserRepository.findOne.mockResolvedValue(await cuenta());
+      freno.comprobar.mockRejectedValueOnce(
+        new HttpException({ statusCode: 429, codigo: 'cuenta-frenada' }, 429),
+      );
+      vi.mocked(bcrypt.compare).mockClear();
+
+      const error = await service
+        .cambiarContrasena('uuid-123', 'Antigua123!', 'Nueva12345!')
+        .catch((e) => e);
+
+      expect(error.getStatus()).toBe(429);
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('la nueva no puede ser de las de siempre', async () => {
+      mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+      const error = await service
+        .cambiarContrasena('uuid-123', 'Antigua123!', 'Password123!')
+        .catch((e) => e);
+
+      expect(error.getResponse().codigo).toBe('contrasena-comun');
+      expect(mockUserRepository.update).not.toHaveBeenCalled();
+      expect(tiempoReal.desconectar).not.toHaveBeenCalled();
+    });
+
+    it('al cambiarla, la cuenta empieza de cero', async () => {
+      mockUserRepository.findOne.mockResolvedValue(await cuenta());
+
+      await service.cambiarContrasena('uuid-123', 'Antigua123!', 'Nueva12345!');
+
+      expect(freno.olvidar).toHaveBeenCalledWith('federico@ejemplo.com');
     });
 
     it('con la actual, pone la nueva y cierra las demás sesiones', async () => {
@@ -519,6 +682,7 @@ describe('AuthService', () => {
     });
     const usuario = (extra = {}) => ({
       id: 'uuid-123',
+      email: 'federico@ejemplo.com',
       isActive: true,
       esDemostracion: false,
       soloLectura: false,
@@ -545,6 +709,27 @@ describe('AuthService', () => {
 
       await expect(service.restablecer(TOKEN, 'Nueva12345!')).rejects.toThrow();
       expect(tiempoReal.desconectar).not.toHaveBeenCalled();
+      expect(freno.olvidar).not.toHaveBeenCalled();
+    });
+
+    it('con una de las de siempre no se pone, y el enlace sigue valiendo', async () => {
+      preparar(pendiente());
+
+      const error = await service
+        .restablecer(TOKEN, 'Welcome2026!')
+        .catch((e) => e);
+
+      expect(error.getResponse().codigo).toBe('contrasena-comun');
+      // Ni la contraseña ni el enlace: se puede probar con otra.
+      expect(gestor.update).not.toHaveBeenCalled();
+    });
+
+    it('y suelta el freno: quien la recupera no espera a que caduque', async () => {
+      preparar(pendiente());
+
+      await service.restablecer(TOKEN, 'Nueva12345!');
+
+      expect(freno.olvidar).toHaveBeenCalledWith('federico@ejemplo.com');
     });
 
     it('pone la contraseña, cierra las sesiones y gasta todos los enlaces', async () => {

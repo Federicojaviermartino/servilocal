@@ -593,6 +593,107 @@ describe('El buscador', () => {
     });
   });
 
+  describe('el orden', () => {
+    const R = es.resultados;
+    const orden = (nombre: string) =>
+      screen.getByRole('button', { name: nombre });
+
+    it('sin elegir, salen los más recientes, y se dice cuál está puesto', async () => {
+      // La API sabía ordenar y la interfaz no lo ofrecía.
+      await pintar();
+      await screen.findByText(GRIFO.title);
+
+      expect(screen.getByRole('group', { name: R.ordenar })).toBeVisible();
+      expect(orden(R.ordenRecientes)).toHaveAttribute('aria-pressed', 'true');
+      expect(orden(R.ordenValoracion)).toHaveAttribute('aria-pressed', 'false');
+      // Sin un punto no hay distancia que ordenar.
+      expect(
+        screen.queryByRole('button', { name: R.ordenCercania }),
+      ).toBeNull();
+    });
+
+    it('buscando cerca de uno, primero lo más cercano, sin tener que pedirlo', async () => {
+      // Salía por fecha de publicación, igual que todo lo demás.
+      buscar.mockResolvedValue(respuestaApi([GRIFO]));
+
+      await pintar('lat=39.47&lng=-0.38', Promise.resolve(null));
+      await screen.findByText(GRIFO.title);
+
+      expect(orden(R.ordenCercania)).toHaveAttribute('aria-pressed', 'true');
+      expect(buscar).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'distance' }),
+      );
+    });
+
+    it('elegir otro lo lleva a la URL, desde la primera página', async () => {
+      await pintar(
+        'q=grifo&page=3',
+        Promise.resolve(resultado([GRIFO], { totalPages: 3 })),
+      );
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.click(orden(R.ordenPrecio));
+
+      expect(reemplazar).toHaveBeenLastCalledWith(
+        '/services/search?q=grifo&sort=price',
+      );
+    });
+
+    it('y desde el navegador se pide en ese orden', async () => {
+      buscar.mockResolvedValue(respuestaApi([GRIFO]));
+
+      await pintar('sort=rating', Promise.resolve(null));
+      await screen.findByText(GRIFO.title);
+
+      expect(buscar).toHaveBeenCalledWith({ sortBy: 'rating', page: 1 });
+      expect(orden(R.ordenValoracion)).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('tras cambiarlo, el foco sigue en el botón que se pulsó', async () => {
+      // Cada búsqueda es otro componente: sin devolverlo, el foco caía en el
+      // documento y había que recorrer la página para probar otro orden.
+      await pintar();
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.click(orden(R.ordenValoracion));
+      await navegarA('/services/search?sort=rating');
+
+      expect(orden(R.ordenValoracion)).toHaveFocus();
+    });
+
+    it('pulsar el que ya está puesto no hace nada', async () => {
+      await pintar('sort=price');
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.click(orden(R.ordenPrecio));
+
+      expect(reemplazar).not.toHaveBeenCalled();
+      expect(buscar).not.toHaveBeenCalled();
+    });
+
+    it('el orden elegido sobrevive a un filtro nuevo', async () => {
+      await pintar('q=grifo&sort=price');
+      await screen.findByText(GRIFO.title);
+
+      await userEvent.selectOptions(
+        screen.getByLabelText(es.filtros.ciudad),
+        'Sevilla',
+      );
+      await pulsar(es.filtros.aplicar);
+
+      expect(reemplazar).toHaveBeenLastCalledWith(
+        '/services/search?q=grifo&city=Sevilla&sort=price',
+      );
+    });
+
+    it('en el mapa no se ofrece: ni se pagina ni tiene orden que enseñar', async () => {
+      await pintar('view=map&sort=price');
+      await screen.findByTestId('mapa');
+
+      expect(screen.queryByRole('group', { name: R.ordenar })).toBeNull();
+    });
+  });
+
   it('aplicar filtros los lleva a la URL, con el texto buscado, desde la primera página', async () => {
     // Los del panel no se escribían nunca en la dirección: se perdían al
     // recargar o al volver atrás, y un enlace no los llevaba.

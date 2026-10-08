@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { visitanteReenviado } from '../proxy-frontend';
+import { coincide, visitanteReenviado } from '../proxy-frontend';
 
 /**
  * Qué llega de verdad al contenedor detrás del proxy.
@@ -36,7 +36,9 @@ export class DiagnosticoController {
     @Headers('x-diagnostico') testigo?: string,
   ): Record<string, unknown> {
     const esperado = process.env.DIAGNOSTICO_TOKEN;
-    if (!esperado || testigo !== esperado) {
+    // En tiempo constante, como el secreto del proxy: con !==, lo que tarda
+    // en fallar va diciendo cuántos caracteres del principio se aciertan.
+    if (!esperado || !testigo || !coincide(testigo, esperado)) {
       throw new NotFoundException();
     }
 

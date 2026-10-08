@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { AlmacenThrottlerTolerante } from './almacen-throttler';
 import { CacheService } from './cache.service';
+import { FrenoDeCuentas } from './freno-de-cuentas';
 import { RedisService } from './redis.service';
 
 /**
@@ -23,9 +24,10 @@ import { RedisService } from './redis.service';
   providers: [
     RedisService,
     CacheService,
+    FrenoDeCuentas,
     AlmacenThrottlerTolerante,
     { provide: ThrottlerStorage, useExisting: AlmacenThrottlerTolerante },
   ],
-  exports: [RedisService, CacheService, ThrottlerStorage],
+  exports: [RedisService, CacheService, FrenoDeCuentas, ThrottlerStorage],
 })
 export class RedisModule {}

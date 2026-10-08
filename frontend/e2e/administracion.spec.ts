@@ -203,6 +203,39 @@ test.describe('Panel de administración', () => {
     }
   });
 
+  test('los pagos por revisar se ven, y la cuenta de demostración no puede moverlos', async ({
+    page,
+  }) => {
+    // La administración podía cobrar y reembolsar por la API, pero el panel
+    // no enseñaba qué: una retención atascada solo se veía en el registro.
+    await entrarComo(page, 'administracion');
+    await page.goto('/admin');
+
+    await abrirPestana(page, 'Pagos');
+
+    // La semilla trae reservas completadas sin pago: eso ya es dinero que
+    // alguien tiene que mirar.
+    const resumen = page.getByRole('list', {
+      name: 'Cuántos hay de cada tipo',
+    });
+    await expect(resumen.getByRole('listitem')).toHaveCount(3);
+    await expect(resumen).toContainText(/Completada sin cobrar: [1-9]/);
+
+    const lista = page.getByRole('list', { name: 'Pagos por revisar' });
+    await expect(lista.getByRole('listitem').first()).toBeVisible();
+    await expect(lista.getByRole('listitem').first()).toContainText(
+      /Reserva #[0-9a-f]{8}/,
+    );
+    // Lo que se lee es la frase, no la clave del motivo.
+    await expect(lista.getByText(/^[a-z]+-[a-z-]+$/)).toHaveCount(0);
+
+    // Y si alguno ofrece moverlo, a esta cuenta no la deja.
+    const acciones = lista.getByRole('button');
+    for (let i = 0; i < (await acciones.count()); i++) {
+      await expect(acciones.nth(i)).toBeDisabled();
+    }
+  });
+
   test('un cliente acaba en su panel y no en el de administración', async ({
     page,
   }) => {

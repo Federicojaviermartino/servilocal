@@ -147,6 +147,34 @@ test.describe('Búsqueda de servicios', () => {
     await expect(recuento(page, '25 resultados encontrados')).toBeVisible();
   });
 
+  test('ordenar por precio pone primero el más barato y lo deja en la dirección', async ({
+    page,
+    request,
+  }) => {
+    // La API sabía ordenar y la interfaz no lo ofrecía: todo salía por
+    // fecha de publicación.
+    await page.goto('/services/search');
+    await expect(page.locator(TARJETA).first()).toBeVisible();
+    const porPrecio = page.getByRole('button', { name: 'Precio más bajo' });
+    await expect(
+      page.getByRole('button', { name: 'Más recientes' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+
+    await porPrecio.click();
+
+    await expect(page).toHaveURL(/sort=price/);
+    await expect(porPrecio).toHaveAttribute('aria-pressed', 'true');
+    // El primero de la página es el que la API da por más barato.
+    const respuesta = await request.get(
+      '/api/services/search?sortBy=price&limit=1',
+    );
+    const [masBarato] = (await respuesta.json()).data as { id: string }[];
+    await expect(page.locator(TARJETA).first()).toHaveAttribute(
+      'href',
+      new RegExp(`/services/${masBarato.id}$`),
+    );
+  });
+
   test('la vista de mapa muestra todos los servicios sin paginar', async ({
     page,
   }) => {

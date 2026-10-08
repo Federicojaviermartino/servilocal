@@ -133,6 +133,8 @@ export const avisosApi = {
 export const adminApi = {
   metricas: () => api.get('/admin/metricas'),
   reputacion: () => api.get('/admin/reputacion'),
+  // Los pagos que alguien tiene que mirar: ver admin/pagos.tsx.
+  pagos: () => api.get('/admin/pagos'),
   auditoria: (pagina: number) =>
     api.get('/admin/auditoria', { params: { pagina } }),
 };
@@ -206,6 +208,12 @@ export const paymentsApi = {
   // Sin pago, la API responde vacío.
   getByBooking: (bookingId: string) =>
     api.get<Payment | ''>(`/payments/booking/${tramo(bookingId)}`),
+  // Las dos de la administración: cobrar lo retenido de una reserva
+  // completada, y soltar o devolver el de una ya cerrada.
+  capture: (bookingId: string) =>
+    api.post(`/payments/capture/${tramo(bookingId)}`),
+  refund: (bookingId: string) =>
+    api.post(`/payments/refund/${tramo(bookingId)}`),
 };
 
 export default api;

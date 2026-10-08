@@ -52,6 +52,49 @@ export interface Metricas {
   categorias: { total: number; sinServicios: number };
 }
 
+/** Por qué un pago está en la lista de los que alguien tiene que mirar. */
+export const MOTIVOS_DE_REVISION = [
+  // Retenido, y la reserva ya está cancelada, rechazada o completada: hay
+  // que soltarlo o cobrarlo. La revisión horaria lo intenta por su cuenta;
+  // si sigue aquí, es que Stripe no la deja.
+  'retenido-con-reserva-cerrada',
+  // Retenido, la reserva sigue confirmada y su hora pasó hace días: nadie
+  // la ha dado por hecha ni la ha cancelado, y la retención se renueva sin
+  // fin.
+  'retenido-sin-completar',
+  // Completada y sin cobrar: el profesional la cerró sin pago, y el cliente
+  // todavía puede pagarla.
+  'completada-sin-cobrar',
+] as const;
+export type MotivoDeRevision = (typeof MOTIVOS_DE_REVISION)[number];
+
+export interface PagoPorRevisar {
+  motivo: MotivoDeRevision;
+  reservaId: string;
+  estadoReserva: BookingStatus;
+  /** Para cuándo era la reserva. */
+  fecha: Date;
+  /** null si la reserva no llegó a tener pago. */
+  estadoPago: PaymentStatus | null;
+  importe: number;
+  servicio: string;
+  cliente: string;
+  profesional: string;
+}
+
+export interface PagosPorRevisar {
+  /** Los más urgentes primero, y como mucho TOPE_DE_PAGOS. */
+  pagos: PagoPorRevisar[];
+  /** Cuántos hay de cada motivo en total, quepan o no en la lista. */
+  totales: Record<MotivoDeRevision, number>;
+}
+
+/** Cuántos pagos por revisar se devuelven de una vez. */
+export const TOPE_DE_PAGOS = 50;
+
+/** Lo que se espera a que alguien cierre una reserva cuya hora ya pasó. */
+const DIAS_SIN_COMPLETAR = 2;
+
 export interface ReputacionProveedor {
   proveedorId: string;
   nombre: string;
@@ -116,6 +159,106 @@ export class AdminService {
     @InjectRepository(Category)
     private readonly categorias: Repository<Category>,
   ) {}
+
+  /**
+   * El dinero que alguien tiene que mirar.
+   *
+   * La administración podía cobrar y reembolsar por la API, pero no tenía
+   * dónde ver qué había que cobrar o reembolsar: una retención que Stripe no
+   * dejaba soltar, o una reserva confirmada que nadie cerraba, solo se
+   * veían en el registro del servidor. Aquí salen las tres situaciones en
+   * las que el dinero no está donde la reserva dice que debería.
+   *
+   * Con `soloDemostracion`, solo las de su mundo y con el apellido
+   * acortado, como en el resto del panel: ver soloVeLaDemostracion.
+   */
+  async pagosPorRevisar({
+    soloDemostracion = false,
+  }: { soloDemostracion?: boolean } = {}): Promise<PagosPorRevisar> {
+    const limite = new Date(
+      Date.now() - DIAS_SIN_COMPLETAR * 24 * 60 * 60 * 1000,
+    );
+    // En el orden de MOTIVOS_DE_REVISION, que es el de urgencia.
+    const motivo = `CASE
+      WHEN p.status = '${PaymentStatus.HELD}' AND b.status IN (
+        '${BookingStatus.CANCELLED}', '${BookingStatus.REJECTED}', '${BookingStatus.COMPLETED}'
+      ) THEN 0
+      WHEN p.status = '${PaymentStatus.HELD}' AND b.status = '${BookingStatus.CONFIRMED}'
+        AND b."scheduledDate" + b."durationMinutes" * interval '1 minute' < :limite THEN 1
+      WHEN b.status = '${BookingStatus.COMPLETED}' AND (
+        p.id IS NULL OR p.status IN ('${PaymentStatus.PENDING}', '${PaymentStatus.FAILED}')
+      ) THEN 2
+    END`;
+
+    const base = () => {
+      const consulta = this.reservas
+        .createQueryBuilder('b')
+        .leftJoin(Payment, 'p', 'p."bookingId" = b.id')
+        .innerJoin('b.service', 's')
+        .innerJoin('b.client', 'c')
+        .innerJoin('b.provider', 'pr')
+        .where(`${motivo} IS NOT NULL`, { limite });
+      // Una reserva es de un solo mundo: basta con mirar a su cliente.
+      if (soloDemostracion) consulta.andWhere('c.esDemostracion = true');
+      return consulta;
+    };
+
+    const [filas, recuento] = await Promise.all([
+      base()
+        .select(motivo, 'motivo')
+        .addSelect('b.id', 'reservaId')
+        .addSelect('b.status', 'estadoReserva')
+        .addSelect('b.scheduledDate', 'fecha')
+        .addSelect('p.status', 'estadoPago')
+        .addSelect('COALESCE(p.amount, b."totalPrice")', 'importe')
+        .addSelect('s.title', 'servicio')
+        .addSelect('c.firstName', 'clienteNombre')
+        .addSelect('c.lastName', 'clienteApellidos')
+        .addSelect('pr.firstName', 'profesionalNombre')
+        .addSelect('pr.lastName', 'profesionalApellidos')
+        // Lo más urgente primero y, dentro de cada motivo, lo más antiguo.
+        .orderBy('motivo', 'ASC')
+        .addOrderBy('b.scheduledDate', 'ASC')
+        .addOrderBy('b.id', 'ASC')
+        .limit(TOPE_DE_PAGOS)
+        .getRawMany(),
+      base()
+        .select(motivo, 'motivo')
+        .addSelect('COUNT(*)', 'total')
+        .groupBy('motivo')
+        .getRawMany<{ motivo: number; total: string }>(),
+    ]);
+
+    const nombre = (propio: unknown, apellidos: unknown): string => {
+      const resto = String(apellidos ?? '');
+      const inicial = resto.charAt(0);
+      return [propio, soloDemostracion ? inicial && `${inicial}.` : resto]
+        .filter(Boolean)
+        .join(' ');
+    };
+
+    const totales = Object.fromEntries(
+      MOTIVOS_DE_REVISION.map((clave) => [clave, 0]),
+    ) as Record<MotivoDeRevision, number>;
+    for (const fila of recuento) {
+      totales[MOTIVOS_DE_REVISION[Number(fila.motivo)]] = Number(fila.total);
+    }
+
+    return {
+      pagos: filas.map((f) => ({
+        motivo: MOTIVOS_DE_REVISION[Number(f.motivo)],
+        reservaId: f.reservaId,
+        estadoReserva: f.estadoReserva,
+        fecha: f.fecha,
+        estadoPago: f.estadoPago ?? null,
+        importe: Number(f.importe),
+        servicio: f.servicio,
+        cliente: nombre(f.clienteNombre, f.clienteApellidos),
+        profesional: nombre(f.profesionalNombre, f.profesionalApellidos),
+      })),
+      totales,
+    };
+  }
 
   /** Convierte el resultado crudo de un GROUP BY en filas tipadas. */
   private aRecuentos(filas: { clave: unknown; total: string }[]): Recuento[] {

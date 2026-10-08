@@ -35,6 +35,7 @@ import {
 } from '../common/cuenta';
 import { PaymentsService } from '../payments/payments.service';
 import { TiempoRealGateway } from '../common/tiempo-real/tiempo-real.gateway';
+import { FrenoDeCuentas } from '../common/redis/freno-de-cuentas';
 import { TOPE_ADMINISTRACION } from '../common/topes';
 
 /** Reservas que todavía comprometen a alguien. */
@@ -51,6 +52,7 @@ export class UsersService {
     private readonly dataSource: DataSource,
     private readonly pagos: PaymentsService,
     private readonly tiempoReal: TiempoRealGateway,
+    private readonly freno: FrenoDeCuentas,
   ) {}
 
   /** Con `soloDemostracion`, las de la demostración: ver soloVeLaDemostracion. */
@@ -331,6 +333,7 @@ export class UsersService {
       where: { id: usuarioId },
       select: {
         id: true,
+        email: true,
         password: true,
         role: true,
         esDemostracion: true,
@@ -351,7 +354,11 @@ export class UsersService {
       );
     }
 
+    // El mismo freno que al entrar: con una sesión robada, esto también
+    // serviría para probar contraseñas.
+    await this.freno.comprobar(cuenta.email);
     if (!(await bcrypt.compare(contrasena, cuenta.password))) {
+      await this.freno.anotarFallo(cuenta.email);
       throw new BadRequestException({
         statusCode: 400,
         codigo: CODIGO_CONTRASENA_INCORRECTA,

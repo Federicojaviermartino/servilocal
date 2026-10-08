@@ -9,6 +9,7 @@ import { Category } from '../../entities/category.entity';
 import { Service } from '../../entities/service.entity';
 import { puntoGeografico } from '../../common/geografia';
 import { COORDENADAS_CIUDAD } from '../../common/ciudades';
+import { esContrasenaComun } from '../../common/contrasenas-comunes';
 import { comprobarDestino, destinoDe } from './barrera';
 import { Booking, BookingStatus } from '../../entities/booking.entity';
 import { Review } from '../../entities/review.entity';
@@ -172,9 +173,14 @@ async function runSeed() {
    */
   const passwordAdmin = process.env.ADMIN_PASSWORD?.trim();
 
-  if (passwordAdmin && passwordAdmin === 'Password123!') {
+  // La de demostración es pública, y las demás de esa lista son las que se
+  // prueban primero: la cuenta que puede moverlo todo no lleva ninguna.
+  if (
+    passwordAdmin &&
+    esContrasenaComun(passwordAdmin, [process.env.ADMIN_EMAIL ?? ''])
+  ) {
     throw new Error(
-      'ADMIN_PASSWORD no puede ser la contraseña de demostración: es pública.',
+      'ADMIN_PASSWORD es de las contraseñas que se adivinan enseguida, como la de demostración, que es pública: elige otra.',
     );
   }
 

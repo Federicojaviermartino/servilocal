@@ -25,6 +25,8 @@ function consultaFalsa(resultado: {
     'andWhere',
     'groupBy',
     'orderBy',
+    'addOrderBy',
+    'limit',
     'leftJoin',
     'innerJoin',
   ]) {
@@ -332,6 +334,133 @@ describe('AdminService', () => {
         );
       },
     );
+  });
+
+  describe('los pagos por revisar', () => {
+    const fila = (extra: Record<string, unknown> = {}) => ({
+      motivo: 0,
+      reservaId: 'r1',
+      estadoReserva: 'cancelled',
+      fecha: new Date('2026-10-01T10:00:00Z'),
+      estadoPago: 'held',
+      importe: '75.50',
+      servicio: 'Reparación de grifos',
+      clienteNombre: 'Laura',
+      clienteApellidos: 'García López',
+      profesionalNombre: 'Carlos',
+      profesionalApellidos: 'Ruiz Pérez',
+      ...extra,
+    });
+
+    /** La lista y el recuento, que son las dos consultas que hace. */
+    function conPagos(filas: unknown[], recuento: unknown[] = []) {
+      const lista = consultaFalsa({ raws: filas });
+      const totales = consultaFalsa({ raws: recuento });
+      return {
+        lista,
+        totales,
+        servicio: construir({
+          reservas: repositorioFalso([lista, totales]),
+        }),
+      };
+    }
+
+    it('cada fila llega con su motivo por su nombre y el importe como número', async () => {
+      const preparado = conPagos([
+        fila(),
+        fila({ motivo: 1, reservaId: 'r2', estadoReserva: 'confirmed' }),
+        fila({
+          motivo: 2,
+          reservaId: 'r3',
+          estadoReserva: 'completed',
+          estadoPago: null,
+          importe: '80.00',
+        }),
+      ]);
+
+      const { pagos } = await (await preparado.servicio).pagosPorRevisar();
+
+      expect(pagos.map((pago) => pago.motivo)).toEqual([
+        'retenido-con-reserva-cerrada',
+        'retenido-sin-completar',
+        'completada-sin-cobrar',
+      ]);
+      expect(pagos[0]).toEqual({
+        motivo: 'retenido-con-reserva-cerrada',
+        reservaId: 'r1',
+        estadoReserva: 'cancelled',
+        fecha: new Date('2026-10-01T10:00:00Z'),
+        estadoPago: 'held',
+        importe: 75.5,
+        servicio: 'Reparación de grifos',
+        cliente: 'Laura García López',
+        profesional: 'Carlos Ruiz Pérez',
+      });
+      expect(pagos[2]).toMatchObject({ estadoPago: null, importe: 80 });
+    });
+
+    it('los totales traen los tres motivos, también los que no tienen ninguno', async () => {
+      const preparado = conPagos([], [{ motivo: 2, total: '79' }]);
+
+      const { totales } = await (await preparado.servicio).pagosPorRevisar();
+
+      expect(totales).toEqual({
+        'retenido-con-reserva-cerrada': 0,
+        'retenido-sin-completar': 0,
+        'completada-sin-cobrar': 79,
+      });
+    });
+
+    it('no trae más de cincuenta, con lo más urgente primero', async () => {
+      const preparado = conPagos([]);
+
+      await (await preparado.servicio).pagosPorRevisar();
+
+      expect(preparado.lista.limit).toHaveBeenCalledWith(50);
+      expect(preparado.lista.orderBy).toHaveBeenCalledWith('motivo', 'ASC');
+    });
+
+    it('la administración de verdad lo ve todo, con el nombre completo', async () => {
+      const preparado = conPagos([fila()]);
+
+      const { pagos } = await (await preparado.servicio).pagosPorRevisar();
+
+      expect(pagos[0].cliente).toBe('Laura García López');
+      expect(preparado.lista.andWhere).not.toHaveBeenCalled();
+      expect(preparado.totales.andWhere).not.toHaveBeenCalled();
+    });
+
+    it('la de demostración, solo lo de su mundo y con el apellido acortado', async () => {
+      // Su contraseña es pública: ni los nombres ni los importes de las
+      // cuentas reales, y tampoco cuántos hay.
+      const preparado = conPagos([fila()]);
+
+      const { pagos } = await (
+        await preparado.servicio
+      ).pagosPorRevisar({ soloDemostracion: true });
+
+      expect(pagos[0]).toMatchObject({
+        cliente: 'Laura G.',
+        profesional: 'Carlos R.',
+      });
+      for (const consulta of [preparado.lista, preparado.totales]) {
+        expect(consulta.andWhere).toHaveBeenCalledWith(
+          'c.esDemostracion = true',
+        );
+      }
+    });
+
+    it('la fecha de corte de «sin completar» es de hace dos días', async () => {
+      vi.useFakeTimers({ now: new Date('2026-10-08T12:00:00Z') });
+      const preparado = conPagos([]);
+
+      await (await preparado.servicio).pagosPorRevisar();
+      vi.useRealTimers();
+
+      expect(preparado.lista.where).toHaveBeenCalledWith(expect.any(String), {
+        limite: new Date('2026-10-06T12:00:00Z'),
+      });
+    });
   });
 
   describe('reputacion', () => {
