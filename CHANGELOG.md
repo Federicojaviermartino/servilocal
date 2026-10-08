@@ -73,6 +73,11 @@ Nothing yet.
   worked.
 - The diagnostic token is compared in constant time, and the front end no longer says
   it is built with Next.js.
+- Next.js 16.3.8, for six advisories published while this version was being tested. The
+  most serious is a server-side request forgery through the image optimiser
+  (GHSA-cjq9-62q9-8jv4), which reaches sites that allow images from other hosts, as
+  this one does with two; among the rest, two poison the cache of prerendered pages.
+  The dependency gate in CI held the version back until it was updated.
 
 ### Changed
 
