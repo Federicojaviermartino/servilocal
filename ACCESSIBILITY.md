@@ -82,7 +82,12 @@ axe run would be the kind of statement this project tries not to make.
 - Nothing changes on its own when a control changes. The language selector was a
   drop-down that loaded the page on change, so moving through it with the
   keyboard jumped to the next language; it is now a button that opens a list of
-  links, and only choosing one navigates.
+  links, and only choosing one navigates. The order of the search results is a
+  group of toggle buttons for the same reason, with the one in force marked with
+  `aria-pressed`, and focus stays on the one just pressed.
+- The header's menu on a phone closes with `Escape`, which returns focus to the
+  button that opened it, and that button is 40 px wide rather than the 24 of its
+  icon.
 - Controls are named by what they show. "Sign out" in the header was labelled
   "Close session" in six of the ten languages, so someone driving the page by voice could
   not reach it by saying what they saw. After accepting a booking, focus moves
@@ -106,7 +111,10 @@ axe run would be the kind of statement this project tries not to make.
   longer rely on the browser's own validation, whose messages come in the
   browser's language rather than the page's and vanish in a bubble: the rules the
   fields declare are checked on submit, each error appears next to its field in
-  the page's language, and focus goes to the first one.
+  the page's language, and focus goes to the first one. The booking form, which
+  checks rules of its own, left focus on the button: it now goes to the first
+  field with an error too. And a service with a fixed price states it instead of
+  asking for an amount that could only be one.
 - Navigation is in the same place on every page, and the current section is marked
   with `aria-current`, not only with colour.
 
@@ -120,6 +128,8 @@ axe run would be the kind of statement this project tries not to make.
   including focus management, which is the part most often skipped.
 - Events that only happen visually are announced: an incoming notification updates
   a polite live region, because otherwise its only trace is a ten-pixel red badge.
+  There is one bell and one region: the header used to mount two, one for each
+  layout with one of them hidden, and each notice was announced twice.
   A conversation is a `log`, so a reply that arrives over the socket is read out;
   it has a heading with the other person's name, and each message says who wrote
   it, which on screen is only the side and the colour. The number of results is

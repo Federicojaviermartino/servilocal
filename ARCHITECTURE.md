@@ -165,7 +165,7 @@ read is now a `PATCH` of its own.
 | `auditoria` | Append-only record of administration actions |
 | `demostracion` | Hourly restore of whatever the demo accounts changed |
 | `correo` | Email through Brevo; outside production, the server log |
-| `admin` | Aggregated metrics and provider reputation |
+| `admin` | Aggregated metrics, provider reputation and the payments that need a person |
 | `ia` | Optional assistant layer with a hard spend ceiling |
 | `health` | Health that checks the database, not just the process, and a liveness route that does not |
 | `common` | Guards, interceptors, filters, Redis, real-time gateway |
@@ -426,6 +426,18 @@ documents nowhere. Requests relayed by the front end are the one exception, cove
 decision 9. IPv6 addresses are counted by their /64: a connection is given a whole block,
 and taking a new address for every request was free.
 
+A limit per visitor does not protect an account: whoever spreads the attempts over many
+addresses never meets it. So wrong passwords are also counted per account, ten every
+quarter of an hour, wherever they come from, and while the brake is on not even the
+right password gets through, or it would stop nobody. It counts emails that have no
+account as well, because a brake that only stopped real ones would say which emails
+are registered. The count lives in Redis when there is one, in the process's memory
+when there is not or it does not answer, and only the email's hash is stored. Its price
+is that anyone can keep someone out for fifteen minutes by failing on purpose; the
+window is short for that reason, recovering the password lifts it, and the demo
+accounts are left out, since their password is public and locking them would lock
+everyone out of the demo.
+
 **2 · Payments use manual capture.**
 Funds are authorised when the booking is made, not taken — the correct model for a
 marketplace, where the money should not move before the service does. The refund path
@@ -450,6 +462,15 @@ completed. Captures and refunds carry idempotency keys, and Stripe calls time ou
 ten seconds with two retries, which bounds how long a row stays locked while Stripe
 answers; whoever waits on that row gives up after five seconds with a 409
 (`lock_timeout`) instead of hanging for the thirty of the statement timeout.
+
+When Stripe itself fails, the answer says so instead of a generic 500: a 503 with
+`Retry-After` when it does not respond, a 402 when the bank declines the card, a 409 when
+the payment is no longer in the state the request assumed. Each carries a code, and the
+interface explains it in the reader's language. A request that Stripe calls malformed
+stays a 500 with its trace, because that one is a bug here. Nothing is left half done
+either way: the transaction is undone, and the booking does not change state unless the
+money did. One payment per booking is the schema's rule as well as the lock's, with a
+unique index on the booking; the row is reused when a booking is paid again.
 
 A declined card does not close a payment: Stripe leaves the intent waiting for another
 payment method, and the form lets the client retry on it. So `payment_failed` only
@@ -623,13 +644,6 @@ Stated here rather than discovered later.
   period. The scheduled ping covers working hours only, and GitHub skips enough of its
   runs that it cannot be counted on: keeping the demo awake takes an external monitor,
   described in `docs/OPERATIONS.md`.
-- **When Stripe fails, the API answers 500.** A timeout or an outage at Stripe reaches
-  the client as a generic server error, where a 503 with `Retry-After` would say that
-  trying again later is the right thing to do. Nothing is left half done, because the
-  booking does not change state unless the money did, but the answer is the wrong one.
-- **One payment per booking is kept by a lock, not by the schema.** Opening a payment
-  locks the booking's row, and a test opens two at once and finds one; `payments` has no
-  unique index on the booking to say the same.
 - **A 404 is rendered by the browser.** Next.js 16 answers `notFound()` with its error
   document and puts the not-found page in the React payload, where the browser renders
   it: with JavaScript, the page is the usual one, with its language, header and message;
@@ -651,7 +665,7 @@ Stated here rather than discovered later.
 | Layer | Tool | What it protects |
 |-------|------|------------------|
 | Back end | Vitest + SWC | Services and every controller, including the money paths, and that whoever acts is taken from the session, never from the address or the body |
-| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that every migration can be undone and applied again, that shutting down closes the sockets before Redis, that a signed Stripe event reaches its handler with the raw body it was signed over, that pages of results with ties neither repeat nor skip a service, that each kind of search uses its index, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it. A second matrix asks the question a role cannot answer, whose it is: with real rows, as the owner, as another client, as another provider and as the administration |
+| Back end, against real infrastructure | Vitest + PostGIS + `stripe-mock` + Valkey | What a double cannot contradict: that the spatial index is actually usable, that a row lock serialises two transactions, that a locked row is skipped rather than waited on, that Stripe rejects a non-integer amount, that the entities describe exactly the schema the migrations build, that every migration can be undone and applied again, that shutting down closes the sockets before Redis, that with Stripe unreachable the answer is a 503 and neither a payment nor a completed booking is left half done, that the limits per visitor and per account actually trip, that a signed Stripe event reaches its handler with the raw body it was signed over, that pages of results with ties neither repeat nor skip a service, that each kind of search uses its index, and who may call each route: the whole application booted as in production, and every route called as an anonymous visitor, a client, a provider, an administrator and the read-only demo administrator. The routes are listed from the application itself, so a new one without a row in the table fails until someone decides who may call it. A second matrix asks the question a role cannot answer, whose it is: with real rows, as the owner, as another client, as another provider and as the administration |
 | Front end | Vitest | Library helpers, components, pages, and catalogue parity across the ten locales |
 | Database copy | `scripts/ensayo-restauracion.sh`, in the integration job | That the encrypted copy the weekly workflow takes restores into an empty database identical to the original: every table's rows, and the extensions, constraints, indexes and sequences |
 | End to end | Playwright | Chrome on desktop and on a narrow phone, Firefox and Safari's WebKit, against a real API and database |

@@ -14,6 +14,97 @@ the project, and carry that commit's date.
 
 Nothing yet.
 
+## [2.14.0] — 2026-10-08
+
+### Added
+
+- The search results can be ordered: nearest, newest, best rated or lowest price. The
+  API could always do it and the interface never offered it, so everything came out by
+  publication date, also when searching near you, which now puts the closest first
+  without being asked. The order lives in the address like the filters, and is a group
+  of buttons rather than a drop-down, so that nothing navigates while the keyboard goes
+  through the options.
+- A payments tab in the administration panel, with the money that somebody has to look
+  at: holds on bookings that are already closed, holds on confirmed bookings whose time
+  passed more than two days ago, and bookings completed without charge. Each has the
+  action that resolves it next to it, which the API already had and the panel never
+  used, and all of them go into the audit log. The demo administrator sees only the
+  demo's, and cannot act (`GET /admin/pagos`).
+- `/.well-known/security.txt`, pointing at the security policy.
+
+### Fixed
+
+- A failure at Stripe was answered with a generic 500, "Error interno del servidor",
+  which was not true and did not say that trying again in a minute was enough. It is
+  now a 503 with `Retry-After` when Stripe does not respond, a 402 when the bank
+  declines the card and a 409 when the payment is no longer in the state the request
+  assumed, each with a code and its text in the ten languages. A request that Stripe
+  calls malformed stays a 500: that one is a bug here.
+- The booking form left focus on its button after a submission with errors, so whoever
+  does not see the screen did not learn that nothing had been sent, or why. Focus now
+  goes to the first field with an error. And a service with a fixed price states it
+  instead of asking for an amount that could only be one.
+- The header mounted two notification bells, one for each layout with one of them
+  hidden: notices were requested twice and announced twice. There is one now. On a
+  phone, the menu had no link to the administration panel, did not close with `Escape`
+  and its button was a 24 px target.
+
+### Security
+
+- Wrong passwords are counted per account as well as per visitor: ten in a quarter of
+  an hour stop that account's sign-in wherever they come from, and the right password
+  does not get through while it lasts. Five attempts a minute per address stopped
+  nobody who spread them over many. Emails without an account are counted too, so the
+  limit does not say which ones exist; changing the password and deleting the account
+  share the count; and the demo accounts are left out, because their password is
+  public and locking them would lock everyone out.
+- The passwords every attack tries first are refused when one is set: the most repeated
+  in published leaks, the usual words with digits and symbols around them, repetitions,
+  keyboard rows and the account's own email. `Password123!`, the demo accounts'
+  published password, is one of them. The seed refuses them for the administrator too.
+- What the API answers to a session is marked `no-store`.
+- The API's interactive documentation was also served from the front end's origin,
+  where the session cookie lives, because everything under `/api` is relayed. Asked for
+  there, it now redirects to the API's own host.
+- The front end checks its environment when it builds and when it starts. A Stripe
+  secret key in the variable meant for the publishable one would have ended up in every
+  visitor's browser; it now stops the build, as do an API address without protocol or
+  without `/api` and a site address with a path, which used to build a site that half
+  worked.
+- The diagnostic token is compared in constant time, and the front end no longer says
+  it is built with Next.js.
+
+### Changed
+
+- One payment per booking is now the schema's rule as well as the lock's: the index on
+  the booking is unique. The migration leaves it as it was, and says so in the log, if
+  a database already has a booking with two.
+
+### Documentation
+
+- SECURITY: what the limit per account costs, what the password check does not cover,
+  and why the script policy still allows inline scripts.
+- ARCHITECTURE: the limit per account next to the one per visitor, what is answered
+  when Stripe fails, and two known limitations fewer.
+- OPERATIONS: the front end's environment check, and the payments tab and the account
+  brake as things to watch.
+
+### Tests
+
+- With the whole application booted and Stripe unreachable, opening a payment and
+  completing a booking answer 503 and leave neither a payment nor a completed booking
+  half done.
+- The limits are exercised for the first time: five sign-in attempts from one address
+  and the sixth is refused, and ten wrong passwords from ten addresses stop the
+  account, also for an email that does not exist and not for a demo account. Every
+  other test changes address on each call precisely so that the limiter stays out of
+  the way.
+- The payments the administration has to review are checked against PostgreSQL: which
+  come out for each reason, which do not, their order, their totals and what the demo
+  administrator sees.
+- 1278 unit tests on the API, 487 integration tests, 950 in the browser and 113 end to
+  end, up from 1146, 468, 873 and 106.
+
 ## [2.13.0] — 2026-10-07
 
 ### Fixed
@@ -1141,7 +1232,8 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
-[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.13.0...HEAD
+[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.14.0...HEAD
+[2.14.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.13.0...v2.14.0
 [2.13.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.12.0...v2.13.0
 [2.12.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.11.1...v2.12.0
 [2.11.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.11.0...v2.11.1

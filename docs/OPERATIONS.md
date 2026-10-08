@@ -59,6 +59,13 @@ every problem at once. A deploy that does not start never replaces the running
 one: Render keeps serving the previous version and marks the deploy as failed. Read
 the reason in the deploy's log, fix the variable in Render and redeploy.
 
+The front end does the same with the shape of its own (`frontend/entorno.js`), when it
+builds and when it starts: `NEXT_PUBLIC_API_URL` and `API_INTERNA` have to be http or
+https addresses ending in `/api`, `NEXT_PUBLIC_SITE_URL` protocol and domain with no
+trailing slash, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` a key starting with `pk_`. A
+secret key there fails the build: it would have been published to every browser, so
+roll it in Stripe as well.
+
 What stops it: no `JWT_SECRET` or `STRIPE_SECRET_KEY`; in production, no
 `DATABASE_URL`/`DB_HOST` or no `CORS_ORIGINS`/`FRONTEND_URL`, or the example
 `JWT_SECRET`; a number that is not a number; a switch that is not exactly `true` or
@@ -257,6 +264,17 @@ and what they publish is deleted, or withdrawn if it already has bookings. So:
   even when the process exits with an error on the way down; a crash while
   serving shows up there as a failure.
 - **Errors**: Sentry, once `SENTRY_DSN` is set.
+- **Money**: the *Pagos* tab of the administration panel lists what somebody has to
+  look at. A hold on a booking that is already closed should not stay there: the
+  hourly review releases or captures it, and what remains is what Stripe refused, to
+  be captured or released by hand from the same list. A hold on a confirmed booking
+  whose time passed more than two days ago waits for someone to complete or cancel it.
+  And a booking completed without charge is listed until its client pays. Whatever is
+  done from there goes into the audit log.
+- **Accounts**: the API logs `Una cuenta se frena tras 10 contraseñas equivocadas`
+  when an account's sign-in is stopped, with a fragment of the email's hash and
+  not the email. Many of those lines with different fragments are someone trying
+  passwords across accounts.
 
 ### External monitor
 

@@ -24,7 +24,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-2019%20unit%20%2B%20468%20integration%20%2B%20106%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-2228%20unit%20%2B%20487%20integration%20%2B%20113%20e2e-475569)
 
 <img src="docs/screenshots/search-en.png" alt="Search results in English, with filters, prices and ratings" width="820">
 
@@ -69,7 +69,7 @@ The stack is a Next.js front end, a NestJS REST API, PostgreSQL with PostGIS for
 - **Search near you**: PostGIS `ST_DWithin` over a spatial index, accent-insensitive text matching, and a results page rendered on the server with its filters and page in the address — [`services.service.ts`](backend/src/services/services.service.ts), [`search/page.tsx`](frontend/src/app/%5Blocale%5D/services/search/page.tsx).
 - **Money that follows Stripe**: the whole amount is held when the client books, captured when the provider completes, released on cancellation, and reconciled with Stripe every hour — [`payments.service.ts`](backend/src/payments/payments.service.ts).
 - **Who may do what**: roles, a read-only demo administrator and demo accounts kept apart from real ones, checked by booting the whole application and calling every route as every kind of account, and every route that names somebody's booking, payment, review or conversation as its owner and as someone else — [`permisos.integracion.ts`](backend/test/integracion/permisos.integracion.ts), [`propiedad.integracion.ts`](backend/test/integracion/propiedad.integracion.ts).
-- **Tested in depth**: 2019 unit tests, 468 against a real database, Stripe's emulator and Valkey, and 106 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
+- **Tested in depth**: 2228 unit tests, 487 against a real database, Stripe's emulator and Valkey, and 113 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
 - **Ten languages**, Arabic right to left included, and an operations runbook for deploying, rolling back and restoring — [`OPERATIONS.md`](docs/OPERATIONS.md).
 
 ---
@@ -156,7 +156,7 @@ Recorded and taken from the running application with the seeded data by [`fronte
 ## Features
 
 **Anyone**
-- Search near you, from the browser's location, or by city, with filters: category, radius, minimum rating, maximum price. Filters, view and page live in the address, so the back button and a shared link give the same search, and the page arrives rendered from the server
+- Search near you, from the browser's location, or by city, with filters — category, radius, minimum rating, maximum price — and results ordered by distance, rating, price or date. Filters, view and page live in the address, so the back button and a shared link give the same search, and the page arrives rendered from the server
 - Results as a list or on a Leaflet map with markers
 - Accent- and case-insensitive search that also matches trade names, so "fontaneria" finds *Fontanería*
 - Service detail with verified reviews, price range and provider profile; on a phone, the price and "Book" come before the reviews
@@ -188,6 +188,7 @@ Recorded and taken from the running application with the seeded data by [`fronte
 - Hierarchical category management
 - Moderation queue for reported reviews
 - Basic platform metrics
+- Payments that need a person: holds left on a closed booking, confirmed bookings that nobody closed and completed bookings never charged, each with the action that resolves it
 
 ---
 
@@ -210,7 +211,7 @@ Recorded and taken from the running application with the seeded data by [`fronte
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1146 unit tests on the API with doubles, plus 468 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 873 in the browser. Playwright for 106 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes. Lighthouse in CI with budgets for performance, accessibility, best practices and SEO, and Stryker mutation testing over payments, bookings, permissions and personal data |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1278 unit tests on the API with doubles, plus 487 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 950 in the browser. Playwright for 113 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes. Lighthouse in CI with budgets for performance, accessibility, best practices and SEO, and Stryker mutation testing over payments, bookings, permissions and personal data |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, a rehearsal of the database copy and its restore, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies that also runs every Monday, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -248,6 +249,8 @@ The UML diagrams in [`diagrams/`](diagrams/README.md) are the ones submitted wit
 - **A page never repeats or skips a service.** Every order ends in the service's id, so services that tie — the same rating, the same price — fall in the same place on every request. Without it PostgreSQL may order ties differently each time: in production, the three pages of `sortBy=rating&limit=10` returned 25 rows and only 23 different services. The default order carries the tie-break in its index, `("createdAt", "id")`, read backwards, so it costs nothing.
 - **Payments use manual capture**, so the client's money is authorised at booking time and only captured when the work is confirmed — the correct model for a marketplace. Each status change runs in one transaction with the booking locked, so a provider completing while the client cancels can no longer leave a cancelled booking charged.
 - **The calendar is enforced by the database.** An exclusion constraint over the provider and the booked interval keeps confirmed bookings from overlapping, even when two are confirmed at the same instant and neither request can see the other.
+- **Sign-in is limited per account as well as per visitor.** Five attempts a minute per address stop nobody who spreads them over many addresses, so ten wrong passwords in a quarter of an hour also stop that account's sign-in, wherever they come from. Unknown emails are counted too, or the brake itself would say which ones exist, and the demo accounts are left out: their password is on the sign-in page, and locking them would lock everyone out of the demo. The passwords every attack tries first are refused when one is set.
+- **When Stripe fails, the answer says so.** It used to be a generic 500. Now it is a 503 with `Retry-After` when Stripe does not respond, a 402 when the bank declines the card and a 409 when the payment is no longer in the state the request assumed, each with a code the interface explains in the reader's language. A request that Stripe calls malformed stays a 500, because that one is a bug here.
 - **The webhook verifies Stripe's signature** against the raw request body, which is why the Nest app boots with `rawBody: true`. A test sends signed events over HTTP to the application booted as in production: with the signature check replaced by a double, as it was, nothing proved that the raw body reached it.
 - **Reviews require a completed booking**, one review per booking, enforced by a unique constraint. That rules out drive-by ratings from people who never hired anything. It does not make collusion impossible — a provider with a second account can still book their own service through it — so treat it as a cost raised, not a guarantee.
 - **The API client retries idempotent reads only.** A timed-out `GET` is retried once; a `POST` never is, because repeating one could duplicate a booking or a charge.
@@ -498,6 +501,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `GET` | `/users` · `/users/:id` | Admin | User administration |
 | `PATCH` | `/users/:id/toggle-active` | Admin | Activate or deactivate an account; recorded in the audit log |
 | `GET` | `/admin/metricas` · `/admin/reputacion` | Admin | Aggregated metrics and provider reputation, computed in SQL |
+| `GET` | `/admin/pagos` | Admin | Payments that need a person, the most urgent first, with how many there are of each kind |
 | `GET` | `/admin/auditoria` | Admin | Audit log, paginated |
 | `POST` | `/ia/asistente` | — | Natural-language search, with or without the model |
 | `GET` | `/ia/estado` · `/ia/consumo` | — · Admin | Whether the assistant is available, and its spending |
@@ -525,6 +529,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `BREVO_API_KEY`, `CORREO_REMITENTE` | Optional. Brevo key and verified sender for password-recovery emails (`CORREO_REMITENTE_NOMBRE` sets the display name). Without them, outside production the email goes to the server log; in production the API answers that recovery is unavailable |
 | `FRONTEND_URL` | Optional. Where the links in emails point; defaults to the first of `CORS_ORIGINS` |
 | `THROTTLE_AUTH_LIMIT` | Optional. Raises the login rate limit in test environments |
+| `THROTTLE_CUENTA_LIMIT` | Optional. Raises the limit of wrong passwords per account, 10 every 15 minutes, in test environments |
 | `THROTTLE_RESERVAS_LIMIT`, `THROTTLE_MENSAJES_LIMIT` | Optional. Raise the per-minute limits on creating bookings (10) and sending messages (30) in test environments |
 | `THROTTLE_SERVICIOS_LIMIT` | Optional. Raises the limit on publishing services, 20 an hour per visitor, in test environments |
 | `ANTHROPIC_API_KEY` | Optional. Without it the AI layer stays inactive and the app boots normally |
@@ -553,7 +558,7 @@ Interactive documentation is generated with OpenAPI and served at **[`/api/docs`
 | `NEXT_PUBLIC_SITE_URL` | Canonical site URL for `sitemap.xml` and Open Graph |
 | `API_INTERNA` | Optional. Where the front end's own server reaches the API, when that is not the public address: inside Docker Compose it is `http://api:3001/api`. Read at runtime |
 
-Every variable is checked when the API boots: a required one that is missing, a number that is not a number or an origin with a path stops it with the list of problems, and a deploy that does not start never replaces the running one. See [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
+Every variable is checked when the API boots: a required one that is missing, a number that is not a number or an origin with a path stops it with the list of problems, and a deploy that does not start never replaces the running one. The front end checks the shape of its own when it builds and when it starts: an API address without its protocol or its `/api`, a site address with a path, or a Stripe secret key where the publishable one goes, which would end up in every visitor's browser. See [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
 `NEXT_PUBLIC_*` variables are injected as Docker build args, because Next.js inlines them at build time. After changing one, redeploy with **Clear build cache** — a restart is not enough.
 
@@ -598,17 +603,17 @@ Controls implemented in the API and the front end:
 
 | Area | Control |
 |------|---------|
-| Authentication | JWT with Passport in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie that page scripts cannot read, kept first-party by relaying API calls through the front end. `bcrypt` password hashing, password column excluded from queries with `select: false`. Tokens carry an audience, so the socket's one-minute ticket is not a session and a session is not a ticket. Signing out revokes that session server-side, so a copied token stops working too, while other sessions of the same account stay open. Changing or recovering the password invalidates every earlier session; recovery links last an hour, work once and are stored only as a hash. Revoking a session, changing the password, deactivating an account or deleting it also closes that account's open sockets, which reconnect only where a session still stands. Signing in reveals neither in its answer nor in its timing whether an email is registered, and the redirect after it only accepts paths of the application |
+| Authentication | JWT with Passport in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie that page scripts cannot read, kept first-party by relaying API calls through the front end. `bcrypt` password hashing, with the passwords every attack tries first refused when one is set, and the password column excluded from queries with `select: false`. Tokens carry an audience, so the socket's one-minute ticket is not a session and a session is not a ticket. Signing out revokes that session server-side, so a copied token stops working too, while other sessions of the same account stay open. Changing or recovering the password invalidates every earlier session; recovery links last an hour, work once and are stored only as a hash. Revoking a session, changing the password, deactivating an account or deleting it also closes that account's open sockets, which reconnect only where a session still stands. Signing in reveals neither in its answer nor in its timing whether an email is registered, and the redirect after it only accepts paths of the application |
 | Privacy | Data export and account deletion from the profile. Deletion anonymises the account and erases the card saved at Stripe, keeping bookings, payments and reviews without the name. Registration records when the terms were accepted and which version |
 | Cross-site requests | `SameSite=Lax`, plus an `Origin` check on every state-changing request, which also stops login CSRF |
 | Authorisation | Route guards by role; the role guard rejects a missing user instead of throwing a `500`. What belongs to someone is checked against the session in each service, and tested with real rows as its owner, as another client, as another provider and as the administration. The read-only demo administrator sees the demo's accounts only: metrics counted over them, and an empty moderation history |
 | Input validation | Global `ValidationPipe` with `whitelist` and `forbidNonWhitelisted`, and no implicit conversion of types: a `"false"` where a boolean goes is refused, not read as `true`. `ParseUUIDPipe` on every id parameter, so a malformed id returns `400` and never reaches the database |
-| Rate limiting | `@nestjs/throttler` globally, a tighter limit on the login route, counters in Redis so a deploy does not reset them, and a tracker keyed on `CF-Connecting-IP` so the bucket belongs to the visitor and not to whichever balancer served the request. For calls relayed by the front end, the visitor address it forwards counts instead, and only when it arrives with the shared secret |
-| Payments | Webhook signature verified against the raw request body; funds held with manual capture, never taken automatically |
-| Transport | Content Security Policy and HSTS plus `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`; database connections validate the server certificate |
+| Rate limiting | `@nestjs/throttler` globally, a tighter limit on the login route, a limit per account on wrong passwords that does not depend on where they come from, counters in Redis so a deploy does not reset them, and a tracker keyed on `CF-Connecting-IP` so the bucket belongs to the visitor and not to whichever balancer served the request. For calls relayed by the front end, the visitor address it forwards counts instead, and only when it arrives with the shared secret |
+| Payments | Webhook signature verified against the raw request body; funds held with manual capture, never taken automatically; one payment per booking, enforced by the schema |
+| Transport | Content Security Policy and HSTS plus `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and `Permissions-Policy`; database connections validate the server certificate. What is answered to a session is `no-store`, the API's interactive documentation is kept off the origin where the session cookie lives, and `/.well-known/security.txt` says where to report a problem |
 | Error handling | Global exception filter. A 5xx logs method, path, status code and the user id when there is one, plus the stack trace — one formatted line, not JSON. Sentry capture strips the session cookie, bearer tokens and the proxy secret from errors and performance traces, and collects no request bodies, cookies, local variables or assistant conversations, checked by a test that runs a sign-in through the real SDK |
 
-What is still open — no second factor, no limit on attempts per account, a CSP that allows inline scripts — is listed in [SECURITY.md](SECURITY.md#known-gaps).
+What is still open — no second factor, no idle timeout, a CSP that allows inline scripts — is listed in [SECURITY.md](SECURITY.md#known-gaps).
 
 ---
 
@@ -618,10 +623,10 @@ What is still open — no second factor, no limit on attempts per account, a CSP
 # Back end
 cd backend
 npm run lint
-npm run test          # 1146 unit tests across 73 files, all with doubles (Vitest)
+npm run test          # 1278 unit tests across 76 files, all with doubles (Vitest)
 npm run test:cov      # all of src; fails below 96% statements / 89% branches,
                       # or below its own floor for payments, bookings, account data and guards
-npm run test:integracion   # 468 tests against a real database, stripe-mock and Valkey
+npm run test:integracion   # 487 tests against a real database, stripe-mock and Valkey
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run test:mutacion      # Stryker: do the tests catch a bug, not just run the line? About 90 minutes
 npm run build
@@ -631,7 +636,7 @@ cd frontend
 npm run lint          # fails on any warning, not only on errors
 npm run format:check  # Prettier, also enforced in CI
 npm run type-check
-npm run test          # 873 unit tests (Vitest)
+npm run test          # 950 unit tests (Vitest)
 npm run test:cov      # fails below 91% statements / 88% branches
 npm run build
 
@@ -648,13 +653,13 @@ npm run storybook
 npm run lock
 ```
 
-106 end-to-end tests run on four projects — Chrome on desktop and on a Pixel 5 phone (393 px), Firefox, and Safari's WebKit, with the narrowest layouts checked at 320 px — for 424 executions per run. They cover:
+113 end-to-end tests run on four projects — Chrome on desktop and on a Pixel 5 phone (393 px), Firefox, and Safari's WebKit, with the narrowest layouts checked at 320 px — for 452 executions per run. They cover:
 
-- **Search**: accent-insensitive matching, a page that arrives rendered from the server and keeps its page in the address, pagination, city filtering, the collapsible filter panel on a phone, and the map.
-- **Sessions and accounts**: demo and failed sign-in, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so that a copied cookie stops working, forms that keep the password and the email out of the address even before the page's JavaScript loads, registering only after accepting the terms, changing the password and deleting the account.
+- **Search**: accent-insensitive matching, a page that arrives rendered from the server and keeps its page in the address, pagination, city filtering, ordering by price, the collapsible filter panel on a phone, and the map.
+- **Sessions and accounts**: demo and failed sign-in, the limit of attempts per account, route protection, a session cookie that page scripts cannot read and that belongs to the front end's own origin, sign-out revoking the session so that a copied cookie stops working, forms that keep the password and the email out of the address even before the page's JavaScript loads, registering only after accepting the terms, changing the password and deleting the account.
 - **Bookings**: publishing a service from the provider's dashboard, and the state machine with its live notifications. A booking is completed only once its date arrives, and completing one with nothing held asks before closing it without charge.
 - **Every page**: a title and a canonical URL, a service page that arrives rendered, theme switching, and language detection and switching.
-- **Administration**: the panel with its charts, moderation queue and audit log.
+- **Administration**: the panel with its charts, moderation queue, payments to review and audit log.
 - **Accessibility**: WCAG 2.1 AA checks with axe in both themes, landmarks included, and in dark mode on a service page, a form showing its errors and the client dashboard.
 - **Payment**: a full booking paid with a Stripe test card, where the Stripe test keys are present.
 
@@ -769,9 +774,11 @@ some tests count the seeded services, and a run leaves bookings and messages beh
 | Status | Item |
 |--------|------|
 | Considering | Provider payouts. Funds are authorised and captured to the platform account; splitting them to the provider needs Stripe Connect |
+| Considering | A second factor for administrators. It changes how the owner signs in, so it waits for that decision |
 | Considering | Machine translation of provider-written text, so the nine non-Spanish locales reach a catalogue written in Spanish. Deferred on cost — it is a paid call per listing |
 | Needs setting up | A weekly encrypted copy of the database. The workflow is written and its restore is rehearsed on every push, but the repository has neither the key nor the connection string, so it fails every Monday on purpose instead of pretending to copy |
 | Needs setting up | An external monitor to keep the demo awake during working hours, since GitHub's scheduler proved unreliable for it, and `PROXY_SECRETO` on both services, without which every visitor shares one rate limit |
+| Done | Second layer: Stripe's failures answered with their own codes, one payment per booking enforced by the schema, sign-in limited per account and common passwords refused, a payments panel for the administration, results that can be ordered, and a front end that checks its own environment |
 | Done | Correctness and isolation: pages that never repeat a service, held payments left behind by a closed booking released or captured within the hour, the demo administrator kept out of the real moderation history and totals, sockets closed with their session, and text in Spanish marked as such on pages in the other nine languages |
 | Done | Quality: Lighthouse budgets in CI, mutation testing over money, permissions and personal data, a search that stays fast with 50,000 services, a favicon, and a fixed price that is really fixed |
 | Done | Tests and operations: who may call each route checked with the whole application booted, coverage over all the code with floors of its own for money and personal data, flaky end-to-end tests failing the run, and a shutdown that is bounded and logged |

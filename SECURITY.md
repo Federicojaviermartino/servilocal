@@ -40,7 +40,20 @@ dependencies of either the API or the front end.
 - Passwords are hashed with bcrypt; the API never stores or logs them. Their
   length is capped at 72 bytes rather than characters, because bcrypt ignores
   whatever comes after: forty Arabic letters passed a 72-character check and
-  lost their last four.
+  lost their last four. The ones every attack tries first are refused when
+  a password is set: the most repeated in published leaks, the usual words
+  dressed up with digits and symbols (`Password123!`, which is also the
+  demo accounts' published password), a repeated character, a keyboard row
+  or the account's own email.
+- Wrong passwords are counted per account as well as per visitor. Five
+  attempts a minute per address stop nobody who spreads them over many, so
+  ten in a quarter of an hour also stop that account's sign-in, wherever
+  they come from, and the right password does not get through while it
+  lasts. Emails with no account are counted the same way, or the limit
+  itself would say which ones exist. Changing the password and deleting the
+  account, which ask for it again, share that count. The demo accounts are
+  left out on purpose: their password is on the sign-in page, and locking
+  them would lock everyone out of the demo.
 - Card details never reach this server. Stripe Elements collects them in the
   browser and the API only ever handles payment intent identifiers.
 - Stripe's events are accepted only with a valid signature over the raw
@@ -87,6 +100,14 @@ dependencies of either the API or the front end.
   there does not inherit a half-typed phone number. If another tab signs in with
   another account, or signs out, this one reloads: the cookie is shared, and it
   would otherwise save into the new account.
+- Whatever the API answers to a request that carries a session is marked
+  `no-store`, so neither the browser nor anything in between keeps
+  someone's bookings or messages after they sign out.
+- The API's interactive documentation is not served from the front end's
+  origin. Everything under `/api` is relayed there, and Swagger with it: a
+  page with its own JavaScript, built to send requests, running where the
+  session cookie lives. Asked for there, it redirects to the API's own
+  host, where that cookie does not exist.
 - Signing out revokes the session on the server, not just the cookie: each
   token carries its own id, which goes on a revocation list until the token
   would have expired anyway. Only that session is closed — the demo accounts
@@ -140,6 +161,12 @@ dependencies of either the API or the front end.
   characters, a missing proxy secret or a missing webhook secret is reported
   in the log. Values that
   may carry credentials, such as database or Redis URLs, are never echoed.
+  The front end checks its own when it builds and when it starts, and
+  refuses a Stripe secret key in the variable meant for the publishable
+  one: everything in a `NEXT_PUBLIC_` variable ends up in every visitor's
+  browser.
+- `/.well-known/security.txt` points here, so whoever finds a problem on
+  the site does not need to know there is a repository.
 - Administrative actions — manual captures and refunds, status changes on
   other people's bookings and services withdrawn included — are written to an
   append-only audit log with no foreign key to users, so the record survives
@@ -191,19 +218,23 @@ These are open, listed here rather than left implicit:
   messages share 10 and 30 a minute, and publishing services 20 an hour.
   `GET /api/health` reports `atravesDelFrontend`, which turns `true` once
   the secret is set on both services.
-- Sign-in attempts are limited per visitor, five a minute, and not per
-  account: attempts spread across many addresses are not slowed down for any
-  one account.
 - There is no second factor, not even for administrators.
-- A password needs eight characters and nothing else. It is not checked
-  against lists of common or leaked passwords.
+- The limit per account has a price: anyone can keep someone out of their
+  account for a quarter of an hour at a time by failing on purpose with
+  their email. Recovering the password lifts it.
+- Passwords are checked against a short list of the most common ones and a
+  few obvious patterns, not against the hundreds of millions that have
+  leaked.
 - A session lasts 24 hours from sign-in, with no idle timeout, and no screen
   lists the open sessions or closes the others; changing the password does
   close them.
 - The Content Security Policy allows inline scripts (`'unsafe-inline'` in
   `script-src`), which the theme script and the framework's own need while
   there are no nonces. It limits where a script could send what it reads,
-  not whether an injected one runs.
+  not whether an injected one runs. A nonce has to be different in every
+  response, so it would mean rendering every page on each request and
+  giving up the prerendered ones; no page renders HTML written by a user,
+  and that trade was not judged worth it.
 - Registration answers `409` when an email is already in use, so it tells
   anyone whether an address has an account, which sign-in and recovery are
   careful not to. Closing it means answering the same either way and sending
