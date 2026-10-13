@@ -28,6 +28,7 @@ import { DemostracionOriginal1791100000000 } from '../../src/database/migrations
 import { IndiceServiciosRecientes1791200000000 } from '../../src/database/migrations/1791200000000-IndiceServiciosRecientes';
 import { DesempateDeServiciosRecientes1791300000000 } from '../../src/database/migrations/1791300000000-DesempateDeServiciosRecientes';
 import { UnPagoPorReserva1791400000000 } from '../../src/database/migrations/1791400000000-UnPagoPorReserva';
+import { PagosDeLaDemostracion1791500000000 } from '../../src/database/migrations/1791500000000-PagosDeLaDemostracion';
 
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
@@ -70,6 +71,7 @@ const MIGRACIONES = [
   IndiceServiciosRecientes1791200000000,
   DesempateDeServiciosRecientes1791300000000,
   UnPagoPorReserva1791400000000,
+  PagosDeLaDemostracion1791500000000,
 ];
 
 /**

@@ -56,7 +56,13 @@ export class RegisterDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: 'Password123!', minLength: 8, maxLength: 72 })
+  // El ejemplo tiene que valer tal cual: las comunes se rechazan, y la de
+  // las cuentas de demostración es una de ellas.
+  @ApiProperty({
+    example: 'Una-frase-larga-de-4-palabras',
+    minLength: 8,
+    maxLength: 72,
+  })
   @IsString()
   @MinLength(8)
   @caben72Bytes()

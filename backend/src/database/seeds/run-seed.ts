@@ -13,6 +13,7 @@ import { esContrasenaComun } from '../../common/contrasenas-comunes';
 import { comprobarDestino, destinoDe } from './barrera';
 import { Booking, BookingStatus } from '../../entities/booking.entity';
 import { Review } from '../../entities/review.entity';
+import { Payment, PaymentStatus } from '../../entities/payment.entity';
 import { GUARDAR_INSTANTANEA } from '../../demostracion/instantanea';
 
 /**
@@ -148,6 +149,18 @@ const RESPUESTAS = [
   'Siento el desenlace. Le he escrito para volver y terminar sin coste.',
 ];
 
+/**
+ * Reservas completadas que se dejan sin cobrar: las más recientes.
+ *
+ * La semilla no creaba ningún pago, así que el panel daba cero euros
+ * facturados con todo el trabajo hecho, y la pestaña de pagos por revisar
+ * listaba cada reserva completada como dinero que alguien tenía que mirar.
+ * Ahora cada una lleva su pago cobrado, menos estas, que son el caso que esa
+ * pestaña existe para enseñar: el profesional la completó sin cobro y su
+ * cliente todavía puede pagarla.
+ */
+const COMPLETADAS_SIN_COBRAR = 3;
+
 // El data source de las migraciones ya carga el .env; la semilla leía
 // process.env a secas, así que seguir el README al pie de la letra
 // terminaba en un fallo de autenticación.
@@ -243,6 +256,7 @@ async function runSeed() {
   const serviceRepo = gestor.getRepository(Service);
   const bookingRepo = gestor.getRepository(Booking);
   const reviewRepo = gestor.getRepository(Review);
+  const paymentRepo = gestor.getRepository(Payment);
 
   // Limpiar datos existentes respetando el orden de dependencias
   const tablasAVaciar = [
@@ -938,6 +952,7 @@ async function runSeed() {
   // Reservas completadas con su valoración, para que las medias y los
   // contadores muestren datos y el filtro por valoración mínima sirva.
   let totalReservas = 0;
+  let cobradas = 0;
   let denuncias = 0;
 
   for (let i = 0; i < serviciosGuardados.length; i++) {
@@ -971,6 +986,22 @@ async function runSeed() {
         }),
       );
       totalReservas++;
+
+      // Las más recientes son la primera reserva de los primeros servicios:
+      // hace siete, ocho y nueve días. Las demás se cobraron al completarse.
+      // Sin intención de Stripe, porque no pasaron por allí.
+      if (j > 0 || i >= COMPLETADAS_SIN_COBRAR) {
+        await paymentRepo.save(
+          paymentRepo.create({
+            bookingId: reserva.id,
+            clientId: cliente.id,
+            amount: precio,
+            status: PaymentStatus.COMPLETED,
+            paidAt: fecha,
+          }),
+        );
+        cobradas++;
+      }
 
       const nota = puntuaciones[j];
 
@@ -1018,7 +1049,9 @@ async function runSeed() {
   }
   console.log(
     totalReservas +
-      ' reservas completadas y ' +
+      ' reservas completadas, ' +
+      cobradas +
+      ' de ellas cobradas, y ' +
       totalReservas +
       ' valoraciones creadas',
   );

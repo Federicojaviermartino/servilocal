@@ -2,6 +2,7 @@ import { DataSource } from 'typeorm';
 import { Booking, Category, Review, Service, User } from '../../src/entities';
 import { BookingsService } from '../../src/bookings/bookings.service';
 import { AdminService } from '../../src/admin/admin.service';
+import { PagosDeLaDemostracion1791500000000 } from '../../src/database/migrations/1791500000000-PagosDeLaDemostracion';
 import { crearFuente } from './base';
 
 /**
@@ -230,5 +231,162 @@ describe('Cuentas de demostración', () => {
         [cliente.id, profesional.id],
       ]);
     }
+  });
+
+  describe('los pagos de lo sembrado', () => {
+    /** Las completadas de la semilla, de la más reciente a la más antigua. */
+    const SEMBRADAS = `
+      SELECT b.id, b."totalPrice"::float AS precio, b."completedAt" AS completada,
+             p.status AS pago, p.amount::float AS importe, p."paidAt" AS pagada,
+             p."stripePaymentIntentId" AS intencion
+      FROM bookings b
+      JOIN users c ON c.id = b."clientId" AND c."esDemostracion"
+      LEFT JOIN payments p ON p."bookingId" = b.id
+      WHERE b.status = 'completed'
+        AND EXISTS (
+          SELECT 1 FROM reviews r
+          JOIN "demostracion_original" d
+            ON d.entidad = 'valoracion' AND d.id = r.id
+          WHERE r."bookingId" = b.id)
+      ORDER BY b."scheduledDate" DESC, b.id`;
+
+    interface Sembrada {
+      id: string;
+      precio: number;
+      completada: Date;
+      pago: string | null;
+      importe: number | null;
+      pagada: Date | null;
+      intencion: string | null;
+    }
+
+    it('la semilla las deja cobradas, menos las tres últimas', async () => {
+      // No creaba ningún pago: el panel daba cero euros facturados con todo
+      // el trabajo hecho, y listaba cada una como dinero por revisar.
+      const sembradas: Sembrada[] = await fuente.query(SEMBRADAS);
+
+      expect(sembradas.length).toBeGreaterThan(10);
+      expect(sembradas.slice(0, 3).map(({ pago }) => pago)).toEqual([
+        null,
+        null,
+        null,
+      ]);
+      for (const fila of sembradas.slice(3)) {
+        expect(fila).toMatchObject({
+          pago: 'completed',
+          importe: fila.precio,
+          // No pasaron por Stripe.
+          intencion: null,
+        });
+        expect(fila.pagada).toEqual(fila.completada);
+      }
+    });
+
+    it('y la demostración ya factura lo que cobró', async () => {
+      const administracion = new AdminService(
+        fuente.getRepository(User),
+        fuente.getRepository(Service),
+        fuente.getRepository(Booking),
+        fuente.getRepository(Review),
+        fuente.getRepository(Category),
+      );
+      const sembradas: Sembrada[] = await fuente.query(SEMBRADAS);
+      const cobrado = sembradas.reduce((suma, f) => suma + (f.importe ?? 0), 0);
+
+      const { reservas: suyas } = await administracion.metricas({
+        soloDemostracion: true,
+      });
+      const { totales } = await administracion.pagosPorRevisar({
+        soloDemostracion: true,
+      });
+
+      expect(cobrado).toBeGreaterThan(0);
+      expect(suyas.facturado).toBeGreaterThanOrEqual(cobrado);
+      // Lo que queda por revisar son esas tres, no todo lo completado.
+      expect(totales['completada-sin-cobrar']).toBeGreaterThanOrEqual(3);
+      expect(totales['completada-sin-cobrar']).toBeLessThan(sembradas.length);
+    });
+
+    it('en una base sembrada antes, la migración deja lo mismo que la semilla', async () => {
+      // Dentro de una transacción que se deshace: primero se quitan los
+      // pagos sembrados, que es como estaba producción, y después se añade
+      // lo que la migración no tiene que tocar.
+      const migracion = new PagosDeLaDemostracion1791500000000();
+      const corredor = fuente.createQueryRunner();
+      const dicho = vi
+        .spyOn(console, 'log')
+        .mockImplementation(() => undefined);
+      const antes: Sembrada[] = await fuente.query(SEMBRADAS);
+      await corredor.startTransaction();
+
+      try {
+        await corredor.query(
+          `DELETE FROM payments p USING users c
+           WHERE c.id = p."clientId" AND c."esDemostracion"
+             AND p.status = 'completed' AND p."stripePaymentIntentId" IS NULL`,
+        );
+        // Completada sin cobro por quien probaba la demostración: es de su
+        // mundo, pero no la sembró nadie. Y es la más reciente de todas.
+        const [{ id: deUnaVisita }] = await corredor.query(
+          `INSERT INTO bookings ("clientId", "providerId", "serviceId",
+             "scheduledDate", "durationMinutes", "totalPrice", status, "completedAt")
+           SELECT b."clientId", b."providerId", b."serviceId",
+                  now() - interval '1 day', 60, 50, 'completed', now() - interval '1 day'
+           FROM bookings b JOIN users c ON c.id = b."clientId"
+           WHERE c."esDemostracion" ORDER BY b.id LIMIT 1
+           RETURNING id`,
+        );
+        // Y una de cuentas reales, también completada y sin pago.
+        const [cliente, profesional] = await corredor.query(
+          `INSERT INTO users (email, password, "firstName", "lastName", role)
+           VALUES ('real-pagos-c@correo.test', 'x', 'Ana', 'Real', 'client'),
+                  ('real-pagos-p@correo.test', 'x', 'Luis', 'Real', 'provider')
+           RETURNING id`,
+        );
+        const [{ id: servicio }] = await corredor.query(
+          `INSERT INTO services ("providerId", "categoryId", title, description,
+             "priceMin", "priceUnit", address, city, location)
+           SELECT $1, id, 'Servicio real', 'De una cuenta real', 60,
+                  'por servicio', 'Calle Real 1', 'Madrid',
+                  ST_SetSRID(ST_MakePoint(-3.7, 40.4), 4326)
+           FROM categories ORDER BY id LIMIT 1
+           RETURNING id`,
+          [profesional.id],
+        );
+        const [{ id: real }] = await corredor.query(
+          `INSERT INTO bookings ("clientId", "providerId", "serviceId",
+             "scheduledDate", "durationMinutes", "totalPrice", status, "completedAt")
+           VALUES ($1, $2, $3, now() - interval '30 days', 60, 60, 'completed',
+                   now() - interval '30 days')
+           RETURNING id`,
+          [cliente.id, profesional.id, servicio],
+        );
+
+        await migracion.up(corredor);
+
+        const despues: Sembrada[] = await corredor.query(SEMBRADAS);
+        expect(despues).toEqual(antes);
+        expect(dicho).toHaveBeenCalledWith(
+          `Puestos ${antes.length - 3} pagos a las reservas completadas de la demostración.`,
+        );
+        const [{ ajenos }] = await corredor.query(
+          `SELECT count(*)::int AS ajenos FROM payments
+           WHERE "bookingId" = ANY($1)`,
+          [[deUnaVisita, real]],
+        );
+        expect(ajenos).toBe(0);
+
+        // Y pasarla otra vez no pone ninguno más, ni dice nada.
+        dicho.mockClear();
+        await migracion.up(corredor);
+
+        expect(await corredor.query(SEMBRADAS)).toEqual(antes);
+        expect(dicho).not.toHaveBeenCalled();
+      } finally {
+        await corredor.rollbackTransaction();
+        await corredor.release();
+        dicho.mockRestore();
+      }
+    });
   });
 });
