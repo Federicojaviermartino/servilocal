@@ -14,6 +14,39 @@ the project, and carry that commit's date.
 
 Nothing yet.
 
+## [2.14.1] — 2026-10-13
+
+### Fixed
+
+- The demo's completed bookings had no payments. The seed created them without one, so
+  the payments tab added in 2.14.0 listed all seventy-nine as "completed without
+  charge", the amount collected in the administration metrics was zero, and each of
+  them still asked its client to pay. The seed now gives every completed booking its
+  payment, collected the day the job was done, and a migration does the same in
+  databases seeded earlier, production among them. The three most recent are left
+  unpaid on purpose: they are what that tab exists to show, and what their clients can
+  still pay.
+- The password the API documentation proposes for registering was `Password123!`, which
+  2.14.0 started to refuse as a common one: trying the example as given answered 400.
+  It is now one the registration accepts, and a test keeps it that way.
+
+### Changed
+
+- Minor and patch updates of the dependencies Dependabot had proposed. In the API:
+  NestJS 12.1.3, Sentry 11.6, the Anthropic SDK 0.131, pg 8.23.1 and dotenv 18.0.7. In
+  the front end: next-intl 4.14.9 and lucide-react 1.55. Among the tools: Vitest 5.0.4
+  and Vite 8.3.4 on both sides, ESLint 10.12 and typescript-eslint 8.71 in the API, and
+  Storybook 10.6.1 in the front end. The API's proposal was failing in CI only because
+  of its lockfile, which `npm ci` refuses unless it is generated in Linux.
+
+### Tests
+
+- The seed's payments and the migration are checked against PostgreSQL: on a database
+  left as the old seed left it, the migration produces exactly what the new seed does,
+  touches neither a booking completed without charge by someone trying the demo nor one
+  of a real account, and adds nothing when it runs again.
+- 1280 unit tests on the API and 490 integration tests, up from 1278 and 487.
+
 ## [2.14.0] — 2026-10-08
 
 ### Added
@@ -1237,7 +1270,8 @@ First public beta, deployed on Render.
 - Messaging, reviews and authentication with JWT.
 - Docker images, and a database connection by `DATABASE_URL` with SSL.
 
-[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.14.0...HEAD
+[Unreleased]: https://github.com/Federicojaviermartino/servilocal/compare/v2.14.1...HEAD
+[2.14.1]: https://github.com/Federicojaviermartino/servilocal/compare/v2.14.0...v2.14.1
 [2.14.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.13.0...v2.14.0
 [2.13.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.12.0...v2.13.0
 [2.12.0]: https://github.com/Federicojaviermartino/servilocal/compare/v2.11.1...v2.12.0

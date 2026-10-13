@@ -24,7 +24,7 @@
 [![CI](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/Federicojaviermartino/servilocal/actions/workflows/ci.yml)
 ![Locales](https://img.shields.io/badge/i18n-10%20locales-7c3aed)
 ![Accessibility](https://img.shields.io/badge/WCAG%202.1-AA-0891b2)
-![Tests](https://img.shields.io/badge/tests-2228%20unit%20%2B%20487%20integration%20%2B%20113%20e2e-475569)
+![Tests](https://img.shields.io/badge/tests-2230%20unit%20%2B%20490%20integration%20%2B%20113%20e2e-475569)
 
 <img src="docs/screenshots/search-en.png" alt="Search results in English, with filters, prices and ratings" width="820">
 
@@ -69,7 +69,7 @@ The stack is a Next.js front end, a NestJS REST API, PostgreSQL with PostGIS for
 - **Search near you**: PostGIS `ST_DWithin` over a spatial index, accent-insensitive text matching, and a results page rendered on the server with its filters and page in the address — [`services.service.ts`](backend/src/services/services.service.ts), [`search/page.tsx`](frontend/src/app/%5Blocale%5D/services/search/page.tsx).
 - **Money that follows Stripe**: the whole amount is held when the client books, captured when the provider completes, released on cancellation, and reconciled with Stripe every hour — [`payments.service.ts`](backend/src/payments/payments.service.ts).
 - **Who may do what**: roles, a read-only demo administrator and demo accounts kept apart from real ones, checked by booting the whole application and calling every route as every kind of account, and every route that names somebody's booking, payment, review or conversation as its owner and as someone else — [`permisos.integracion.ts`](backend/test/integracion/permisos.integracion.ts), [`propiedad.integracion.ts`](backend/test/integracion/propiedad.integracion.ts).
-- **Tested in depth**: 2228 unit tests, 487 against a real database, Stripe's emulator and Valkey, and 113 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
+- **Tested in depth**: 2230 unit tests, 490 against a real database, Stripe's emulator and Valkey, and 113 end-to-end tests in Chrome, a phone, Firefox and Safari, with WCAG 2.1 AA checks in both themes — [Testing](#testing).
 - **Ten languages**, Arabic right to left included, and an operations runbook for deploying, rolling back and restoring — [`OPERATIONS.md`](docs/OPERATIONS.md).
 
 ---
@@ -211,7 +211,7 @@ Recorded and taken from the running application with the seeded data by [`fronte
 | Real-time messaging | Socket.IO gateway with one private room per person. Clients never ask to join a room: the server puts each connection in its own and emits to both participants of a conversation, which it reads from the stored conversation. HTTP polling stays as a fallback while the socket is down |
 | Redis, optional | Rate-limit counters, the Socket.IO adapter and a read cache. Every one of them degrades on its own: with no `REDIS_URL` the app behaves exactly as it did before Redis existed, and if Redis goes down mid-flight the API keeps serving — the counter stops counting, the cache falls through to PostgreSQL. A cache must never become a single point of failure |
 | Admin dashboard | Every figure comes from a SQL aggregation, never from counting rows in the browser. Charts with Recharts, theme-aware through the same CSS variables as the rest of the UI. The weekly series fills empty weeks server-side, so the line never joins two distant dates as if they were adjacent |
-| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1278 unit tests on the API with doubles, plus 487 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 950 in the browser. Playwright for 113 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes. Lighthouse in CI with budgets for performance, accessibility, best practices and SEO, and Stryker mutation testing over payments, bookings, permissions and personal data |
+| Testing | Vitest on both sides, because NestJS 12 and `next-intl` both ship ESM only: 1280 unit tests on the API with doubles, plus 490 integration tests against a real PostGIS database, Stripe's official `stripe-mock` and Valkey — most of them a matrix that boots the whole application and calls every route as every kind of account — and 950 in the browser. Playwright for 113 end-to-end tests, each run in Chrome on desktop and on a phone, in Firefox and in Safari's WebKit, and `@axe-core/playwright` for WCAG checks in both themes. Lighthouse in CI with budgets for performance, accessibility, best practices and SEO, and Stryker mutation testing over payments, bookings, permissions and personal data |
 | CI | GitHub Actions on every push to any branch: lint, type-check, unit and integration tests, a rehearsal of the database copy and its restore, build, component catalogue, end-to-end, a gate on known vulnerabilities in production dependencies that also runs every Monday, secret scanning over the whole history, and building and booting the Docker images. CodeQL static analysis on `main` and weekly; Dependabot for updates. After every deploy, a smoke test waits for each service to serve the new commit and then checks production end to end: the proxy, the cookie, the socket and sign-out |
 | Hosting | Render (web services) + Neon (PostgreSQL) |
 
@@ -319,7 +319,7 @@ defaults work against the database above. Add your Stripe test key to try paymen
 cd backend
 npm ci
 npm run migration:run   # creates the schema, including the PostGIS extension
-npm run seed            # 16 users, 10 categories, 25 services, 79 reviews
+npm run seed            # 16 users, 10 categories, 25 services, 93 bookings, 76 payments, 79 reviews
 npm run start:dev
 ```
 
@@ -623,10 +623,10 @@ What is still open — no second factor, no idle timeout, a CSP that allows inli
 # Back end
 cd backend
 npm run lint
-npm run test          # 1278 unit tests across 76 files, all with doubles (Vitest)
+npm run test          # 1280 unit tests across 77 files, all with doubles (Vitest)
 npm run test:cov      # all of src; fails below 96% statements / 89% branches,
                       # or below its own floor for payments, bookings, account data and guards
-npm run test:integracion   # 487 tests against a real database, stripe-mock and Valkey
+npm run test:integracion   # 490 tests against a real database, stripe-mock and Valkey
 npm run evaluar:ia         # the assistant against its evaluation set; needs ANTHROPIC_API_KEY, costs cents
 npm run test:mutacion      # Stryker: do the tests catch a bug, not just run the line? About 90 minutes
 npm run build

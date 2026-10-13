@@ -207,6 +207,13 @@ that is not local unless `SEMILLA_CONFIRMAR` carries the name of the database
 being emptied, so a production URL left in `.env` cannot wipe production by
 accident.
 
+Each completed booking is seeded with its payment, collected the day the job was done
+and with no Stripe intent, because it never went through Stripe. The three most recent
+are left unpaid on purpose: they are what the *Pagos* tab has to show, and what their
+clients can still pay. A database seeded before 2.14.1 got the same payments from the
+migration `PagosDeLaDemostracion`, which logs `Puestos N pagos a las reservas
+completadas de la demostración.` when it adds any.
+
 The seed also saves the copy of the demo that the API restores every hour, in
 `demostracion_original`. What the demo accounts change in services, profiles and
 reviews goes back to what the last seed left once it has been untouched for an hour,
